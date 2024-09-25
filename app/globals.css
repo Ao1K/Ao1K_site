@@ -1,0 +1,104 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+  }
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      transparent,
+     rgb(var(--background-end-rgb))
+    ),
+    rgb(var(--background-start-rgb));
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .no-spinner::-webkit-outer-spin-button,
+  .no-spinner::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .no-spinner {
+      -moz-appearance: textfield;
+      appearance: none;
+  }
+}
+
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  background: transparent;
+  align-items: middle; 
+}
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: #4C4B58;
+  cursor: pointer;
+  border-radius: 50%;
+  outline-width: 2px;
+  margin-top: -6px;
+}
+
+/* Slider scale customization */
+input[type='range']::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: #4C4B58;
+  cursor: pointer;
+  border-radius: 50%;
+  outline-width: 2px;
+  outline: #ece6ef;
+}
+
+input[type='range']::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 8px;
+  cursor: pointer;
+  background: #4C4B58;
+  border-radius: 5px;
+  outline-width: 2px;
+  outline: #4C4B58;
+}
+
+input[type='range']::-moz-range-track {
+  width: 100%;
+  height: 8px;
+  cursor: pointer;
+  background: #4C4B58;
+  border-radius: 5px;
+  outline-width: 2px;
+  outline: #ece6ef;
+}
+
+
+
+/*scrollbar customization */
+* {
+  scrollbar-width: auto;
+  scrollbar-color:  #ece6ef #4C4B58;
+}
+
