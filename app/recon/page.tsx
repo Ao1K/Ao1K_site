@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import MovesTextEditor from "../../components/MovesTextEditor";
 import SpeedSlider from "../../components/SpeedSlider";
 
@@ -9,6 +9,7 @@ import Dropdown from "../../components/Dropdown";
 import TwistyPlayer from "../../components/TwistyPlayer";
 import ReconTimeHelpInfo from "../../components/ReconTimeHelpInfo";
 import TPSInfo from "../../components/TPSInfo";
+import updateURL from "@/composables/updateURL";
 
 
 export default function Recon() {
@@ -119,12 +120,24 @@ export default function Recon() {
   }
 
   const handleSolveTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.value.length > 9) return;
     if (e.target.value === '') {
       setSolveTime('');
+      updateURL('time', 'undefined');
       return;
     }
+
     setSolveTime(parseFloat(e.target.value));
+    updateURL('time', e.target.value);
   }
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const time = urlParams.get('time');
+    if (time) {
+      setSolveTime(parseFloat(time));
+    }
+  }, []);
 
   return (
     <div id="main_page" className="w-full flex flex-col items-center bg-dark h-dvh">

@@ -31,7 +31,7 @@ export default function Footer(): JSX.Element {
           </a>
         </div>
         <div className="flex flex-row space-x-2 items-center hover:underline underline-offset-4">
-          <a href="https://www.github.com" target="_blank" rel="noopener noreferrer" className="flex flex-row items-center hover:underline underline-offset-4">
+          <a href="https://github.com/Ao1K/Ao1K_site" target="_blank" rel="noopener noreferrer" className="flex flex-row items-center hover:underline underline-offset-4">
             <GithubIcon className='mr-2'/>
             Contribute || Report bugs
           </a>

@@ -4,13 +4,6 @@ Undo/redo inconsistency
  - Undo/redo doesn't trigger any updates
  - Undo after pasting content causes error
 
-Fix mass text selection
- - buggy but sort of fixed
- - fixed
-
-Selection time doesn't work if it's at the end of line
- - fixed
-
 If you change textbox selection from 0 to 1, but not caret selection of textbox 1 from last time that that textbox 1 was selected, then the move displayed on the cube won't changed
  - this happens because updates to move selection are pushed from within textbox. Since nothing has changed in textbox, no update pushed.
  - can fix this by forcing an update if the document textbox focus has changed

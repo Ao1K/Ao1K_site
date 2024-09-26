@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import sanitizeHtml from 'sanitize-html';
 import validateTextInput from "../composables/validateTextInput";
 import validationToMoves from "../composables/validationToMoves";
+import updateURL from '../composables/updateURL';
 
 //todo: create replacement table for URL encoding AND decoding.
 
@@ -15,9 +16,6 @@ const EditorLoader = ({ contentEditableRef, onInputChange, name, autofocus }: { 
   const searchParams = useSearchParams();
 
   useEffect(() => {
-
-    console.log('loader triggered');
-
     let encodedText = searchParams.get(name)?.replace(/_/g, '%C2%A0');
 
     if (encodedText) {
@@ -127,7 +125,7 @@ const MovesTextEditor = React.memo(({ name, trackMoves, autofocus, moveHistory }
     onInputChange();
     
     updateURLTimeout.current ? clearTimeout(updateURLTimeout.current) : null;
-    updateURLTimeout.current = setTimeout(updateURL, 500);
+    updateURLTimeout.current = setTimeout(passURLupdate, 500);
   };
   
   function denestHTML(html: string) {
@@ -504,12 +502,9 @@ const MovesTextEditor = React.memo(({ name, trackMoves, autofocus, moveHistory }
     onInputChange();
   };
   
-  const updateURL = () => {
-    const currentParams = new URLSearchParams(window.location.search);
-    const newParam = encodeURIComponent(contentEditableRef.current?.innerText || '').replace(/\n/g, '%0A').replace(/%C2%A0/g, '_');
-    currentParams.set(name, newParam);
-    const newQueryString = currentParams.toString();
-    window.history.replaceState({}, '', `${window.location.pathname}?${newQueryString}`); // used to use useRouter, but it was reloading the page
+  const passURLupdate = () => {
+    const text = contentEditableRef.current?.innerText || '';
+    updateURL(name, text);
   };
 
   const isMultiSelect = () => {
@@ -697,7 +692,7 @@ const MovesTextEditor = React.memo(({ name, trackMoves, autofocus, moveHistory }
           onInput={handleInput}
           onCopy={handleCopy}
           onPaste={handlePaste}
-          onBlur={updateURL}
+          onBlur={passURLupdate}
           onFocus={handleInput} // this hack ensures a visual cube update
           dangerouslySetInnerHTML={{ __html: html }}
           spellCheck={false} 
