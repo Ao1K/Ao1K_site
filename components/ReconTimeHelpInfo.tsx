@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useEffect } from 'react';
 import InfoIcon from './icons/info';
 import CloseIcon from './icons/close';
 
@@ -11,13 +11,13 @@ export default function ReconTimeHelpInfo() {
   };
 
   const handleClose = () => {
-    console.log('closing');
     const popup = document.getElementById('popup');
     if (popup) {
       popup.style.display = 'none';
     }
   };
 
+  //todo: ideally, width and height of popup should be determined right away, and then top and left set accordingly.
   const handlePopupPosition = (event: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
     const iconRect = event.currentTarget.getBoundingClientRect();
     const popup = document.getElementById('popup');
@@ -40,7 +40,7 @@ export default function ReconTimeHelpInfo() {
   
       
       if (tooTall && tooWide) {
-        //place in center of screen
+        //place on center of screen
         top = viewportHeight / 2;
         
         left = viewportWidth / 2 - 200;
@@ -56,7 +56,6 @@ export default function ReconTimeHelpInfo() {
       if (left < 0) { left = 0; }
       popup.style.top = `${top}px`;
       popup.style.left = `${left}px`;
-      console.log('final top', top, 'final left', left);
     }
   };
   
