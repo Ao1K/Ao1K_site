@@ -1,6 +1,6 @@
 
 const replaceText = (text: string) => {
-    const replacementTable: string[][] = [
+    const replacementTable: [string,string][] = [
         ['%C2%A0','_'],
         ['\n', '%0A'],
     ];

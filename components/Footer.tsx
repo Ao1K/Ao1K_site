@@ -12,7 +12,7 @@ export default function Footer(): JSX.Element {
 
 
   return (
-    <footer className="bg-dark text-light justify-center items-center flex flex-col w-full py-16 h-1/3">
+    <footer className="bg-dark text-light justify-center items-center flex flex-col w-full py-16 h-1/3 -translate-y-1 -z-10">
       <div id="blur-border" className="w-1/2 h-[20px] blur-xl bg-primary mb-24"/>
       <div className="flex flex-col items-center">
         <div className={`text-2xl font-bold ${glory.variable} font-modern mb-3`}>
