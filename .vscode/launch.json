@@ -9,7 +9,7 @@
       "request": "launch",
       "name": "chrome+vscode debug",
       "url": "http://localhost:3000/recon",
-      "webRoot": "${workspaceFolder}"
+      "webRoot": "${workspaceFolder}",
     }
   ]
 }

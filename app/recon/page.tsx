@@ -63,26 +63,26 @@ export default function Recon() {
     && moveLocation.current[2] === newMoveLocation[2];
 
     if (movesSame && moveIndexSame) {
-      console.log('no change');
+      //console.log('no change');
       return;
     }
 
-    if (!movesSame) console.log('moves not same');
+    //if (!movesSame) console.log('moves not same');
 
     
     
     if(!moves[lineIndex]) {
       moveIndex = -1;
       lineIndex = findPrevNonEmptyLine(moves, lineIndex, idIndex);
-      console.log('newLineIndex:', lineIndex);
+      //console.log('newLineIndex:', lineIndex);
     }
 
     if (idIndex === 0) {
-      console.log('scramble', moves, moves.flat().join(' '));
+      //console.log('scramble', moves, moves.flat().join(' '));
       setScramble(moves.flat().join(' '));  
     }
     else {
-      console.log('solution', moves, 'flattened:', moves.flat().join(' '));
+      //console.log('solution', moves, 'flattened:', moves.flat().join(' '));
       setSolution(moves.flat().join(' '));
     }
 
@@ -101,7 +101,7 @@ export default function Recon() {
           sumPrevMoveTimes += moveAnimationTimes[lineIndex][i];
         }
       }
-      console.log('sumPrevMoveTimes:', sumPrevMoveTimes);
+      //console.log('sumPrevMoveTimes:', sumPrevMoveTimes);
       setAnimationTime(sumPrevMoveTimes);
     }
 

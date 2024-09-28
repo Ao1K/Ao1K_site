@@ -120,7 +120,7 @@ const MovesTextEditor = React.memo(({ name, trackMoves, autofocus, moveHistory }
   
   const handleInput = () => {
 
-    console.log('input event triggered');
+    //console.log('input event triggered');
 
     onInputChange();
     
@@ -163,7 +163,7 @@ const MovesTextEditor = React.memo(({ name, trackMoves, autofocus, moveHistory }
     const paintedHTML = htmlUpdateMatrix.map((line, i) => {
       
       if (!moveStatus.current[i]) {
-        console.log('moveStatus not found at line', i);
+        console.log('moveStatus not found at line', i, "for textbox", idIndex);
         moveStatus.current[i] = [''];
       }
 
@@ -217,6 +217,9 @@ const MovesTextEditor = React.memo(({ name, trackMoves, autofocus, moveHistory }
   }
 
   const isQuantifiableMoveChange = (oldMoveCounts: number[], newMoveCounts: number[]) => {
+    if (oldMoveCounts.length === 0) oldMoveCounts = [0]
+    if (newMoveCounts.length === 0) newMoveCounts = [0]
+    
     if (oldMoveCounts.length !== newMoveCounts.length) return true;
 
     for (let i = 0; i < oldMoveCounts.length; i++) {
@@ -226,16 +229,16 @@ const MovesTextEditor = React.memo(({ name, trackMoves, autofocus, moveHistory }
     return false;
   }
 
-  const otherTextboxChanged = () => {
-    if (moveHistory.current.index === 0) return false;
-    const otherID = idIndex === 0 ? 1 : 0;
-    let v = moveHistory.current.history[moveHistory.current.index][otherID] !== 'unchanged';
-    //console.log('otherTextboxChanged:', v);
-    return v;
-  }
+  // const otherTextboxChanged = () => {
+  //   if (moveHistory.current.index === 0) return false;
+  //   const otherID = idIndex === 0 ? 1 : 0;
+  //   let v = moveHistory.current.history[moveHistory.current.index][otherID] !== 'unchanged';
+  //   //console.log('otherTextboxChanged:', v);
+  //   return v;
+  // }
 
   const updateMoveHistory = (html: string, moveCountChanged: boolean) => {
-    
+    console.log('movecountchanged:', moveCountChanged);
     let i = moveHistory.current.index;
     //console.log('historyIndex1:', i);
    
@@ -245,7 +248,7 @@ const MovesTextEditor = React.memo(({ name, trackMoves, autofocus, moveHistory }
 
     if (MaxHistoryReached) {
       moveHistory.current.history.shift();
-    } else if (moveCountChanged || otherTextboxChanged() || i === 0) { 
+    } else if (moveCountChanged || i === 0) { 
       moveHistory.current.index++;
       i++;
     }
@@ -255,7 +258,7 @@ const MovesTextEditor = React.memo(({ name, trackMoves, autofocus, moveHistory }
       moveHistory.current.history[i] = [html, 'unchanged'] : 
       moveHistory.current.history[i] = ['unchanged', html];
 
-    //console.log('history at', i, ":", moveHistory.current.history[i]);
+    console.log('history:', moveHistory.current.history);
     
   }
 
@@ -392,10 +395,10 @@ const MovesTextEditor = React.memo(({ name, trackMoves, autofocus, moveHistory }
     setHTML(newHTMLlines);
 
     // 7
-    console.log('trackMoves from onInputChange');
-    console.log('html', newHTMLlines);
-    console.log('lineOffset', lineOffset.current);
-    console.log('moveOffset', moveOffset.current);
+    // console.log('trackMoves from onInputChange');
+    // console.log('html', newHTMLlines);
+    // console.log('lineOffset', lineOffset.current);
+    // console.log('moveOffset', moveOffset.current);
     trackMoves(idIndex, lineOffset.current, moveOffset.current, moveStatus.current, oldLineMoveCounts.current, oldMoveAnimationTimes.current);
   };
 
@@ -527,7 +530,7 @@ const MovesTextEditor = React.memo(({ name, trackMoves, autofocus, moveHistory }
     const prevHTML = contentEditableRef.current.innerHTML;
     insertCaretNode();
     if (prevHTML === contentEditableRef.current.innerHTML) {
-      console.log('no change');
+      //console.log('no change');
       return;
     }
 
@@ -577,48 +580,48 @@ const MovesTextEditor = React.memo(({ name, trackMoves, autofocus, moveHistory }
 
 
     if (lineOffset.current !== -1) {
-      
       caretLine ? setHTML(contentEditableRef.current.innerHTML): null; // ensures html will not be set during mounting
-      console.log('trackMoves from handleCaretChange');
-      console.log('html', html);
-      console.log('lineOffset', lineOffset.current);
-      console.log('moveOffset', moveOffset.current);
+      // console.log('trackMoves from handleCaretChange');
+      // console.log('html', html);
+      // console.log('lineOffset', lineOffset.current);
+      // console.log('moveOffset', moveOffset.current);
       trackMoves(idIndex, lineOffset.current, moveOffset.current, moveStatus.current, oldLineMoveCounts.current, oldMoveAnimationTimes.current);
     }
   };
 
   const handleUndoRedo = (e: KeyboardEvent) => {
     if (e.ctrlKey && e.key === 'z') {
-      //console.log('undo on textbox:', idIndex);
-      //console.log('Checking history:', moveHistory.current.history);
-      //console.log('On index:', Math.ceil(moveHistory.current.index) - 1);
+      console.log('undo on textbox:', idIndex);
+      console.log('Checking history:', moveHistory.current.history);
+      console.log('On index:', Math.ceil(moveHistory.current.index) - 1);
 
       e.preventDefault();
       
       let historyIndex = Math.ceil(moveHistory.current.index) - 1;
 
       if (historyIndex < 0) {
-        //console.log('end of history');
+        console.log('end of history');
         return;
       }
 
       moveHistory.current.index = moveHistory.current.index - 0.5;
 
       if (moveHistory.current.history[historyIndex + 1] && moveHistory.current.history[historyIndex + 1][idIndex] === 'unchanged') {
-        //console.log('not target textbox')
+        console.log('not target textbox')
         return;
       }
       
       let prevHTML = moveHistory.current.history[historyIndex][idIndex];
       while (prevHTML === 'unchanged' || historyIndex < 0) {
-        //console.log('1,',moveHistory.current.index);
+        console.log('1,',moveHistory.current.index);
         historyIndex--;
-        //console.log('2,',moveHistory.current.index);
+        console.log('2,',moveHistory.current.index);
 
         prevHTML = moveHistory.current.history[historyIndex][idIndex];
       }
       
       setHTML(prevHTML);
+      handleInput();
       oldLineMoveCounts.current = [-1];
       setCaretToCaretNode();
       console.log('move undone')

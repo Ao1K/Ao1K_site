@@ -2,6 +2,8 @@ import { useEffect } from 'react';
 import InfoIcon from './icons/info';
 import CloseIcon from './icons/close';
 
+const WIDTH = 300; //px
+
 export default function ReconTimeHelpInfo() {
   const handleClickOutside = (event: MouseEvent | TouchEvent) => {
     const popup = document.getElementById('popup');
@@ -43,7 +45,7 @@ export default function ReconTimeHelpInfo() {
         //place on center of screen
         top = viewportHeight / 2;
         
-        left = viewportWidth / 2 - 200;
+        left = (viewportWidth - WIDTH) / 2;
         
       } else if (tooTall) {
         top = iconRect.top - popup.offsetHeight - 10;
@@ -76,8 +78,9 @@ export default function ReconTimeHelpInfo() {
       </div>
       <div
         id="popup"
-        className="fixed bg-white border rounded-lg ml-10 p-4 pt-8 max-w-[400px] max-h-full overflow-auto hidden"
-      >
+        className={`fixed bg-white border rounded-lg ml-10 p-4 pt-8 max-h-full overflow-auto hidden z-10`}
+        style={{ width: `${WIDTH}px` }}
+        >
         <button onClick={handleClose} className="absolute top-2 right-2">
           <CloseIcon className="w-6 h-6 text-gray-500 hover:text-gray-700" />
         </button>
@@ -86,7 +89,7 @@ export default function ReconTimeHelpInfo() {
           <strong>STM</strong> means Slice Turn Metric. It's a way of measuring the number of moves in your solution. <strong> x y </strong> and <strong>z</strong> don't count as moves. Every other letter counts as one move.
         </p>
         <p className="text-sm text-gray-700 mt-2">
-          <strong>TPS</strong> means Turns Per Second.
+          <strong>TPS</strong> means Turns Per Second. Here, turns are measured in STM.
         </p>
       </div>
     </div>
