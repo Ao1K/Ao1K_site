@@ -2,32 +2,36 @@
 import React, { useState } from 'react';
 
 const Tagline = () => {
+  const [finished, setFinished] = useState<boolean>(false);
   const [hovering, setHovering] = useState<boolean>(false);
   const [displayText, setDisplayText] = useState<string>('statistical');
 
   const handleMouseEnter = () => {
     setHovering(true);
+    if (finished) return;
     let currentIndex = displayText.length;
+    
+    startUntyping(currentIndex);
+    setFinished(true);
+  };
 
+  const startUntyping = (i: number) => {
     const typingInterval = setInterval(() => {
-      if (currentIndex > 0) {
-        setDisplayText(displayText.slice(0, --currentIndex));
+      setDisplayText('statistical|');
+      if (i > 0) {
+        setDisplayText(displayText.slice(0, --i)+'|');
       } else {
+        setDisplayText('');
         clearInterval(typingInterval);
+
       }
     }, 100);
-  };
-
-  const handleMouseLeave = () => {
-    // setHovering(false);
-    // setDisplayText('statistical');
-  };
+  }
 
   return (
     <div
       className="px-6 py-2"
       onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
     >
       find your {hovering ? displayText : 'statistical'} significance
     </div>

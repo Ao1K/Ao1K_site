@@ -27,6 +27,8 @@ export default function Player({ scramble, solution, speed, moveLocation, animat
 
  //
 
+
+
   const calcCubeSpeed = (speed: number) => {
     if (speed === 100) {
       return 1000;
@@ -46,6 +48,7 @@ export default function Player({ scramble, solution, speed, moveLocation, animat
         viewerLink: 'none',
         puzzle: '3x3x3',
         hintFacelets: 'floating',
+        experimentalInitialHintFaceletsAnimation: "always",
         backView: 'none',
         background: 'none',
         controlPanel: 'none',
@@ -54,8 +57,6 @@ export default function Player({ scramble, solution, speed, moveLocation, animat
 
         experimentalSetupAlg: scramble,
         alg: solution,
-        experimentalTitle: 'test!',
-        experimentalHintSprite: '/Ao1K Logo Simple.png', // this is supposed to point to a URL or something
         
         
         tempoScale: cubeSpeed,
@@ -64,7 +65,7 @@ export default function Player({ scramble, solution, speed, moveLocation, animat
       playerInstance.current.style.height = '100%';
       
       playerInstance.current.experimentalFaceletScale = .95;
-      console.log(playerInstance.current);
+      //console.log(playerInstance.current);
       playerRef.current.appendChild(playerInstance.current);
     }
 

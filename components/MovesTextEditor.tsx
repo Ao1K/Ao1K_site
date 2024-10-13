@@ -1,22 +1,23 @@
 'use client';
 
-import React, { Suspense, useLayoutEffect, useEffect, useState } from 'react';
+import React, { useImperativeHandle, forwardRef, useEffect, useMemo, useState, memo } from 'react';
 import { useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useRouter } from 'next/navigation';
 import sanitizeHtml from 'sanitize-html';
+
 import validateTextInput from "../composables/validateTextInput";
 import validationToMoves from "../composables/validationToMoves";
 import updateURL from '../composables/updateURL';
 
-//todo: create replacement table for URL encoding AND decoding.
+import { urlEncodeKey } from '../utils/urlEncodeKey';
 
 
-const EditorLoader = ({ contentEditableRef, onInputChange, name, autofocus }: { contentEditableRef: React.RefObject<any>, onInputChange: () => void, name: string, autofocus: boolean})  => {
+const EditorLoader = ({ editorRef: contentEditableRef, onInputChange, name, autofocus }: { editorRef: React.RefObject<any>, onInputChange: () => void, name: string, autofocus: boolean})  => {
+  // useSearchParams is a hook. Storing searchParams here prevents it from being called again and causing reloads.
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    let encodedText = searchParams.get(name)?.replace(/_/g, '%C2%A0');
+    let encodedText = searchParams.get(name)?.replace(/_/g, '%C2%A0'); // TODO: use urlEncodeKey
 
     if (encodedText) {
       const decodedText = decodeURIComponent(encodedText);
@@ -24,7 +25,7 @@ const EditorLoader = ({ contentEditableRef, onInputChange, name, autofocus }: { 
     }
 
     if (autofocus) {
-      if (!encodedText) {
+      if (!encodedText && name === 'solution') {
         //adds caretNode span, which then is processed by onInputChange
         const selection = window.getSelection();
         const range = document.createRange();
@@ -61,47 +62,30 @@ interface EditorProps {
   trackMoves: (idIndex: number, lineIndex: number, moveIndex: number, moves: string[][], moveCounts: number[], moveAnimationTimes: number[][]) => void;
   autofocus: boolean;
   moveHistory: React.MutableRefObject<any>;
+  updateHistoryBtns: () => void;
+  html: string;
+  setHTML: React.Dispatch<React.SetStateAction<string>>;
 }
 
-const MovesTextEditor = React.memo(({ name, trackMoves, autofocus, moveHistory }: EditorProps) => {
+export interface EditorRef {
+  undo: () => void;
+  redo: () => void;
+}
 
-  //console.log('editor rendered');
+const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, autofocus, moveHistory, updateHistoryBtns, html, setHTML }, ref) => {
 
-  const contentEditableRef = useRef<any>(null);
+  const contentEditableRef = useRef<HTMLDivElement>(null);
   let moveOffset = useRef<number>(0);
   let lineOffset = useRef<number>(0);
   let moveStatus = useRef<string[][]>([['']]); // inner array for line of moves, outer array for all lines in textbox 
 
   const updateURLTimeout = useRef<NodeJS.Timeout | null>(null);
-  const router = useRouter();
-  const [html, setHTML] = useState<string>('');
 
   const oldHTMLlines = useRef<string[]>(['']);
   const oldLineMoveCounts = useRef<number[]>([0]);
   const oldMoveAnimationTimes = useRef<number[][]>([[]]); // stores move animation times for each move in each line. Only for solution textbox.
 
   const idIndex = name === 'scramble' ? 0 : 1;
-
-  // const [_, setReload] = useState<number>(0);
-  // const reloadRef = useRef<any>(0);
-
-
-  // const triggerReload = () => {
-  //   reloadRef.current = Date.now();
-  //   setReload(reloadRef.current);
-  // };
-
-  // useEffect(() => {
-  //   const intervalId = setInterval(() => {
-  //     console.log('BEFORE RELOAD');
-  //     console.log('contentEditableRef:', contentEditableRef.current);
-  //     triggerReload();
-  //     console.log('RELOAD');
-  //     console.log('contentEditableRef:', contentEditableRef.current);
-  //   }, 5000); // Example: reload every 5 seconds
-
-  //   return () => clearInterval(intervalId);
-  // }, []);
 
   const colorDict = [
     { key: 'move', value: 'text-light' },
@@ -111,7 +95,6 @@ const MovesTextEditor = React.memo(({ name, trackMoves, autofocus, moveHistory }
     { key: 'paren', value: 'text-paren' },
     { key: 'rep', value: 'text-paren' },
   ];
-
 
   const sanitizeConf = {
     allowedTags: ["b", "i","br","div"],
@@ -138,7 +121,6 @@ const MovesTextEditor = React.memo(({ name, trackMoves, autofocus, moveHistory }
     
     return lines;
   }
-
   
   function findHTMLchanges(oldHTML: string[], newHTML: string[]) {
     const htmlUpdateMatrix: string[] = [];
@@ -217,9 +199,15 @@ const MovesTextEditor = React.memo(({ name, trackMoves, autofocus, moveHistory }
   }
 
   const isQuantifiableMoveChange = (oldMoveCounts: number[], newMoveCounts: number[]) => {
+    //Remove trailing zeros. Clean empty count arrays.
+    while (oldMoveCounts[oldMoveCounts.length - 1] === 0) oldMoveCounts.pop();
+    while (newMoveCounts[newMoveCounts.length - 1] === 0) newMoveCounts.pop();
     if (oldMoveCounts.length === 0) oldMoveCounts = [0]
     if (newMoveCounts.length === 0) newMoveCounts = [0]
-    
+
+    // console.log('oldMoveCounts:', ...oldMoveCounts);
+    // console.log('newMoveCounts:', ...newMoveCounts);
+
     if (oldMoveCounts.length !== newMoveCounts.length) return true;
 
     for (let i = 0; i < oldMoveCounts.length; i++) {
@@ -229,36 +217,61 @@ const MovesTextEditor = React.memo(({ name, trackMoves, autofocus, moveHistory }
     return false;
   }
 
-  // const otherTextboxChanged = () => {
-  //   if (moveHistory.current.index === 0) return false;
-  //   const otherID = idIndex === 0 ? 1 : 0;
-  //   let v = moveHistory.current.history[moveHistory.current.index][otherID] !== 'unchanged';
-  //   //console.log('otherTextboxChanged:', v);
-  //   return v;
-  // }
-
   const updateMoveHistory = (html: string, moveCountChanged: boolean) => {
-    console.log('movecountchanged:', moveCountChanged);
-    let i = moveHistory.current.index;
-    //console.log('historyIndex1:', i);
-   
-    moveHistory.current.history = moveHistory.current.history.slice(0, i + 1); // delete redo history
+    
+    console.log('move history status:', moveHistory.current.status);
+
+    //console.log('html upon move history update:', html);
+    if (moveHistory.current.status === 'loading') {
+      // console.log('move history loading, now ready');
+      moveHistory.current.history = [["", ""]];
+      moveHistory.current.index = 0;
+      
+      moveHistory.current.status = 'ready';
+    }
+
+    if (moveHistory.current.status !== 'ready') {
+      console.log('move history NOT ready');
+      return;
+    }
+    console.log('move history ready!');
+
+    let i = moveHistory.current.index;    
     
     const MaxHistoryReached = i >= moveHistory.current.MAX_HISTORY;
 
     if (MaxHistoryReached) {
+
       moveHistory.current.history.shift();
-    } else if (moveCountChanged || i === 0) { 
+
+    } else if (moveCountChanged || i === 0) {
+
       moveHistory.current.index++;
       i++;
+
+    } else if (!moveCountChanged) {
+      
+      let lastTextboxHistory = moveHistory.current.history[moveHistory.current.index][idIndex];
+      let rowIndex = moveHistory.current.index;
+      while (lastTextboxHistory === '<unchanged>' && rowIndex > 1) {
+        rowIndex--;
+        lastTextboxHistory = moveHistory.current.history[rowIndex][idIndex];
+      }
+
+      if (lastTextboxHistory === '<unchanged>') {
+        return;
+      } else {
+        i = rowIndex; // moveHistory.current.index stays the same
+      }
     }
-    //console.log('historyIndex:', i);
+
+    moveCountChanged ? moveHistory.current.history = moveHistory.current.history.slice(0, i + 1) : null;
 
     idIndex === 0 ?
-      moveHistory.current.history[i] = [html, 'unchanged'] : 
-      moveHistory.current.history[i] = ['unchanged', html];
+      moveHistory.current.history[i] = [html, '<unchanged>'] : 
+      moveHistory.current.history[i] = ['<unchanged>', html];
 
-    console.log('history:', moveHistory.current.history);
+    //console.table(moveHistory.current.history);
     
   }
 
@@ -349,6 +362,7 @@ const MovesTextEditor = React.memo(({ name, trackMoves, autofocus, moveHistory }
   }
 
   const onInputChange = () => {
+
     
     // core functionality of the input change sequence:
     // 1. Store existing caret node. Textbox caret is later restored via useEffect.
@@ -364,9 +378,9 @@ const MovesTextEditor = React.memo(({ name, trackMoves, autofocus, moveHistory }
 
     // 1
     insertCaretNode();
-    
+
     // 2
-    let htmlLines = denestHTML(contentEditableRef.current.innerHTML);
+    let htmlLines = denestHTML(contentEditableRef.current!.innerHTML);
     const htmlUpdateMatrix = findHTMLchanges(oldHTMLlines.current, htmlLines);
     
     // 5
@@ -384,7 +398,7 @@ const MovesTextEditor = React.memo(({ name, trackMoves, autofocus, moveHistory }
     
     // 5
     const moveCountChanged = isQuantifiableMoveChange(oldLineMoveCounts.current, lineMoveCounts);
-    updateMoveHistory(newHTMLlines, moveCountChanged); // can't use html state because it's not done updating
+    updateMoveHistory(newHTMLlines, moveCountChanged);
     
     // 6
     oldHTMLlines.current = htmlLines;
@@ -392,13 +406,10 @@ const MovesTextEditor = React.memo(({ name, trackMoves, autofocus, moveHistory }
     oldMoveAnimationTimes.current = moveAnimationTimes;
     
     // 4
+    updateHistoryBtns();
     setHTML(newHTMLlines);
 
     // 7
-    // console.log('trackMoves from onInputChange');
-    // console.log('html', newHTMLlines);
-    // console.log('lineOffset', lineOffset.current);
-    // console.log('moveOffset', moveOffset.current);
     trackMoves(idIndex, lineOffset.current, moveOffset.current, moveStatus.current, oldLineMoveCounts.current, oldMoveAnimationTimes.current);
   };
 
@@ -434,10 +445,11 @@ const MovesTextEditor = React.memo(({ name, trackMoves, autofocus, moveHistory }
 
     if (document.activeElement !== contentEditableRef.current) return;
     if (!contentEditableRef.current) return;
-
+    if (moveHistory.current.undo_redo_done === false) return;
+    
     let existingCaretNode = contentEditableRef.current?.querySelector('#caretNode');
     while (existingCaretNode) {
-      existingCaretNode.parentNode.removeChild(existingCaretNode);
+      existingCaretNode.parentNode!.removeChild(existingCaretNode);
       existingCaretNode = contentEditableRef.current.querySelector('#caretNode');
     }   
 
@@ -453,11 +465,10 @@ const MovesTextEditor = React.memo(({ name, trackMoves, autofocus, moveHistory }
       range.setEnd(node, selection.focusOffset);
       range.insertNode(caretNode);
     }
-
   };
 
   const setCaretToCaretNode = () => {
-    const existingCaretNode = contentEditableRef.current.querySelector('#caretNode');
+    const existingCaretNode = contentEditableRef.current?.querySelector('#caretNode');
     if (existingCaretNode) {
       const selection = window.getSelection();
       const range = document.createRange();
@@ -501,7 +512,7 @@ const MovesTextEditor = React.memo(({ name, trackMoves, autofocus, moveHistory }
       range.collapse(false);
     }
 
-    setHTML(contentEditableRef.current.innerHTML);
+    setHTML(contentEditableRef.current!.innerHTML);
     onInputChange();
   };
   
@@ -527,9 +538,9 @@ const MovesTextEditor = React.memo(({ name, trackMoves, autofocus, moveHistory }
     if (multiSelect) return;
       
 
-    const prevHTML = contentEditableRef.current.innerHTML;
+    const prevHTML = contentEditableRef.current!.innerHTML;
     insertCaretNode();
-    if (prevHTML === contentEditableRef.current.innerHTML) {
+    if (prevHTML === contentEditableRef.current!.innerHTML) {
       //console.log('no change');
       return;
     }
@@ -538,7 +549,7 @@ const MovesTextEditor = React.memo(({ name, trackMoves, autofocus, moveHistory }
     let caretLine = '';
     let caretOffset = 0;
 
-    let lines = splitIntoLines(contentEditableRef.current.innerHTML);
+    let lines = splitIntoLines(contentEditableRef.current!.innerHTML);
     lines = cleanLines(lines);
 
     lineOffset.current = lines.findIndex((line) => line.includes('<span id="caretNode">'));
@@ -580,127 +591,202 @@ const MovesTextEditor = React.memo(({ name, trackMoves, autofocus, moveHistory }
 
 
     if (lineOffset.current !== -1) {
-      caretLine ? setHTML(contentEditableRef.current.innerHTML): null; // ensures html will not be set during mounting
-      // console.log('trackMoves from handleCaretChange');
-      // console.log('html', html);
-      // console.log('lineOffset', lineOffset.current);
-      // console.log('moveOffset', moveOffset.current);
+      caretLine ? setHTML(contentEditableRef.current!.innerHTML): null; // ensures html will not be set during mounting
       trackMoves(idIndex, lineOffset.current, moveOffset.current, moveStatus.current, oldLineMoveCounts.current, oldMoveAnimationTimes.current);
     }
   };
 
-  const handleUndoRedo = (e: KeyboardEvent) => {
+  const handleCommand = (e: KeyboardEvent) => {
+    if (!e.ctrlKey) return;
+
     if (e.ctrlKey && e.key === 'z') {
-      console.log('undo on textbox:', idIndex);
-      console.log('Checking history:', moveHistory.current.history);
-      console.log('On index:', Math.ceil(moveHistory.current.index) - 1);
-
+      
       e.preventDefault();
-      
-      let historyIndex = Math.ceil(moveHistory.current.index) - 1;
+      console.log('Undo called via ctrl+z');
 
-      if (historyIndex < 0) {
-        console.log('end of history');
-        return;
-      }
-
-      moveHistory.current.index = moveHistory.current.index - 0.5;
-
-      if (moveHistory.current.history[historyIndex + 1] && moveHistory.current.history[historyIndex + 1][idIndex] === 'unchanged') {
-        console.log('not target textbox')
-        return;
-      }
-      
-      let prevHTML = moveHistory.current.history[historyIndex][idIndex];
-      while (prevHTML === 'unchanged' || historyIndex < 0) {
-        console.log('1,',moveHistory.current.index);
-        historyIndex--;
-        console.log('2,',moveHistory.current.index);
-
-        prevHTML = moveHistory.current.history[historyIndex][idIndex];
-      }
-      
-      setHTML(prevHTML);
-      handleInput();
-      oldLineMoveCounts.current = [-1];
-      setCaretToCaretNode();
-      console.log('move undone')
+      handleUndo();
     }
 
-
     if (e.ctrlKey && e.key === 'y') {
-      // console.log('redo on textbox:', idIndex);
-      // console.log('Checking history:', moveHistory.current.history);
-      // console.log('On index:', Math.floor(moveHistory.current.index) + 1);
+
       e.preventDefault();
+      console.log('Redo called via ctrl+y');
 
-      let historyIndex = Math.floor(moveHistory.current.index) + 1;
-
-      if (historyIndex > moveHistory.current.MAX_HISTORY || historyIndex >= moveHistory.current.history.length) {
-        // console.log('max history reached');
-        return;
-      }
-
-      moveHistory.current.index = moveHistory.current.index + 0.5;
-
-      if (moveHistory.current.history[historyIndex][idIndex] === 'unchanged') {
-        // console.log('not target textbox')
-        return;
-      }
-
-      let nextHTML = moveHistory.current.history[historyIndex][idIndex];
-      
-      setHTML(nextHTML);
-      oldLineMoveCounts.current = [-1];
-      // console.log('move redone')
+      handleRedo();
     }
   };
 
+  const statusTransitions: any = {
+    ready: { start: 'in_progress_one'},
+    in_progress_one: { fail: 'checked_one', success: 'success_one' },
+    checked_one: { fail: 'ready', success: 'ready', start: 'in_progress_two' },
+    success_one: { start: 'ready'},
+    in_progress_two: { fail: 'ready', success: 'ready' },
+  };
+  
+  const incrementStatus = (type: 'fail' | 'success') => {
+    const nextStatus = statusTransitions[moveHistory.current.status]?.[type];
+    if (nextStatus) {
+      moveHistory.current.status = nextStatus;
+    } else {
+      console.error('moveHistory status out of sync!');
+    }
+  };
+  
+  const handleUndo = () => {
 
+    // console.log(moveHistory.current.history);
+    // console.log('On index:', moveHistory.current.index);
+    // console.log('On status:', moveHistory.current.status);
+  
+    const startStatus = statusTransitions[moveHistory.current.status]?.start;
+    if (startStatus) {
+      moveHistory.current.status = startStatus;
+    } else {
+      console.error('moveHistory status out of sync!');
+    }
+    if (startStatus === 'ready') {
+      return;
+    }
 
- 
-  useEffect(() => { // on mount
+    let index = moveHistory.current.index;
+    const history = moveHistory.current.history;
+  
+    if (index < 1) {
+      moveHistory.current.index = 0;
+      incrementStatus('fail');
+      return;
+    }
+  
+    if (history[index] && history[index][idIndex] === '<unchanged>') {
+      incrementStatus('fail');
+      return;
+    }
+  
+    index--;
+    moveHistory.current.index--;
+
+    const parentElement = document.getElementById(name);
+    const textbox = parentElement?.querySelector<HTMLDivElement>('div[contenteditable="true"]');
+    textbox?.focus();
+  
+    let prevHTML = history[index][idIndex];
+    while (prevHTML === '<unchanged>' && index > 0) {
+      index--;
+      //don't update moveHistory.current.index here. While loop would cause skips.
+      prevHTML = history[index][idIndex];
+    }    
+
+    contentEditableRef.current!.innerHTML = prevHTML;
+    updateHistoryBtns();
+    setCaretToCaretNode(); // updating contentEditableRef causes refresh which misplaces caret
+    handleInput(); // updates URL, oldlineCounts, oldHTMLlines, and moveAnimationTimes
+
+    incrementStatus('success'); // placed at end to give correct moveHistory state to updateMoveHistory
+  };
+  
+
+  const handleRedo = () => {
+
+    // console.log(moveHistory.current.history);
+    // console.log('On index:', moveHistory.current.index);
+    // console.log('On status:', moveHistory.current.status);
+  
+    const startStatus = statusTransitions[moveHistory.current.status]?.start;
+    if (startStatus) {
+      moveHistory.current.status = startStatus;
+    } else {
+      console.error('moveHistory status out of sync!');
+    }
+    if (startStatus === 'ready') {
+      return;
+    }
+
+    let index = moveHistory.current.index;
+    const history = moveHistory.current.history;
+    
+    if (index + 1 > moveHistory.current.MAX_HISTORY || index + 1 >= moveHistory.current.history.length) {
+      incrementStatus('fail');
+      return;
+    }
+    
+    if (history[index + 1] && history[index + 1][idIndex] === '<unchanged>') {
+      incrementStatus('fail');
+      return;
+    }
+    
+    index++;
+    moveHistory.current.index++;
+
+    const parentElement = document.getElementById(name);
+    const textbox = parentElement?.querySelector<HTMLDivElement>('div[contenteditable="true"]');
+    textbox?.focus();
+
+    let nextHTML = history[index][idIndex];
+    while (nextHTML === '<unchanged>' && index > moveHistory.current.MAX_HISTORY) {
+      index++;
+      nextHTML = history[index][idIndex];
+    }
+
+    contentEditableRef.current!.innerHTML = nextHTML;
+    updateHistoryBtns();
+    setCaretToCaretNode();
+    handleInput();
+
+    incrementStatus('success');
+  }
+
+  useImperativeHandle(ref, () => {
+    return {
+      undo: () => {
+        //console.log('Undo called once');
+        handleUndo();
+      },
+      redo: () => {
+        //console.log('Redo called once');
+        handleRedo();
+      }
+    };
+  },[]);
+
+  useEffect(() => {
+    if (!contentEditableRef.current) return;
+    
+    setCaretToCaretNode();
+    
+  }, [html]);
+
+  useEffect(() => {
     
     document.addEventListener('selectionchange', handleCaretChange); // this is triggered more than necessary due to rerenders
-    document.addEventListener('keydown', handleUndoRedo);
+    document.addEventListener('keydown', handleCommand);
 
     return () => {
 
       document.removeEventListener('selectionchange', handleCaretChange);
-      document.removeEventListener('keydown', handleUndoRedo);
+      document.removeEventListener('keydown', handleCommand);
 
       updateURLTimeout.current ? clearTimeout(updateURLTimeout.current) : null;
 
     };
   }, []);
 
-  useEffect(() => {
-    if (!contentEditableRef.current) return;
-    setCaretToCaretNode();
-
-  }, [html]);
-  
   return (
-      <Suspense>
-        <EditorLoader 
-          contentEditableRef={contentEditableRef} 
-          onInputChange={onInputChange}
-          name={name} 
-          autofocus={autofocus}
-        />
-        <div
-          contentEditable
-          ref={contentEditableRef}
-          className="bg-dark text-left rounded-sm resize-none text-xl w-full min-h-[4.5rem] mb-4 mx-1 p-2 caret-light border border-primary focus:border-1"
-          onInput={handleInput}
-          onCopy={handleCopy}
-          onPaste={handlePaste}
-          onBlur={passURLupdate}
-          onFocus={handleInput} // this hack ensures a visual cube update
-          dangerouslySetInnerHTML={{ __html: html }}
-          spellCheck={false} 
-        /> 
-      </Suspense>
+    <>
+      <EditorLoader editorRef={contentEditableRef} onInputChange={onInputChange} name={name} autofocus={autofocus} />   
+      <div
+        contentEditable
+        ref={contentEditableRef}
+        className="bg-dark text-left rounded-sm resize-none text-xl w-full min-h-[4.5rem] mb-4 mx-1 p-2 caret-light border border-primary focus:border-1"
+        onInput={handleInput}
+        onCopy={handleCopy}
+        onPaste={handlePaste}
+        onBlur={passURLupdate}
+        onFocus={handleInput} // this hack ensures a visual cube update
+        dangerouslySetInnerHTML={{ __html: html }}
+        spellCheck={false}
+      /> 
+    </>
   );
 });
 

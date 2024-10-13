@@ -1,8 +1,13 @@
 Bugs/Todo
 ===================
-Undo/redo inconsistency
- - Undo/redo doesn't trigger any updates
- - Undo after pasting content causes error
+
+
+Need to be able to call commands like undo redo and 
+
+Create a status string under moveHistory.current.status to avoid impossible combinations of states.
+
+ - Caret node only tells where in textbox the undo/redo should snap the caret to. 
+    That's it. This mentality can guide history-saving code.
 
 If you change textbox selection from 0 to 1, but not caret selection of textbox 1 from last time that that textbox 1 was selected, then the move displayed on the cube won't changed
  - this happens because updates to move selection are pushed from within textbox. Since nothing has changed in textbox, no update pushed.

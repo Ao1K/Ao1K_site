@@ -20,14 +20,14 @@ const DropdownButton: FunctionComponent<DropdownProps> = ({targetDiv}) => {
     setIsVisible((prev) => !prev);
   };
 
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 768) { // md breakpoint
-        setIsVisible(true); // Reset to the desired state
-        //setIsRotated(false); // Reset rotation if needed
-      }
-    };
+  const handleResize = () => {
+    if (window.innerWidth >= 768) { // md breakpoint
+      setIsVisible(true); // Reset to the desired state
+      //setIsRotated(false); // Reset rotation if needed
+    }
+  };
 
+  useEffect(() => {
     window.addEventListener('resize', handleResize);
     
     return () => {
@@ -37,7 +37,7 @@ const DropdownButton: FunctionComponent<DropdownProps> = ({targetDiv}) => {
 
   return (
     <div
-      className="text-dark_accent hover:text-light font-medium mr-1 flex flex-row items-center cursor-pointer"
+      className="text-dark_accent hover:text-light font-medium mr-1 flex flex-row items-center cursor-pointer select-none"
       onClick={() => toggleVisibility(targetDiv)}
     >
       <DropdownIcon

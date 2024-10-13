@@ -78,12 +78,13 @@ export default function ReconTimeHelpInfo() {
       </div>
       <div
         id="popup"
-        className={`fixed bg-white border rounded-lg ml-10 p-4 pt-8 max-h-full overflow-auto hidden z-10`}
+        className={`fixed bg-white border rounded-lg ml-10 p-4 max-h-full overflow-auto hidden z-10`}
+        // className={`pt-8`}
         style={{ width: `${WIDTH}px` }}
         >
-        <button onClick={handleClose} className="absolute top-2 right-2">
+        {/* <button onClick={handleClose} className="absolute top-2 right-2">
           <CloseIcon className="w-6 h-6 text-gray-500 hover:text-gray-700" />
-        </button>
+        </button> */}
 
         <p className="text-sm text-gray-700">
           <strong>STM</strong> means Slice Turn Metric. It's a way of measuring the number of moves in your solution. <strong> x y </strong> and <strong>z</strong> don't count as moves. Every other letter counts as one move.

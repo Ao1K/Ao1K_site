@@ -9,7 +9,7 @@ interface SpeedSliderProps {
 const SpeedSlider = ({speed, onChange}: SpeedSliderProps) => {
 
     return (
-        <div className="flex flex-row items-center text-bg-light p-2 w-full space-x-4">
+        <div className="flex items-center text-bg-light p-2 w-full space-x-4 select-none">
             <div className="flex flex-1 justify-end">
                 <SpeedIcon className="text-light" />
             </div>
@@ -22,7 +22,7 @@ const SpeedSlider = ({speed, onChange}: SpeedSliderProps) => {
                     onChange={onChange}
                 />
             </div>
-            <div className="text-light flex-1">{speed.toString() === '100' ? "Instant" : speed.toString() } </div>
+            <div className="text-light w-14">{speed.toString() === '100' ? "Instant" : speed.toString() } </div>
         </div>
     );
 };

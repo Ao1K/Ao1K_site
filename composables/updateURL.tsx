@@ -1,13 +1,15 @@
+import { urlEncodeKey } from '../utils/urlEncodeKey';
 
 const replaceText = (text: string) => {
-    const replacementTable: [string,string][] = [
-        ['%C2%A0','_'],
-        ['\n', '%0A'],
-    ];
-
-    replacementTable.forEach((replacement, i) => {
-        text = text.replace(new RegExp(replacement[i][0], 'g'), replacement[i][1]);
+    while (text.endsWith('\n')) {
+        text = text.slice(0, -1);
+    }
+    urlEncodeKey.forEach((replacement, i) => {
+        //console.log('replacement:', replacement, JSON.stringify(text));
+        text = text.replace(new RegExp(replacement[0], 'g'), replacement[1]);
+        //console.log('text:', JSON.stringify(text));
     });
+
     return text;
   };
 

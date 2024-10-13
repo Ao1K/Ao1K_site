@@ -26,10 +26,10 @@ export default async function RootLayout({
 }>) {
   return (
     <>
-    <html lang="en">
+    <html lang="en" className="min-h-full">
       <body className={`w-full min-h-screen flex flex-col bg-dark overflow-auto ${rubik.variable} font-sans`}>
         <Header/>
-        <div className="pt-16">
+        <div className="flex-grow bg-dark pt-16">
           {children}
         </div>
         <Footer/>

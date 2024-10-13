@@ -5,7 +5,7 @@ import HeaderNavLink from './HeaderNavLink';
 import WriteIcon from './icons/write';
 import DatabaseIcon from './icons/database';
 import TimerIcon from './icons/timer';
-import List from './icons/list';
+import ListIcon from './icons/list';
 
 export default function Header(): JSX.Element {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
@@ -19,7 +19,7 @@ export default function Header(): JSX.Element {
   };
 
   return (
-    <div className="fixed bg-white text-light_accent w-screen z-10 h-16">
+    <div className="fixed bg-white text-light_accent w-screen z-50 h-16 top-0 left-0">
       <nav className="mx-auto flex justify-between items-start">
         <div className="text-lg font-bold flex flex-row">
           <img
@@ -29,7 +29,7 @@ export default function Header(): JSX.Element {
           />
           <div className="md:hidden py-3 px-2">
             <button onClick={toggleSidebar}>
-              <List />
+              <ListIcon />
             </button>
           </div>
         </div>
