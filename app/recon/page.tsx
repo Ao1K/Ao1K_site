@@ -1,28 +1,40 @@
 'use client';
 
 import { useState, useRef, useEffect } from "react";
-import MovesTextEditor from "../../components/MovesTextEditor";
-import SpeedSlider from "../../components/SpeedSlider";
+import MovesTextEditor from "@/components/MovesTextEditor";
+import SpeedSlider from "@/components/SpeedSlider";
 
-import Dropdown from "../../components/Dropdown";
-import UndoRedoButton from "../../components/UndoRedoButton";
-import ToolbarButton from "../../components/UndoRedoButton";
+import Dropdown from "@/components/Dropdown";
+import UndoRedoButton from "@/components/UndoRedoButton";
+import ToolbarButton from "@/components/ToolbarButton";
 
-import TwistyPlayer from "../../components/TwistyPlayer";
-import ReconTimeHelpInfo from "../../components/ReconTimeHelpInfo";
-import TPSInfo from "../../components/TPSInfo";
+import TwistyPlayer from "@/components/TwistyPlayer";
+import ReconTimeHelpInfo from "@/components/ReconTimeHelpInfo";
+import TPSInfo from "@/components/TPSInfo";
 import updateURL from "@/composables/updateURL";
 
-import type { EditorRef } from "../../components/MovesTextEditor";
-import UndoIcon from "../../components/icons/undo";
-import RedoIcon from "../../components/icons/redo";
-import CatIcon from "../../components/icons/cat";
+import type { EditorRef } from "@/components/MovesTextEditor";
+import UndoIcon from "@/components/icons/undo";
+import RedoIcon from "@/components/icons/redo";
+import CatIcon from "@/components/icons/cat";
+import MirrorM from "@/components/icons/mirrorM";
+import MirrorS from "@/components/icons/mirrorS";
+
+import addCat from "@/composables/addCat";
+import { mirrorHTML_M, mirrorHTML_S } from "@/composables/mirrorHTML";
+import isSelectionInTextbox from "@/composables/isSelectionInTextbox";
 
 export interface MoveHistory {
   history: string[][];
   index: number;
   status: string;
   MAX_HISTORY: number;
+}
+
+interface OldSelectionRef {
+  status: string;
+  range: Range | null;
+  textbox: string | null;
 }
 
 export default function Recon() {
@@ -43,6 +55,8 @@ export default function Recon() {
   const solutionRef = useRef<EditorRef>(null);
   const undoRef = useRef<HTMLButtonElement>(null);
   const redoRef = useRef<HTMLButtonElement>(null);
+
+  const oldSelectionRef = useRef<OldSelectionRef>({ range: null, textbox: null,  status: "init" });
 
   const MAX_EDITOR_HISTORY = 100;
 
@@ -82,26 +96,18 @@ export default function Recon() {
     && moveLocation.current[2] === newMoveLocation[2];
 
     if (movesSame && moveIndexSame) {
-      //console.log('no change');
       return;
     }
 
-    //if (!movesSame) console.log('moves not same');
-
-    
-    
     if(!moves[lineIndex]) {
       moveIndex = -1;
       lineIndex = findPrevNonEmptyLine(moves, lineIndex, idIndex);
-      //console.log('newLineIndex:', lineIndex);
     }
 
     if (idIndex === 0) {
-      //console.log('scramble', moves, moves.flat().join(' '));
       setScramble(moves.flat().join(' '));  
     }
     else {
-      //console.log('solution', moves, 'flattened:', moves.flat().join(' '));
       setSolution(moves.flat().join(' '));
     }
 
@@ -167,8 +173,8 @@ export default function Recon() {
     const isAtEnd = moveHistory.current.index === moveHistory.current.history.length - 1;
     const isAtStart = moveHistory.current.index === 0;
 
-    console.log('start?, end?, index, history length:', isAtStart, isAtEnd, moveHistory.current.index, moveHistory.current.history.length);
-    console.log('history:', moveHistory.current.history);
+    // console.log('start?, end?, index, history length:', isAtStart, isAtEnd, moveHistory.current.index, moveHistory.current.history.length);
+    // console.log('history:', moveHistory.current.history);
 
     const buttons = [
       { ref: undoRef, condition: isAtStart },
@@ -190,28 +196,137 @@ export default function Recon() {
     });
   };
 
-  const createCat = () => {
-    const src = '/tangus.png'; // Path relative to the public folder
+  const getWholeTextboxRange = (textboxID: string): Range => {
+
+      const parentElement = document.getElementById(textboxID);
+      const textbox = parentElement!.querySelector<HTMLDivElement>('div[contenteditable="true"]');
+      textbox!.focus()
+      let range = document.createRange();
+      range.selectNodeContents(textbox!);
+      return range;
+
+  }
+
+  const mirrorSelectionM = (range: Range | null, textbox: string | null) => {
+    console.log('mirroring started');
+    console.log('old selection:', oldSelectionRef.current.range?.toString());
+    if (oldSelectionRef.current.status === 'updating') {
+      console.log('updating');
+      setTimeout(() => {
+        mirrorSelectionM(range, textbox);
+      }, 100);
+      return;
+    }
+
+    //set range and textbox as necessary
+    if (range && textbox) { // testing only
+      console.log('range found:', range);
+      console.log('old selection:', range.toString());
+      console.log('old textbox:', textbox);
+
+    } else if (!range && textbox) {
+      console.log('only textbox found:', textbox);
+      range = getWholeTextboxRange(textbox);
+
+    } else {
+      console.log('no range or textbox found');
+      range = getWholeTextboxRange('solution')      
+      textbox = 'solution';      
+    } 
+
+    if (!range) return;
+
+    let newHTML = mirrorHTML_M(range, textbox) ?? '';
+
+    textbox === 'solution' ? 
+      solutionRef.current!.mirror(newHTML) : // can handle html or plaintext
+      scrambleRef.current!.mirror(newHTML)
+
+  }
+
+  const mirrorSelectionS = () => {
     
-    const img = document.createElement('img');
-    img.src = src;
-    img.alt = 'Image from public folder';
+  }
   
+  const getTextboxOfSelection = (range: Range) => {
+    let node = range?.commonAncestorContainer
+    let nodeType = node?.nodeType;
+    while (node && (nodeType === Node.ELEMENT_NODE || nodeType === Node.TEXT_NODE)) {
+      const element = node as HTMLElement;
+  
+      if (element.id === "scramble" || element.id === "solution") {
+        return element.id
+      }
+  
+      if (element.tagName === 'BODY') {
+        return null;
+      }
+  
+      node = node.parentNode as HTMLElement;
+    }
+
+    return null;
+  }
+
+  const storeLastSelection = () => {
+    oldSelectionRef.current.status = 'updating';
+
     const selection = window.getSelection();
-    if (selection && selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      range.insertNode(img); // Insert the image at the caret position
+    let range = null;
+    let textbox = null;
 
-      const newRange = document.createRange();
-      newRange.setStartAfter(img);
-      newRange.setEndAfter(img);
+    // if (selection) {
+    //   const range = selection.getRangeAt(0);
+    //   const commonAncestor = range.commonAncestorContainer;
 
-      selection.removeAllRanges();
-      selection.addRange(newRange);
+    //   if (commonAncestor instanceof HTMLElement && commonAncestor.id === 'caretNode') {
+    //   console.log("this selection is always overwritten anyways.");
+    //   return;
+    //   }
+    // }
+
+    oldSelectionRef.current.range = null;
+    oldSelectionRef.current.textbox = null;
+
+    if (selection && isSelectionInTextbox(selection)) {
+      range = selection.getRangeAt(0).cloneRange();
+      console.log('range:', range, range.toString());
+      textbox = getTextboxOfSelection(range);
+      //console.log('selection in textbox:', textbox);
+    }
+
+    if (!range || !textbox) return;
+
+    if (range.startContainer === range.endContainer && range.startOffset === range.endOffset) {
+      // not multi-select
+      //console.log('not multi-select');
+      range = null;
+    }
+
+    oldSelectionRef.current.range = range;
+    oldSelectionRef.current.textbox = textbox;
+    oldSelectionRef.current.status = 'updated';
+
+
+  }
+
+  const handleCommand = (e: KeyboardEvent) => {
+    if (!e.ctrlKey) return;
+
+    if (e.ctrlKey && e.key === 'm') {
+      
+      e.preventDefault();
+
+      mirrorSelectionM(oldSelectionRef.current.range, oldSelectionRef.current.textbox);
+    }
+
+    if (e.ctrlKey && e.key === 's') {
+
+      e.preventDefault();
+
+      mirrorSelectionS();
     }
   };
-  
-
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -219,6 +334,19 @@ export default function Recon() {
     if (time) {
       setSolveTime(parseFloat(time));
     }
+  }, []);
+
+  useEffect(() => {
+    
+    document.addEventListener('selectionchange', storeLastSelection);
+    document.addEventListener('keydown', handleCommand);
+
+    return () => {
+
+      document.removeEventListener('selectionchange', storeLastSelection);
+      document.addEventListener('keydown', handleCommand);
+
+    };
   }, []);
 
   return (
@@ -233,7 +361,9 @@ export default function Recon() {
         <SpeedSlider speed={speed} onChange={handleSpeedChange}/>
         <UndoRedoButton buttonRef={undoRef} text="Undo" shortcutHint="ctrl+z" onClick={handleUndo} icon={<UndoIcon/>} />
         <UndoRedoButton buttonRef={redoRef} text="Redo" shortcutHint="ctrl+y" onClick={handleRedo} icon={<RedoIcon/>} />
-        <ToolbarButton text="" shortcutHint="Cat" onClick={createCat} icon={<CatIcon/>} />
+        <ToolbarButton text="Mirror M" shortcutHint="ctrl+m" onClick={mirrorSelectionM} icon={<MirrorM/>} />
+        <ToolbarButton text="Mirror S" shortcutHint="ctrl+s" onClick={mirrorSelectionS} icon={<MirrorS/>} />
+        <ToolbarButton text=" " shortcutHint="Cat" onClick={addCat} icon={<CatIcon/>} />
       </div>
       <div id="datafields" className="pl-6 max-h-[calc(100vh/2.5)] overflow-x-hidden w-full xs:w-11/12 md:w-4/5 lg:w-3/5 xl:w-2/5 transition-width duration-500 ease-linear flex flex-col justify-center items-center">
         <div className="w-full flex flex-col pr-6 overflow-y-auto">

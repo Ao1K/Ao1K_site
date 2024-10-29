@@ -1,16 +1,8 @@
 Bugs/Todo
 ===================
 
+Trying to add a newline seems to have caused a disconnect in the moveplayer and the textbox selection
+- newlines should be allowed between existing lines
 
-Need to be able to call commands like undo redo and 
 
-Create a status string under moveHistory.current.status to avoid impossible combinations of states.
-
- - Caret node only tells where in textbox the undo/redo should snap the caret to. 
-    That's it. This mentality can guide history-saving code.
-
-If you change textbox selection from 0 to 1, but not caret selection of textbox 1 from last time that that textbox 1 was selected, then the move displayed on the cube won't changed
- - this happens because updates to move selection are pushed from within textbox. Since nothing has changed in textbox, no update pushed.
- - can fix this by forcing an update if the document textbox focus has changed
-   - this causes issues where rerenders cause loss in caret position.
-   - fixed via hack triggering the input handler
+- div ancester chain: 

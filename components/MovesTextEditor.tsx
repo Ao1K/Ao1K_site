@@ -70,6 +70,7 @@ interface EditorProps {
 export interface EditorRef {
   undo: () => void;
   redo: () => void;
+  mirror: (html: string) => void;
 }
 
 const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, autofocus, moveHistory, updateHistoryBtns, html, setHTML }, ref) => {
@@ -145,7 +146,7 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
     const paintedHTML = htmlUpdateMatrix.map((line, i) => {
       
       if (!moveStatus.current[i]) {
-        console.log('moveStatus not found at line', i, "for textbox", idIndex);
+        //console.log('moveStatus not found at line', i, "for textbox", idIndex);
         moveStatus.current[i] = [''];
       }
 
@@ -219,11 +220,7 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
 
   const updateMoveHistory = (html: string, moveCountChanged: boolean) => {
     
-    console.log('move history status:', moveHistory.current.status);
-
-    //console.log('html upon move history update:', html);
     if (moveHistory.current.status === 'loading') {
-      // console.log('move history loading, now ready');
       moveHistory.current.history = [["", ""]];
       moveHistory.current.index = 0;
       
@@ -231,10 +228,8 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
     }
 
     if (moveHistory.current.status !== 'ready') {
-      console.log('move history NOT ready');
       return;
     }
-    console.log('move history ready!');
 
     let i = moveHistory.current.index;    
     
@@ -602,7 +597,6 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
     if (e.ctrlKey && e.key === 'z') {
       
       e.preventDefault();
-      console.log('Undo called via ctrl+z');
 
       handleUndo();
     }
@@ -610,7 +604,6 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
     if (e.ctrlKey && e.key === 'y') {
 
       e.preventDefault();
-      console.log('Redo called via ctrl+y');
 
       handleRedo();
     }
@@ -736,16 +729,28 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
     incrementStatus('success');
   }
 
+  const handleMirror = (mirroredHTML: string) => {
+    contentEditableRef.current!.innerHTML = mirroredHTML;
+    setCaretToCaretNode();
+    handleInput();
+  }
+
   useImperativeHandle(ref, () => {
     return {
       undo: () => {
         //console.log('Undo called once');
         handleUndo();
       },
+
       redo: () => {
         //console.log('Redo called once');
         handleRedo();
-      }
+      },
+
+      mirror: (mirroredHTML: string) => {
+        handleMirror(mirroredHTML);
+      },
+
     };
   },[]);
 

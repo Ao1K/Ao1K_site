@@ -2,7 +2,7 @@ interface ButtonProps {
   text: string;
   shortcutHint: string;
   icon: React.ReactNode;
-  onClick: () => void;
+  onClick: any;
 }
 
 export default function UndoRedoButton({ text, shortcutHint, icon, onClick }: ButtonProps) {
@@ -15,8 +15,8 @@ export default function UndoRedoButton({ text, shortcutHint, icon, onClick }: Bu
       >
         <div className="">{icon}</div>
       </button>
-      <div className="flex flex-col absolute left-1/2 transform -translate-x-1/2 text-light rounded-md text-sm opacity-0 items-center group-hover:opacity-100 group-hover:delay-1000 pointer-events-none select-none">
-        {/* <div>{text}</div> */}
+      <div className="flex flex-col absolute left-1/2 whitespace-nowrap transform -translate-x-1/2 text-light rounded-md text-sm opacity-0 items-center group-hover:opacity-100 group-hover:delay-1000 pointer-events-none select-none">
+        <div>{text}</div>
         <div className="">({shortcutHint})</div>
       </div>
     </div>
