@@ -69,9 +69,7 @@ function parseSelection(range: Range, textbox: string, processFunction: (text: s
         let html = element.outerHTML;
         html = processFunction(html);
         
-        const tempWrapper = document.createElement("span");
-        tempWrapper.innerHTML = html;
-        clonedElement = tempWrapper;
+        clonedElement.innerHTML = html;
 
       } else if (isWithinRange) {
         for (const child of Array.from(element.childNodes)) {
@@ -148,16 +146,18 @@ const mirrorSplitMatches = (splits: { split: string, isMatch: boolean }[], repla
 
     const moveParts = split.split(splitPattern);
 
-    const mirroredMoveParts = moveParts.map((movePart) => {
-      if (movePart === "" || splitPattern.exec(movePart)) return movePart;
+    let mirroredMoveParts = moveParts.reduce((acc, movePart) => {
+      if (movePart === "" || splitPattern.test(movePart)) {
+        return acc + movePart;
+      }
 
-      movePart = replacementTable[movePart] || reportMove(movePart);
-      movePart = '<span class="' + VALID_SPAN_CLASS + '">' + movePart + '</span>';
-      
-      return movePart;
-    });
+      const mirroredPart = replacementTable[movePart] || reportMove(movePart);
+      return acc + mirroredPart;
+    }, "");
 
-    mirroredText += mirroredMoveParts.join('');
+    mirroredMoveParts = '<span class="' + VALID_SPAN_CLASS + '">' + mirroredMoveParts + '</span>';
+
+    mirroredText += mirroredMoveParts;
   });
 
   return mirroredText;
@@ -187,24 +187,24 @@ const mirrorTextInValidSpans = (text: string, replacementTable: { [key: string]:
 
 
 
-export function mirrorHTML_M(range: Range, textbox: string): string | null {
-  
+interface MirrorHTMLFunction {
+  (range: Range, textbox: string): string | null;
+}
+
+export const mirrorHTML_M: MirrorHTMLFunction = (range, textbox) => {
   function processMirrorM(text: string): string {
-
     text = mirrorTextInValidSpans(text, replacementTable_M);
-
-    return text
+    return text;
   }
 
-  return parseSelection(range, textbox, processMirrorM)
-}
+  return parseSelection(range, textbox, processMirrorM);
+};
 
-export function mirrorHTML_S(range: Range): string | null {
-
+export const mirrorHTML_S: MirrorHTMLFunction = (range, textbox) => {
   function processMirrorS(text: string): string {
-
-    return replacementTable_S[text] || text
+    text = mirrorTextInValidSpans(text, replacementTable_S);
+    return text;
   }
 
-  return parseSelection(range, processMirrorS)
-}
+  return parseSelection(range, textbox, processMirrorS);
+};
