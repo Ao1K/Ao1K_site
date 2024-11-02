@@ -93,7 +93,7 @@ const ResponsiveButtonRow = ({ buttons, containerRef }: ButtonRowProps) => {
           </button>
           
           {overflowBtnVisibility && (
-            <div className="flex flex-col absolute right-0 -space-y-1 bg-dark shadow-lg border border-gray-200 px-1 rounded-md">
+            <div className="flex flex-col absolute right-0 -space-y-1 bg-dark shadow-lg border border-gray-200 px-1 rounded-md z-50">
               {overflowButtons.map(button => (
                 <ToolbarButton key={button.id} {...button} isOverflow={true} />
               ))}

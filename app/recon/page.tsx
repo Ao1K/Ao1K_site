@@ -371,20 +371,20 @@ export default function Recon() {
   }, []);
 
   return (
-    <div id="main_page" className="w-full flex flex-col items-center bg-dark">
+    <div id="main_page" className="col-start-2 col-span-1 flex flex-col bg-dark">
       <div className="relative flex flex-col mt-8 m-4 w-full justify-center items-center">
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 inset-0 h-full blur-sm bg-primary w-11/12 md:w-4/5 lg:w-3/5 xl:w-2/5"></div>
-        <div id="cube_model" className="flex aspect-[1.618/1] max-h-96 bg-dark z-10 w-11/12 md:w-4/5 lg:w-3/5 xl:w-2/5">
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 inset-0 h-full blur-sm bg-primary w-full"></div>
+        <div id="cube_model" className="flex aspect-[1.618/1] max-h-96 bg-dark z-10 w-full">
           <TwistyPlayer scramble={scramble} solution={solution} speed={speed} moveLocation={moveLocation.current} animationTime={animationTime}/>
         </div>
       </div>
-      <div id="bottom bar" className="flex flex-row space-x-1 text-light w-11/12 md:w-4/5 lg:w-3/5 xl:w-2/5 items-center" ref={bottomBarRef}>
+      <div id="bottom bar" className="flex flex-row space-x-1 text-light w-full items-center" ref={bottomBarRef}>
         <div id="spacer-1" className="flex-1 text-paren"></div>
         <SpeedSlider speed={speed} onChange={handleSpeedChange}/>
         <Toolbar buttons={toolbarButtons} containerRef={bottomBarRef}/>
         <div id="spacer-2" className="flex-1 text-rep"></div>
       </div>
-      <div id="datafields" className="pl-6 max-h-[calc(100vh/2.5)] overflow-x-hidden w-full xs:w-11/12 md:w-4/5 lg:w-3/5 xl:w-2/5 transition-width duration-500 ease-linear flex flex-col justify-center items-center">
+      <div id="datafields" className="pl-6 max-h-[calc(100vh/2.5)] overflow-x-hidden w-full transition-width duration-500 ease-linear flex flex-col justify-center items-center">
         <div className="w-full flex flex-col pr-6 overflow-y-auto">
           <div className="flex flex-row items-center">
             <Dropdown targetDiv="scramble"/> 
@@ -438,6 +438,7 @@ export default function Recon() {
           {/* <div className="text-dark_accent text-xl pt-1 font-medium">Review</div> */}
         </div>
       </div>
+      <div id="blur-border" className="h-[20px] blur-xl bg-primary mt-1 mb-8"/>
     </div>
   );
 }

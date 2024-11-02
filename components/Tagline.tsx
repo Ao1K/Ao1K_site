@@ -25,12 +25,12 @@ const Tagline = () => {
         clearInterval(typingInterval);
 
       }
-    }, 100);
+    }, 150);
   }
 
   return (
     <div
-      className="px-6 py-2"
+      className={``}
       onMouseEnter={handleMouseEnter}
     >
       find your {hovering ? displayText : 'statistical'} significance
