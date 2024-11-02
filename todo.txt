@@ -4,5 +4,6 @@ Bugs/Todo
 Trying to add a newline seems to have caused a disconnect in the moveplayer and the textbox selection
 - newlines should be allowed between existing lines
 
+Invalid text is now black.
 
-- div ancester chain: 
+Rapidly clearing the entire textbox causes URL not to update

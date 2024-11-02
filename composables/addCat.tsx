@@ -5,6 +5,10 @@ export default function addCat() {
   const img = document.createElement('img');
   img.src = src;
   img.alt = 'Tangus';
+  
+  // wrap image in span
+  const span = document.createElement('span');
+  span.appendChild(img);
 
   let selection = window.getSelection();
 
@@ -19,11 +23,11 @@ export default function addCat() {
 
   if (selection && selection.rangeCount > 0) {
     const range = selection.getRangeAt(0);
-    range.insertNode(img);
+    range.insertNode(span);
 
     const newRange = document.createRange();
-    newRange.setStartAfter(img);
-    newRange.setEndAfter(img);
+    newRange.setStartAfter(span);
+    newRange.setEndAfter(span);
 
     selection.removeAllRanges();
     selection.addRange(newRange);

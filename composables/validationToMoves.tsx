@@ -77,7 +77,7 @@ function expandGroup(start: number, end: number, reps: number, newValidation: Mo
   }
 
   let splicePoint = end + 1 + reps.toString().length;
-  console.log('splicePoint: ' + splicePoint);
+  //console.log('splicePoint: ' + splicePoint);
   newValidation[start][1] = "ungrouped";
   newValidation[end][1] = "ungrouped";
   for (let i = end+1; i < splicePoint; i++) {

@@ -10,6 +10,7 @@ import validationToMoves from "../composables/validationToMoves";
 import updateURL from '../composables/updateURL';
 
 import { urlEncodeKey } from '../utils/urlEncodeKey';
+import { colorDict } from '../composables/editorColorDict';
 
 
 const EditorLoader = ({ editorRef: contentEditableRef, onInputChange, name, autofocus }: { editorRef: React.RefObject<any>, onInputChange: () => void, name: string, autofocus: boolean})  => {
@@ -70,7 +71,7 @@ interface EditorProps {
 export interface EditorRef {
   undo: () => void;
   redo: () => void;
-  mirror: (html: string) => void;
+  transform: (html: string) => void;
 }
 
 const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, autofocus, moveHistory, updateHistoryBtns, html, setHTML }, ref) => {
@@ -87,15 +88,6 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
   const oldMoveAnimationTimes = useRef<number[][]>([[]]); // stores move animation times for each move in each line. Only for solution textbox.
 
   const idIndex = name === 'scramble' ? 0 : 1;
-
-  const colorDict = [
-    { key: 'move', value: 'text-light' },
-    { key: 'comment', value: 'text-gray-500' },
-    { key: 'space', value: 'text-light' },
-    { key: 'invalid', value: 'text-red-500' },
-    { key: 'paren', value: 'text-paren' },
-    { key: 'rep', value: 'text-paren' },
-  ];
 
   const sanitizeConf = {
     allowedTags: ["b", "i","br","div"],
@@ -301,7 +293,12 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
       while (remainingMatchLength > 0) {
         const valLength = validation[valIndex][0].substring(valOffset).length;
         const type = validation[valIndex][1];
-        const color = colorDict.find((color) => color.key === type)?.value || 'text-dark';
+        let colorEntry = colorDict.find((color) => color.key === type);
+        if (!colorEntry) {
+          console.error(`Color not found for type: ${type}`);
+          colorEntry = { key: 'not found', value: 'text-light' };
+        }
+        const color = colorEntry.value;
     
         const allowableMatchOffset = valLength - valOffset;
         let matchEnd = matchOffset + remainingMatchLength;
@@ -691,6 +688,7 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
     } else {
       console.error('moveHistory status out of sync!');
     }
+    
     if (startStatus === 'ready') {
       return;
     }
@@ -729,8 +727,9 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
     incrementStatus('success');
   }
 
-  const handleMirror = (mirroredHTML: string) => {
-    contentEditableRef.current!.innerHTML = mirroredHTML;
+  const handleTransform = (newHTML: string) => {
+    contentEditableRef.current!.innerHTML = newHTML;
+    oldLineMoveCounts.current = [-1]; // ensures that moveHistory contains transformed moves
     setCaretToCaretNode();
     handleInput();
   }
@@ -747,8 +746,8 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
         handleRedo();
       },
 
-      mirror: (mirroredHTML: string) => {
-        handleMirror(mirroredHTML);
+      transform: (transformedHTML: string) => {
+        handleTransform(transformedHTML);
       },
 
     };

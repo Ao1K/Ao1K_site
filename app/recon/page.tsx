@@ -5,8 +5,7 @@ import MovesTextEditor from "@/components/MovesTextEditor";
 import SpeedSlider from "@/components/SpeedSlider";
 
 import Dropdown from "@/components/Dropdown";
-import UndoRedoButton from "@/components/UndoRedoButton";
-import ToolbarButton from "@/components/ToolbarButton";
+import Toolbar from "@/components/Toolbar";
 
 import TwistyPlayer from "@/components/TwistyPlayer";
 import ReconTimeHelpInfo from "@/components/ReconTimeHelpInfo";
@@ -14,6 +13,7 @@ import TPSInfo from "@/components/TPSInfo";
 import updateURL from "@/composables/updateURL";
 
 import type { EditorRef } from "@/components/MovesTextEditor";
+
 import UndoIcon from "@/components/icons/undo";
 import RedoIcon from "@/components/icons/redo";
 import CatIcon from "@/components/icons/cat";
@@ -21,8 +21,9 @@ import MirrorM from "@/components/icons/mirrorM";
 import MirrorS from "@/components/icons/mirrorS";
 
 import addCat from "@/composables/addCat";
-import { mirrorHTML_M, mirrorHTML_S } from "@/composables/mirrorHTML";
+import { mirrorHTML_M, mirrorHTML_S, removeComments } from "@/composables/transformHTML";
 import isSelectionInTextbox from "@/composables/isSelectionInTextbox";
+import { TransformHTMLprops } from "@/composables/transformHTML";
 
 export interface MoveHistory {
   history: string[][];
@@ -59,9 +60,9 @@ export default function Recon() {
   const oldSelectionRef = useRef<OldSelectionRef>({ range: null, textbox: null,  status: "init" });
 
   const MAX_EDITOR_HISTORY = 100;
-
-
   const moveHistory = useRef<MoveHistory>({ history: [['','']], index: 0, MAX_HISTORY: MAX_EDITOR_HISTORY, status: 'loading' });
+
+  const bottomBarRef = useRef<HTMLDivElement>(null);
   
   const findPrevNonEmptyLine = (moves: string[][], lineIndex: number, idIndex: number): number => {
     for (let i = lineIndex; i >= 0; i--) {
@@ -126,7 +127,7 @@ export default function Recon() {
           sumPrevMoveTimes += moveAnimationTimes[lineIndex][i];
         }
       }
-      //console.log('sumPrevMoveTimes:', sumPrevMoveTimes);
+
       setAnimationTime(sumPrevMoveTimes);
     }
 
@@ -137,7 +138,6 @@ export default function Recon() {
 
     moveLocation.current = newMoveLocation;
     allMoves.current[idIndex] = [...moves];
-    //console.log('allMoves:', allMoves.current[idIndex]);
   }
 
   const handleSpeedChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -173,9 +173,6 @@ export default function Recon() {
     const isAtEnd = moveHistory.current.index === moveHistory.current.history.length - 1;
     const isAtStart = moveHistory.current.index === 0;
 
-    // console.log('start?, end?, index, history length:', isAtStart, isAtEnd, moveHistory.current.index, moveHistory.current.history.length);
-    // console.log('history:', moveHistory.current.history);
-
     const buttons = [
       { ref: undoRef, condition: isAtStart },
       { ref: redoRef, condition: isAtEnd }
@@ -207,46 +204,53 @@ export default function Recon() {
 
   }
 
-  const mirrorSelectionM = (range: Range | null, textbox: string | null) => {
-    console.log('mirroring started');
-    console.log('old selection:', oldSelectionRef.current.range?.toString());
-    if (oldSelectionRef.current.status === 'updating') {
-      console.log('updating');
-      setTimeout(() => {
-        mirrorSelectionM(range, textbox);
-      }, 100);
-      return;
-    }
+  const transformSelection = (transformType: TransformHTMLprops) => {
+
+    let range = oldSelectionRef.current.range;
+    let textbox = oldSelectionRef.current.textbox;
+
+    // if (oldSelectionRef.current.status === 'updating') {
+    //   console.log('updating');
+    //   setTimeout(() => {
+    //     mirrorSelectionM(range, textbox);
+    //   }, 100);
+    //   return;
+    // }
 
     //set range and textbox as necessary
     if (range && textbox) { // testing only
-      console.log('range found:', range);
-      console.log('old selection:', range.toString());
-      console.log('old textbox:', textbox);
 
     } else if (!range && textbox) {
-      console.log('only textbox found:', textbox);
       range = getWholeTextboxRange(textbox);
 
     } else {
-      console.log('no range or textbox found');
       range = getWholeTextboxRange('solution')      
       textbox = 'solution';      
     } 
 
     if (!range) return;
 
-    let newHTML = mirrorHTML_M(range, textbox) ?? '';
+    let newHTML = transformType(range, textbox) ?? '';
 
     textbox === 'solution' ? 
-      solutionRef.current!.mirror(newHTML) : // can handle html or plaintext
-      scrambleRef.current!.mirror(newHTML)
+      solutionRef.current!.transform(newHTML) : // can handle html or plaintext
+      scrambleRef.current!.transform(newHTML)
 
-  }
-
-  const mirrorSelectionS = () => {
     
+
   }
+
+  const handleTransform = (transformType: TransformHTMLprops) => {
+    oldSelectionRef.current.status = 'locked';
+
+    transformSelection(transformType);
+
+    oldSelectionRef.current.status = 'unlocked';
+  }
+
+  const handleMirrorM = () => handleTransform(mirrorHTML_M);
+  const handleMirrorS = () => handleTransform(mirrorHTML_S);
+  const handleRemoveComments = () => handleTransform(removeComments);
   
   const getTextboxOfSelection = (range: Range) => {
     let node = range?.commonAncestorContainer
@@ -269,28 +273,23 @@ export default function Recon() {
   }
 
   const storeLastSelection = () => {
+    if (oldSelectionRef.current.status === 'locked') {
+      console.log('locked');
+      return;
+    }
+
     oldSelectionRef.current.status = 'updating';
 
     const selection = window.getSelection();
     let range = null;
     let textbox = null;
 
-    // if (selection) {
-    //   const range = selection.getRangeAt(0);
-    //   const commonAncestor = range.commonAncestorContainer;
-
-    //   if (commonAncestor instanceof HTMLElement && commonAncestor.id === 'caretNode') {
-    //   console.log("this selection is always overwritten anyways.");
-    //   return;
-    //   }
-    // }
-
     oldSelectionRef.current.range = null;
     oldSelectionRef.current.textbox = null;
 
     if (selection && isSelectionInTextbox(selection)) {
       range = selection.getRangeAt(0).cloneRange();
-      console.log('range:', range, range.toString());
+      //console.log('range:', range, range.toString());
       textbox = getTextboxOfSelection(range);
       //console.log('selection in textbox:', textbox);
     }
@@ -299,7 +298,6 @@ export default function Recon() {
 
     if (range.startContainer === range.endContainer && range.startOffset === range.endOffset) {
       // not multi-select
-      //console.log('not multi-select');
       range = null;
     }
 
@@ -317,16 +315,39 @@ export default function Recon() {
       
       e.preventDefault();
 
-      mirrorSelectionM(oldSelectionRef.current.range, oldSelectionRef.current.textbox);
+      handleMirrorM();
     }
 
     if (e.ctrlKey && e.key === 's') {
 
       e.preventDefault();
 
-      mirrorSelectionS();
+      handleMirrorS();
+    }
+
+    if (e.ctrlKey && e.shiftKey && e.key === 'x') {
+
+      e.preventDefault();
+
+      // handleRotationX();
+    }
+
+    if (e.ctrlKey && e.key === '/') {
+
+      e.preventDefault();
+
+      handleRemoveComments();
     }
   };
+
+  const toolbarButtons = [
+    { id: 'undo', text: 'Undo', shortcutHint: 'ctrl+z', onClick: handleUndo, icon: <UndoIcon />, buttonRef: undoRef },
+    { id: 'redo', text: 'Redo', shortcutHint: 'ctrl+y', onClick: handleRedo, icon: <RedoIcon />, buttonRef: redoRef },
+    { id: 'mirrorM', text: 'Mirror M', shortcutHint: 'ctrl+m', onClick: handleMirrorM, icon: <MirrorM /> },
+    { id: 'mirrorS', text: 'Mirror S', shortcutHint: 'ctrl+s', onClick: handleMirrorS, icon: <MirrorS /> },
+    { id: 'cat', text: 'Angus', shortcutHint: 'Cat', onClick: addCat, icon: <CatIcon /> },
+    { id: 'removeComments', text: 'Remove Comments', shortcutHint: 'ctrl+/ ', onClick: handleRemoveComments, iconText: '// ' },
+  ];
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -351,19 +372,17 @@ export default function Recon() {
 
   return (
     <div id="main_page" className="w-full flex flex-col items-center bg-dark">
-      <div className="relative flex flex-col w-full mt-8 m-4 justify-center items-center">
+      <div className="relative flex flex-col mt-8 m-4 w-full justify-center items-center">
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 inset-0 h-full blur-sm bg-primary w-11/12 md:w-4/5 lg:w-3/5 xl:w-2/5"></div>
-        <div id="cube_model" className="flex aspect-[1.618/1] max-h-96 bg-dark z-10 w-11/12 md:w-4/5 lg:w-3/5 xl:w-2/5 ">
+        <div id="cube_model" className="flex aspect-[1.618/1] max-h-96 bg-dark z-10 w-11/12 md:w-4/5 lg:w-3/5 xl:w-2/5">
           <TwistyPlayer scramble={scramble} solution={solution} speed={speed} moveLocation={moveLocation.current} animationTime={animationTime}/>
         </div>
       </div>
-      <div id="toolbar" className="flex flex-row space-x-1 text-light">
+      <div id="bottom bar" className="flex flex-row space-x-1 text-light w-11/12 md:w-4/5 lg:w-3/5 xl:w-2/5 items-center" ref={bottomBarRef}>
+        <div id="spacer-1" className="flex-1 text-paren"></div>
         <SpeedSlider speed={speed} onChange={handleSpeedChange}/>
-        <UndoRedoButton buttonRef={undoRef} text="Undo" shortcutHint="ctrl+z" onClick={handleUndo} icon={<UndoIcon/>} />
-        <UndoRedoButton buttonRef={redoRef} text="Redo" shortcutHint="ctrl+y" onClick={handleRedo} icon={<RedoIcon/>} />
-        <ToolbarButton text="Mirror M" shortcutHint="ctrl+m" onClick={mirrorSelectionM} icon={<MirrorM/>} />
-        <ToolbarButton text="Mirror S" shortcutHint="ctrl+s" onClick={mirrorSelectionS} icon={<MirrorS/>} />
-        <ToolbarButton text=" " shortcutHint="Cat" onClick={addCat} icon={<CatIcon/>} />
+        <Toolbar buttons={toolbarButtons} containerRef={bottomBarRef}/>
+        <div id="spacer-2" className="flex-1 text-rep"></div>
       </div>
       <div id="datafields" className="pl-6 max-h-[calc(100vh/2.5)] overflow-x-hidden w-full xs:w-11/12 md:w-4/5 lg:w-3/5 xl:w-2/5 transition-width duration-500 ease-linear flex flex-col justify-center items-center">
         <div className="w-full flex flex-col pr-6 overflow-y-auto">

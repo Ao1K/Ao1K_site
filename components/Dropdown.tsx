@@ -16,8 +16,8 @@ const DropdownButton: FunctionComponent<DropdownProps> = ({targetDiv}) => {
   const toggleVisibility = (divName: string) => {
     const targetDiv = document.getElementById(divName);
     targetDiv!.classList.toggle('hidden');
-    setIsRotated((prev) => !prev);
-    setIsVisible((prev) => !prev);
+    setIsRotated(!isRotated);
+    setIsVisible(!isVisible);
   };
 
   const handleResize = () => {

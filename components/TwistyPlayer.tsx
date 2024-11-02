@@ -13,22 +13,6 @@ export default function Player({ scramble, solution, speed, moveLocation, animat
   const playerRef = useRef<HTMLDivElement>(null);
   const playerInstance = useRef<TwistyPlayer | null>(null);
 
-  //trying to understand props
-
-  // interface test extends TwistyPlayerConfig {
-  //   nothing: string;
-  // }
-
-  // const whatever = ({nothing, ...props}: test) => {
-  //   console.log('...props', props, props.experimentalHintSprite, props.experimentalSprite, props.experimentalStickeringMaskOrbits, props.alg);
-  // }
-  
-  // whatever({nothing: "something"});
-
- //
-
-
-
   const calcCubeSpeed = (speed: number) => {
     if (speed === 100) {
       return 1000;

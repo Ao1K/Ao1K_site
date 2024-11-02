@@ -1,4 +1,7 @@
-const VALID_SPAN_CLASS = 'text-light'; // mirror will ignore all other classes
+import { colorDict } from './editorColorDict';
+
+const VALID_SPAN_CLASS = colorDict.find((dict) => dict.key === 'move')!.value;
+const COMMENT_SPAN_CLASS = colorDict.find((dict) => dict.key === 'comment')!.value;
 
 const replacementTable_M: { [key: string]: string } = {
   "U": "U'", "U2": "U2'", "U3": "U3'", "U'": "U", "U2'": "U2", "U3'": "U3",
@@ -59,6 +62,13 @@ function parseSelection(range: Range, textbox: string, processFunction: (text: s
       const nodeRange = document.createRange();
       nodeRange.selectNodeContents(element);
 
+    // to properly check the boundararies of the selection within each span,
+      // would need to grab selection and range.
+        // const selection = window.getSelection();
+        // const range = selection.getRangeAt(0);
+      // then somehow compare that range to the range of the span, and expand the selection until the end of span or until it reaches a &nbsp;.
+      // then split the spans accordingly and pass to processFunction.
+
       const startIsBeforeEndOfChild = range.compareBoundaryPoints(Range.START_TO_END, nodeRange) === 1;
       const endIsAfterStartOfChild = range.compareBoundaryPoints(Range.END_TO_START, nodeRange) === -1;
       const isWithinRange = startIsBeforeEndOfChild && endIsAfterStartOfChild;
@@ -80,7 +90,6 @@ function parseSelection(range: Range, textbox: string, processFunction: (text: s
         clonedElement = element.cloneNode(true) as HTMLElement;
       }
 
-      console.log('clonedElement:', clonedElement);
       return clonedElement;
     } else {
       return node.cloneNode(true);
@@ -181,17 +190,16 @@ const mirrorTextInValidSpans = (text: string, replacementTable: { [key: string]:
 
   const mirroredText = mirrorSplitMatches(splits, replacementTable, caretPlaceholder, placeholderLength);
 
-  console.log('mirroredText:', mirroredText);
   return mirroredText;
 }
 
 
 
-interface MirrorHTMLFunction {
+export interface TransformHTMLprops {
   (range: Range, textbox: string): string | null;
 }
 
-export const mirrorHTML_M: MirrorHTMLFunction = (range, textbox) => {
+export const mirrorHTML_M: TransformHTMLprops = (range, textbox) => {
   function processMirrorM(text: string): string {
     text = mirrorTextInValidSpans(text, replacementTable_M);
     return text;
@@ -200,7 +208,7 @@ export const mirrorHTML_M: MirrorHTMLFunction = (range, textbox) => {
   return parseSelection(range, textbox, processMirrorM);
 };
 
-export const mirrorHTML_S: MirrorHTMLFunction = (range, textbox) => {
+export const mirrorHTML_S: TransformHTMLprops = (range, textbox) => {
   function processMirrorS(text: string): string {
     text = mirrorTextInValidSpans(text, replacementTable_S);
     return text;
@@ -208,3 +216,12 @@ export const mirrorHTML_S: MirrorHTMLFunction = (range, textbox) => {
 
   return parseSelection(range, textbox, processMirrorS);
 };
+
+export const removeComments: TransformHTMLprops = (range, textbox) => {
+  function processRemoveComments(text: string): string {
+    const commentSpan = new RegExp(`<span class="${COMMENT_SPAN_CLASS}">(.*?)<\/span>`, 'g');
+    return text.replaceAll(commentSpan, '');
+  }
+  
+  return parseSelection(range, textbox, processRemoveComments);
+}
