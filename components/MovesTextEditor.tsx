@@ -10,8 +10,16 @@ import validationToMoves from "../composables/validationToMoves";
 import updateURL from '../composables/updateURL';
 
 import { urlEncodeKey } from '../utils/urlEncodeKey';
-import { colorDict } from '../composables/editorColorDict';
 
+export const colorDict = [ // can't be in /utils folder due to automatic tailwind style purging. probably.
+  { key: 'move', value: 'text-light'},
+  { key: 'comment', value: 'text-gray-500'},
+  { key: 'space', value: 'text-light'},
+  { key: 'invalid', value: 'text-red-500'},
+  { key: 'paren', value: 'text-paren'},
+  { key: 'rep', value: 'text-paren'},
+  { key: 'image', value: 'text-light'}, // wip
+];
 
 const EditorLoader = ({ editorRef: contentEditableRef, onInputChange, name, autofocus }: { editorRef: React.RefObject<any>, onInputChange: () => void, name: string, autofocus: boolean})  => {
   // useSearchParams is a hook. Storing searchParams here prevents it from being called again and causing reloads.
@@ -291,6 +299,10 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
       let prevNonspaceType = '';
     
       while (remainingMatchLength > 0) {
+        if (!(validation[valIndex] && validation[valIndex][0])) {
+          console.error(`ERROR: Validation at ${valIndex} is undefined`);
+          break;
+        }
         const valLength = validation[valIndex][0].substring(valOffset).length;
         const type = validation[valIndex][1];
         let colorEntry = colorDict.find((color) => color.key === type);
@@ -749,6 +761,7 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
       transform: (transformedHTML: string) => {
         handleTransform(transformedHTML);
       },
+      
 
     };
   },[]);
@@ -779,16 +792,16 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
     <>
       <EditorLoader editorRef={contentEditableRef} onInputChange={onInputChange} name={name} autofocus={autofocus} />   
       <div
-        contentEditable
-        ref={contentEditableRef}
-        className="bg-dark text-left rounded-sm resize-none text-xl w-full min-h-[4.5rem] mb-4 mx-1 p-2 caret-light border border-primary focus:border-1"
-        onInput={handleInput}
-        onCopy={handleCopy}
-        onPaste={handlePaste}
-        onBlur={passURLupdate}
-        onFocus={handleInput} // this hack ensures a visual cube update
-        dangerouslySetInnerHTML={{ __html: html }}
-        spellCheck={false}
+      contentEditable
+      ref={contentEditableRef}
+      className="bg-dark text-left rounded-sm resize-none text-xl min-h-[4.7rem] mb-4 mx-1 p-2 max-w-full caret-light border border-primary focus:border-1 ff-space-adjust"
+      onInput={handleInput}
+      onCopy={handleCopy}
+      onPaste={handlePaste}
+      onBlur={passURLupdate}
+      onFocus={handleInput} // this hack ensures a visual cube update
+      dangerouslySetInnerHTML={{ __html: html }}
+      spellCheck={false}
       /> 
     </>
   );

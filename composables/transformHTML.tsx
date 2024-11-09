@@ -1,4 +1,4 @@
-import { colorDict } from './editorColorDict';
+import { colorDict } from '../components/MovesTextEditor';
 
 const VALID_SPAN_CLASS = colorDict.find((dict) => dict.key === 'move')!.value;
 const COMMENT_SPAN_CLASS = colorDict.find((dict) => dict.key === 'comment')!.value;
@@ -52,7 +52,7 @@ function parseSelection(range: Range, textbox: string, processFunction: (text: s
   const container = parentElement!.querySelector<HTMLDivElement>('div[contenteditable="true"]');
 
   if (!container) {
-    console.error('container not found');
+    console.error('textbox not found');
     return null;
   }
   

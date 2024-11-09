@@ -101,3 +101,9 @@ input[type='range']::-moz-range-track {
   scrollbar-width: auto;
   scrollbar-color:  #ece6ef #4C4B58;
 }
+
+.ff-space-adjust {
+  font-family: var(--font-Rubik);
+  font-variant-ligatures: none;
+  letter-spacing: normal;
+}

@@ -1,6 +1,12 @@
 import { useEffect, useRef } from 'react';
 
-export default function TPSInfo({ moveCount, solveTime }: { moveCount: number; solveTime: number | string }) {
+interface TPSInfoProps {
+  moveCount: number;
+  solveTime: number | string;
+  tpsRef: React.MutableRefObject<string>;
+}
+
+export default function TPSInfo({ moveCount, solveTime, tpsRef }: TPSInfoProps) {
   const tpsDivRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -10,6 +16,8 @@ export default function TPSInfo({ moveCount, solveTime }: { moveCount: number; s
     } else {
       tpsString = "(-- tps)";
     }
+
+    tpsRef.current = tpsString;
 
     if (tpsDivRef.current) {
       tpsDivRef.current.textContent = tpsString;

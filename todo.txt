@@ -1,11 +1,10 @@
-Bugs/Todo
-===================
+Informal Bugs/Todo List. Not guaranteed to be complete or accurate.
+===================================================================
 
 Trying to add a newline seems to have caused a disconnect in the moveplayer and the textbox selection
 - newlines should be allowed between existing lines
 
-Invalid text is now black.
-
 Rapidly clearing the entire textbox causes URL not to update
 
-Try using properties to handle changes to twisty player rather than useEffect.
+Should try using properties to handle changes to twisty player rather than useEffect.
+

@@ -19,11 +19,17 @@ import RedoIcon from "@/components/icons/redo";
 import CatIcon from "@/components/icons/cat";
 import MirrorM from "@/components/icons/mirrorM";
 import MirrorS from "@/components/icons/mirrorS";
+import TrashIcon from "@/components/icons/trash";
+import CopyIcon from "@/components/icons/copy";
+import ShareIcon from "@/components/icons/share";
 
 import addCat from "@/composables/addCat";
 import { mirrorHTML_M, mirrorHTML_S, removeComments } from "@/composables/transformHTML";
 import isSelectionInTextbox from "@/composables/isSelectionInTextbox";
 import { TransformHTMLprops } from "@/composables/transformHTML";
+
+import InputWithPlaceholder from "@/components/TitleInput";
+import TopButton from "@/components/TopButton";
 
 export interface MoveHistory {
   history: string[][];
@@ -48,21 +54,23 @@ export default function Recon() {
   const [solution, setSolution] = useState<string>('');
   const [totalMoves, setTotalMoves] = useState<number>(0);
   const [solveTime, setSolveTime] = useState<number|string>('');
-
+  const [solveTitle, setSolveTitle] = useState<string>('');
+  const [topButtonAlert, setTopButtonAlert] = useState<[string, string]>(["", ""]); // [id, alert msg]
+    
   const [scrambleHTML, setScrambleHTML] = useState<string>('');
   const [solutionHTML, setSolutionHTML] = useState<string>('');
-
+    
+  const tpsRef = useRef<string>('');
   const scrambleRef = useRef<EditorRef>(null);
   const solutionRef = useRef<EditorRef>(null);
   const undoRef = useRef<HTMLButtonElement>(null);
   const redoRef = useRef<HTMLButtonElement>(null);
-
   const oldSelectionRef = useRef<OldSelectionRef>({ range: null, textbox: null,  status: "init" });
+  const bottomBarRef = useRef<HTMLDivElement>(null);
 
   const MAX_EDITOR_HISTORY = 100;
   const moveHistory = useRef<MoveHistory>({ history: [['','']], index: 0, MAX_HISTORY: MAX_EDITOR_HISTORY, status: 'loading' });
 
-  const bottomBarRef = useRef<HTMLDivElement>(null);
   
   const findPrevNonEmptyLine = (moves: string[][], lineIndex: number, idIndex: number): number => {
     for (let i = lineIndex; i >= 0; i--) {
@@ -251,6 +259,72 @@ export default function Recon() {
   const handleMirrorM = () => handleTransform(mirrorHTML_M);
   const handleMirrorS = () => handleTransform(mirrorHTML_S);
   const handleRemoveComments = () => handleTransform(removeComments);
+
+  const handleClearPage = () => {
+    setScramble('');
+    scrambleRef.current?.transform('');
+    setSolution('');
+    solutionRef.current?.transform('');
+    setSolveTime('');
+    setSolveTitle('');
+    setTotalMoves(0);
+    // don't clear moveHistory
+
+    updateURL('title', null);
+    updateURL('time', null);
+    setTopButtonAlert(["trash", "Page cleared! Undo with Ctrl+Z"]);
+  }
+
+  const getTextboxInnerText = (textboxID: string): string => {
+    const parentElement = document.getElementById(textboxID);
+    const textbox = parentElement!.querySelector<HTMLDivElement>('div[contenteditable="true"]');
+    return textbox!.innerText;
+  }
+
+  const handleCopySolve = () => {
+    const title = solveTitle ? `${solveTitle.trim()}` : '';
+
+    const scramble = getTextboxInnerText('scramble').trim();
+    const solution = getTextboxInnerText('solution').trim();
+
+    const time = solveTime ? `${solveTime}` : '';
+    const stm = totalMoves ? `${totalMoves} stm` : '';
+    let tpsString = '';
+    if (tpsRef.current && tpsRef.current !== '(-- tps)') {
+      tpsString = tpsRef.current;
+    }
+    const url = window.location.href;
+    let printout = "";
+
+    title ? printout += `${title}\n\n` : '';
+    scramble ? printout += `${scramble}\n\n` : '';
+    solution ? printout += `Solution:\n${solution}\n\n` : '';
+
+    time ? printout += `${time} sec ` : '';
+    stm ? printout += `${stm} ` : '';
+    tpsString ? printout += `${tpsString}` : '';
+    printout += '\n';
+
+    url ? printout += `\n[View solve on Ao1K](${url})` : '';
+
+    navigator.clipboard.writeText(printout);
+    setTopButtonAlert(["copy", "Solve text copied!"]);
+  }
+
+  const handleShare = async () => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('scramble', scramble);
+    url.searchParams.set('solution', solution);
+    url.searchParams.set('time', solveTime.toString());
+    url.searchParams.set('title', solveTitle);
+
+    try {
+      await navigator.clipboard.writeText(url.toString());
+      setTopButtonAlert(["share", "URL copied!"]);
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error);
+    }
+  }
   
   const getTextboxOfSelection = (range: Range) => {
     let node = range?.commonAncestorContainer
@@ -308,11 +382,27 @@ export default function Recon() {
 
   }
 
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const title = e.target.value;
+
+    if (e.target.value.length > 100) return;
+
+    // if (e.target.value === '') {
+    //   setSolveTime('');
+    //   updateURL('time', null);
+    //   return;
+    // }
+
+    setSolveTitle(title);
+
+    updateURL('title', e.target.value);
+  }
+
   const handleCommand = (e: KeyboardEvent) => {
     if (!e.ctrlKey) return;
 
     if (e.ctrlKey && e.key === 'm') {
-      
+    
       e.preventDefault();
 
       handleMirrorM();
@@ -338,22 +428,33 @@ export default function Recon() {
 
       handleRemoveComments();
     }
-  };
 
-  const toolbarButtons = [
-    { id: 'undo', text: 'Undo', shortcutHint: 'ctrl+z', onClick: handleUndo, icon: <UndoIcon />, buttonRef: undoRef },
-    { id: 'redo', text: 'Redo', shortcutHint: 'ctrl+y', onClick: handleRedo, icon: <RedoIcon />, buttonRef: redoRef },
-    { id: 'mirrorM', text: 'Mirror M', shortcutHint: 'ctrl+m', onClick: handleMirrorM, icon: <MirrorM /> },
-    { id: 'mirrorS', text: 'Mirror S', shortcutHint: 'ctrl+s', onClick: handleMirrorS, icon: <MirrorS /> },
-    { id: 'cat', text: 'Angus', shortcutHint: 'Cat', onClick: addCat, icon: <CatIcon /> },
-    { id: 'removeComments', text: 'Remove Comments', shortcutHint: 'ctrl+/ ', onClick: handleRemoveComments, iconText: '// ' },
-  ];
+    if (e.ctrlKey && e.shiftKey && e.key === 'd') {
+
+      e.preventDefault();
+
+      handleCopySolve();
+    }
+
+    if (e.ctrlKey && e.key === 'Delete') {
+
+      e.preventDefault();
+
+      handleClearPage();
+    }
+  };
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
+
     const time = urlParams.get('time');
     if (time) {
       setSolveTime(parseFloat(time));
+    }
+
+    const title = urlParams.get('title');
+    if (title) {
+      setSolveTitle(decodeURIComponent(title));
     }
   }, []);
 
@@ -370,22 +471,40 @@ export default function Recon() {
     };
   }, []);
 
+  const toolbarButtons = [
+    { id: 'undo', text: 'Undo', shortcutHint: 'Ctrl+Z', onClick: handleUndo, icon: <UndoIcon />, buttonRef: undoRef },
+    { id: 'redo', text: 'Redo', shortcutHint: 'Ctrl+Y', onClick: handleRedo, icon: <RedoIcon />, buttonRef: redoRef },
+    { id: 'mirrorM', text: 'Mirror M', shortcutHint: 'Ctrl+M', onClick: handleMirrorM, icon: <MirrorM /> },
+    { id: 'mirrorS', text: 'Mirror S', shortcutHint: 'Ctrl+S', onClick: handleMirrorS, icon: <MirrorS /> },
+    { id: 'cat', text: 'Angus', shortcutHint: 'Cat', onClick: addCat, icon: <CatIcon /> },
+    { id: 'removeComments', text: 'Remove Comments', shortcutHint: 'Ctrl+/ ', onClick: handleRemoveComments, iconText: '// ' },
+  ];
+
   return (
-    <div id="main_page" className="col-start-2 col-span-1 flex flex-col bg-dark">
-      <div className="relative flex flex-col mt-8 m-4 w-full justify-center items-center">
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 inset-0 h-full blur-sm bg-primary w-full"></div>
+    <div id="main_page" className="col-start-2 col-span-1 flex flex-col bg-dark overflow-x-hidden px-2">
+      <div id="top-bar" className="pl-6 pr-5 flex flex-row items-center justify-between space-x-2 mt-8">
+        <div className="text-dark_accent text-xl font-medium select-none">Title</div>
+        <InputWithPlaceholder solveTitle={solveTitle} handleTitleChange={handleTitleChange} />
+        <div className="flex flex-row space-x-1 pr-2 text-dark_accent">
+          <TopButton id="trash" text="Clear Page" shortcutHint="Ctrl+Del" onClick={handleClearPage} icon={<TrashIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
+          <TopButton id="copy" text="Copy Solve" shortcutHint="" onClick={handleCopySolve} icon={<CopyIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
+          <TopButton id="share" text="Copy URL" shortcutHint="" onClick={handleShare} icon={<ShareIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
+        </div>
+      </div>
+      <div id="player-box" className="relative flex flex-col my-4 w-full justify-center items-center">
+        <div id="cube-highlight"className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 inset-0 h-full blur-sm bg-primary w-full"></div>
         <div id="cube_model" className="flex aspect-[1.618/1] max-h-96 bg-dark z-10 w-full">
           <TwistyPlayer scramble={scramble} solution={solution} speed={speed} moveLocation={moveLocation.current} animationTime={animationTime}/>
         </div>
       </div>
-      <div id="bottom bar" className="flex flex-row space-x-1 text-light w-full items-center" ref={bottomBarRef}>
+      <div id="bottom-bar" className="flex flex-row space-x-1 text-light w-full items-center" ref={bottomBarRef}>
         <div id="spacer-1" className="flex-1 text-paren"></div>
         <SpeedSlider speed={speed} onChange={handleSpeedChange}/>
         <Toolbar buttons={toolbarButtons} containerRef={bottomBarRef}/>
         <div id="spacer-2" className="flex-1 text-rep"></div>
       </div>
       <div id="datafields" className="pl-6 max-h-[calc(100vh/2.5)] overflow-x-hidden w-full transition-width duration-500 ease-linear flex flex-col justify-center items-center">
-        <div className="w-full flex flex-col pr-6 overflow-y-auto">
+        <div className="pr-6 flex flex-col flex-shrink max-w-full w-full overflow-y-auto">
           <div className="flex flex-row items-center">
             <Dropdown targetDiv="scramble"/> 
           </div>
@@ -405,7 +524,7 @@ export default function Recon() {
           <div className="flex flex-row items-center">
             <Dropdown targetDiv="solution"/> 
           </div>
-          <div id="solution">
+          <div id="solution" className="max-w-full">
             <MovesTextEditor 
               name={`solution`}
               ref={solutionRef} 
@@ -432,13 +551,13 @@ export default function Recon() {
               <div className="text-light ml-2 pr-2 text-xl">sec</div> 
             </div>
             <div className="text-light ml-2 text-xl">{totalMoves} stm </div> 
-            <TPSInfo moveCount={totalMoves} solveTime={solveTime} />
+            <TPSInfo moveCount={totalMoves} solveTime={solveTime} tpsRef={tpsRef} />
             <ReconTimeHelpInfo />
           </div>
           {/* <div className="text-dark_accent text-xl pt-1 font-medium">Review</div> */}
         </div>
       </div>
-      <div id="blur-border" className="h-[20px] blur-xl bg-primary mt-1 mb-8"/>
+      <div id="blur-border" className="h-[20px] blur-xl bg-primary mt-1 mb-12"/>
     </div>
   );
 }

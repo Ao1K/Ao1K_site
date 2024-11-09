@@ -13,11 +13,18 @@ const replaceText = (text: string) => {
     return text;
   };
 
-export default function updateURL(queryName: string, textToEncode: string) {
-
-    if (!textToEncode) return;
+export default function updateURL(queryName: string, textToEncode: string | null) {
 
     const currentParams = new URLSearchParams(window.location.search);
+
+    if (!textToEncode) {
+        if (currentParams.has(queryName)) {
+            currentParams.delete(queryName);
+            const newQueryString = currentParams.toString();
+            window.history.replaceState({}, '', `${window.location.pathname}?${newQueryString}`);
+        }
+        return;
+    }
 
     const text = replaceText(textToEncode);
     const newParam = encodeURIComponent(text);

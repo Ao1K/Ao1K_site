@@ -33,17 +33,21 @@ export default async function RootLayout({
         
         
         <body
-          className={`w-full min-h-screen pt-16 grid grid-cols-[1fr,5fr,1fr] md:grid-cols-[1fr,4fr,1fr] lg:grid-cols-[1fr,3fr,1fr] xl:grid-cols-[2fr,3fr,2fr] overflow-auto bg-dark`}
+          className={`min-h-screen pt-16 grid overflow-auto bg-dark
+            grid-cols-[1fr,minmax(0,5fr),1fr] 
+            md:grid-cols-[1fr,minmax(0,4fr),1fr] 
+            lg:grid-cols-[1fr,minmax(0,3fr),1fr] 
+            xl:grid-cols-[2fr,minmax(0,3fr),2fr] `}
         >
           <Header />
           
-          <div id="left-margin" className="block bg-dark h-full"></div> 
+          <div id="left-margin" className="block bg-dark h-full -z-10"></div> 
           
           <main className="col-start-2 flex flex-col bg-dark">
             {children}
           </main>
           
-          <div id="right-margin" className="block bg-dark h-full"></div> 
+          <div id="right-margin" className="block bg-dark h-full -z-10"></div> 
           
           <Footer/>
         </body>

@@ -6,10 +6,10 @@ export interface ButtonProps {
   buttonRef?: React.RefObject<HTMLButtonElement>;
   icon?: React.ReactNode;
   iconText?: string; // icon or iconText should be used, but not both
-  isOverflow?: boolean; // new prop to indicate overflow buttons
+  isOverflow?: boolean;
 }
 
-export default function UndoRedoButton({ id, text, shortcutHint, onClick, icon, iconText, buttonRef, isOverflow }: ButtonProps) {
+export default function ToolbarButton({ id, text, shortcutHint, onClick, icon, iconText, buttonRef, isOverflow }: ButtonProps) {
 
   return (
     <div id={id} className={`relative inline-block group`} >
