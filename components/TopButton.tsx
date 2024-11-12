@@ -40,9 +40,9 @@ export default function TopButton({ id, text, onClick, buttonRef, shortcutHint, 
       >
         {icon || iconText}
       </button>
-      <div className="mt-2 flex flex-col absolute items-center translate-y-[80%] text-light bg-dark rounded-md text-sm opacity-0 group-hover:opacity-100 pointer-events-none select-none whitespace-nowrap z-30">
+      <div className={`mt-2 px-1 flex flex-col absolute items-center ${shortcutHint ? 'translate-y-[75%]' : 'translate-y-[140%]' } text-light bg-dark rounded-md text-sm opacity-0 group-hover:opacity-100 pointer-events-none select-none whitespace-nowrap z-30`}>
         <div>{text}</div>
-        {shortcutHint ? (<div>({shortcutHint})</div>) : (<div>&nbsp;</div>)}
+        {shortcutHint ? (<div>({shortcutHint})</div>) : (<div></div>)}
       </div>
     </div>
   );
