@@ -775,7 +775,7 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
 
   useEffect(() => {
     
-    document.addEventListener('selectionchange', handleCaretChange); // this is triggered more than necessary due to rerenders
+    document.addEventListener('selectionchange', handleCaretChange);
     document.addEventListener('keydown', handleCommand);
 
     return () => {
