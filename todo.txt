@@ -6,5 +6,3 @@ Trying to add a newline seems to have caused a disconnect in the moveplayer and 
 
 Rapidly clearing the entire textbox causes URL not to update
 
-Should try using properties to handle changes to twisty player rather than useEffect.
-

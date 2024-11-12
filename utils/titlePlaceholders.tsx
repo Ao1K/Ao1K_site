@@ -11,6 +11,7 @@ export const titlePlaceholders = [
   "1. Be respectful. 2. Disagree.",
   "Be the change you want to see in the world",
   "You're doing okay",
+  `Skill is when luck becomes habit`, // unknown/multiple
   `"You've got to get better, you're all that I got" - AJR`,
   "Good ideas can come from anyone",
   
@@ -23,13 +24,13 @@ export const titlePlaceholders = [
   "Drill A perms with the AUF and regrip included",
   "Move notation is an abstraction. Fingertricks are ground truth.",
   "Learn keyhole!",
-  "Learn F2L edge orientation recognition!",
+  "Learn EO!",
   "Learn the fingertricks for algorithms from videos", // remove if/when fingertrick info added
   "Learn dual color neutrality or full color neutrality",
   "Learn full PLL, then full OLL, then focus on F2L efficiency",
   "Use untimed solves to fix bad habits and learn new techniques",
   "A skillful CFOP solve is roughly 60 stm on average",
-  "First improve efficiency, then turn speed",
+  "In general, improve efficiency before turn speed",
   "Prioritize practicing what you're bad at",
   "Working on lookahead before 15 sec average is a distraction",
   "Use spaced repetition to learn algs effectively",
@@ -44,6 +45,7 @@ export const titlePlaceholders = [
   // fun
   "42",
   "No.",
+  "UwU",
   'Cat.',
   'PB!!!!!',
   "Misscramble",
@@ -68,8 +70,10 @@ export const titlePlaceholders = [
   
   // meta
   "Open source!",
-  "Thank you for using Ao1K.com",
-  "Beware technical debt",
+  "Try on mobile!",
+  "Written in typescript",
+  "The font is Rubik",
+  "Thank god for cubing js",
   "Also try alg.cubing.net",
   "Also try alpha.twizzle.net", // may need update eventually
   "Also try cubedb.net",
