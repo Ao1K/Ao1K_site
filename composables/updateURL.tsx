@@ -1,4 +1,4 @@
-import { urlEncodeKey } from '../utils/urlEncodeKey';
+import { urlEncodeKey } from './urlEncoding';
 
 const replaceText = (text: string) => {
     while (text.endsWith('\n')) {

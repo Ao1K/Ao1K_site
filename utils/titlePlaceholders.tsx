@@ -25,8 +25,8 @@ export const titlePlaceholders = [
   "Move notation is an abstraction. Fingertricks are ground truth.",
   "Learn keyhole!",
   "Learn EO!",
-  "Learn the fingertricks for algorithms from videos", // remove if/when fingertrick info added
-  "Learn dual color neutrality or full color neutrality",
+  "Learn the fingertricks for algorithms from videos!", // remove if/when fingertrick info added
+  "Learn dual or full color neutrality!",
   "Learn full PLL, then full OLL, then focus on F2L efficiency",
   "Use untimed solves to fix bad habits and learn new techniques",
   "A skillful CFOP solve is roughly 60 stm on average",
@@ -41,6 +41,7 @@ export const titlePlaceholders = [
   "Mirroring A perms keeps headlights on one side for all PLLs. But at what cost?",
   "RUS U perms are probably too risky to use",
   "Use rotations to deal with bad edge orientation",
+  "If you want a tutor, you need a friend or money",
   
   // fun
   "42",
@@ -48,13 +49,13 @@ export const titlePlaceholders = [
   "UwU",
   'Cat.',
   'PB!!!!!',
-  "Misscramble",
   "Sub-Yiheng?",
   "I don't know",
   "Minceraft", // not a typo
   "That is so qwiii",
   "Worst solve ever",
   "Not a good solve",
+  "Oops, misscramble",
   'One of the solves',
   "Roux? What's that?",
   'Get your ass to Mars',
@@ -65,6 +66,7 @@ export const titlePlaceholders = [
   "I don't know how I got here",
   "Ladders! I go up and I go down.",
   "Your mom will never be impressed",
+  "Hold cube gently, like a hamburger",
   "That one's actually just a bug. Sorry.",
   "I am just a ball of mistakes and this is my life",
   

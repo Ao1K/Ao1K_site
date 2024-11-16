@@ -9,7 +9,7 @@ import validateTextInput from "../composables/validateTextInput";
 import validationToMoves from "../composables/validationToMoves";
 import updateURL from '../composables/updateURL';
 
-import { urlEncodeKey } from '../utils/urlEncodeKey';
+import { customDecodeURL } from '../composables/urlEncoding';
 
 export const colorDict = [ // can't be in /utils folder due to automatic tailwind style purging. probably.
   { key: 'move', value: 'text-light'},
@@ -26,15 +26,15 @@ const EditorLoader = ({ editorRef: contentEditableRef, onInputChange, name, auto
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    let encodedText = searchParams.get(name)?.replace(/_/g, '%C2%A0'); // TODO: use urlEncodeKey
+    let urlText = searchParams.get(name);
 
-    if (encodedText) {
-      const decodedText = decodeURIComponent(encodedText);
+    if (urlText) {
+      let decodedText = decodeURIComponent(customDecodeURL(urlText));
       contentEditableRef.current.innerText = decodedText;
     }
 
     if (autofocus) {
-      if (!encodedText && name === 'solution') {
+      if (!urlText && name === 'solution') {
         //adds caretNode span, which then is processed by onInputChange
         const selection = window.getSelection();
         const range = document.createRange();
@@ -56,7 +56,7 @@ const EditorLoader = ({ editorRef: contentEditableRef, onInputChange, name, auto
       
     }
       
-  if (encodedText || (autofocus && !encodedText)) {
+  if (urlText || (autofocus && !urlText)) {
     onInputChange();
   }
   
@@ -68,7 +68,7 @@ const EditorLoader = ({ editorRef: contentEditableRef, onInputChange, name, auto
 
 interface EditorProps {
   name: string;
-  trackMoves: (idIndex: number, lineIndex: number, moveIndex: number, moves: string[][], moveCounts: number[], moveAnimationTimes: number[][]) => void;
+  trackMoves: (idIndex: number, lineIndex: number, caretIndex: number, moves: string[][], moveCounts: number[], moveAnimationTimes: number[][]) => void;
   autofocus: boolean;
   moveHistory: React.MutableRefObject<any>;
   updateHistoryBtns: () => void;
@@ -85,9 +85,9 @@ export interface EditorRef {
 const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, autofocus, moveHistory, updateHistoryBtns, html, setHTML }, ref) => {
 
   const contentEditableRef = useRef<HTMLDivElement>(null);
-  let moveOffset = useRef<number>(0);
-  let lineOffset = useRef<number>(0);
-  let moveStatus = useRef<string[][]>([['']]); // inner array for line of moves, outer array for all lines in textbox 
+  const moveOffsetRef = useRef<number>(0); // number of moves before and at the caret. 0 is at the start of the line before any moves.
+  const lineOffsetRef = useRef<number>(0);
+  const textboxMovesRef = useRef<string[][]>([['']]); // inner array for line of moves, outer array for all lines in textbox 
 
   const updateURLTimeout = useRef<NodeJS.Timeout | null>(null);
 
@@ -137,17 +137,38 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
     return htmlUpdateMatrix;
   }
 
+  const findEndOfMoveOnCaret = (validation: [string, string, number?][], caretOffset: number) => {
+    // counts characters
+    // increment caretOffset until it reaches the end of a move or move rep
+
+    let i = caretOffset;
+    try {
+      for (i; i < validation.length; i++) {
+        const type = validation[i][1];
+        if (type === 'move' || type === 'rep') {
+          continue;
+        } else {
+          break;
+        }
+      }
+    } catch (e) {
+      console.error('Error in findEndOfMoveOnCaret:', e);
+    }
+    return i;
+    
+  };
+
   function handleHTMLlines(htmlUpdateMatrix: string[], lineMoveCounts: number[], moveAnimationTimes: number[][]): [string[], number[], number[][]] {
 
-    if (moveStatus.current.length > htmlUpdateMatrix.length) {
-      moveStatus.current = moveStatus.current.slice(0, htmlUpdateMatrix.length);
+    if (textboxMovesRef.current.length > htmlUpdateMatrix.length) {
+      textboxMovesRef.current = textboxMovesRef.current.slice(0, htmlUpdateMatrix.length);
     }
 
     const paintedHTML = htmlUpdateMatrix.map((line, i) => {
       
-      if (!moveStatus.current[i]) {
+      if (!textboxMovesRef.current[i]) {
         //console.log('moveStatus not found at line', i, "for textbox", idIndex);
-        moveStatus.current[i] = [''];
+        textboxMovesRef.current[i] = [''];
       }
 
       if (lineMoveCounts[i] === undefined) {
@@ -160,14 +181,26 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
         const validation = validateTextInput(text);
         
         const [newHTMLline, caretIndex] = updateLine(validation, line);
-
-        moveOffset.current = caretIndex;
-        lineOffset.current = i; // could be wrong in certain situations (copy-paste)
-
         
-        const moves = validationToMoves(validation);
+        let moves: string[];
+        
+        if (caretIndex !== null) {
+          let caretSplitIndex = findEndOfMoveOnCaret(validation, caretIndex);
+  
+          const movesBeforeCaret = validationToMoves(validation.slice(0, caretSplitIndex + 1));
+          const movesAfterCaret = validationToMoves(validation.slice(caretSplitIndex + 1));
+          moves = movesBeforeCaret.concat(movesAfterCaret);
+
+          lineOffsetRef.current = i; // could be wrong in certain situations? (copy-paste)
+
+          moveOffsetRef.current = movesBeforeCaret.length; // not minus 1. 0 represents before any moves.
+
+        } else {
+          moves = validationToMoves(validation);
+        }
+
         lineMoveCounts[i] = moves.length;
-        moveStatus.current[i] = moves;
+        textboxMovesRef.current[i] = moves;
 
         moveAnimationTimes[i] = findAnimationLengths(moves);
     
@@ -270,13 +303,13 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
     
   }
 
-  function updateLine(validation: [string, string, number?][], line: string): [string, number] {
+  function updateLine(validation: [string, string, number?][], line: string): [string, number | null] {
     line = removeSpansExceptCaret(line);
     line = line.replace(/&nbsp;/g, ' ');
   
     let { updatedLine, caretIndex } = processValidation(validation, line);
   
-    return [updatedLine, caretIndex!];
+    return [updatedLine, caretIndex];
   }
   
   function processValidation(validation: [string, string, number?][], line: string): { updatedLine: string, caretIndex: number | null } {
@@ -414,7 +447,7 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
     setHTML(newHTMLlines);
 
     // 7
-    trackMoves(idIndex, lineOffset.current, moveOffset.current, moveStatus.current, oldLineMoveCounts.current, oldMoveAnimationTimes.current);
+    trackMoves(idIndex, lineOffsetRef.current, moveOffsetRef.current, textboxMovesRef.current, oldLineMoveCounts.current, oldMoveAnimationTimes.current);
   };
 
   const splitIntoLines = (html: string) => {
@@ -532,6 +565,8 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
     const range = selection.getRangeAt(0);
     return !range.collapsed && (range.startContainer !== range.endContainer || range.startOffset !== range.endOffset);
   };
+
+
   
 
   const handleCaretChange = () => {
@@ -556,16 +591,18 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
     let lines = splitIntoLines(contentEditableRef.current!.innerHTML);
     lines = cleanLines(lines);
 
-    lineOffset.current = lines.findIndex((line) => line.includes('<span id="caretNode">'));
-    caretLine = lines[lineOffset.current];
+    lineOffsetRef.current = lines.findIndex((line) => line.includes('<span id="caretNode">'));
+
+    caretLine = lines[lineOffsetRef.current];
     let lineTextArray = caretLine?.match(/>[^<>]+<|caretNode">/g);
     let fullRawText = '';
     let caretReached = false;
+
+    // find number of characters before caret and get full text for validation
     if (lineTextArray) {
       for (let text of lineTextArray){
         
         if (text === 'caretNode">') {
-          //console.log('caret reached');
           caretReached = true;
           continue;
         }
@@ -573,6 +610,7 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
         text = text.substring(1, text.length - 1);
         fullRawText += text;
   
+        // accumulate characters before caret
         if (!caretReached) {
           text = text.replaceAll(/&[a-zA-Z0-9]+;/g, ' ');
           caretOffset += text.length;
@@ -580,23 +618,19 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
       }
       let validation = validateTextInput(fullRawText);
 
-      let i = caretOffset;
-      for (i; i < validation.length; i++) {
-        const type = validation[i][1];
-        if (type === 'move' || type === 'rep') {
-          continue;
-        } else {
-          break;
-        }
-      }
+
+
+      let i = findEndOfMoveOnCaret(validation, caretOffset);
+
+      // calculate number of moves before caret
       let v = validationToMoves(validation.slice(0, i));
-      moveOffset.current = v.length;
+      moveOffsetRef.current = v.length;
     }
 
 
-    if (lineOffset.current !== -1) {
+    if (lineOffsetRef.current !== -1) {
       caretLine ? setHTML(contentEditableRef.current!.innerHTML): null; // ensures html will not be set during mounting
-      trackMoves(idIndex, lineOffset.current, moveOffset.current, moveStatus.current, oldLineMoveCounts.current, oldMoveAnimationTimes.current);
+      trackMoves(idIndex, lineOffsetRef.current, moveOffsetRef.current, textboxMovesRef.current, oldLineMoveCounts.current, oldMoveAnimationTimes.current);
     }
   };
 
@@ -792,16 +826,16 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
     <>
       <EditorLoader editorRef={contentEditableRef} onInputChange={onInputChange} name={name} autofocus={autofocus} />   
       <div
-      contentEditable
-      ref={contentEditableRef}
-      className="bg-dark text-left rounded-sm resize-none text-xl min-h-[4.7rem] mb-4 mx-1 p-2 max-w-full caret-light border border-primary focus:border-1 ff-space-adjust"
-      onInput={handleInput}
-      onCopy={handleCopy}
-      onPaste={handlePaste}
-      onBlur={passURLupdate}
-      onFocus={handleInput} // this hack ensures a visual cube update
-      dangerouslySetInnerHTML={{ __html: html }}
-      spellCheck={false}
+        contentEditable
+        ref={contentEditableRef}
+        className="bg-dark text-left rounded-sm resize-none text-xl min-h-[4.7rem] mb-4 mx-1 p-2 max-w-full caret-light border border-primary focus:border-1 ff-space-adjust"
+        onInput={handleInput}
+        onCopy={handleCopy}
+        onPaste={handlePaste}
+        onBlur={passURLupdate}
+        onFocus={handleInput} // this hack ensures a visual cube update
+        dangerouslySetInnerHTML={{ __html: html }}
+        spellCheck={false}
       /> 
     </>
   );

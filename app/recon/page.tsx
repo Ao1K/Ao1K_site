@@ -30,6 +30,8 @@ import { TransformHTMLprops } from "@/composables/transformHTML";
 
 import InputWithPlaceholder from "@/components/TitleInput";
 import TopButton from "@/components/TopButton";
+import { customDecodeURL } from "@/composables/urlEncoding";
+import { update } from "three/examples/jsm/libs/tween.module.js";
 
 export interface MoveHistory {
   history: string[][];
@@ -46,11 +48,10 @@ interface OldSelectionRef {
 
 export default function Recon() {
   const allMoves = useRef<string[][][]>([[[]], [[]]]);
-  const moveLocation = useRef<number[]>([0, 0, 0]);
-  const [animationTime, setAnimationTime] = useState<number>(0);
+  const moveLocation = useRef<[number, number, number]>([0, 0, 0]);
 
   const [speed, setSpeed] = useState<number>(25);
-  const [scramble, setScramble] = useState<string>('');
+  const scrambleRef = useRef<string>('');
   const [solution, setSolution] = useState<string>('');
   const [totalMoves, setTotalMoves] = useState<number>(0);
   const [solveTime, setSolveTime] = useState<number|string>('');
@@ -61,7 +62,7 @@ export default function Recon() {
   const [solutionHTML, setSolutionHTML] = useState<string>('');
     
   const tpsRef = useRef<string>('');
-  const scrambleRef = useRef<EditorRef>(null);
+  const scrambleEditorRef = useRef<EditorRef>(null);
   const solutionRef = useRef<EditorRef>(null);
   const undoRef = useRef<HTMLButtonElement>(null);
   const redoRef = useRef<HTMLButtonElement>(null);
@@ -71,7 +72,8 @@ export default function Recon() {
   const MAX_EDITOR_HISTORY = 100;
   const moveHistory = useRef<MoveHistory>({ history: [['','']], index: 0, MAX_HISTORY: MAX_EDITOR_HISTORY, status: 'loading' });
 
-  
+  const [playerParams, setPlayerParams] = useState<{ animationTimes: number[], solution: string, scramble: string }>({ animationTimes: [], solution: '', scramble: '' });
+
   const findPrevNonEmptyLine = (moves: string[][], lineIndex: number, idIndex: number): number => {
     for (let i = lineIndex; i >= 0; i--) {
       if (moves && moves[i]) {
@@ -81,13 +83,19 @@ export default function Recon() {
     return 0;
   }
 
-
   const trackMoves = (
-    idIndex: number, lineIndex: number, moveIndex: number, 
+    idIndex: number, 
+    lineIndex: number, // the line number of the caret
+    moveIndex: number, // the number of moves before the caret on its line
     moves: string[][], // the moves in the textbox of id
     moveCounts: number[],
     moveAnimationTimes: number[][],
   ) => {
+
+    // create local variables for updating TwistyPlayer that don't rely on state
+    let sol = solution;
+    let scram = scrambleRef.current;
+    let animTimes = [0];
 
     const regex =/[^xyz2']/g;
     if (idIndex === 1) {
@@ -98,11 +106,11 @@ export default function Recon() {
     //console.log('tracking moves');
     const movesSame: boolean = JSON.stringify(allMoves.current[idIndex]) === JSON.stringify(moves);
 
-    const newMoveLocation = [idIndex, lineIndex, moveIndex];
+    const newMoveLocation: [number, number, number] = [idIndex, lineIndex, moveIndex];
     const moveIndexSame = 
-       moveLocation.current[0] === newMoveLocation[0] 
-    && moveLocation.current[1] === newMoveLocation[1] 
-    && moveLocation.current[2] === newMoveLocation[2];
+        moveLocation.current[0] === newMoveLocation[0] 
+     && moveLocation.current[1] === newMoveLocation[1] 
+     && moveLocation.current[2] === newMoveLocation[2];
 
     if (movesSame && moveIndexSame) {
       return;
@@ -114,38 +122,51 @@ export default function Recon() {
     }
 
     if (idIndex === 0) {
-      setScramble(moves.flat().join(' '));  
+      scram = moves.flat().join(' ');
+      scrambleRef.current = scram;  
     }
     else {
-      setSolution(moves.flat().join(' '));
+      console.log('updating sol');
+      sol = moves.flat().join(' ');
+      setSolution(sol);
     }
 
-    
-    
-    if(!moveIndexSame && idIndex === 1 && moveAnimationTimes.length > 0) {
-      let sumPrevMoveTimes = 0;
+    // set animationTimes to whole list of times up to and including time for move at caret
+    moveAnimationTimes = moveAnimationTimes
+      .map(line => line.filter(time => time !== 0))
+      .filter(line => line.length > 0);
+
+    if(idIndex === 1 && moveAnimationTimes.length > 0) {
+      let prevMoveTimes: number[] = [];
       const nonEmptyLineIndexAdjustment = moveIndex === -1 ? 1 : 0;
 
+      // push in moves from previous lines
       for (let i = 0; i < lineIndex + nonEmptyLineIndexAdjustment; i++) {
-        sumPrevMoveTimes += moveAnimationTimes[i].reduce((total, time) => total + time, 0); // BUG: sometimes moveAnimationTimes[i] is undefined
+        if (moveAnimationTimes[i]) prevMoveTimes.push(...moveAnimationTimes[i]);
       }
 
-      for (let i = 0; i <= moveIndex; i++) {
-        if (moveAnimationTimes[lineIndex] && moveAnimationTimes[lineIndex][i]) {
-          sumPrevMoveTimes += moveAnimationTimes[lineIndex][i];
+      // push in moves from current line, up to moveIndex
+      for (let j = 0; j < moveIndex; j++) {
+        if (moveAnimationTimes[lineIndex] && moveAnimationTimes[lineIndex][j]) {
+
+          prevMoveTimes.push(moveAnimationTimes[lineIndex][j]);
         }
       }
-
-      setAnimationTime(sumPrevMoveTimes);
+      console.log('updating animation times', prevMoveTimes);
+      animTimes = prevMoveTimes;
     }
 
     if(idIndex === 0) {
-      setAnimationTime(1);
+      console.log('updating animation times');
+      animTimes = [1];
     }
 
 
     moveLocation.current = newMoveLocation;
     allMoves.current[idIndex] = [...moves];
+
+    console.log('UPDATING PLAYER PARAMS', animTimes, scram, sol);
+    setPlayerParams({animationTimes: animTimes, solution: sol, scramble: scram});
   }
 
   const handleSpeedChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -165,14 +186,15 @@ export default function Recon() {
   }
 
   const handleUndo = () => {
-    if (scrambleRef.current  && solutionRef.current) {
-      scrambleRef.current.undo();
+    if (scrambleEditorRef.current  && solutionRef.current) {
+      scrambleEditorRef.current.undo();
       solutionRef.current.undo();
     }
   }
+
   const handleRedo = () => {
-    if (scrambleRef.current  && solutionRef.current) {
-      scrambleRef.current.redo();
+    if (scrambleEditorRef.current  && solutionRef.current) {
+      scrambleEditorRef.current.redo();
       solutionRef.current.redo();
     }
   }
@@ -217,14 +239,6 @@ export default function Recon() {
     let range = oldSelectionRef.current.range;
     let textbox = oldSelectionRef.current.textbox;
 
-    // if (oldSelectionRef.current.status === 'updating') {
-    //   console.log('updating');
-    //   setTimeout(() => {
-    //     mirrorSelectionM(range, textbox);
-    //   }, 100);
-    //   return;
-    // }
-
     //set range and textbox as necessary
     if (range && textbox) { // testing only
 
@@ -242,7 +256,7 @@ export default function Recon() {
 
     textbox === 'solution' ? 
       solutionRef.current!.transform(newHTML) : // can handle html or plaintext
-      scrambleRef.current!.transform(newHTML)
+      scrambleEditorRef.current!.transform(newHTML)
 
     
 
@@ -261,8 +275,8 @@ export default function Recon() {
   const handleRemoveComments = () => handleTransform(removeComments);
 
   const handleClearPage = () => {
-    setScramble('');
-    scrambleRef.current?.transform('');
+    scrambleRef.current = '';
+    scrambleEditorRef.current?.transform('');
     setSolution('');
     solutionRef.current?.transform('');
     setSolveTime('');
@@ -313,8 +327,8 @@ export default function Recon() {
 
   const handleShare = async () => {
     const url = new URL(window.location.href);
-    url.searchParams.set('scramble', scramble);
-    url.searchParams.set('solution', solution);
+    updateURL('scramble', scrambleRef.current);
+    updateURL('solution', solution);
     url.searchParams.set('time', solveTime.toString());
     url.searchParams.set('title', solveTitle);
 
@@ -456,6 +470,14 @@ export default function Recon() {
     if (title) {
       setSolveTitle(decodeURIComponent(title));
     }
+
+    if (solution) {
+      console.log('solution:', solution);
+      setPlayerParams(prev => ({ ...prev, solution: solution }));
+    }
+    if (scrambleRef.current) {
+      setPlayerParams(prev => ({ ...prev, scramble: scrambleRef.current }));
+    }
   }, []);
 
   useEffect(() => {
@@ -494,7 +516,7 @@ export default function Recon() {
       <div id="player-box" className="relative flex flex-col my-4 w-full justify-center items-center">
         <div id="cube-highlight"className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 inset-0 h-full blur-sm bg-primary w-full"></div>
         <div id="cube_model" className="flex aspect-[1.618/1] max-h-96 bg-dark z-10 w-full">
-          <TwistyPlayer scramble={scramble} solution={solution} speed={speed} moveLocation={moveLocation.current} animationTime={animationTime}/>
+          <TwistyPlayer scramble={playerParams.scramble} solution={playerParams.solution} speed={25} animationTimes={playerParams.animationTimes}/>
         </div>
       </div>
       <div id="bottom-bar" className="flex flex-row space-x-1 text-light w-full items-center" ref={bottomBarRef}>
@@ -511,7 +533,7 @@ export default function Recon() {
           <div id="scramble">
             <MovesTextEditor
               name={`scramble`}
-              ref={scrambleRef}
+              ref={scrambleEditorRef}
               trackMoves={trackMoves}
               autofocus={true}
               moveHistory={moveHistory}

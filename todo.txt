@@ -5,4 +5,6 @@ Trying to add a newline seems to have caused a disconnect in the moveplayer and 
 - newlines should be allowed between existing lines
 
 Rapidly clearing the entire textbox causes URL not to update
+- having trouble reproducing
 
+htmlUpdateMatrix is including html that did not update

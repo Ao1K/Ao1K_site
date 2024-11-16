@@ -14,7 +14,7 @@ const rubik = Rubik({
 });
 
 export const metadata: Metadata = {
-  title: "Ao1K",
+  title: "Ao1K – Reconstruction",
   description: "Statisically significant speedcube analysis",
   icons: {
     icon: "../Ao1K Logo - Icon.png",
