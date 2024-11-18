@@ -126,7 +126,6 @@ export default function Recon() {
       scrambleRef.current = scram;  
     }
     else {
-      console.log('updating sol');
       sol = moves.flat().join(' ');
       setSolution(sol);
     }
@@ -139,16 +138,20 @@ export default function Recon() {
     if(idIndex === 1 && moveAnimationTimes.length > 0) {
       let prevMoveTimes: number[] = [];
       const nonEmptyLineIndexAdjustment = moveIndex === -1 ? 1 : 0;
+      console.log('nonEmptyLineIndexAdjustment', nonEmptyLineIndexAdjustment);
+      console.log('lineIndex', lineIndex);
 
       // push in moves from previous lines
       for (let i = 0; i < lineIndex + nonEmptyLineIndexAdjustment; i++) {
+        console.log('movesAnimationTimes[i]', moveAnimationTimes[i]);
         if (moveAnimationTimes[i]) prevMoveTimes.push(...moveAnimationTimes[i]);
       }
+      console.log('prevMoveTimes', prevMoveTimes);
 
       // push in moves from current line, up to moveIndex
+      console.log('moveIndex', moveIndex);
       for (let j = 0; j < moveIndex; j++) {
         if (moveAnimationTimes[lineIndex] && moveAnimationTimes[lineIndex][j]) {
-
           prevMoveTimes.push(moveAnimationTimes[lineIndex][j]);
         }
       }
@@ -157,7 +160,6 @@ export default function Recon() {
     }
 
     if(idIndex === 0) {
-      console.log('updating animation times');
       animTimes = [1];
     }
 
@@ -165,7 +167,6 @@ export default function Recon() {
     moveLocation.current = newMoveLocation;
     allMoves.current[idIndex] = [...moves];
 
-    console.log('UPDATING PLAYER PARAMS', animTimes, scram, sol);
     setPlayerParams({animationTimes: animTimes, solution: sol, scramble: scram});
   }
 
@@ -413,7 +414,6 @@ export default function Recon() {
   }
 
   const handleCommand = (e: KeyboardEvent) => {
-    if (!e.ctrlKey) return;
 
     if (e.ctrlKey && e.key === 'm') {
     
@@ -443,7 +443,7 @@ export default function Recon() {
       handleRemoveComments();
     }
 
-    if (e.ctrlKey && e.shiftKey && e.key === 'd') {
+    if (e.ctrlKey && e.key === 'q') {
 
       e.preventDefault();
 

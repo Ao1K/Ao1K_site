@@ -99,7 +99,7 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
 
   const sanitizeConf = {
     allowedTags: ["b", "i","br","div"],
-    allowedAttributes: { span: ["class"]}
+    allowedAttributes: { span: ["className","class"]}
   };
   
   const handleInput = () => {
@@ -112,7 +112,7 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
     updateURLTimeout.current = setTimeout(passURLupdate, 500);
   };
   
-  function denestHTML(html: string) {
+  function htmlToLineArray(html: string) {
     //Remove obvious nested divs
     html = html.replace(/<div><div>/g, '');
     html = html.replace(/<\/div><\/div>/g, '');
@@ -185,6 +185,7 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
         let moves: string[];
         
         if (caretIndex !== null) {
+          console.log('updating lineoffset:', htmlUpdateMatrix, line, i)
           let caretSplitIndex = findEndOfMoveOnCaret(validation, caretIndex);
   
           const movesBeforeCaret = validationToMoves(validation.slice(0, caretSplitIndex + 1));
@@ -417,7 +418,7 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
     insertCaretNode();
 
     // 2
-    let htmlLines = denestHTML(contentEditableRef.current!.innerHTML);
+    let htmlLines = htmlToLineArray(contentEditableRef.current!.innerHTML);
     const htmlUpdateMatrix = findHTMLchanges(oldHTMLlines.current, htmlLines);
     
     // 5
@@ -430,7 +431,6 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
     // 3, 5
     [htmlLines, lineMoveCounts, moveAnimationTimes] = handleHTMLlines(htmlUpdateMatrix, lineMoveCounts, moveAnimationTimes);
     
-    // 4
     const newHTMLlines = htmlLines.join('');
     
     // 5
@@ -451,6 +451,7 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
   };
 
   const splitIntoLines = (html: string) => {
+    console.log('html', html)
     const lines = html.split(/<\/div>(?!$)|<br>/)
 
     // if line 0 has div in middle, split it
@@ -462,7 +463,7 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
       lines[0] = firstLine;
       lines.splice(1, 0, remainingText);
     }
-
+    console.log('lines:', lines)
     return lines;
   };
 
@@ -529,6 +530,8 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
     const text = e.clipboardData.getData('text');
   
     let sanitizedText = sanitizeHtml(text, sanitizeConf);
+    
+    // may need to manually clean up <font color=""></font> tags
   
     const selection = window.getSelection();
     if (selection) {
@@ -588,8 +591,7 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
     let caretLine = '';
     let caretOffset = 0;
 
-    let lines = splitIntoLines(contentEditableRef.current!.innerHTML);
-    lines = cleanLines(lines);
+    let lines = htmlToLineArray(contentEditableRef.current!.innerHTML);
 
     lineOffsetRef.current = lines.findIndex((line) => line.includes('<span id="caretNode">'));
 

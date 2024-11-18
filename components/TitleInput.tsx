@@ -27,7 +27,7 @@ const InputWithPlaceholder: React.FC<InputWithPlaceholderProps> = ({ solveTitle,
       if (context) {
         context.font = font;
         const textWidth = context.measureText(placeholder).width;
-        setPlaceholderText(textWidth > inputWidth ? '' : placeholder);
+        setPlaceholderText(textWidth + 10 > inputWidth ? '' : placeholder);
       }
     };
 
@@ -45,9 +45,10 @@ const InputWithPlaceholder: React.FC<InputWithPlaceholderProps> = ({ solveTitle,
     <input
       ref={inputRef}
       placeholder={placeholderText}
-      className="p-2 ml-4 w-full text-lg text-light bg-dark border-primary focus:border-light border border-1 rounded-sm"
+      className="p-2 ml-4 w-full text-lg text-light bg-dark border-primary focus:border-light border border-1 rounded-sm auto"
       value={solveTitle}
       onChange={handleTitleChange}
+      autoComplete="off"
     />
   );
 };

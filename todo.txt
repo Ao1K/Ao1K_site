@@ -8,3 +8,5 @@ Rapidly clearing the entire textbox causes URL not to update
 - having trouble reproducing
 
 htmlUpdateMatrix is including html that did not update
+
+start text: RUF \n LUF. Replace copy paste in LUF \n LUF instead. Timestamp snaps to end on 2nd line.

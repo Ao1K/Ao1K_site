@@ -18,7 +18,6 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
   
   const divRef = useRef<HTMLDivElement>(null);
   const hiddenRef = useRef<HTMLDivElement>(null);
-  const lastMoves = useRef<string[]>(solution ? solution.split(' ') : []);
   const lastSolution = useRef<string>('');
   const lastScramble = useRef<string>('');
   const lastAnimationTimes = useRef<number[]>([]);
@@ -37,25 +36,26 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
   
   const setPlayerProps = () => {
 
-    if (lastScramble.current !== scramble) { playerRef.current!.experimentalSetupAlg = scramble;}
+    if (lastScramble.current !== scramble) { 
+      console.log('PLAYER REF setting scram to:', scramble); 
+      playerRef.current!.experimentalSetupAlg = scramble;
+    }
     if (lastSpeed.current !== speed) {playerRef.current!.tempoScale = cubeSpeed;}
     
-    // if solution and timestamp changed, update player
+    // handles case where TwistyPlayer is rerendered with no change. Might not cover all edge cases.
     if (lastSolution.current !== solution && lastAnimationTimes.current !== animationTimes) {
       console.log('PLAYER REF setting alg to:', solution);
       playerRef.current!.alg = solution;
+      lastSolution.current = solution;
+    } else {
+      console.log('did NOT set sol. Already should match.');
     }
   }
 
   const updateLastPlayerProps = () => {
-    lastSolution.current = solution;
     lastScramble.current = scramble;
     lastAnimationTimes.current = animationTimes;
     lastSpeed.current = speed;
-
-    solution ? 
-    lastMoves.current = solution.split(' ') : 
-    lastMoves.current = [];
   }
 
   const updateTimestamp = (animationTimes: number[] | undefined) => {
@@ -122,7 +122,6 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
     }
     
     const changeIndex = times.length - 1 + (isAdded ? 0 : 1); // add one if move was removed. Corrects for fact that times sync with move prior to change
-    console.log('changeIndex:', changeIndex);
     const longerBeforeChange = longerMoves.slice(0, changeIndex);
     const shorterBeforeChange = shorterMoves.slice(0, changeIndex);
     const longerAfterChange = longerMoves.slice(changeIndex + 1); // excludes move at index of change
@@ -133,7 +132,6 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
     console.log('shorterAfterChange:', shorterAfterChange);
 
     if (longerBeforeChange.join(' ') !== shorterBeforeChange.join(' ') || longerAfterChange.join(' ') !== shorterAfterChange.join(' ')) {
-      console.log('before and after change do not match');
       return {singleMove: '', movesBefore: ''};
     } 
     
@@ -142,7 +140,6 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
 
     if (!isAdded) {
       movesBeforeChange += " " + singleMoveChange; // add move back before reversing it
-      console.log('movesBeforeChange:', movesBeforeChange);
       singleMoveChange = reverseMove(singleMoveChange);
     }
 
@@ -161,12 +158,15 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
     updateTimestamp(animationTimes);
 
     const moves = solution.split(' ');
-    const moveChangeDelta = Math.abs(moves.length - lastMoves.current.length);
+    const lastMoves = lastSolution.current ? lastSolution.current.split(' ') : [];
+    
+    const moveChangeDelta = Math.abs(moves.length - lastMoves.length);
+    console.log('moveChangeDelta:', moveChangeDelta);
     
     let singleMoveChange = "";
     let movesBeforeChange = "";
     if (moveChangeDelta === 1) {
-      ({ singleMove: singleMoveChange, movesBefore: movesBeforeChange } = findSingleMoveChange(moves, lastMoves.current, animationTimes));
+      ({ singleMove: singleMoveChange, movesBefore: movesBeforeChange } = findSingleMoveChange(moves, lastMoves, animationTimes));
     }
     if (moveChangeDelta === 0) {
       // find if move selection changed by one move
@@ -177,8 +177,11 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
       try {
         console.log('PLAYER REF alg set to:', movesBeforeChange);
         playerRef.current.alg = movesBeforeChange;
+        
         console.log('PLAYER REF adding move:', singleMoveChange);
         playerRef.current.experimentalAddMove(singleMoveChange);
+
+        lastSolution.current = movesBeforeChange + " " + singleMoveChange;
       } catch (e) {
         console.error('Failed to add move:', singleMoveChange);
       }
