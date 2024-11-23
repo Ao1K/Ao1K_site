@@ -37,7 +37,8 @@ export default function Header(): JSX.Element {
       </div>
 
       <div className="p-4 mt-1 pr-8 hidden sm:block">
-        <Link href="https://login-ao1k.auth.us-east-1.amazoncognito.com">Profile</Link>
+        {/* <Link href="https://login-ao1k.auth.us-east-1.amazoncognito.com">Profile</Link> */}
+        By Chet
       </div>
 
       <div className="sm:hidden flex justify-end">
