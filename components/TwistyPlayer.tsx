@@ -22,6 +22,8 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
   const lastScramble = useRef<string>('');
   const lastAnimationTimes = useRef<number[]>([]);
   const lastSpeed = useRef<number>(0);
+
+  const lastRenderRef = useRef<PlayerProps>({ scramble: scramble, solution: solution, speed: speed, animationTimes: animationTimes });
   
   const calcCubeSpeed = (speed: number) => {
     if (speed === 100) {
@@ -34,47 +36,68 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
   const cubeSpeed = calcCubeSpeed(speed);
   const isInstant = cubeSpeed === 1000;
   
-  const setPlayerProps = () => {
+  const setInstantPlayerProps = () => {
+
+    if (!playerRef.current) return;
 
     if (lastScramble.current !== scramble) { 
       console.log('PLAYER REF setting scram to:', scramble); 
-      playerRef.current!.experimentalSetupAlg = scramble;
+      playerRef.current.experimentalSetupAlg = scramble;
     }
-    if (lastSpeed.current !== speed) {playerRef.current!.tempoScale = cubeSpeed;}
+
+    if (lastSpeed.current !== speed) {
+      playerRef.current!.tempoScale = cubeSpeed;
+    }
     
-    // handles case where TwistyPlayer is rerendered with no change. Might not cover all edge cases.
-    if (lastSolution.current !== solution && lastAnimationTimes.current !== animationTimes) {
-      console.log('PLAYER REF setting alg to:', solution);
-      playerRef.current!.alg = solution;
-      lastSolution.current = solution;
-    } else {
-      console.log('did NOT set sol. Already should match.');
-    }
+    // const solutionTillTime = solution.split(' ').slice(0, animationTimes.length + 1).join(' ');
+    // const lastSolutionTillTime = lastSolution.current.split(' ').slice(0, animationTimes.length + 1).join(' ');
+    // console.log('solutionTillTime:', solutionTillTime, 'lastSolutionTillTime:', lastSolutionTillTime);
+    // if (solutionTillTime !== lastSolutionTillTime) {
+    // // if (solution !== lastSolution.current) { 
+    //   console.log('PLAYER REF setting alg to:', solution);
+      playerRef.current.alg = solution;
+    // }
+
+    if (lastAnimationTimes.current !== animationTimes) {
+      console.log('PLAYER REF setting timestamp to:', animationTimes.reduce((acc, val) => acc + val, 0));
+      playerRef.current.timestamp = animationTimes.reduce((acc, val) => acc + val, 0);
+    } 
   }
 
-  const updateLastPlayerProps = () => {
+  const updateLastPlayerProps = (sol: string | undefined, animTimes: number[] | undefined) => {
+
+    if (sol === undefined) {
+      lastSolution.current = solution;
+    } else {
+      lastSolution.current = sol;
+    }
+
+    animTimes ? lastAnimationTimes.current = animTimes : 
+                lastAnimationTimes.current = animationTimes;
+
+    console.log('LAST Solution.current:', lastSolution.current);
+    console.log('LAST AnimationTimes.current:', lastAnimationTimes.current);
+    
     lastScramble.current = scramble;
-    lastAnimationTimes.current = animationTimes;
     lastSpeed.current = speed;
   }
 
-  const updateTimestamp = (animationTimes: number[] | undefined) => {
+  const findTimestamp = (animationTimes: number[] | undefined, currentAlg: string) => {
 
-    let time = -1;
+    let time = 0;
+    let currentLength = currentAlg.split(' ').length;
+
     if (animationTimes && playerRef.current) {
-      time = 0;
-      animationTimes.forEach((animationTime, index) => {
-        time += animationTime;
-      });
+      for (let i = 0; i < currentLength; i++) {
+          time += animationTimes[i];
+      }
     }
-    
-    if (playerRef.current && time !== -1) {
-      console.log('PLAYER REF setting timestap:', time);
-      playerRef.current.timestamp = time;
-    }
+
+    return time;
   }
 
   const reverseMove = (move: string) => {
+    if (!move) return '';
     const rootMove = move[0];
     const suffix = move.slice(1);
     let reversedSuffix;
@@ -110,6 +133,7 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
     let longerMoves;
     let shorterMoves;
     let isAdded: boolean;
+
     
     if (moves.length > prevMoves.length) {
       longerMoves = moves;
@@ -121,15 +145,19 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
       isAdded = false;
     }
     
+    times = times.filter(time => time !== 0);
+    
     const changeIndex = times.length - 1 + (isAdded ? 0 : 1); // add one if move was removed. Corrects for fact that times sync with move prior to change
     const longerBeforeChange = longerMoves.slice(0, changeIndex);
+
+
     const shorterBeforeChange = shorterMoves.slice(0, changeIndex);
     const longerAfterChange = longerMoves.slice(changeIndex + 1); // excludes move at index of change
     const shorterAfterChange = shorterMoves.slice(changeIndex); // includes move at index of change
-    console.log('longerBeforeChange:', longerBeforeChange);
-    console.log('shorterBeforeChange:', shorterBeforeChange);
-    console.log('longerAfterChange:', longerAfterChange);
-    console.log('shorterAfterChange:', shorterAfterChange);
+    // console.log('longerBeforeChange:', longerBeforeChange);
+    // console.log('shorterBeforeChange:', shorterBeforeChange);
+    // console.log('longerAfterChange:', longerAfterChange);
+    // console.log('shorterAfterChange:', shorterAfterChange);
 
     if (longerBeforeChange.join(' ') !== shorterBeforeChange.join(' ') || longerAfterChange.join(' ') !== shorterAfterChange.join(' ')) {
       return {singleMove: '', movesBefore: ''};
@@ -139,12 +167,164 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
     let movesBeforeChange = longerBeforeChange.join(' ');
 
     if (!isAdded) {
-      movesBeforeChange += " " + singleMoveChange; // add move back before reversing it
       singleMoveChange = reverseMove(singleMoveChange);
     }
 
     return {singleMove: singleMoveChange, movesBefore: movesBeforeChange};
   }
+
+  const findAlgBeforeSingle = (singleMoveChange: string, movesBeforeChange: string, moveChangeDelta: number) => {
+    let currentAlg = solution;
+    if (singleMoveChange) {
+      switch (moveChangeDelta) {
+        case 1:
+          currentAlg = movesBeforeChange;
+          break;
+        case -1:
+          currentAlg = movesBeforeChange + " " + reverseMove(singleMoveChange);
+          break;
+        case 0:
+          console.warn('moveChangeDelta is 0'); // findAlgBeforeSingle should only be called with delta of 1 or -1
+          break;
+        default:
+          break;
+      }
+    }
+    return currentAlg;
+  }
+
+  const findAlgAfterSingle = (singleMoveChange: string, movesBeforeChange: string, moveChangeDelta: number) => {
+    let currentAlg = solution;
+    if (singleMoveChange) {
+      switch (moveChangeDelta) {
+        case 1:
+          currentAlg = movesBeforeChange + " " + singleMoveChange;
+          break;
+        case -1:
+          currentAlg = movesBeforeChange;
+          break;
+        case 0:
+          currentAlg = movesBeforeChange;
+          break;
+        default:
+          break;
+      }
+    }
+    return currentAlg;
+  }
+
+  const findSingleMoveSwitch = (): {singleMove: string, movesBefore: string, isForward: boolean | undefined} => {
+    if (!playerRef.current) return {singleMove: '', movesBefore: '', isForward: undefined};
+    if (solution !== lastSolution.current) {
+      console.log("solution changed");
+      return {singleMove: '', movesBefore: '', isForward: undefined};
+    }
+    const positionChangeDelta = animationTimes.length - lastAnimationTimes.current.length;
+    if (Math.abs(positionChangeDelta) !== 1) {
+      console.log('position change delta not abs 1');
+      return {singleMove: '', movesBefore: '', isForward: undefined};
+    }
+
+    let movesBefore: string = "";
+    let singleMove: string = "";
+    if (positionChangeDelta === 1) {
+      movesBefore = solution.split(' ').slice(0, animationTimes.length - 1).join(' ');
+      const forwardNewMove = solution.split(' ')[animationTimes.length - 1];
+      singleMove = forwardNewMove;
+      console.log('forwardnewmove:', singleMove);
+
+    } else if (positionChangeDelta === -1) {
+      movesBefore = lastSolution.current.split(' ').slice(0, lastAnimationTimes.current.length - 1).join(' ');
+      const reversedLastMove = reverseMove(lastSolution.current.split(' ')[animationTimes.length]);
+      singleMove = reversedLastMove;
+      console.log('reversedlastMove:', reversedLastMove);
+    }
+
+    console.log('movesBefore:', movesBefore);
+    return {singleMove: singleMove, movesBefore: movesBefore, isForward: positionChangeDelta > 0};
+
+  }
+
+  const handleSingleMoveChange = (moves: string[], lastMoves: string[], moveChangeDelta: number) => {
+
+    let singleMoveChange = "";
+    let movesBeforeChange = "";
+    ({ singleMove: singleMoveChange, movesBefore: movesBeforeChange } = findSingleMoveChange(moves, lastMoves, animationTimes));
+
+    if (!singleMoveChange) {
+      console.log('no single');
+      setInstantPlayerProps();
+      updateLastPlayerProps(undefined, undefined);
+
+    } else if (singleMoveChange) {
+      
+      const algBeforeSingle = findAlgBeforeSingle(singleMoveChange, movesBeforeChange, moveChangeDelta); 
+      const timeBeforeSingle = findTimestamp(animationTimes, algBeforeSingle);
+      const algAfterSingle = findAlgAfterSingle(singleMoveChange, movesBeforeChange, moveChangeDelta);
+      const timeArrayAfterSingle = animationTimes.slice(0, algAfterSingle.split(' ').length);
+      
+      if (!playerRef.current) return;
+      
+      console.log('PLAYER REF alg set to:', algBeforeSingle);
+      playerRef.current.alg = algBeforeSingle;
+
+      console.log('setting time to:', timeBeforeSingle);
+      playerRef.current.timestamp = timeBeforeSingle;
+
+      
+      updateLastPlayerProps(solution, timeArrayAfterSingle);
+        
+      try {
+        console.log('PLAYER REF adding move:', singleMoveChange);
+        playerRef.current.experimentalAddMove(singleMoveChange);
+      } catch (e) {
+        console.error('Failed to add move:', singleMoveChange);
+        setInstantPlayerProps();
+      }  
+    }
+  }
+
+  const handleSingleMoveSwitch = (moves: string[], lastMoves: string[], moveChangeDelta: number) => {
+    
+    let singleMoveChange = "";
+    let movesBeforeChange = "";
+    let isForward: boolean | undefined;
+    ({ singleMove: singleMoveChange, movesBefore: movesBeforeChange, isForward: isForward } = findSingleMoveSwitch());
+
+    if (!singleMoveChange) {
+      console.log('no single');
+      setInstantPlayerProps();
+      updateLastPlayerProps(undefined, undefined);
+
+    } else if (singleMoveChange) {
+      
+      let delta = isForward ? 1 : -1;
+      const algBeforeSingle = findAlgBeforeSingle(singleMoveChange, movesBeforeChange, delta); 
+      const timeBeforeSingle = findTimestamp(animationTimes, algBeforeSingle);
+      const algAfterSingle = findAlgAfterSingle(singleMoveChange, movesBeforeChange, delta);
+      console.log('algAfterSingle:', algAfterSingle);
+      const timeArrayAfterSingle = animationTimes.slice(0, algAfterSingle.split(' ').length);
+      
+      if (!playerRef.current) return;
+      
+      console.log('PLAYER REF alg set to:', algBeforeSingle);
+      playerRef.current.alg = algBeforeSingle;
+
+      console.log('setting time to:', timeBeforeSingle);
+      playerRef.current.timestamp = timeBeforeSingle;
+
+      updateLastPlayerProps(solution, timeArrayAfterSingle);
+        
+      try {
+        console.log('PLAYER REF adding move:', singleMoveChange);
+        playerRef.current.experimentalAddMove(singleMoveChange);
+      } catch (e) {
+        console.error('Failed to add move:', singleMoveChange);
+        setInstantPlayerProps();
+      }  
+    }
+  }
+
 
   // handles all visual cube updates
   const displayMoves = () => {
@@ -152,48 +332,52 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
     // four cases for single move change:
     // 1. new move added
     // 2. move removed
-    // 3. move selection changed by one move
+    // 3. move selection changed by one move. Not yet implemented.
     // 4. move modified. Ignored for now. Possibly too unintuitive to user to implement.
 
-    updateTimestamp(animationTimes);
-
-    const moves = solution.split(' ');
-    const lastMoves = lastSolution.current ? lastSolution.current.split(' ') : [];
-    
-    const moveChangeDelta = Math.abs(moves.length - lastMoves.length);
-    console.log('moveChangeDelta:', moveChangeDelta);
-    
-    let singleMoveChange = "";
-    let movesBeforeChange = "";
-    if (moveChangeDelta === 1) {
-      ({ singleMove: singleMoveChange, movesBefore: movesBeforeChange } = findSingleMoveChange(moves, lastMoves, animationTimes));
+    if (isInstant) {
+      setInstantPlayerProps();
+      updateLastPlayerProps(undefined, undefined);
+      return;
     }
-    if (moveChangeDelta === 0) {
+    
+    // check for single move change
+    const moves = solution.split(' ').filter(move => move !== '');
+    const lastMoves = lastSolution.current ? lastSolution.current.split(' ').filter(move => move !== '') : [];
+    
+    const moveChangeDelta = moves.length - lastMoves.length;
+    
+
+    if (moveChangeDelta === 1 || moveChangeDelta === -1) {
+      handleSingleMoveChange(moves, lastMoves, moveChangeDelta);
+    } else if (moveChangeDelta === 0) {
       // find if move selection changed by one move
+      console.log('CHECKING SWITCH');
+      handleSingleMoveSwitch(moves, lastMoves, moveChangeDelta);
+    } else {
+      console.log('invalid delta');
+      setInstantPlayerProps();
+      updateLastPlayerProps(undefined, undefined);
     }
-    
-    
-    if (singleMoveChange && playerRef.current && !isInstant) {
-      try {
-        console.log('PLAYER REF alg set to:', movesBeforeChange);
-        playerRef.current.alg = movesBeforeChange;
-        
-        console.log('PLAYER REF adding move:', singleMoveChange);
-        playerRef.current.experimentalAddMove(singleMoveChange);
 
-        lastSolution.current = movesBeforeChange + " " + singleMoveChange;
-      } catch (e) {
-        console.error('Failed to add move:', singleMoveChange);
-      }
-    } else if (!singleMoveChange && playerRef.current) {
-      setPlayerProps();
-    }
     
-    updateLastPlayerProps();
-
   }
-  
-  displayMoves();
+
+  const anyMoveChange = () => {
+    if (lastRenderRef.current.scramble !== scramble) return true;
+    if (lastRenderRef.current.solution !== solution) return true;
+    if (lastRenderRef.current.speed !== speed) return true;
+    if (lastRenderRef.current.animationTimes !== animationTimes) return true;
+    return false;
+  }
+
+  if (anyMoveChange()) {
+    displayMoves();
+  } else {
+    console.log('no change');
+  }
+
+  lastRenderRef.current = { scramble: scramble, solution: solution, speed: speed, animationTimes: animationTimes };
   
   let scene: THREE.Scene;
   let camera: THREE.PerspectiveCamera;
@@ -216,7 +400,7 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
     while (!cube && attempts < maxAttempts) {
       await new Promise(resolve => setTimeout(resolve, waitTime));
       cube = await playerRef.current!.experimentalCurrentThreeJSPuzzleObject() as unknown as Object3D;
-      updateTimestamp(animationTimes);
+      playerRef.current? playerRef.current.timestamp = findTimestamp(animationTimes, solution) : null;
       attempts++;
     }
 
@@ -370,7 +554,7 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
     playerRef.current!.style.height = '100%';
     playerRef.current!.experimentalFaceletScale = .95;
 
-    setPlayerProps();
+    setInstantPlayerProps();
     
     createCustomScene();
 

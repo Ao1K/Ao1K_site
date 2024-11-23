@@ -104,8 +104,6 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
   
   const handleInput = () => {
 
-    //console.log('input event triggered');
-
     onInputChange();
     
     updateURLTimeout.current ? clearTimeout(updateURLTimeout.current) : null;
@@ -185,7 +183,7 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
         let moves: string[];
         
         if (caretIndex !== null) {
-          console.log('updating lineoffset:', htmlUpdateMatrix, line, i)
+          //console.log('updating lineoffset:', htmlUpdateMatrix, line, i)
           let caretSplitIndex = findEndOfMoveOnCaret(validation, caretIndex);
   
           const movesBeforeCaret = validationToMoves(validation.slice(0, caretSplitIndex + 1));
@@ -239,9 +237,6 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
     while (newMoveCounts[newMoveCounts.length - 1] === 0) newMoveCounts.pop();
     if (oldMoveCounts.length === 0) oldMoveCounts = [0]
     if (newMoveCounts.length === 0) newMoveCounts = [0]
-
-    // console.log('oldMoveCounts:', ...oldMoveCounts);
-    // console.log('newMoveCounts:', ...newMoveCounts);
 
     if (oldMoveCounts.length !== newMoveCounts.length) return true;
 
@@ -451,7 +446,7 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
   };
 
   const splitIntoLines = (html: string) => {
-    console.log('html', html)
+    //console.log('html', html)
     const lines = html.split(/<\/div>(?!$)|<br>/)
 
     // if line 0 has div in middle, split it
@@ -463,7 +458,7 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
       lines[0] = firstLine;
       lines.splice(1, 0, remainingText);
     }
-    console.log('lines:', lines)
+    //console.log('lines:', lines)
     return lines;
   };
 
@@ -531,8 +526,7 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
   
     let sanitizedText = sanitizeHtml(text, sanitizeConf);
     
-    // may need to manually clean up <font color=""></font> tags
-  
+    // TODO: may need to manually clean up <font color=""></font> tags. Not sure where these tags are created.
     const selection = window.getSelection();
     if (selection) {
       const range = selection.getRangeAt(0);
@@ -673,10 +667,6 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
   
   const handleUndo = () => {
 
-    // console.log(moveHistory.current.history);
-    // console.log('On index:', moveHistory.current.index);
-    // console.log('On status:', moveHistory.current.status);
-  
     const startStatus = statusTransitions[moveHistory.current.status]?.start;
     if (startStatus) {
       moveHistory.current.status = startStatus;
@@ -725,10 +715,6 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
   
 
   const handleRedo = () => {
-
-    // console.log(moveHistory.current.history);
-    // console.log('On index:', moveHistory.current.index);
-    // console.log('On status:', moveHistory.current.status);
   
     const startStatus = statusTransitions[moveHistory.current.status]?.start;
     if (startStatus) {
@@ -785,12 +771,10 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
   useImperativeHandle(ref, () => {
     return {
       undo: () => {
-        //console.log('Undo called once');
         handleUndo();
       },
 
       redo: () => {
-        //console.log('Redo called once');
         handleRedo();
       },
 

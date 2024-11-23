@@ -138,24 +138,24 @@ export default function Recon() {
     if(idIndex === 1 && moveAnimationTimes.length > 0) {
       let prevMoveTimes: number[] = [];
       const nonEmptyLineIndexAdjustment = moveIndex === -1 ? 1 : 0;
-      console.log('nonEmptyLineIndexAdjustment', nonEmptyLineIndexAdjustment);
-      console.log('lineIndex', lineIndex);
+      //console.log('nonEmptyLineIndexAdjustment', nonEmptyLineIndexAdjustment);
+      //console.log('lineIndex', lineIndex);
 
       // push in moves from previous lines
       for (let i = 0; i < lineIndex + nonEmptyLineIndexAdjustment; i++) {
-        console.log('movesAnimationTimes[i]', moveAnimationTimes[i]);
+        //console.log('movesAnimationTimes[i]', moveAnimationTimes[i]);
         if (moveAnimationTimes[i]) prevMoveTimes.push(...moveAnimationTimes[i]);
       }
-      console.log('prevMoveTimes', prevMoveTimes);
+      //console.log('prevMoveTimes', prevMoveTimes);
 
       // push in moves from current line, up to moveIndex
-      console.log('moveIndex', moveIndex);
+      //console.log('moveIndex', moveIndex);
       for (let j = 0; j < moveIndex; j++) {
         if (moveAnimationTimes[lineIndex] && moveAnimationTimes[lineIndex][j]) {
           prevMoveTimes.push(moveAnimationTimes[lineIndex][j]);
         }
       }
-      console.log('updating animation times', prevMoveTimes);
+      //console.log('updating animation times', prevMoveTimes);
       animTimes = prevMoveTimes;
     }
 
@@ -167,6 +167,7 @@ export default function Recon() {
     moveLocation.current = newMoveLocation;
     allMoves.current[idIndex] = [...moves];
 
+    console.log('updating player params');
     setPlayerParams({animationTimes: animTimes, solution: sol, scramble: scram});
   }
 
@@ -363,7 +364,7 @@ export default function Recon() {
 
   const storeLastSelection = () => {
     if (oldSelectionRef.current.status === 'locked') {
-      console.log('locked');
+      //console.log('selection is locked');
       return;
     }
 
@@ -472,7 +473,6 @@ export default function Recon() {
     }
 
     if (solution) {
-      console.log('solution:', solution);
       setPlayerParams(prev => ({ ...prev, solution: solution }));
     }
     if (scrambleRef.current) {
@@ -516,7 +516,7 @@ export default function Recon() {
       <div id="player-box" className="relative flex flex-col my-4 w-full justify-center items-center">
         <div id="cube-highlight"className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 inset-0 h-full blur-sm bg-primary w-full"></div>
         <div id="cube_model" className="flex aspect-[1.618/1] max-h-96 bg-dark z-10 w-full">
-          <TwistyPlayer scramble={playerParams.scramble} solution={playerParams.solution} speed={25} animationTimes={playerParams.animationTimes}/>
+          <TwistyPlayer scramble={playerParams.scramble} solution={playerParams.solution} speed={speed} animationTimes={playerParams.animationTimes}/>
         </div>
       </div>
       <div id="bottom-bar" className="flex flex-row space-x-1 text-light w-full items-center" ref={bottomBarRef}>
