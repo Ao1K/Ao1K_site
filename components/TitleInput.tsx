@@ -42,14 +42,17 @@ const InputWithPlaceholder: React.FC<InputWithPlaceholderProps> = ({ solveTitle,
   }, []);
 
   return (
-    <input
-      ref={inputRef}
-      placeholder={placeholderText}
-      className="p-2 ml-4 w-full text-lg text-light bg-dark border-primary focus:border-light border border-1 rounded-sm auto"
-      value={solveTitle}
-      onChange={handleTitleChange}
-      autoComplete="off"
-    />
+    <div className="flex flex-grow flex-nowrap items-center text-center min-w-[200px]">
+      <div className="text-dark_accent text-xl font-medium select-none">Title</div>
+      <input
+        ref={inputRef}
+        placeholder={placeholderText}
+        className="p-2 ml-4 w-full text-lg text-light bg-dark border border-primary focus:border-light rounded-sm"
+        value={solveTitle}
+        onChange={handleTitleChange}
+        autoComplete="off"
+      />
+    </div>
   );
 };
 

@@ -9,17 +9,18 @@ interface SpeedSliderProps {
 const SpeedSlider = ({speed, onChange}: SpeedSliderProps) => {
 
     return (
-        <div className="flex items-center text-bg-light p-2 w-[250px] space-x-3 select-none">
-            <div className="flex flex-1 justify-end">
-                <SpeedIcon className="text-light" />
-            </div>
-            <div className="flex-shrink-0">
+        <div className="flex flex-wrap items-center justify-start text-bg-light px-2 w-[250px] select-none">
+            <div className="flex flex-nowrap items-center space-x-3">
+                <div className="">
+                    <SpeedIcon className="text-light" />
+                </div>
                 <input
                     type="range"
                     min={1}
                     max={100}
                     value={speed.toString()}
                     onChange={onChange}
+                    className="flex-shrink min-w-[70px] pr-3"
                 />
             </div>
             <div className="text-light w-14">{speed.toString() === '100' ? "Instant" : speed.toString() } </div>

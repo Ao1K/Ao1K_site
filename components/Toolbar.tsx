@@ -77,7 +77,7 @@ const ResponsiveButtonRow = ({ buttons, containerRef }: ButtonRowProps) => {
   }, []);
 
   return (
-    <div className={`flex flex-row space-x-1 shrink min-w-${MIN_MORE_TOOLS_WIDTH}`} ref={containerRef}>
+    <div className={`flex flex-row flex-nowrap relative space-x-1 min-w-${MIN_MORE_TOOLS_WIDTH}`} ref={containerRef}>
 
       {visibleButtons.map(button => (
         <ToolbarButton key={button.id} {...button} />

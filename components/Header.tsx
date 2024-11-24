@@ -19,34 +19,33 @@ export default function Header(): JSX.Element {
   };
 
   return (
-    <div className="fixed bg-white text-light_accent w-screen z-50 h-16 top-0 right-0">
-      <nav className="mx-auto flex justify-between">
-      <div className="text-lg font-bold flex flex-row">
+    <div className="fixed bg-white text-light_accent w-full z-50 h-16 top-0 right-0">
+      <nav className="mx-auto flex justify-between w-full">
+
         <img
         src="../Ao1K Logo v2.svg"
-        className="h-16 w-auto ml-4"
+        className="h-16 w-auto overflow-visible"
         />
-      </div>
 
-      <div className="hidden sm:flex space-x-10 p-4 mt-1 flex-row">
-        <div onClick={closeSidebar}>
-        {/* <HeaderNavLink href="/" title="Practice" icon={<TimerIcon />} /> */}
+        <div className="hidden sm:flex p-4 mt-1 flex-row"> {/* space-x-10 */}
+          <div onClick={closeSidebar}>
+          {/* <HeaderNavLink href="/" title="Practice" icon={<TimerIcon />} /> */}
+          </div>
+          <HeaderNavLink href="/recon" title="Reconstruct" icon={<WriteIcon />} />
+          {/* <HeaderNavLink href="/algs" title="Learn" icon={<DatabaseIcon />} /> */}
         </div>
-        <HeaderNavLink href="/recon" title="Reconstruct" icon={<WriteIcon />} />
-        {/* <HeaderNavLink href="/algs" title="Learn" icon={<DatabaseIcon />} /> */}
-      </div>
 
-      <div className="p-4 mt-1 pr-8 hidden sm:block">
-        {/* <Link href="https://login-ao1k.auth.us-east-1.amazoncognito.com">Profile</Link> */}
-        By Chet
-      </div>
+        <div className="p-4 mt-1 hidden sm:block">
+          {/* <Link href="https://login-ao1k.auth.us-east-1.amazoncognito.com">Profile</Link> */}
+          By Chet
+        </div>
 
-      <div className="sm:hidden flex justify-end">
-        <button onClick={toggleSidebar} className="px-3">
-        <ListIcon />
-        </button>
-      </div>
-    </nav>
+        <div className="sm:hidden flex justify-end">
+          <button onClick={toggleSidebar} className="px-3">
+          <ListIcon />
+          </button>
+        </div>
+      </nav>
 
 
       {isSidebarOpen && (
@@ -61,9 +60,10 @@ export default function Header(): JSX.Element {
         {/* <HeaderNavLink href="/" title="Practice" icon={<TimerIcon />} /> */}
         <HeaderNavLink href="/recon" title="Reconstruct" icon={<WriteIcon />} />
         {/* <HeaderNavLink href="/algs" title="Learn" icon={<DatabaseIcon />} /> */}
-        <Link href="/not a link" className="block mt-4">
+        {/* <Link href="/not a link" className="block mt-4">
           Profile
-        </Link>
+        </Link> */}
+        By Chet
         </div>
       </div>
       )}

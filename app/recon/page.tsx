@@ -1,6 +1,6 @@
 'use client';
-
-import { useState, useRef, useEffect } from "react";
+import debounce from 'lodash.debounce';
+import { useState, useRef, useEffect, useCallback } from "react";
 import MovesTextEditor from "@/components/MovesTextEditor";
 import SpeedSlider from "@/components/SpeedSlider";
 
@@ -28,7 +28,7 @@ import { mirrorHTML_M, mirrorHTML_S, removeComments } from "@/composables/transf
 import isSelectionInTextbox from "@/composables/isSelectionInTextbox";
 import { TransformHTMLprops } from "@/composables/transformHTML";
 
-import InputWithPlaceholder from "@/components/TitleInput";
+import TitleWithPlaceholder from "@/components/TitleInput";
 import TopButton from "@/components/TopButton";
 import { customDecodeURL } from "@/composables/urlEncoding";
 import { update } from "three/examples/jsm/libs/tween.module.js";
@@ -50,7 +50,9 @@ export default function Recon() {
   const allMoves = useRef<string[][][]>([[[]], [[]]]);
   const moveLocation = useRef<[number, number, number]>([0, 0, 0]);
 
-  const [speed, setSpeed] = useState<number>(25);
+  const [speed, setSpeed] = useState<number>(25); // allows debounced speed updates to Player
+  const [localSpeed, setLocalSpeed] = useState<number>(25); // allows smooth slider input rendering
+
   const scrambleRef = useRef<string>('');
   const [solution, setSolution] = useState<string>('');
   const [totalMoves, setTotalMoves] = useState<number>(0);
@@ -171,20 +173,35 @@ export default function Recon() {
     setPlayerParams({animationTimes: animTimes, solution: sol, scramble: scram});
   }
 
+
+
+  const debouncedSetSpeed = useCallback(
+    debounce((value: number) => {
+      setSpeed(value);
+    }, 300), // Set a reasonable debounce delay
+    []
+  );
+
   const handleSpeedChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSpeed(parseInt(e.target.value));
-  }
+    const value = parseInt(e.target.value);
+    setLocalSpeed(value); // Update the local state immediately
+    debouncedSetSpeed(value); // Debounce the state update
+  };
 
   const handleSolveTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.value.length > 9) return;
-    if (e.target.value === '') {
+    const value = e.target.value;
+    const regex = /^\d{0,5}(\.\d{1,3})?$/;
+
+    if (!regex.test(value)) return;
+
+    if (value === '') {
       setSolveTime('');
       updateURL('time', 'undefined');
       return;
     }
 
-    setSolveTime(parseFloat(e.target.value));
-    updateURL('time', e.target.value);
+    setSolveTime(parseFloat(value));
+    updateURL('time', value);
   }
 
   const handleUndo = () => {
@@ -329,6 +346,7 @@ export default function Recon() {
 
   const handleShare = async () => {
     const url = new URL(window.location.href);
+    console.log('scrambleRef.current', scrambleRef.current);
     updateURL('scramble', scrambleRef.current);
     updateURL('solution', solution);
     url.searchParams.set('time', solveTime.toString());
@@ -503,30 +521,29 @@ export default function Recon() {
   ];
 
   return (
-    <div id="main_page" className="col-start-2 col-span-1 flex flex-col bg-dark overflow-x-hidden px-2">
-      <div id="top-bar" className="pl-6 pr-5 flex flex-row items-center justify-between space-x-2 mt-8">
-        <div className="text-dark_accent text-xl font-medium select-none">Title</div>
-        <InputWithPlaceholder solveTitle={solveTitle} handleTitleChange={handleTitleChange} />
-        <div className="flex flex-row space-x-1 pr-2 text-dark_accent">
+    <div id="main_page" className="col-start-2 col-span-1 flex flex-col bg-dark">
+      <div id="top-bar" className="pl-2 pr-2 flex flex-row flex-wrap items-center place-content-end gap-2 mt-6">
+        <TitleWithPlaceholder solveTitle={solveTitle} handleTitleChange={handleTitleChange} />
+        <div className="flex-none flex flex-row space-x-1 pr-2 text-dark_accent">
           <TopButton id="trash" text="Clear Page" shortcutHint="Ctrl+Del" onClick={handleClearPage} icon={<TrashIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
           <TopButton id="copy" text="Copy Solve" shortcutHint="" onClick={handleCopySolve} icon={<CopyIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
           <TopButton id="share" text="Copy URL" shortcutHint="" onClick={handleShare} icon={<ShareIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
         </div>
       </div>
       <div id="player-box" className="relative flex flex-col my-4 w-full justify-center items-center">
-        <div id="cube-highlight"className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 inset-0 h-full blur-sm bg-primary w-full"></div>
-        <div id="cube_model" className="flex aspect-[1.618/1] max-h-96 bg-dark z-10 w-full">
+        <div id="cube-highlight"className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 inset-0 h-full blur-sm bg-primary w-full px-2"></div>
+        <div id="cube_model" className="flex aspect-video max-h-96 bg-dark z-10 w-full">
           <TwistyPlayer scramble={playerParams.scramble} solution={playerParams.solution} speed={speed} animationTimes={playerParams.animationTimes}/>
         </div>
       </div>
-      <div id="bottom-bar" className="flex flex-row space-x-1 text-light w-full items-center" ref={bottomBarRef}>
-        <div id="spacer-1" className="flex-1 text-paren"></div>
-        <SpeedSlider speed={speed} onChange={handleSpeedChange}/>
+      <div id="bottom-bar" className="flex flex-row items-center place-content-end justify-center text-light w-full" ref={bottomBarRef}>
+        {/* <div id="spacer-1" className="flex-1 text-paren"></div> */}
+        <SpeedSlider speed={localSpeed} onChange={handleSpeedChange}/>
         <Toolbar buttons={toolbarButtons} containerRef={bottomBarRef}/>
-        <div id="spacer-2" className="flex-1 text-rep"></div>
+        {/* <div id="spacer-2" className="flex-1 text-rep"></div> */}
       </div>
-      <div id="datafields" className="pl-6 max-h-[calc(100vh/2.5)] overflow-x-hidden w-full transition-width duration-500 ease-linear flex flex-col justify-center items-center">
-        <div className="pr-6 flex flex-col flex-shrink max-w-full w-full overflow-y-auto">
+      <div id="datafields" className="pl-2 max-h-[calc(100vh/2)] overflow-x-hidden w-full transition-width duration-500 ease-linear flex flex-col justify-center items-center">
+        <div className="pr-2 flex flex-col flex-shrink max-w-full w-full overflow-y-auto">
           <div className="flex flex-row items-center">
             <Dropdown targetDiv="scramble"/> 
           </div>
@@ -560,7 +577,7 @@ export default function Recon() {
           </div>
 
           <div className="text-dark_accent text-xl font-medium py-2">Time</div>
-          <div id="time-stats" className="flex flex-row items-center mb-4">
+          <div id="time-stats" className="flex flex-row flex-wrap text-nowrap items-center mb-4 gap-y-2">
             <div id="time-field" className="border border-light flex flex-row items-center justify-start">
               <input 
                 type="number" 
@@ -573,10 +590,11 @@ export default function Recon() {
               <div className="text-light ml-2 pr-2 text-xl">sec</div> 
             </div>
             <div className="text-light ml-2 text-xl">{totalMoves} stm </div> 
-            <TPSInfo moveCount={totalMoves} solveTime={solveTime} tpsRef={tpsRef} />
-            <ReconTimeHelpInfo />
+            <div className="flex-nowrap text-nowrap flex flex-row">
+              <TPSInfo moveCount={totalMoves} solveTime={solveTime} tpsRef={tpsRef} />
+              <ReconTimeHelpInfo />
+            </div>
           </div>
-          {/* <div className="text-dark_accent text-xl pt-1 font-medium">Review</div> */}
         </div>
       </div>
       <div id="blur-border" className="h-[20px] blur-xl bg-primary mt-1 mb-12"/>

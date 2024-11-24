@@ -1,8 +1,6 @@
 Informal Bugs/Todo List. Not guaranteed to be complete or accurate.
 ===================================================================
 
-Fix URL-copy button updating the URL with the wrong encoding scheme
-
 Trying to add a newline seems to have caused a disconnect in the moveplayer and the textbox selection
 - newlines should be allowed between existing lines
 
@@ -13,6 +11,4 @@ htmlUpdateMatrix is including html that did not update
 
 start text: RUF \n LUF. Replace copy paste in LUF \n LUF instead. Timestamp snaps to end on 2nd line.
 - having trouble reproducing
-
-Create code of conduct and contributing guidelines
 

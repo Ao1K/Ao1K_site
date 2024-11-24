@@ -17,7 +17,7 @@ export const titlePlaceholders = [
   
   // tips
   "Cheap, generic silicone oil can work just as good as cube lube",
-  "Plan as much as you can",
+  "Plan as much as you can every time",
   "Use unlimited inspection!",
   "Reduce risk by practicing the risky thing more often",
   "There's always more F2L to learn!",
