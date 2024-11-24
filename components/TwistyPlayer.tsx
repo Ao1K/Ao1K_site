@@ -12,7 +12,6 @@ interface PlayerProps {
 }
 
 const Player = React.memo(({ scramble, solution, speed, animationTimes }: PlayerProps) => {
-  console.log('TwistyPlayer rendered with props:', { scramble, solution, speed, animationTimes });
 
   const playerRef = useRef<TwistyPlayer | null>(null);
   
@@ -41,25 +40,16 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
     if (!playerRef.current) return;
 
     if (lastScramble.current !== scramble) { 
-      console.log('PLAYER REF setting scram to:', scramble); 
       playerRef.current.experimentalSetupAlg = scramble;
     }
 
     if (lastSpeed.current !== speed) {
       playerRef.current!.tempoScale = cubeSpeed;
     }
-    
-    // const solutionTillTime = solution.split(' ').slice(0, animationTimes.length + 1).join(' ');
-    // const lastSolutionTillTime = lastSolution.current.split(' ').slice(0, animationTimes.length + 1).join(' ');
-    // console.log('solutionTillTime:', solutionTillTime, 'lastSolutionTillTime:', lastSolutionTillTime);
-    // if (solutionTillTime !== lastSolutionTillTime) {
-    // // if (solution !== lastSolution.current) { 
-    //   console.log('PLAYER REF setting alg to:', solution);
-      playerRef.current.alg = solution;
-    // }
+
+    playerRef.current.alg = solution;
 
     if (lastAnimationTimes.current !== animationTimes) {
-      console.log('PLAYER REF setting timestamp to:', animationTimes.reduce((acc, val) => acc + val, 0));
       playerRef.current.timestamp = animationTimes.reduce((acc, val) => acc + val, 0);
     } 
   }
@@ -74,9 +64,6 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
 
     animTimes ? lastAnimationTimes.current = animTimes : 
                 lastAnimationTimes.current = animationTimes;
-
-    console.log('LAST Solution.current:', lastSolution.current);
-    console.log('LAST AnimationTimes.current:', lastAnimationTimes.current);
     
     lastScramble.current = scramble;
     lastSpeed.current = speed;
@@ -154,10 +141,6 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
     const shorterBeforeChange = shorterMoves.slice(0, changeIndex);
     const longerAfterChange = longerMoves.slice(changeIndex + 1); // excludes move at index of change
     const shorterAfterChange = shorterMoves.slice(changeIndex); // includes move at index of change
-    // console.log('longerBeforeChange:', longerBeforeChange);
-    // console.log('shorterBeforeChange:', shorterBeforeChange);
-    // console.log('longerAfterChange:', longerAfterChange);
-    // console.log('shorterAfterChange:', shorterAfterChange);
 
     if (longerBeforeChange.join(' ') !== shorterBeforeChange.join(' ') || longerAfterChange.join(' ') !== shorterAfterChange.join(' ')) {
       return {singleMove: '', movesBefore: ''};
@@ -183,10 +166,8 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
         case -1:
           currentAlg = movesBeforeChange + " " + reverseMove(singleMoveChange);
           break;
-        case 0:
-          console.warn('moveChangeDelta is 0'); // findAlgBeforeSingle should only be called with delta of 1 or -1
-          break;
         default:
+          console.warn('moveChangeDelta is invalid'); // findAlgBeforeSingle should only be called with delta of 1 or -1
           break;
       }
     }
@@ -216,12 +197,15 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
   const findSingleMoveSwitch = (): {singleMove: string, movesBefore: string, isForward: boolean | undefined} => {
     if (!playerRef.current) return {singleMove: '', movesBefore: '', isForward: undefined};
     if (solution !== lastSolution.current) {
-      console.log("solution changed");
+      // solution was changed. Likely only happens if move was replaced.
+      return {singleMove: '', movesBefore: '', isForward: undefined};
+    }
+    if (animationTimes.length === 1 && animationTimes[0] === 1) {
+      // scramble was selected
       return {singleMove: '', movesBefore: '', isForward: undefined};
     }
     const positionChangeDelta = animationTimes.length - lastAnimationTimes.current.length;
     if (Math.abs(positionChangeDelta) !== 1) {
-      console.log('position change delta not abs 1');
       return {singleMove: '', movesBefore: '', isForward: undefined};
     }
 
@@ -231,16 +215,13 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
       movesBefore = solution.split(' ').slice(0, animationTimes.length - 1).join(' ');
       const forwardNewMove = solution.split(' ')[animationTimes.length - 1];
       singleMove = forwardNewMove;
-      console.log('forwardnewmove:', singleMove);
 
     } else if (positionChangeDelta === -1) {
       movesBefore = lastSolution.current.split(' ').slice(0, lastAnimationTimes.current.length - 1).join(' ');
       const reversedLastMove = reverseMove(lastSolution.current.split(' ')[animationTimes.length]);
       singleMove = reversedLastMove;
-      console.log('reversedlastMove:', reversedLastMove);
     }
 
-    console.log('movesBefore:', movesBefore);
     return {singleMove: singleMove, movesBefore: movesBefore, isForward: positionChangeDelta > 0};
 
   }
@@ -252,7 +233,6 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
     ({ singleMove: singleMoveChange, movesBefore: movesBeforeChange } = findSingleMoveChange(moves, lastMoves, animationTimes));
 
     if (!singleMoveChange) {
-      console.log('no single');
       setInstantPlayerProps();
       updateLastPlayerProps(undefined, undefined);
 
@@ -265,17 +245,14 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
       
       if (!playerRef.current) return;
       
-      console.log('PLAYER REF alg set to:', algBeforeSingle);
       playerRef.current.alg = algBeforeSingle;
 
-      console.log('setting time to:', timeBeforeSingle);
       playerRef.current.timestamp = timeBeforeSingle;
 
       
       updateLastPlayerProps(solution, timeArrayAfterSingle);
         
       try {
-        console.log('PLAYER REF adding move:', singleMoveChange);
         playerRef.current.experimentalAddMove(singleMoveChange);
       } catch (e) {
         console.error('Failed to add move:', singleMoveChange);
@@ -284,7 +261,7 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
     }
   }
 
-  const handleSingleMoveSwitch = (moves: string[], lastMoves: string[], moveChangeDelta: number) => {
+  const handleSingleMoveSwitch = () => {
     
     let singleMoveChange = "";
     let movesBeforeChange = "";
@@ -292,7 +269,6 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
     ({ singleMove: singleMoveChange, movesBefore: movesBeforeChange, isForward: isForward } = findSingleMoveSwitch());
 
     if (!singleMoveChange) {
-      console.log('no single');
       setInstantPlayerProps();
       updateLastPlayerProps(undefined, undefined);
 
@@ -302,21 +278,17 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
       const algBeforeSingle = findAlgBeforeSingle(singleMoveChange, movesBeforeChange, delta); 
       const timeBeforeSingle = findTimestamp(animationTimes, algBeforeSingle);
       const algAfterSingle = findAlgAfterSingle(singleMoveChange, movesBeforeChange, delta);
-      console.log('algAfterSingle:', algAfterSingle);
       const timeArrayAfterSingle = animationTimes.slice(0, algAfterSingle.split(' ').length);
       
       if (!playerRef.current) return;
       
-      console.log('PLAYER REF alg set to:', algBeforeSingle);
       playerRef.current.alg = algBeforeSingle;
 
-      console.log('setting time to:', timeBeforeSingle);
       playerRef.current.timestamp = timeBeforeSingle;
 
       updateLastPlayerProps(solution, timeArrayAfterSingle);
         
       try {
-        console.log('PLAYER REF adding move:', singleMoveChange);
         playerRef.current.experimentalAddMove(singleMoveChange);
       } catch (e) {
         console.error('Failed to add move:', singleMoveChange);
@@ -352,10 +324,9 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
       handleSingleMoveChange(moves, lastMoves, moveChangeDelta);
     } else if (moveChangeDelta === 0) {
       // find if move selection changed by one move
-      console.log('CHECKING SWITCH');
-      handleSingleMoveSwitch(moves, lastMoves, moveChangeDelta);
+      handleSingleMoveSwitch();
     } else {
-      console.log('invalid delta');
+      // invalid delta
       setInstantPlayerProps();
       updateLastPlayerProps(undefined, undefined);
     }
@@ -373,8 +344,6 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
 
   if (anyMoveChange()) {
     displayMoves();
-  } else {
-    console.log('no change');
   }
 
   lastRenderRef.current = { scramble: scramble, solution: solution, speed: speed, animationTimes: animationTimes };
@@ -582,6 +551,7 @@ export default Player;
 
 
 
-
-//access kpuzzleFaceletInfo to change cube colors, etc
-//cube.kpuzzleFaceletInfo.CENTERS[0][0]);
+// NOTE:
+// access kpuzzleFaceletInfo to change cube colors, etc
+// for example:
+//  cube.kpuzzleFaceletInfo.CENTERS[0][0]);
