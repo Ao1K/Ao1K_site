@@ -8,6 +8,7 @@ Currently, Ao1K.com is just a website to reconstruct your 3x3 solves.
 
 You may also want to connect on [Discord](https://discord.com/invite/ffXwKXB9)
 
+
 ### Pledge
   Community members agree to do the following:
 
@@ -16,9 +17,11 @@ You may also want to connect on [Discord](https://discord.com/invite/ffXwKXB9)
 
   Since this is currently a small project, moderation details will be decided case-by-case.
 
+
 ### Contributing
 Refer to [CONTRIBUTING.md](https://github.com/Ao1K/Ao1K_site/blob/main/CONTRIBUTING.md)
 
-### LICENCE
+
+### License
 This project operates under an [MIT license](https://github.com/Ao1K/Ao1K_site/blob/main/LICENSE). 
 
