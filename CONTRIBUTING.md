@@ -21,9 +21,9 @@ If no related post exists, create one to track the idea.
 
 
 ### Pull Requests 
-Avoid pull requests for purely cosmetic changes.
-Ensure your contributions align with the project’s MIT license. Do not submit code that violates this license.
-Features should prioritize UX and be easily accessible.
+Do not make pull requests for purely cosmetic changes.
+Ensure your contributions align with the project’s MIT license. Do not include code that violates this license.
+Features should prioritize UX and be easily reachable by the user.
 Any UI changes must work well on mobile devices.
 
 
