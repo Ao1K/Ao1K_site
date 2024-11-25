@@ -24,14 +24,13 @@ import CopyIcon from "@/components/icons/copy";
 import ShareIcon from "@/components/icons/share";
 
 import addCat from "@/composables/addCat";
-import { mirrorHTML_M, mirrorHTML_S, removeComments } from "@/composables/transformHTML";
+import { mirrorHTML_M, mirrorHTML_S, removeComments, rotateHTML_X, rotateHTML_Y, rotateHTML_Z } from "@/composables/transformHTML";
 import isSelectionInTextbox from "@/composables/isSelectionInTextbox";
 import { TransformHTMLprops } from "@/composables/transformHTML";
 
 import TitleWithPlaceholder from "@/components/TitleInput";
 import TopButton from "@/components/TopButton";
-import { customDecodeURL } from "@/composables/urlEncoding";
-import { update } from "three/examples/jsm/libs/tween.module.js";
+import { customDecodeURL } from '@/composables/urlEncoding';
 
 export interface MoveHistory {
   history: string[][];
@@ -169,18 +168,14 @@ export default function Recon() {
     moveLocation.current = newMoveLocation;
     allMoves.current[idIndex] = [...moves];
 
-    console.log('updating player params');
     setPlayerParams({animationTimes: animTimes, solution: sol, scramble: scram});
   }
 
 
 
-  const debouncedSetSpeed = useCallback(
-    debounce((value: number) => {
-      setSpeed(value);
-    }, 300), // Set a reasonable debounce delay
-    []
-  );
+  const debouncedSetSpeed = debounce((value: number) => {
+    setSpeed(value);
+  }, 300); // Set a reasonable debounce delay
 
   const handleSpeedChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value);
@@ -291,6 +286,10 @@ export default function Recon() {
 
   const handleMirrorM = () => handleTransform(mirrorHTML_M);
   const handleMirrorS = () => handleTransform(mirrorHTML_S);
+  const handleRotateX = () => handleTransform(rotateHTML_X);
+  const handleRotateY = () => handleTransform(rotateHTML_Y);
+  const handleRotateZ = () => handleTransform(rotateHTML_Z);
+
   const handleRemoveComments = () => handleTransform(removeComments);
 
   const handleClearPage = () => {
@@ -346,7 +345,6 @@ export default function Recon() {
 
   const handleShare = async () => {
     const url = new URL(window.location.href);
-    console.log('scrambleRef.current', scrambleRef.current);
     updateURL('scramble', scrambleRef.current);
     updateURL('solution', solution);
     url.searchParams.set('time', solveTime.toString());
@@ -448,11 +446,32 @@ export default function Recon() {
       handleMirrorS();
     }
 
-    if (e.ctrlKey && e.shiftKey && e.key === 'x') {
+    if (e.ctrlKey && e.shiftKey && e.key === 'S') {
 
       e.preventDefault();
 
-      // handleRotationX();
+      handleShare();
+    }
+
+    if (e.ctrlKey && e.shiftKey && e.key === 'X') {
+
+      e.preventDefault();
+
+      handleRotateX();
+    }
+
+    if (e.ctrlKey && e.shiftKey && e.key === 'Y') {
+
+      e.preventDefault();
+
+      handleRotateY();
+    }
+
+    if (e.ctrlKey && e.shiftKey && e.key === 'Z') {
+
+      e.preventDefault();
+
+      handleRotateZ();
     }
 
     if (e.ctrlKey && e.key === '/') {
@@ -482,12 +501,15 @@ export default function Recon() {
 
     const time = urlParams.get('time');
     if (time) {
-      setSolveTime(parseFloat(time));
+      const parsedTime = parseFloat(time);
+      if (!isNaN(parsedTime)) {
+        setSolveTime(parsedTime.toString());
+      }
     }
 
     const title = urlParams.get('title');
     if (title) {
-      setSolveTitle(decodeURIComponent(title));
+      setSolveTitle(decodeURIComponent(customDecodeURL(title)));
     }
 
     if (solution) {
@@ -516,18 +538,21 @@ export default function Recon() {
     { id: 'redo', text: 'Redo', shortcutHint: 'Ctrl+Y', onClick: handleRedo, icon: <RedoIcon />, buttonRef: redoRef },
     { id: 'mirrorM', text: 'Mirror M', shortcutHint: 'Ctrl+M', onClick: handleMirrorM, icon: <MirrorM /> },
     { id: 'mirrorS', text: 'Mirror S', shortcutHint: 'Ctrl+S', onClick: handleMirrorS, icon: <MirrorS /> },
+    { id: 'rotateX', text: 'Rotate X', shortcutHint: 'Ctrl+Shift+X', onClick: handleRotateX, iconText: "X" },
+    { id: 'rotateY', text: 'Rotate Y', shortcutHint: 'Ctrl+Shift+Y', onClick: handleRotateY, iconText: "Y" },
+    { id: 'rotateZ', text: 'Rotate Z', shortcutHint: 'Ctrl+Shift+Z', onClick: handleRotateZ, iconText: "Z" },
     { id: 'cat', text: 'Angus', shortcutHint: 'Cat', onClick: addCat, icon: <CatIcon /> },
     { id: 'removeComments', text: 'Remove Comments', shortcutHint: 'Ctrl+/ ', onClick: handleRemoveComments, iconText: '// ' },
   ];
 
   return (
     <div id="main_page" className="col-start-2 col-span-1 flex flex-col bg-dark">
-      <div id="top-bar" className="pl-2 pr-2 flex flex-row flex-wrap items-center place-content-end gap-2 mt-6">
+      <div id="top-bar" className="pl-2 pr-2 flex flex-row flex-wrap items-center place-content-end gap-2 mt-8">
         <TitleWithPlaceholder solveTitle={solveTitle} handleTitleChange={handleTitleChange} />
         <div className="flex-none flex flex-row space-x-1 pr-2 text-dark_accent">
           <TopButton id="trash" text="Clear Page" shortcutHint="Ctrl+Del" onClick={handleClearPage} icon={<TrashIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
-          <TopButton id="copy" text="Copy Solve" shortcutHint="" onClick={handleCopySolve} icon={<CopyIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
-          <TopButton id="share" text="Copy URL" shortcutHint="" onClick={handleShare} icon={<ShareIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
+          <TopButton id="copy" text="Copy Solve" shortcutHint="Ctrl+Q" onClick={handleCopySolve} icon={<CopyIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
+          <TopButton id="share" text="Copy URL" shortcutHint="Ctrl+Shift+S" onClick={handleShare} icon={<ShareIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
         </div>
       </div>
       <div id="player-box" className="relative flex flex-col my-4 w-full justify-center items-center">
@@ -537,10 +562,8 @@ export default function Recon() {
         </div>
       </div>
       <div id="bottom-bar" className="flex flex-row items-center place-content-end justify-center text-light w-full" ref={bottomBarRef}>
-        {/* <div id="spacer-1" className="flex-1 text-paren"></div> */}
         <SpeedSlider speed={localSpeed} onChange={handleSpeedChange}/>
         <Toolbar buttons={toolbarButtons} containerRef={bottomBarRef}/>
-        {/* <div id="spacer-2" className="flex-1 text-rep"></div> */}
       </div>
       <div id="datafields" className="pl-2 max-h-[calc(100vh/2)] overflow-x-hidden w-full transition-width duration-500 ease-linear flex flex-col justify-center items-center">
         <div className="pr-2 flex flex-col flex-shrink max-w-full w-full overflow-y-auto">
@@ -579,18 +602,20 @@ export default function Recon() {
           <div className="text-dark_accent text-xl font-medium py-2">Time</div>
           <div id="time-stats" className="flex flex-row flex-wrap text-nowrap items-center mb-4 gap-y-2">
             <div id="time-field" className="border border-light flex flex-row items-center justify-start">
-              <input 
+              <input
+                id="time-input"
                 type="number" 
                 placeholder="00.000" 
                 className="pt-2 pb-2 pl-2 text-xl text-light bg-dark focus:outline-none rounded-sm box-content no-spinner w-[4.25rem]"
                 value={solveTime}
                 onChange={handleSolveTimeChange}
                 onWheel={(e) => e.currentTarget.blur()}
+                autoComplete="off"
                 />
               <div className="text-light ml-2 pr-2 text-xl">sec</div> 
             </div>
             <div className="text-light ml-2 text-xl">{totalMoves} stm </div> 
-            <div className="flex-nowrap text-nowrap flex flex-row">
+            <div className="flex-nowrap text-nowrap items-center flex flex-row">
               <TPSInfo moveCount={totalMoves} solveTime={solveTime} tpsRef={tpsRef} />
               <ReconTimeHelpInfo />
             </div>
