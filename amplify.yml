@@ -4,11 +4,11 @@ applications:
       commands:
         - npm run build
         - npm install
-  artifacts:
-    baseDirectory: .next
-    files:
-      - '**/*'
-  cache:
-    paths:
-      - .next/cache/**/*
-      - node_modules/**/*
+    artifacts:
+      baseDirectory: .next
+      files:
+        - '**/*'
+    cache:
+      paths:
+        - .next/cache/**/*
+        - node_modules/**/*
