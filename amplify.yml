@@ -1,14 +1,20 @@
 applications:
   - appRoot: app
-    build:
-      commands:
-        - npm run build
-        - npm install
-    artifacts:
-      baseDirectory: .next
-      files:
-        - '**/*'
-    cache:
-      paths:
-        - .next/cache/**/*
-        - node_modules/**/*
+    frontend:
+      phases:
+        preBuild:
+          commands:
+            - npm install
+        build:
+          commands:
+            - npm run build
+        postBuild:
+          commands:
+            - npm run export
+      artifacts:
+        baseDirectory: .next
+        files:
+          - '**/*'
+      cache:
+        paths:
+          - node_modules/**/*
