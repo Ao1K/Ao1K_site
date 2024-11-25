@@ -8,9 +8,6 @@ applications:
         build:
           commands:
             - npm run build
-        postBuild:
-          commands:
-            - npm run export
       artifacts:
         baseDirectory: .next
         files:
