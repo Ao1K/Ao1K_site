@@ -1,0 +1,14 @@
+applications:
+  - appRoot: app
+    build:
+      commands:
+        - npm run build
+        - npm install
+  artifacts:
+    baseDirectory: .next
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - .next/cache/**/*
+      - node_modules/**/*
