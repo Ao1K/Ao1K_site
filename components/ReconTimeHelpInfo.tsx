@@ -78,7 +78,7 @@ export default function ReconTimeHelpInfo() {
       </div>
       <div
         id="popup"
-        className={`fixed bg-white border rounded-lg ml-10 p-4 max-h-full overflow-auto hidden z-10`}
+        className={`fixed bg-white border rounded-lg ml-10 p-4 max-h-full overflow-auto text-wrap hidden z-10`}
         // className={`pt-8`}
         style={{ width: `${WIDTH}px` }}
         >
@@ -87,7 +87,7 @@ export default function ReconTimeHelpInfo() {
         </button> */}
 
         <p className="text-sm text-gray-700">
-          <strong>STM</strong> means Slice Turn Metric. It's a way of measuring the number of moves in your solution. <strong> x y </strong> and <strong>z</strong> don't count as moves. Every other letter counts as one move.
+          <strong>STM</strong> means Slice Turn Metric. It&apos;s a way of measuring the number of moves in your solution. <strong> x y </strong> and <strong>z</strong> don&apos;t count as moves. Every other letter counts as one move.
         </p>
         <p className="text-sm text-gray-700 mt-2">
           <strong>TPS</strong> means Turns Per Second. Here, turns are measured in STM.

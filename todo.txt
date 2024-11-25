@@ -12,3 +12,6 @@ htmlUpdateMatrix is including html that did not update
 start text: RUF \n LUF. Replace copy paste in LUF \n LUF instead. Timestamp snaps to end on 2nd line.
 - having trouble reproducing
 
+If textbox begins with an invalid character string (ex: ff) then rotation prefixing will fail and spans are not correctly parsed.
+
+

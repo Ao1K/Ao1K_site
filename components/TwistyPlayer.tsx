@@ -382,7 +382,6 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
   };
 
   const createCustomScene = async () => {
-    console.log('creating scene');
     hiddenRef.current!.appendChild(playerRef.current!); 
     
     await playerRef.current!.connectedCallback();
@@ -547,6 +546,7 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
   );
 });
 
+Player.displayName = 'Player';
 export default Player;
 
 

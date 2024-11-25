@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useImperativeHandle, forwardRef, useEffect, useMemo, useState, memo } from 'react';
+import React, { useImperativeHandle, forwardRef, useEffect, useMemo, useState, memo, Suspense } from 'react';
 import { useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import sanitizeHtml from 'sanitize-html';
@@ -781,8 +781,6 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
       transform: (transformedHTML: string) => {
         handleTransform(transformedHTML);
       },
-      
-
     };
   },[]);
 
@@ -810,7 +808,9 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
 
   return (
     <>
-      <EditorLoader editorRef={contentEditableRef} onInputChange={onInputChange} name={name} autofocus={autofocus} />   
+      <Suspense fallback={null}>
+        <EditorLoader editorRef={contentEditableRef} onInputChange={onInputChange} name={name} autofocus={autofocus} />   
+      </Suspense>
       <div
         contentEditable
         ref={contentEditableRef}
@@ -827,4 +827,5 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
   );
 });
 
+MovesTextEditor.displayName = 'MovesTextEditor';
 export default MovesTextEditor;

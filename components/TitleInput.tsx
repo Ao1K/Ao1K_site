@@ -45,6 +45,7 @@ const InputWithPlaceholder: React.FC<InputWithPlaceholderProps> = ({ solveTitle,
     <div className="flex flex-grow flex-nowrap items-center text-center min-w-[200px]">
       <div className="text-dark_accent text-xl font-medium select-none">Title</div>
       <input
+        id="title-input"
         ref={inputRef}
         placeholder={placeholderText}
         className="p-2 ml-4 w-full text-lg text-light bg-dark border border-primary focus:border-light rounded-sm"

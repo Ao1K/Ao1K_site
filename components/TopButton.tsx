@@ -16,8 +16,6 @@ export default function TopButton({ id, text, onClick, buttonRef, shortcutHint, 
 
   useEffect(() => {
     if (alert && alert[0] === id && alert[1] && setAlert) {
-      console.log('alert', alert);
-      console.log(id);
       const timeoutId = setTimeout(() => {
         setAlert(['','']) // do not ever set to a truthy value
       }, 2000);
