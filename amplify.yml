@@ -1,5 +1,5 @@
 applications:
-  - appRoot: .
+  - appRoot: app
     frontend:
       phases:
         preBuild:
@@ -9,7 +9,8 @@ applications:
           commands:
             - npm run build
       artifacts:
-        baseDirectory: .next'
+        baseDirectory: 
+          - '**/.next'
         files:
           - '**/*'
       cache:
