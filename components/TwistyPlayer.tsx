@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { TwistyPlayer } from 'cubing/twisty';
 import * as THREE from 'three';
 import type { Object3D } from 'three';
-import { OrbitControls } from 'three/addons/controls/orbitcontrols.js'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
 interface PlayerProps {
   scramble: string;
