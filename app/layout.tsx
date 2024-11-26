@@ -8,6 +8,15 @@ import Footer from "../components/Footer";
 import type { Metadata } from "next";
 import { Rubik } from "next/font/google";
 
+
+
+import { Amplify } from 'aws-amplify';
+import outputs from '../amplify_outputs.json';
+
+Amplify.configure(outputs);
+
+
+
 const rubik = Rubik({
   subsets: ['latin'],
   variable: '--font-Rubik',
