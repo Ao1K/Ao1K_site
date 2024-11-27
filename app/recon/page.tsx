@@ -1,36 +1,36 @@
 'use client';
 import debounce from 'lodash.debounce';
-import { useState, useRef, useEffect, useCallback } from "react";
-import MovesTextEditor from "@/components/MovesTextEditor";
-import SpeedSlider from "@/components/SpeedSlider";
+import { useState, useRef, useEffect } from "react";
+import MovesTextEditor from "../components/MovesTextEditor";
+import SpeedSlider from "../components/SpeedSlider";
 
-import Dropdown from "@/components/Dropdown";
-import Toolbar from "@/components/Toolbar";
+import Dropdown from "../components/Dropdown";
+import Toolbar from "../components/Toolbar";
 
-import TwistyPlayer from "@/components/TwistyPlayer";
-import ReconTimeHelpInfo from "@/components/ReconTimeHelpInfo";
-import TPSInfo from "@/components/TPSInfo";
-import updateURL from "@/composables/updateURL";
+import TwistyPlayer from "../components/TwistyPlayer";
+import ReconTimeHelpInfo from "../components/ReconTimeHelpInfo";
+import TPSInfo from "../components/TPSInfo";
+import updateURL from "../composables/updateURL";
 
-import type { EditorRef } from "@/components/MovesTextEditor";
+import type { EditorRef } from "../components/MovesTextEditor";
 
-import UndoIcon from "@/components/icons/undo";
-import RedoIcon from "@/components/icons/redo";
-import CatIcon from "@/components/icons/cat";
-import MirrorM from "@/components/icons/mirrorM";
-import MirrorS from "@/components/icons/mirrorS";
-import TrashIcon from "@/components/icons/trash";
-import CopyIcon from "@/components/icons/copy";
-import ShareIcon from "@/components/icons/share";
+import UndoIcon from "../components/icons/undo";
+import RedoIcon from "../components/icons/redo";
+import CatIcon from "../components/icons/cat";
+import MirrorM from "../components/icons/mirrorM";
+import MirrorS from "../components/icons/mirrorS";
+import TrashIcon from "../components/icons/trash";
+import CopyIcon from "../components/icons/copy";
+import ShareIcon from "../components/icons/share";
 
-import addCat from "@/composables/addCat";
-import { mirrorHTML_M, mirrorHTML_S, removeComments, rotateHTML_X, rotateHTML_Y, rotateHTML_Z } from "@/composables/transformHTML";
-import isSelectionInTextbox from "@/composables/isSelectionInTextbox";
-import { TransformHTMLprops } from "@/composables/transformHTML";
+import addCat from "../composables/addCat";
+import { mirrorHTML_M, mirrorHTML_S, removeComments, rotateHTML_X, rotateHTML_Y, rotateHTML_Z } from "../composables/transformHTML";
+import isSelectionInTextbox from "../composables/isSelectionInTextbox";
+import { TransformHTMLprops } from "../composables/transformHTML";
 
-import TitleWithPlaceholder from "@/components/TitleInput";
-import TopButton from "@/components/TopButton";
-import { customDecodeURL } from '@/composables/urlEncoding';
+import TitleWithPlaceholder from "../components/TitleInput";
+import TopButton from "../components/TopButton";
+import { customDecodeURL } from '../composables/urlEncoding';
 
 export interface MoveHistory {
   history: string[][];
