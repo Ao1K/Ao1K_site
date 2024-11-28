@@ -10,13 +10,6 @@ const nextConfig = {
   images: {
     unoptimized: true, // Amplify doesn't optimize images by default
   },
-  exportPathMap: async function () {
-    return {
-      '/': { page: '/' },
-      '/about': { page: '/about' },
-      '/contact': { page: '/contact' },
-    };
-  },
 };
 
 export default nextConfig;
