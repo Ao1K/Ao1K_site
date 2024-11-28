@@ -10,10 +10,10 @@ import { Rubik } from "next/font/google";
 
 
 
-import { Amplify } from 'aws-amplify';
-import outputs from '../amplify_outputs.json';
+// import { Amplify } from 'aws-amplify';
+// import outputs from '../amplify_outputs.json';
 
-Amplify.configure(outputs);
+// Amplify.configure(outputs);
 
 
 
