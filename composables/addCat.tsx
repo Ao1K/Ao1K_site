@@ -1,46 +1,21 @@
-import isSelectionInTextbox from "./isSelectionInTextbox";
-
-export default async function addCat() {
-  const src = '/tangus.png';
+export default async function addCat(range: Range, textbox: string) {
+  const src = '/angus.png';
   const img = document.createElement('img');
   img.src = src;
-  img.alt = 'Tangus';
+  img.alt = 'angus';
 
   const span = document.createElement('span');
   span.appendChild(img);
 
-  let selection = window.getSelection();
+  range.insertNode(span);
 
-  if (selection && isSelectionInTextbox(selection) === false) {
-    const defaultID = 'scramble';
-    const parentElement = document.getElementById(defaultID);
-    const textbox = parentElement?.querySelector<HTMLDivElement>('div[contenteditable="true"]');
-    if (textbox) {
-      selection = await focusTextbox(textbox);
-    }
-  }
-
-  addCatSpan(selection, span);
+  focusTextbox(textbox);
 }
 
-const focusTextbox = (textbox: HTMLDivElement) => {
+const focusTextbox = (textboxID: string) => {
   return new Promise<Selection | null>((resolve) => {
+    const textbox = document.getElementById(textboxID) as HTMLElement;
     textbox.focus();
     setTimeout(() => resolve(window.getSelection()), 50);
   });
 };
-
-const addCatSpan = (selection: Selection | null, span: HTMLSpanElement) => {
-  if (selection && selection.rangeCount > 0) {
-    const range = selection.getRangeAt(0);
-    range.insertNode(span);
-    
-    selection.removeAllRanges();
-
-    const newRange = document.createRange();
-    newRange.setStartAfter(span);
-    newRange.setEndAfter(span);
-
-    selection.addRange(newRange);
-  }
-} 
