@@ -34,6 +34,6 @@
 These instructions are untested. Contact an admin if you run into trouble. 
 
 1. Install npm and node.js (the latest LTM version).
-2. Clone the repository using `git clone -b main https://github.com/Ao1K/Ao1K_site`
+2. Clone the repository using `git clone -b development https://github.com/Ao1K/Ao1K_site`
 3. Navigate to the project directory in a terminal. Run `npm install` to install project dependencies.
 4. Run `npm run dev` to begin testing your code.
