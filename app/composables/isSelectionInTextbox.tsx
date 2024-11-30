@@ -1,4 +1,4 @@
-export default function isSelectionInTextbox(selection: Selection) {
+export default function isSelectionInTextbox(selection: Selection | null) {
   if (!selection || selection.rangeCount === 0) {
     return false;
   }

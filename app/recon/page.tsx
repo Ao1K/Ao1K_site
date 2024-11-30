@@ -239,41 +239,41 @@ export default function Recon() {
 
   const getWholeTextboxRange = (textboxID: string): Range => {
 
-      const parentElement = document.getElementById(textboxID);
+      const parentElement = document.getElementById(textboxID); // either "scramble" or "solution"
       const textbox = parentElement!.querySelector<HTMLDivElement>('div[contenteditable="true"]');
-      textbox!.focus()
       let range = document.createRange();
       range.selectNodeContents(textbox!);
       return range;
 
   }
 
-  const transformSelection = (transformType: TransformHTMLprops) => {
-
+  const getLastRangeAndTextbox = (): { range: Range | null, textbox: string | null } => {
     let range = oldSelectionRef.current.range;
     let textbox = oldSelectionRef.current.textbox;
 
-    //set range and textbox as necessary
-    if (range && textbox) { // testing only
-
+    if (range && textbox) {
+      return { range, textbox };
     } else if (!range && textbox) {
       range = getWholeTextboxRange(textbox);
-
+      return { range, textbox };
     } else {
-      range = getWholeTextboxRange('solution')      
-      textbox = 'solution';      
-    } 
+      range = getWholeTextboxRange('solution');
+      textbox = 'solution';
+      return { range, textbox };
+    }
+  };
 
-    if (!range) return;
+  const transformSelection = (transformType: TransformHTMLprops) => {
 
-    let newHTML = transformType(range, textbox) ?? '';
+    const { range, textbox } = getLastRangeAndTextbox();
+
+    if (!range || !textbox) return;
+
+    let newHTML = transformType(range, textbox!) ?? '';
 
     textbox === 'solution' ? 
       solutionRef.current!.transform(newHTML) : // can handle html or plaintext
       scrambleEditorRef.current!.transform(newHTML)
-
-    
-
   }
 
   const handleTransform = (transformType: TransformHTMLprops) => {
@@ -305,6 +305,15 @@ export default function Recon() {
     updateURL('title', null);
     updateURL('time', null);
     setTopButtonAlert(["trash", "Page cleared! Undo with Ctrl+Z"]);
+  }
+
+  const handleAddCat = () => {
+    const { range , textbox} = getLastRangeAndTextbox()
+
+    if (!range || !textbox) return;
+
+    range!.collapse(false); // collapse to end of selection
+    addCat(range, textbox)
   }
 
   const getTextboxInnerText = (textboxID: string): string => {
@@ -430,6 +439,11 @@ export default function Recon() {
     updateURL('title', e.target.value);
   }
 
+  const handleFocus = () => { // this is might too restrictive in preventing scrolling
+    const scrollPosition = window.scrollY;
+    window.scrollTo({ top: scrollPosition });
+  }; 
+
   const handleCommand = (e: KeyboardEvent) => {
 
     if (e.ctrlKey && e.key === 'm') {
@@ -524,11 +538,13 @@ export default function Recon() {
     
     document.addEventListener('selectionchange', storeLastSelection);
     document.addEventListener('keydown', handleCommand);
+    document.addEventListener('focus', handleFocus);
 
     return () => {
 
       document.removeEventListener('selectionchange', storeLastSelection);
       document.addEventListener('keydown', handleCommand);
+      document.removeEventListener('focus', handleFocus);
 
     };
   }, []);
@@ -541,13 +557,13 @@ export default function Recon() {
     { id: 'rotateX', text: 'Rotate X', shortcutHint: 'Ctrl+Shift+X', onClick: handleRotateX, iconText: "X" },
     { id: 'rotateY', text: 'Rotate Y', shortcutHint: 'Ctrl+Shift+Y', onClick: handleRotateY, iconText: "Y" },
     { id: 'rotateZ', text: 'Rotate Z', shortcutHint: 'Ctrl+Shift+Z', onClick: handleRotateZ, iconText: "Z" },
-    { id: 'cat', text: 'Angus', shortcutHint: 'Cat', onClick: addCat, icon: <CatIcon /> },
+    { id: 'cat', text: 'Angus', shortcutHint: 'Cat', onClick: handleAddCat, icon: <CatIcon /> },
     { id: 'removeComments', text: 'Remove Comments', shortcutHint: 'Ctrl+/ ', onClick: handleRemoveComments, iconText: '// ' },
   ];
 
   return (
     <div id="main_page" className="col-start-2 col-span-1 flex flex-col bg-dark">
-      <div id="top-bar" className="pl-2 pr-2 flex flex-row flex-wrap items-center place-content-end gap-2 mt-8">
+      <div id="top-bar" className="px-2 flex flex-row flex-wrap items-center place-content-center gap-2 mt-8">
         <TitleWithPlaceholder solveTitle={solveTitle} handleTitleChange={handleTitleChange} />
         <div className="flex-none flex flex-row space-x-1 pr-2 text-dark_accent">
           <TopButton id="trash" text="Clear Page" shortcutHint="Ctrl+Del" onClick={handleClearPage} icon={<TrashIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
@@ -557,15 +573,15 @@ export default function Recon() {
       </div>
       <div id="player-box" className="relative flex flex-col my-4 w-full justify-center items-center">
         <div id="cube-highlight"className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 inset-0 h-full blur-sm bg-primary w-full px-2"></div>
-        <div id="cube_model" className="flex aspect-video max-h-96 bg-dark z-10 w-full">
+        <div id="cube_model" className="flex aspect-video h-full max-h-96 bg-dark z-10 w-full">
           <TwistyPlayer scramble={playerParams.scramble} solution={playerParams.solution} speed={speed} animationTimes={playerParams.animationTimes}/>
         </div>
       </div>
-      <div id="bottom-bar" className="flex flex-row items-center place-content-end justify-center text-light w-full" ref={bottomBarRef}>
+      <div id="bottom-bar" className="px-3 pb-2 flex flex-row items-center place-content-end justify-center text-light w-full" ref={bottomBarRef}>
         <SpeedSlider speed={localSpeed} onChange={handleSpeedChange}/>
         <Toolbar buttons={toolbarButtons} containerRef={bottomBarRef}/>
       </div>
-      <div id="datafields" className="pl-2 max-h-[calc(100vh/2)] overflow-x-hidden w-full transition-width duration-500 ease-linear flex flex-col justify-center items-center">
+      <div id="datafields" className="px-2 max-h-[calc(100vh/2)] overflow-x-visible w-full transition-width duration-500 ease-linear flex flex-col justify-center items-center">
         <div className="pr-2 flex flex-col flex-shrink max-w-full w-full overflow-y-auto">
           <div className="flex flex-row items-center">
             <Dropdown targetDiv="scramble"/> 

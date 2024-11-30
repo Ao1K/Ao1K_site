@@ -20,6 +20,7 @@ function matricesAreEqual(a: Matrix3x3, b: Matrix3x3): boolean {
 function findMinimalSequence(target: Matrix3x3, rotations: any): string[] {
   const moves = Object.keys(rotations);
 
+
   // Try all single moves
   for (const move of moves) {
     if (matricesAreEqual(rotations[move], target)) {
@@ -61,8 +62,10 @@ function multiplyMatrices(a: Matrix3x3, b: Matrix3x3): Matrix3x3 {
 }
 
 export default function simplifyRotations(sequence: string): string[] {
+  // assumes no leading or trailing spaces in sequence
+
   const moves = sequence.split(" ");
-  const rotations: any = {
+  const rotations: { [key: string]: Matrix3x3 } = {
     "": [
       [1, 0, 0],
       [0, 1, 0],
@@ -114,6 +117,22 @@ export default function simplifyRotations(sequence: string): string[] {
       [0, 0, 1]
     ]
   };
+  
+  const rotationSortOrder_X = ["", "x", "x'", "x2", "y", "y'", "y2", "z", "z'", "z2"];
+  const rotationSortOrder_Y = ["", "y", "y'", "y2", "x", "x'", "x2", "z", "z'", "z2"];
+  const rotationSortOrder_Z = ["", "z", "z'", "z2", "x", "x'", "x2", "y", "y'", "y2"];
+
+  const rotationSortOrders: { [key: string]: string[] } = {
+    "x": rotationSortOrder_X,
+    "y": rotationSortOrder_Y,
+    "z": rotationSortOrder_Z
+  };
+  const firstLetter = sequence.trim()[0]; // would break if space is inputted as first char
+
+  const sortedRotations = Object.fromEntries(
+    rotationSortOrders[firstLetter].map(key => [key, rotations[key]])
+  );
+
 
   let currentMatrix: Matrix3x3 = [
     [1, 0, 0],
@@ -125,7 +144,7 @@ export default function simplifyRotations(sequence: string): string[] {
     currentMatrix = multiplyMatrices(currentMatrix, rotations[move]);
   }
 
-  const simplifiedSequence = findMinimalSequence(currentMatrix, rotations);
+  const simplifiedSequence = findMinimalSequence(currentMatrix, sortedRotations);
   return simplifiedSequence;
 }
 

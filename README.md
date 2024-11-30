@@ -1,12 +1,12 @@
 ## Ao1K means average of one thousand
 
-To get useful statistics, you often need a lot of data. 
-Speedsolving Rubik's cubes is no exception.
-This is project to create good data, and to create it in a way that has the best user experience possible.
+To get useful statistics, you often need a lot of data. Speedsolving Rubik's cubes is no exception.
+
+This is project to create good data, with the best user experience possible.
 
 Currently, Ao1K.com is just a website to reconstruct your 3x3 solves.
 
-You may also want to connect on [Discord](https://discord.com/invite/ffXwKXB9)
+You may also want to connect on [Discord](https://discord.gg/WMm6JBgt2W)
 
 
 ### Pledge

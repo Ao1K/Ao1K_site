@@ -9,7 +9,7 @@ interface SpeedSliderProps {
 const SpeedSlider = ({speed, onChange}: SpeedSliderProps) => {
 
     return (
-        <div className="flex flex-wrap items-center justify-start text-bg-light px-2 w-[250px] select-none">
+        <div className="flex flex-wrap items-center justify-start text-bg-light w-[250px] select-none">
             <div className="flex flex-nowrap items-center space-x-3">
                 <div className="">
                     <SpeedIcon className="text-light" />

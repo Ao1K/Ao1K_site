@@ -47,19 +47,19 @@ const replacementTable_S: { [key: string]: string } = {
 };
 
 const replacementTable_X: { [key: string]: string } = {
-  "U": "B", "U2": "B2", "U3": "B3", "U'": "B'", "U2'": "B2'", "U3'": "B3'",
-  "u": "b", "u2": "b2", "u3": "b3", "u'": "b'", "u2'": "b2'", "u3'": "b3'",
-  "D": "F", "D2": "F2", "D3": "F3", "D'": "F'", "D2'": "F2'", "D3'": "F3'",
-  "d": "f", "d2": "f2", "d3": "f3", "d'": "f'", "d2'": "f2'", "d3'": "f3'",
-  "F": "U", "F2": "U2", "F3": "U3", "F'": "U'", "F2'": "U2'", "F3'": "U3'",
-  "f": "u", "f2": "u2", "f3": "u3", "f'": "u'", "f2'": "u2'", "f3'": "u3'",
-  "B": "D", "B2": "D2", "B3": "D3", "B'": "D'", "B2'": "D2'", "B3'": "D3'",
-  "b": "d", "b2": "d2", "b3": "d3", "b'": "d'", "b2'": "d2'", "b3'": "d3'",
+  "U": "B", "U2": "B2", "U3": "B3", "U'": "B'", "U2'": "B2", "U3'": "B3'", // for double moves (ex: x2) that don't change, preserve the apostrophe. Else, remove.
+  "u": "b", "u2": "b2", "u3": "b3", "u'": "b'", "u2'": "b2", "u3'": "b3'",
+  "D": "F", "D2": "F2", "D3": "F3", "D'": "F'", "D2'": "F2", "D3'": "F3'",
+  "d": "f", "d2": "f2", "d3": "f3", "d'": "f'", "d2'": "f2", "d3'": "f3'",
+  "F": "U", "F2": "U2", "F3": "U3", "F'": "U'", "F2'": "U2", "F3'": "U3'",
+  "f": "u", "f2": "u2", "f3": "u3", "f'": "u'", "f2'": "u2", "f3'": "u3'",
+  "B": "D", "B2": "D2", "B3": "D3", "B'": "D'", "B2'": "D2", "B3'": "D3'",
+  "b": "d", "b2": "d2", "b3": "d3", "b'": "d'", "b2'": "d2", "b3'": "d3'",
   "R": "R", "R2": "R2", "R3": "R3", "R'": "R'", "R2'": "R2'", "R3'": "R3'",
   "r": "r", "r2": "r2", "r3": "r3", "r'": "r'", "r2'": "r2'", "r3'": "r3'",
   "L": "L", "L2": "L2", "L3": "L3", "L'": "L'", "L2'": "L2'", "L3'": "L3'",
   "l": "l", "l2": "l2", "l3": "l3", "l'": "l'", "l2'": "l2'", "l3'": "l3'",
-  "x": "x", "x2": "x2", "x'": "x'", "x2'": "x2'",
+  "x": "x", "x2": "x2", "x'": "x'", "x2'": "x2'", 
   "y": "z'", "y2": "z2", "y'": "z", "y2'": "z2",
   "z": "y", "z2": "y2", "z'": "y'", "z2'": "y2",
   "M": "M", "M2": "M2", "M'": "M'", "M2'": "M2'",
@@ -72,14 +72,14 @@ const replacementTable_Y: { [key: string]: string } = {
   "u": "u", "u2": "u2", "u3": "u3", "u'": "u'", "u2'": "u2'", "u3'": "u3'",
   "D": "D", "D2": "D2", "D3": "D3", "D'": "D'", "D2'": "D2'", "D3'": "D3'",
   "d": "d", "d2": "d2", "d3": "d3", "d'": "d'", "d2'": "d2'", "d3'": "d3'",
-  "F": "L", "F2": "L2", "F3": "L3", "F'": "L'", "F2'": "L2'", "F3'": "L3'",
-  "f": "l", "f2": "l2", "f3": "l3", "f'": "l'", "f2'": "l2'", "f3'": "l3'",
-  "B": "R", "B2": "R2", "B3": "R3", "B'": "R'", "B2'": "R2'", "B3'": "R3'",
-  "b": "r", "b2": "r2", "b3": "r3", "b'": "r'", "b2'": "r2'", "b3'": "r3'",
-  "L": "B", "L2": "B2", "L3": "B3", "L'": "B'", "L2'": "B2'", "L3'": "B3'",
-  "l": "b", "l2": "b2", "l3": "b3", "l'": "b'", "l2'": "b2'", "l3'": "b3'",
-  "R": "F", "R2": "F2", "R3": "F3", "R'": "F'", "R2'": "F2'", "R3'": "F3'",
-  "r": "f", "r2": "f2", "r3": "f3", "r'": "f'", "r2'": "f2'", "r3'": "f3'",
+  "F": "L", "F2": "L2", "F3": "L3", "F'": "L'", "F2'": "L2", "F3'": "L3'",
+  "f": "l", "f2": "l2", "f3": "l3", "f'": "l'", "f2'": "l2", "f3'": "l3'",
+  "B": "R", "B2": "R2", "B3": "R3", "B'": "R'", "B2'": "R2", "B3'": "R3'",
+  "b": "r", "b2": "r2", "b3": "r3", "b'": "r'", "b2'": "r2", "b3'": "r3'",
+  "L": "B", "L2": "B2", "L3": "B3", "L'": "B'", "L2'": "B2", "L3'": "B3'",
+  "l": "b", "l2": "b2", "l3": "b3", "l'": "b'", "l2'": "b2", "l3'": "b3'",
+  "R": "F", "R2": "F2", "R3": "F3", "R'": "F'", "R2'": "F2", "R3'": "F3'",
+  "r": "f", "r2": "f2", "r3": "f3", "r'": "f'", "r2'": "f2", "r3'": "f3'",
   "x": "z", "x2": "z2", "x'": "z'", "x2'": "z2",
   "y": "y", "y2": "y2", "y'": "y'", "y2'": "y2'",
   "z": "x'", "z2": "x2", "z'": "x", "z2'": "x2",
@@ -89,14 +89,14 @@ const replacementTable_Y: { [key: string]: string } = {
 };
 
 const replacementTable_Z: { [key: string]: string } = {
-  "U": "R", "U2": "R2", "U3": "R3", "U'": "R'", "U2'": "R2'", "U3'": "R3'",
-  "u": "r", "u2": "r2", "u3": "r3", "u'": "r'", "u2'": "r2'", "u3'": "r3'",
-  "D": "L", "D2": "L2", "D3": "L3", "D'": "L'", "D2'": "L2'", "D3'": "L3'",
-  "d": "l", "d2": "l2", "d3": "l3", "d'": "l'", "d2'": "l2'", "d3'": "l3'",
-  "R": "D", "R2": "D2", "R3": "D3", "R'": "D'", "R2'": "D2'", "R3'": "D3'",
-  "r": "d", "r2": "d2", "r3": "d3", "r'": "d'", "r2'": "d2'", "r3'": "d3'",
-  "L": "U", "L2": "U2", "L3": "U3", "L'": "U'", "L2'": "U2'", "L3'": "U3'",
-  "l": "u", "l2": "u2", "l3": "u3", "l'": "u'", "l2'": "u2'", "l3'": "u3'",
+  "U": "R", "U2": "R2", "U3": "R3", "U'": "R'", "U2'": "R2", "U3'": "R3'",
+  "u": "r", "u2": "r2", "u3": "r3", "u'": "r'", "u2'": "r2", "u3'": "r3'",
+  "D": "L", "D2": "L2", "D3": "L3", "D'": "L'", "D2'": "L2", "D3'": "L3'",
+  "d": "l", "d2": "l2", "d3": "l3", "d'": "l'", "d2'": "l2", "d3'": "l3'",
+  "R": "D", "R2": "D2", "R3": "D3", "R'": "D'", "R2'": "D2", "R3'": "D3'",
+  "r": "d", "r2": "d2", "r3": "d3", "r'": "d'", "r2'": "d2", "r3'": "d3'",
+  "L": "U", "L2": "U2", "L3": "U3", "L'": "U'", "L2'": "U2", "L3'": "U3'",
+  "l": "u", "l2": "u2", "l3": "u3", "l'": "u'", "l2'": "u2", "l3'": "u3'",
   "F": "F", "F2": "F2", "F3": "F3", "F'": "F'", "F2'": "F2'", "F3'": "F3'",
   "f": "f", "f2": "f2", "f3": "f3", "f'": "f'", "f2'": "f2'", "f3'": "f3'",
   "B": "B", "B2": "B2", "B3": "B3", "B'": "B'", "B2'": "B2'", "B3'": "B3'",
@@ -238,7 +238,7 @@ const transformSplitMatches = (splits: { split: string, isMatch: boolean }[], re
       return acc + transformedPart;
     }, "");
 
-    transformedMoveParts = '<span class="' + VALID_SPAN_CLASS + '">' + transformedMoveParts + '</span>';
+    //transformedMoveParts = '<span class="' + VALID_SPAN_CLASS + '">' + transformedMoveParts + '</span>';
 
     transformedSplits.push(transformedMoveParts);
   });
@@ -273,8 +273,22 @@ const getNewRotationPrefix = (currentPrefix: string, rotation: string): string =
 
 const findRotationPrefixChange = (text: string, rotation: string): string[] => {
   const currentPrefix = getCurrentRotationPrefix(text);
-  const newPrefix = getNewRotationPrefix(currentPrefix, rotation) + "&nbsp;";
-  return [currentPrefix, newPrefix];
+  const newPrefix = getNewRotationPrefix(currentPrefix, rotation);
+
+  return [currentPrefix, newPrefix]
+
+}
+
+const joinSplits = (transformedSplitText: string[], splits: { split: string, isMatch: boolean }[]): string => {
+  let transformedText = '';
+  splits.forEach(({ isMatch }, i) => {
+    if (!isMatch) {
+      transformedText += transformedSplitText[i];
+    } else {
+      transformedText += '<span class="' + VALID_SPAN_CLASS + '">' + transformedSplitText + '</span>'
+    }
+  });
+  return transformedText;
 }
 
 const transformTextInValidSpans = (text: string, replacementTable: { [key: string]: string }, rotation?: string): string => {
@@ -294,25 +308,28 @@ const transformTextInValidSpans = (text: string, replacementTable: { [key: strin
 
   let newRotationPrefix = '';
   let oldRotationPrefix = '';
-  let firstMatchIndex = 0;
+
+  
+  const transformedSplitText = transformSplitMatches(splits, replacementTable, caretPlaceholder, placeholderLength);
+  
   if (rotation) { // indicates first transform on a rotation transform request
-    for (let i = 0; i < splits.length; i++) {
+    for (let i = 0; i < transformedSplitText.length; i++) {
       if (splits[i].isMatch) {
-        firstMatchIndex = i;
-        [oldRotationPrefix, newRotationPrefix] = findRotationPrefixChange(splits[i].split, rotation);
-        splits[i].split = splits[i].split.replace(oldRotationPrefix, ''); // remove old. Added back after transform.
+
+        [oldRotationPrefix, newRotationPrefix] = findRotationPrefixChange(transformedSplitText[i], rotation);
+
+        transformedSplitText[i] = transformedSplitText[i]
+          .replace(oldRotationPrefix, '')
+          .replace(/^(&nbsp;)+/g, ''); // remove leading spaces
+
+          newRotationPrefix ? transformedSplitText[i] = newRotationPrefix + '&nbsp;' + transformedSplitText[i] : null;
+        console.log('replaced', oldRotationPrefix, 'with', newRotationPrefix);
         break;
       }
     }
   }
 
-  const transformedSplits = transformSplitMatches(splits, replacementTable, caretPlaceholder, placeholderLength);
-
-  if (rotation && newRotationPrefix) {
-    transformedSplits[firstMatchIndex] = (newRotationPrefix + transformedSplits[firstMatchIndex]).replace(/^(&nbsp;)+/g, ''); // re-add prefix and remove leading spaces
-  }
-
-  let transformedText = transformedSplits.join('');
+  let transformedText = joinSplits(transformedSplitText, splits);
 
   return transformedText;
 }

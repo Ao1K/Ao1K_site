@@ -23,8 +23,8 @@ export default function Header(): JSX.Element {
       <nav className="mx-auto flex justify-between w-full">
 
         <img
-        src="../Ao1K Logo v2.svg"
-        className="h-16 w-auto overflow-visible"
+          src="/Ao1K Logo v2.svg"
+          className="h-16 w-auto overflow-visible"
         />
 
         <div className="hidden sm:flex p-4 mt-1 flex-row"> {/* space-x-10 */}
