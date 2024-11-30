@@ -767,12 +767,9 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
     setCaretToCaretNode();
     handleInput();
   }
-  
-  const handleFocus = () => {
-    const scrollPosition = window.scrollY;
-    window.scrollTo({ top: scrollPosition });
-  };
 
+  
+  
   useImperativeHandle(ref, () => {
     return {
       undo: () => {
@@ -789,6 +786,11 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
     };
   },[]);
 
+  const handleFocus = () => { // this is might too restrictive in preventing scrolling
+    const scrollPosition = window.scrollY;
+    window.scrollTo({ top: scrollPosition });
+  }; 
+  
   useEffect(() => {
     if (!contentEditableRef.current) return;
     
@@ -823,7 +825,7 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
       <div
         contentEditable
         ref={contentEditableRef}
-        className="bg-dark text-left rounded-sm resize-none text-xl min-h-[4.7rem] mb-4 mx-1 p-2 max-w-full caret-light border border-primary focus:border-1 ff-space-adjust"
+        className="bg-dark text-left rounded-sm resize-none text-xl min-h-[4.7rem] p-2 mx-1 max-w-full caret-light border border-primary focus:border-1 ff-space-adjust"
         onInput={handleInput}
         onCopy={handleCopy}
         onPaste={handlePaste}

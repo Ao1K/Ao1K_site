@@ -26,7 +26,7 @@ export default function Footer(): JSX.Element {
         
         <div className="space-y-6 my-6  col-start-2 col-span-1 justify-items-center">
           <div className="flex flex-row space-x-2 items-center hover:underline underline-offset-4">
-            <a href="https://discord.gg/ffXwKXB9" target="_blank" rel="noopener noreferrer" className="flex flex-row hover:text-light items-center hover:underline underline-offset-4 ">
+            <a href="https://discord.gg/WMm6JBgt2W" target="_blank" rel="noopener noreferrer" className="flex flex-row hover:text-light items-center hover:underline underline-offset-4 ">
               <DiscordIcon className='mr-2'/>
               Connect on Discord
             </a>

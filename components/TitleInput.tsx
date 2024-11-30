@@ -9,6 +9,7 @@ interface InputWithPlaceholderProps {
 const InputWithPlaceholder: React.FC<InputWithPlaceholderProps> = ({ solveTitle, handleTitleChange }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [placeholderText, setPlaceholderText] = useState("");
+  const lastWidth = useRef(inputRef.current?.clientWidth);
 
   useEffect(() => {
     let resizeTimeout: NodeJS.Timeout;
@@ -31,9 +32,11 @@ const InputWithPlaceholder: React.FC<InputWithPlaceholderProps> = ({ solveTitle,
       }
     };
 
-    const handleResize = () => {
+    const handleResize = () => { // probably unnecessary
+      if (lastWidth.current === inputRef.current?.clientWidth) return;
+      lastWidth.current = inputRef.current?.clientWidth;
       clearTimeout(resizeTimeout);
-      resizeTimeout = setTimeout(checkPlaceholderFit, 200); // Adjust delay as needed
+      resizeTimeout = setTimeout(checkPlaceholderFit, 200);
     };
 
     handleResize();
