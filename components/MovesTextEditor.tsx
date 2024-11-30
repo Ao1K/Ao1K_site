@@ -51,7 +51,7 @@ const EditorLoader = ({ editorRef: contentEditableRef, onInputChange, name, auto
         const otherID = name === 'scramble' ? 'solution' : 'scramble';
         const parentOtherElement = document.getElementById(otherID);
         const otherTextbox = parentOtherElement?.querySelector<HTMLDivElement>('div[contenteditable="true"]');
-        otherTextbox?.focus();
+        otherTextbox?.focus({ preventScroll: true });
       }
       
     }
@@ -696,7 +696,7 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
 
     const parentElement = document.getElementById(name);
     const textbox = parentElement?.querySelector<HTMLDivElement>('div[contenteditable="true"]');
-    textbox?.focus();
+    textbox?.focus({ preventScroll: true });
   
     let prevHTML = history[index][idIndex];
     while (prevHTML === '<unchanged>' && index > 0) {
@@ -745,7 +745,7 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
 
     const parentElement = document.getElementById(name);
     const textbox = parentElement?.querySelector<HTMLDivElement>('div[contenteditable="true"]');
-    textbox?.focus();
+    textbox?.focus({ preventScroll: true });
 
     let nextHTML = history[index][idIndex];
     while (nextHTML === '<unchanged>' && index > moveHistory.current.MAX_HISTORY) {
@@ -767,6 +767,11 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
     setCaretToCaretNode();
     handleInput();
   }
+  
+  const handleFocus = () => {
+    const scrollPosition = window.scrollY;
+    window.scrollTo({ top: scrollPosition });
+  };
 
   useImperativeHandle(ref, () => {
     return {
@@ -796,10 +801,14 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
     document.addEventListener('selectionchange', handleCaretChange);
     document.addEventListener('keydown', handleCommand);
 
+    contentEditableRef.current?.addEventListener('focus', handleFocus);
+
     return () => {
 
       document.removeEventListener('selectionchange', handleCaretChange);
       document.removeEventListener('keydown', handleCommand);
+
+      contentEditableRef.current?.removeEventListener('focus', handleFocus);
 
       updateURLTimeout.current ? clearTimeout(updateURLTimeout.current) : null;
 
@@ -822,6 +831,8 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
         onFocus={handleInput} // this hack ensures a visual cube update
         dangerouslySetInnerHTML={{ __html: html }}
         spellCheck={false}
+        inputMode="text"
+        role="textbox"
       /> 
     </>
   );

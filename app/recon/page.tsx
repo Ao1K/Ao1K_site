@@ -239,41 +239,41 @@ export default function Recon() {
 
   const getWholeTextboxRange = (textboxID: string): Range => {
 
-      const parentElement = document.getElementById(textboxID);
+      const parentElement = document.getElementById(textboxID); // either "scramble" or "solution"
       const textbox = parentElement!.querySelector<HTMLDivElement>('div[contenteditable="true"]');
-      textbox!.focus()
       let range = document.createRange();
       range.selectNodeContents(textbox!);
       return range;
 
   }
 
-  const transformSelection = (transformType: TransformHTMLprops) => {
-
+  const getLastRangeAndTextbox = (): { range: Range | null, textbox: string | null } => {
     let range = oldSelectionRef.current.range;
     let textbox = oldSelectionRef.current.textbox;
 
-    //set range and textbox as necessary
-    if (range && textbox) { // testing only
-
+    if (range && textbox) {
+      return { range, textbox };
     } else if (!range && textbox) {
       range = getWholeTextboxRange(textbox);
-
+      return { range, textbox };
     } else {
-      range = getWholeTextboxRange('solution')      
-      textbox = 'solution';      
-    } 
+      range = getWholeTextboxRange('solution');
+      textbox = 'solution';
+      return { range, textbox };
+    }
+  };
 
-    if (!range) return;
+  const transformSelection = (transformType: TransformHTMLprops) => {
 
-    let newHTML = transformType(range, textbox) ?? '';
+    const { range, textbox } = getLastRangeAndTextbox();
+
+    if (!range || !textbox) return;
+
+    let newHTML = transformType(range, textbox!) ?? '';
 
     textbox === 'solution' ? 
       solutionRef.current!.transform(newHTML) : // can handle html or plaintext
       scrambleEditorRef.current!.transform(newHTML)
-
-    
-
   }
 
   const handleTransform = (transformType: TransformHTMLprops) => {
@@ -305,6 +305,15 @@ export default function Recon() {
     updateURL('title', null);
     updateURL('time', null);
     setTopButtonAlert(["trash", "Page cleared! Undo with Ctrl+Z"]);
+  }
+
+  const handleAddCat = () => {
+    const { range , textbox} = getLastRangeAndTextbox()
+    
+    if (!range || !textbox) return;
+
+    range!.collapse(false); // collapse to end of selection
+    addCat(range, textbox)
   }
 
   const getTextboxInnerText = (textboxID: string): string => {
@@ -541,7 +550,7 @@ export default function Recon() {
     { id: 'rotateX', text: 'Rotate X', shortcutHint: 'Ctrl+Shift+X', onClick: handleRotateX, iconText: "X" },
     { id: 'rotateY', text: 'Rotate Y', shortcutHint: 'Ctrl+Shift+Y', onClick: handleRotateY, iconText: "Y" },
     { id: 'rotateZ', text: 'Rotate Z', shortcutHint: 'Ctrl+Shift+Z', onClick: handleRotateZ, iconText: "Z" },
-    { id: 'cat', text: 'Angus', shortcutHint: 'Cat', onClick: addCat, icon: <CatIcon /> },
+    { id: 'cat', text: 'Angus', shortcutHint: 'Cat', onClick: handleAddCat, icon: <CatIcon /> },
     { id: 'removeComments', text: 'Remove Comments', shortcutHint: 'Ctrl+/ ', onClick: handleRemoveComments, iconText: '// ' },
   ];
 
