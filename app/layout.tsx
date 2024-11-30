@@ -46,7 +46,7 @@ export default async function RootLayout({
             grid-cols-[1fr,minmax(0,6fr),1fr] 
             md:grid-cols-[1fr,minmax(0,4fr),1fr] 
             lg:grid-cols-[1fr,minmax(0,3fr),1fr] 
-            xl:grid-cols-[2fr,minmax(0,2fr),2fr] `}
+            xl:grid-cols-[3fr,minmax(0,4fr),3fr] `}
         >
           <Header />
           
