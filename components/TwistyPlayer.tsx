@@ -445,7 +445,8 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
         const texture = loader.load(label.file, () => {
           texture.minFilter = THREE.LinearFilter;
           texture.magFilter = THREE.LinearFilter;
-          texture.anisotropy = renderer.capabilities.getMaxAnisotropy() / 4;
+          const maxAnisotropy = renderer.capabilities.getMaxAnisotropy()
+          texture.anisotropy = Math.min(16, maxAnisotropy);
           
           const material = new THREE.MeshBasicMaterial({ 
             map: texture, 
@@ -464,9 +465,14 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
       
       scene.add(cube);
       
-      camera = new THREE.PerspectiveCamera(75, divRef.current.clientWidth / divRef.current.clientHeight, 0.1, 5);
-      camera.position.z = 1.56; // unit circle stuff. [sqrt(3) / 2] * 1.8
-      camera.position.y = .9; // [1/2] * 1.8
+      const aspectRatio = divRef.current.clientWidth / divRef.current.clientHeight;
+      camera = new THREE.PerspectiveCamera(75, aspectRatio, 0.1, 5);
+
+      const scaleFactor = (divRef.current.clientHeight * 0.0024) + 0.92; // found through experimentation w/linear system
+
+      //zoom level
+      camera.position.z = (Math.sqrt(3) / 2) * scaleFactor;
+      camera.position.y = (1 / 2) * scaleFactor;
 
       renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setSize(divRef.current.clientWidth, divRef.current.clientHeight);
