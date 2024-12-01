@@ -17,10 +17,9 @@
 
 
 ### Feature Discussions: 
- - Discuss new feature ideas on our [discord](https://discord.gg/WMm6JBgt2W).
- - If your idea gets positive feedback, check the #feature-ideas channel to see if it already exists.
- - If no related post exists, create one to track the idea.
+Discuss new feature ideas on our [discord](https://discord.gg/WMm6JBgt2W). You can also make a post in the #feature-ideas channel.
 
+   
 
 ### Pull Requests: 
  - Do not make pull requests for purely cosmetic changes.
