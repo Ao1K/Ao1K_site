@@ -13,3 +13,5 @@ start text: RUF \n LUF. Replace copy paste in LUF \n LUF instead. Timestamp snap
 - having trouble reproducing
 
 If textbox begins with an invalid character string (ex: ff) then rotation prefixing will fail and spans are not correctly parsed.
+
+Encode "(" and ")". These characters can break "copy solve".

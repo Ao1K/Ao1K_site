@@ -87,7 +87,7 @@ const ResponsiveButtonRow = ({ buttons, containerRef }: ButtonRowProps) => {
         <div className="relative" ref={moreToolsRef}>
           <button
             id="moreToolsBtn"
-            className="flex flex-row align-middle whitespace-nowrap h-8 px-2 py-1 my-1 rounded-sm hover:bg-primary border border-primary text-light select-none" 
+            className="flex flex-row align-middle whitespace-nowrap h-8 px-2 py-1 rounded-sm hover:bg-primary border border-primary text-light select-none" 
             onClick={toggleOverflowBtnVisibility}>
               More Tools
           </button>

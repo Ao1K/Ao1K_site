@@ -14,7 +14,7 @@ export default function ToolbarButton({ id, text, shortcutHint, onClick, icon, i
   return (
     <div id={id} className={`relative inline-block group`} >
       <button ref={buttonRef}
-        className="flex flex-row align-middle w-10 h-8 px-2 py-1 my-1 rounded-sm hover:bg-primary border border-primary text-light select-none"
+        className="flex flex-row align-middle w-10 h-8 px-2 py-1 rounded-sm hover:bg-primary border border-primary text-light select-none"
         onClick={onClick}
       >
         <div className="flex justify-center items-center w-full select-none">{icon || iconText}</div>

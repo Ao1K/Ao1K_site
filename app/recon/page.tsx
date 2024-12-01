@@ -64,7 +64,7 @@ export default function Recon() {
     
   const tpsRef = useRef<string>('');
   const scrambleEditorRef = useRef<EditorRef>(null);
-  const solutionRef = useRef<EditorRef>(null);
+  const solutionEditorRef = useRef<EditorRef>(null);
   const undoRef = useRef<HTMLButtonElement>(null);
   const redoRef = useRef<HTMLButtonElement>(null);
   const oldSelectionRef = useRef<OldSelectionRef>({ range: null, textbox: null,  status: "init" });
@@ -200,16 +200,16 @@ export default function Recon() {
   }
 
   const handleUndo = () => {
-    if (scrambleEditorRef.current  && solutionRef.current) {
+    if (scrambleEditorRef.current  && solutionEditorRef.current) {
       scrambleEditorRef.current.undo();
-      solutionRef.current.undo();
+      solutionEditorRef.current.undo();
     }
   }
 
   const handleRedo = () => {
-    if (scrambleEditorRef.current  && solutionRef.current) {
+    if (scrambleEditorRef.current  && solutionEditorRef.current) {
       scrambleEditorRef.current.redo();
-      solutionRef.current.redo();
+      solutionEditorRef.current.redo();
     }
   }
 
@@ -272,7 +272,7 @@ export default function Recon() {
     let newHTML = transformType(range, textbox!) ?? '';
 
     textbox === 'solution' ? 
-      solutionRef.current!.transform(newHTML) : // can handle html or plaintext
+      solutionEditorRef.current!.transform(newHTML) : // can handle html or plaintext
       scrambleEditorRef.current!.transform(newHTML)
   }
 
@@ -296,7 +296,7 @@ export default function Recon() {
     scrambleRef.current = '';
     scrambleEditorRef.current?.transform('');
     setSolution('');
-    solutionRef.current?.transform('');
+    solutionEditorRef.current?.transform('');
     setSolveTime('');
     setSolveTitle('');
     setTotalMoves(0);
@@ -352,15 +352,14 @@ export default function Recon() {
     setTopButtonAlert(["copy", "Solve text copied!"]);
   }
 
-  const handleShare = async () => {
-    const url = new URL(window.location.href);
-    updateURL('scramble', scrambleRef.current);
-    updateURL('solution', solution);
-    url.searchParams.set('time', solveTime.toString());
-    url.searchParams.set('title', solveTitle);
+  const handleShare = async () => { 
+    await new Promise(resolve => setTimeout(resolve, 500)); // wait for scramble and solution to finish updating:
+    // There's definitely a more clever way of updating it right away.
+    // Tried using useImperativeHandle to force updateURL to run. Didn't appear to cause a timely update.
 
     try {
-      await navigator.clipboard.writeText(url.toString());
+      const currentURL = window.location.href;
+      navigator.clipboard.writeText(currentURL);
       setTopButtonAlert(["share", "URL copied!"]);
     } catch (error) {
       console.error('Failed to copy to clipboard:', error);
@@ -563,7 +562,7 @@ export default function Recon() {
 
   return (
     <div id="main_page" className="col-start-2 col-span-1 flex flex-col bg-dark">
-      <div id="top-bar" className="px-2 flex flex-row flex-wrap items-center place-content-center gap-2 mt-8">
+      <div id="top-bar" className="px-3 flex flex-row flex-wrap items-center place-content-start gap-2 mt-8 mb-3">
         <TitleWithPlaceholder solveTitle={solveTitle} handleTitleChange={handleTitleChange} />
         <div className="flex-none flex flex-row space-x-1 pr-2 text-dark_accent">
           <TopButton id="trash" text="Clear Page" shortcutHint="Ctrl+Del" onClick={handleClearPage} icon={<TrashIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
@@ -571,41 +570,38 @@ export default function Recon() {
           <TopButton id="share" text="Copy URL" shortcutHint="Ctrl+Shift+S" onClick={handleShare} icon={<ShareIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
         </div>
       </div>
-      <div id="player-box" className="relative flex flex-col my-4 w-full justify-center items-center">
-        <div id="cube-highlight"className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 inset-0 h-full blur-sm bg-primary w-full px-2"></div>
+      <div id="scramble-area" className="px-3 mt-3 flex flex-col">
+        <div className="text-xl text-dark_accent font-medium">Scramble</div>
+        <div id="scramble">
+              <MovesTextEditor
+                name={`scramble`}
+                ref={scrambleEditorRef}
+                trackMoves={trackMoves}
+                autofocus={true}
+                moveHistory={moveHistory}
+                updateHistoryBtns={handleHistoryBtnUpdate}
+                html={scrambleHTML}
+                setHTML={setScrambleHTML}
+              />
+        </div>
+      </div>
+      <div id="player-box" className="px-3 relative flex flex-col my-6 w-full justify-center items-center">
+        <div id="cube-highlight" className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-full blur-sm bg-primary w-[calc(100%-1.5rem)]"></div>
         <div id="cube_model" className="flex aspect-video h-full max-h-96 bg-dark z-10 w-full">
           <TwistyPlayer scramble={playerParams.scramble} solution={playerParams.solution} speed={speed} animationTimes={playerParams.animationTimes}/>
         </div>
       </div>
-      <div id="bottom-bar" className="px-3 pb-2 flex flex-row items-center place-content-end justify-center text-light w-full" ref={bottomBarRef}>
+      <div id="bottom-bar" className="px-3 static flex flex-row items-center place-content-end justify-center text-light w-full" ref={bottomBarRef}>
         <SpeedSlider speed={localSpeed} onChange={handleSpeedChange}/>
         <Toolbar buttons={toolbarButtons} containerRef={bottomBarRef}/>
       </div>
-      <div id="datafields" className="px-2 max-h-[calc(100vh/2)] overflow-x-visible w-full transition-width duration-500 ease-linear flex flex-col justify-center items-center">
-        <div className="pr-2 flex flex-col flex-shrink max-w-full w-full overflow-y-auto">
-          <div className="flex flex-row items-center">
-            <Dropdown targetDiv="scramble"/> 
-          </div>
-          <div id="scramble">
-            <MovesTextEditor
-              name={`scramble`}
-              ref={scrambleEditorRef}
-              trackMoves={trackMoves}
-              autofocus={true}
-              moveHistory={moveHistory}
-              updateHistoryBtns={handleHistoryBtnUpdate}
-              html={scrambleHTML}
-              setHTML={setScrambleHTML}
-            />
-          </div>
-
-          <div className="flex flex-row items-center">
-            <Dropdown targetDiv="solution"/> 
-          </div>
-          <div id="solution" className="max-w-full">
+      <div id="datafields" className="max-h-[calc(100vh/4)] overflow-y-auto w-full items-start transition-width duration-500 ease-linear">
+        <div id="solution-area" className="px-3 mt-3 mb-6 flex flex-col w-full">
+          <div className="text-xl text-dark_accent font-medium w-full">Solution</div>
+          <div id="solution">
             <MovesTextEditor 
               name={`solution`}
-              ref={solutionRef} 
+              ref={solutionEditorRef} 
               trackMoves={trackMoves} 
               autofocus={false} 
               moveHistory={moveHistory}
@@ -614,28 +610,29 @@ export default function Recon() {
               setHTML={setSolutionHTML}
             />
           </div>
-
-          <div className="text-dark_accent text-xl font-medium py-2">Time</div>
-          <div id="time-stats" className="flex flex-row flex-wrap text-nowrap items-center mb-4 gap-y-2">
-            <div id="time-field" className="border border-light flex flex-row items-center justify-start">
-              <input
-                id="time-input"
-                type="number" 
-                placeholder="00.000" 
-                className="pt-2 pb-2 pl-2 text-xl text-light bg-dark focus:outline-none rounded-sm box-content no-spinner w-[4.25rem]"
-                value={solveTime}
-                onChange={handleSolveTimeChange}
-                onWheel={(e) => e.currentTarget.blur()}
-                autoComplete="off"
-                />
-              <div className="text-light ml-2 pr-2 text-xl">sec</div> 
-            </div>
-            <div className="text-light ml-2 text-xl">{totalMoves} stm </div> 
-            <div className="flex-nowrap text-nowrap items-center flex flex-row">
-              <TPSInfo moveCount={totalMoves} solveTime={solveTime} tpsRef={tpsRef} />
-              <ReconTimeHelpInfo />
-            </div>
+        </div>
+        <div id="time-area" className="px-3 flex flex-col w-full">
+          <div className="text-xl text-dark_accent font-medium w-full">Time</div>
+          <div id="time-stats" className="flex flex-row flex-wrap text-nowrap items-center mb-4 w-full gap-y-2">
+          <div id="time-field" className="border border-light flex flex-row items-center justify-start">
+            <input
+              id="time-input"
+              type="number" 
+              placeholder="00.000" 
+              className="pt-2 pb-2 pl-2 text-xl text-light bg-dark focus:outline-none rounded-sm box-content no-spinner w-[4.25rem]"
+              value={solveTime}
+              onChange={handleSolveTimeChange}
+              onWheel={(e) => e.currentTarget.blur()}
+              autoComplete="off"
+              />
+            <div className="text-light ml-2 pr-2 text-xl">sec</div> 
           </div>
+          <div className="text-light ml-2 text-xl">{totalMoves} stm </div> 
+          <div className="flex-nowrap text-nowrap items-center flex flex-row">
+            <TPSInfo moveCount={totalMoves} solveTime={solveTime} tpsRef={tpsRef} />
+            <ReconTimeHelpInfo />
+          </div>
+        </div>
         </div>
       </div>
       <div id="blur-border" className="h-[20px] blur-xl bg-primary mt-1 mb-12"/>

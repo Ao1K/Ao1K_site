@@ -323,7 +323,6 @@ const transformTextInValidSpans = (text: string, replacementTable: { [key: strin
           .replace(/^(&nbsp;)+/g, ''); // remove leading spaces
 
           newRotationPrefix ? transformedSplitText[i] = newRotationPrefix + '&nbsp;' + transformedSplitText[i] : null;
-        console.log('replaced', oldRotationPrefix, 'with', newRotationPrefix);
         break;
       }
     }

@@ -32,5 +32,4 @@ export default function updateURL(queryName: string, textToEncode: string | null
     currentParams.set(queryName, newParam);
     const newQueryString = currentParams.toString();
     window.history.replaceState({}, '', `${window.location.pathname}?${newQueryString}`); // used to use useRouter, but it was reloading the page
-
 }
