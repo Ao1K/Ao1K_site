@@ -17,7 +17,7 @@ const Header = ({ href, title, icon }: HeaderProps) => {
 
   return (
     <Link href={href}>
-      <div className={`flex flex-row items-center pb-2 mb-3
+      <div className={`flex flex-row items-center pb-2 mb-3 font-[450]
                       ${isPath ? 
                       'border-b-2 border-light_accent' : 
                       'hover:border-b-2 hover:border-dark_accent'}`}>
