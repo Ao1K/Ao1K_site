@@ -285,7 +285,7 @@ const joinSplits = (transformedSplitText: string[], splits: { split: string, isM
     if (!isMatch) {
       transformedText += transformedSplitText[i];
     } else {
-      transformedText += '<span class="' + VALID_SPAN_CLASS + '">' + transformedSplitText + '</span>'
+      transformedText += '<span class="' + VALID_SPAN_CLASS + '">' + transformedSplitText[i] + '</span>'
     }
   });
   return transformedText;
