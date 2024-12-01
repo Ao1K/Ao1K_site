@@ -525,6 +525,7 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
     const text = e.clipboardData.getData('text');
   
     let sanitizedText = sanitizeHtml(text, sanitizeConf);
+    sanitizedText = sanitizedText.replace(/’/g, "'"); // certain apps generate fancy apostrophes
     
     // TODO: may need to manually clean up <font color=""></font> tags. Not sure where these tags are created.
     const selection = window.getSelection();
