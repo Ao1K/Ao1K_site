@@ -562,14 +562,14 @@ export default function Recon() {
 
   return (
     <div id="main_page" className="col-start-2 col-span-1 flex flex-col bg-dark">
-      <div id="top-bar" className="px-3 flex flex-row flex-wrap items-center place-content-start gap-2 mt-8 mb-3">
+      <div id="top-bar" className="px-3 flex flex-row flex-wrap items-center place-content-end gap-2 mt-8 mb-3">
         <TitleWithPlaceholder solveTitle={solveTitle} handleTitleChange={handleTitleChange} />
         <div className="flex-none flex flex-row space-x-1 pr-2 text-dark_accent">
           <TopButton id="trash" text="Clear Page" shortcutHint="Ctrl+Del" onClick={handleClearPage} icon={<TrashIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
           <TopButton id="copy" text="Copy Solve" shortcutHint="Ctrl+Q" onClick={handleCopySolve} icon={<CopyIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
           <TopButton id="share" text="Copy URL" shortcutHint="Ctrl+Shift+S" onClick={handleShare} icon={<ShareIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
         </div>
-      </div>
+      </div> {/* place-content-end works best to keep command success popup and tool hint popup on screen */}
       <div id="scramble-area" className="px-3 mt-3 flex flex-col">
         <div className="text-xl text-dark_accent font-medium">Scramble</div>
         <div id="scramble">
