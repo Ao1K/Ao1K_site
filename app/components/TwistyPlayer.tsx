@@ -115,7 +115,7 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
     return rootMove + reversedSuffix;
   }
 
-  const findSingleMoveChange = (moves: string[], prevMoves: string[], times: number[]): {singleMove: string, movesBefore: string} => {
+  const findSingleMovecountChange = (moves: string[], prevMoves: string[], times: number[]): {singleMove: string, movesBefore: string} => {
 
     let longerMoves;
     let shorterMoves;
@@ -157,21 +157,25 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
   }
 
   const findAlgBeforeSingle = (singleMoveChange: string, movesBeforeChange: string, moveChangeDelta: number) => {
-    let currentAlg = solution;
+    let alg = solution;
     if (singleMoveChange) {
       switch (moveChangeDelta) {
         case 1:
-          currentAlg = movesBeforeChange;
+          alg = movesBeforeChange;
           break;
         case -1:
-          currentAlg = movesBeforeChange + " " + reverseMove(singleMoveChange);
+          alg = movesBeforeChange + " " + reverseMove(singleMoveChange); // animation time of SingleMoveChange must be preserved upon reversal
+          break;
+        case 0:
+          // only for moveModify case
+          alg = movesBeforeChange;
           break;
         default:
-          console.warn('moveChangeDelta is invalid'); // findAlgBeforeSingle should only be called with delta of 1 or -1
+          console.warn('moveChangeDelta is invalid:', moveChangeDelta);
           break;
       }
     }
-    return currentAlg;
+    return alg;
   }
 
   const findAlgAfterSingle = (singleMoveChange: string, movesBeforeChange: string, moveChangeDelta: number) => {
@@ -185,7 +189,8 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
           currentAlg = movesBeforeChange;
           break;
         case 0:
-          currentAlg = movesBeforeChange;
+          //only for moveModify case. Returns new alg up to and including the move selected during the change
+          currentAlg = solution.split(' ').slice(0, movesBeforeChange.split(' ').length).join(' ');
           break;
         default:
           break;
@@ -195,19 +200,14 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
   }
 
   const findSingleMoveSwitch = (): {singleMove: string, movesBefore: string, isForward: boolean | undefined} => {
-    if (!playerRef.current) return {singleMove: '', movesBefore: '', isForward: undefined};
+    const noSingle = { singleMove: '', movesBefore: '', isForward: undefined };
+    if (!playerRef.current) return noSingle;
     if (solution !== lastSolution.current) {
       // solution was changed. Likely only happens if move was replaced.
-      return {singleMove: '', movesBefore: '', isForward: undefined};
+      return noSingle;
     }
-    if (animationTimes.length === 1 && animationTimes[0] === 1) {
-      // scramble was selected
-      return {singleMove: '', movesBefore: '', isForward: undefined};
-    }
+
     const positionChangeDelta = animationTimes.length - lastAnimationTimes.current.length;
-    if (Math.abs(positionChangeDelta) !== 1) {
-      return {singleMove: '', movesBefore: '', isForward: undefined};
-    }
 
     let movesBefore: string = "";
     let singleMove: string = "";
@@ -226,43 +226,153 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
 
   }
 
-  const handleSingleMoveChange = (moves: string[], lastMoves: string[], moveChangeDelta: number) => {
+  const calcMoveBetweenSingles = (singleBeforeChange: string, singleAfterChange: string): string | undefined => {
+    const singleBeforeChangeRoot = singleBeforeChange[0];
+    const singleAfterChangeRoot = singleAfterChange[0];
+    
+    if (singleBeforeChangeRoot !== singleAfterChangeRoot) {
+      return '';
+    }
+    const root = singleBeforeChangeRoot;
+
+    const singleBeforeChangeSuffix = singleBeforeChange.slice(1);
+    const singleAfterChangeSuffix = singleAfterChange.slice(1);
+
+    if (singleBeforeChangeSuffix === singleAfterChangeSuffix) {
+      return '';
+    }
+
+    const beforeAfter = singleBeforeChangeSuffix + " " + singleAfterChangeSuffix;
+    let delta = 0;
+    
+    // we're only interested in handling cases that require a single character to be typed or deleted
+    // this switch statement could be tweaked extensively based on preference. Possibly user preference.
+    switch (beforeAfter) {
+      case " '":
+        delta = -2;
+        break;
+      case "' ":
+        delta = 2;
+        break;
+      case " 2":
+        delta = 1;
+        break;
+      case "2 ":
+        delta = -1;
+        break;
+      case " 3":
+        delta = 2;
+        break;
+      case "3 ":
+        delta = -2;
+        break;
+      case "2' 2":
+        delta = 0;
+        break;
+      case "2 2'":
+        delta = 0;
+        break;
+      case "3' 3":
+        delta = 2; // not intuitive. Might be better to set instantly on this case
+        break;
+      case "3 3'":
+        delta = -2; // not intuitive. Might be better to set instantly on this case
+        break;
+      default:
+        return '';
+    }
+
+    switch (delta) {
+      case 0:
+        return '';
+      case 1:
+        return root;
+      case -1:
+        return root + "'";
+      case 2:
+        return root + "2";
+      case -2:
+        return root + "2'";
+      default:
+        return '';
+    }
+  }
+
+  const findSingleMoveModify = (): {singleMove: string, movesBefore: string} => {
+    // movecount matching and selection matching have already been already verified
+
+    const noSingle = { singleMove: '', movesBefore: '' };
+
+    if (!playerRef.current) return noSingle;
+
+    const lastSolutionArray = lastSolution.current.split(' ');
+    const solutionArray = solution.split(' ');
+
+    const leftBeforeChange = lastSolutionArray.slice(0, lastAnimationTimes.current.length - 1).join(' ');
+    const rightBeforeChange = lastSolutionArray.slice(lastAnimationTimes.current.length).join(' ');
+
+    const leftAfterChange = solutionArray.slice(0, animationTimes.length - 1).join(' ');
+    const rightAfterChange = solutionArray.slice(animationTimes.length).join(' ');
+
+    if (leftBeforeChange !== leftAfterChange || rightBeforeChange !== rightAfterChange) {
+      return noSingle;
+    }
+
+    const singleBeforeChange = lastSolutionArray[lastAnimationTimes.current.length - 1];
+    const singleAfterChange = solutionArray[animationTimes.length - 1];
+
+    const singleMoveChange = calcMoveBetweenSingles(singleBeforeChange, singleAfterChange);
+
+    if (!singleMoveChange) {
+      return noSingle;
+    }
+
+    return {singleMove: singleMoveChange, movesBefore: leftBeforeChange + " " + singleBeforeChange};
+  }
+
+  const manifestSingleChange = (singleMoveChange: string, movesBeforeChange: string, delta: number) => {
+    const algBeforeSingle = findAlgBeforeSingle(singleMoveChange, movesBeforeChange, delta); 
+    const timeBeforeSingle = findTimestamp(animationTimes, algBeforeSingle);
+    const algAfterSingle = findAlgAfterSingle(singleMoveChange, movesBeforeChange, delta);
+    const timeArrayAfterSingle = animationTimes.slice(0, algAfterSingle.split(' ').length);
+    
+    if (!playerRef.current) return;
+    
+    playerRef.current.alg = algBeforeSingle;
+
+    playerRef.current.timestamp = timeBeforeSingle;
+
+    updateLastPlayerProps(solution, timeArrayAfterSingle);
+      
+    try {
+      playerRef.current.experimentalAddMove(singleMoveChange);
+    } catch (e) {
+      console.error('Failed to add move:', singleMoveChange);
+      setInstantPlayerProps();
+    }  
+  }
+
+  const handleSingleMovecountChange = (moves: string[], lastMoves: string[], moveChangeDelta: number) => {
+    // handles case were a single move was added or removed
+    // animates the change if the selection count also changed by one
 
     let singleMoveChange = "";
     let movesBeforeChange = "";
-    ({ singleMove: singleMoveChange, movesBefore: movesBeforeChange } = findSingleMoveChange(moves, lastMoves, animationTimes));
+
+    ({ singleMove: singleMoveChange, movesBefore: movesBeforeChange } = findSingleMovecountChange(moves, lastMoves, animationTimes));
 
     if (!singleMoveChange) {
       setInstantPlayerProps();
       updateLastPlayerProps(undefined, undefined);
+      return;
+    } 
+      
+    manifestSingleChange(singleMoveChange, movesBeforeChange, moveChangeDelta);
 
-    } else if (singleMoveChange) {
-      
-      const algBeforeSingle = findAlgBeforeSingle(singleMoveChange, movesBeforeChange, moveChangeDelta); 
-      const timeBeforeSingle = findTimestamp(animationTimes, algBeforeSingle);
-      const algAfterSingle = findAlgAfterSingle(singleMoveChange, movesBeforeChange, moveChangeDelta);
-      const timeArrayAfterSingle = animationTimes.slice(0, algAfterSingle.split(' ').length);
-      
-      if (!playerRef.current) return;
-      
-      playerRef.current.alg = algBeforeSingle;
-
-      playerRef.current.timestamp = timeBeforeSingle;
-
-      
-      updateLastPlayerProps(solution, timeArrayAfterSingle);
-        
-      try {
-        playerRef.current.experimentalAddMove(singleMoveChange);
-      } catch (e) {
-        console.error('Failed to add move:', singleMoveChange);
-        setInstantPlayerProps();
-      }  
-    }
   }
 
   const handleSingleMoveSwitch = () => {
-    
+    // handles case where move selection changed by one move, ex: from first move to second move
     let singleMoveChange = "";
     let movesBeforeChange = "";
     let isForward: boolean | undefined;
@@ -271,30 +381,33 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
     if (!singleMoveChange) {
       setInstantPlayerProps();
       updateLastPlayerProps(undefined, undefined);
-
-    } else if (singleMoveChange) {
-      
-      let delta = isForward ? 1 : -1;
-      const algBeforeSingle = findAlgBeforeSingle(singleMoveChange, movesBeforeChange, delta); 
-      const timeBeforeSingle = findTimestamp(animationTimes, algBeforeSingle);
-      const algAfterSingle = findAlgAfterSingle(singleMoveChange, movesBeforeChange, delta);
-      const timeArrayAfterSingle = animationTimes.slice(0, algAfterSingle.split(' ').length);
-      
-      if (!playerRef.current) return;
-      
-      playerRef.current.alg = algBeforeSingle;
-
-      playerRef.current.timestamp = timeBeforeSingle;
-
-      updateLastPlayerProps(solution, timeArrayAfterSingle);
-        
-      try {
-        playerRef.current.experimentalAddMove(singleMoveChange);
-      } catch (e) {
-        console.error('Failed to add move:', singleMoveChange);
-        setInstantPlayerProps();
-      }  
+      return;
     }
+      
+    let delta = isForward ? 1 : -1;
+
+    manifestSingleChange(singleMoveChange, movesBeforeChange, delta);
+    
+  }
+
+  const handleSingleMoveModify = () => {
+    // handles case where the move selected was modified, ex: from R to R2
+    let singleMoveChange = "";
+    let movesBeforeChange = "";
+
+    ({ singleMove: singleMoveChange, movesBefore: movesBeforeChange } = findSingleMoveModify());
+    // movesBeforeChange is the last solution up to and including the move selected during the change
+
+    if (!singleMoveChange) {
+      setInstantPlayerProps();
+      updateLastPlayerProps(undefined, undefined);
+      return;
+    } 
+      
+    let delta = 0;
+
+    manifestSingleChange(singleMoveChange, movesBeforeChange, delta);
+    
   }
 
 
@@ -307,7 +420,9 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
     // 3. move selection changed by one move. Not yet implemented.
     // 4. move modified. Ignored for now. Possibly too unintuitive to user to implement.
 
-    if (isInstant) {
+    const isScrambleSelected = animationTimes.length === 1 && animationTimes[0] === 1;
+
+    if (isInstant || isScrambleSelected) {
       setInstantPlayerProps();
       updateLastPlayerProps(undefined, undefined);
       return;
@@ -317,21 +432,26 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
     const moves = solution.split(' ').filter(move => move !== '');
     const lastMoves = lastSolution.current ? lastSolution.current.split(' ').filter(move => move !== '') : [];
     
-    const moveChangeDelta = moves.length - lastMoves.length;
+    const movecountDelta = moves.length - lastMoves.length;
     
 
-    if (moveChangeDelta === 1 || moveChangeDelta === -1) {
-      handleSingleMoveChange(moves, lastMoves, moveChangeDelta);
-    } else if (moveChangeDelta === 0) {
-      // find if move selection changed by one move
-      handleSingleMoveSwitch();
-    } else {
-      // invalid delta
-      setInstantPlayerProps();
-      updateLastPlayerProps(undefined, undefined);
-    }
+    if (Math.abs(movecountDelta) === 1) {
+      handleSingleMovecountChange(moves, lastMoves, movecountDelta);
+      return;
+    } else if (movecountDelta === 0) {
+      const animationSelectionDelta = animationTimes.length - lastAnimationTimes.current.length;
+      if (Math.abs(animationSelectionDelta) === 1) {
+        // find if move selection changed by one move
+        handleSingleMoveSwitch();
+      } else if (animationSelectionDelta === 0) {
+        handleSingleMoveModify();
+      }
+      return;
+    } 
 
-    
+    // fallback update
+    setInstantPlayerProps();
+    updateLastPlayerProps(undefined, undefined);
   }
 
   const anyMoveChange = () => {
@@ -354,7 +474,7 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
   let controls: OrbitControls;
   let cube: Object3D;
     
-  const animate = (time: number) => {
+  const animate = () => {
     requestAnimationFrame(animate);
     controls.update();
     renderer.render(scene, camera);
@@ -443,11 +563,14 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
       // add  R, L, U, D, F, B labels
       labels.forEach(label => {
         const texture = loader.load(label.file, () => {
-          texture.minFilter = THREE.LinearFilter;
+          texture.generateMipmaps = true;
+          texture.minFilter = THREE.LinearMipmapLinearFilter;
           texture.magFilter = THREE.LinearFilter;
           const maxAnisotropy = renderer.capabilities.getMaxAnisotropy()
-          texture.anisotropy = Math.min(16, maxAnisotropy);
+          // texture.anisotropy = Math.min(16, maxAnisotropy);
+          texture.anisotropy = maxAnisotropy;
           
+                    
           const material = new THREE.MeshBasicMaterial({ 
             map: texture, 
             transparent: true 
@@ -481,7 +604,6 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
       const light = new THREE.AmbientLight(0xffffff, 0.5); // soft white light
       scene.add(light);
 
-      // Add OrbitControls
       controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
       controls.dampingFactor = 0.15;
@@ -489,7 +611,7 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
       controls.enablePan = false;
       controls.update();
       
-      animate(0);
+      animate();
     }
   }
 
