@@ -4,7 +4,6 @@ import { useState, useRef, useEffect } from "react";
 import MovesTextEditor from "../components/MovesTextEditor";
 import SpeedSlider from "../components/SpeedSlider";
 
-import Dropdown from "../components/Dropdown";
 import Toolbar from "../components/Toolbar";
 
 import TwistyPlayer from "../components/TwistyPlayer";
@@ -187,7 +186,9 @@ export default function Recon() {
     const value = e.target.value;
     const regex = /^\d{0,5}(\.\d{1,3})?$/;
 
-    if (!regex.test(value)) return;
+    if (!regex.test(value)) {
+      return;
+    }
 
     if (value === '') {
       setSolveTime('');
@@ -427,12 +428,6 @@ export default function Recon() {
 
     if (e.target.value.length > 100) return;
 
-    // if (e.target.value === '') {
-    //   setSolveTime('');
-    //   updateURL('time', null);
-    //   return;
-    // }
-
     setSolveTitle(title);
 
     updateURL('title', e.target.value);
@@ -516,7 +511,7 @@ export default function Recon() {
     if (time) {
       const parsedTime = parseFloat(time);
       if (!isNaN(parsedTime)) {
-        setSolveTime(parsedTime.toString());
+        setSolveTime(parsedTime);
       }
     }
 
