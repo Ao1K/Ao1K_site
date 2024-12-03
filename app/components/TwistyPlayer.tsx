@@ -437,21 +437,20 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
 
     if (Math.abs(movecountDelta) === 1) {
       handleSingleMovecountChange(moves, lastMoves, movecountDelta);
-      return;
     } else if (movecountDelta === 0) {
-      const animationSelectionDelta = animationTimes.length - lastAnimationTimes.current.length;
+        const animationSelectionDelta = animationTimes.length - lastAnimationTimes.current.length;
       if (Math.abs(animationSelectionDelta) === 1) {
-        // find if move selection changed by one move
         handleSingleMoveSwitch();
       } else if (animationSelectionDelta === 0) {
         handleSingleMoveModify();
+      } else {
+        setInstantPlayerProps();
+        updateLastPlayerProps(undefined, undefined);
       }
-      return;
-    } 
-
-    // fallback update
-    setInstantPlayerProps();
-    updateLastPlayerProps(undefined, undefined);
+    } else {
+      setInstantPlayerProps();
+      updateLastPlayerProps(undefined, undefined);
+    }
   }
 
   const anyMoveChange = () => {
