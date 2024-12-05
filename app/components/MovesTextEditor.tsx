@@ -24,44 +24,40 @@ export const colorDict = [ // can't be in /utils folder due to automatic tailwin
 const EditorLoader = ({ editorRef: contentEditableRef, onInputChange, name, autofocus }: { editorRef: React.RefObject<any>, onInputChange: () => void, name: string, autofocus: boolean})  => {
   // useSearchParams is a hook. Storing searchParams here prevents it from being called again and causing reloads.
   const searchParams = useSearchParams();
+  
 
   useEffect(() => {
-    let urlText = searchParams.get(name);
+    const urlText = searchParams.get(name);
+    const otherID = name === 'scramble' ? 'solution' : 'scramble';
+    const otherURLtext = searchParams.get(otherID);
 
     if (urlText) {
       let decodedText = decodeURIComponent(customDecodeURL(urlText));
       contentEditableRef.current.innerText = decodedText;
     }
 
-    if (autofocus) {
-      if (!urlText && name === 'solution') {
-        //adds caretNode span, which then is processed by onInputChange
-        const selection = window.getSelection();
-        const range = document.createRange();
-        const caretNode = document.createElement('span');
-        caretNode.id = 'caretNode';
-        range.selectNodeContents(contentEditableRef.current);
-        range.collapse(false);
-        range.insertNode(caretNode);
-        selection?.removeAllRanges();
-        selection?.addRange(range);
-      }
-      else {
-        //select the other textbox
-        const otherID = name === 'scramble' ? 'solution' : 'scramble';
-        const parentOtherElement = document.getElementById(otherID);
-        const otherTextbox = parentOtherElement?.querySelector<HTMLDivElement>('div[contenteditable="true"]');
-        otherTextbox?.focus({ preventScroll: true });
-      }
-      
+    if (autofocus && urlText && !otherURLtext) { // TODO: `&& !otherURLtext` isn't desired, but an unknown bug causes animation desync otherwise.
+      //adds caretNode span, which then is processed by onInputChange
+      const selection = window.getSelection();
+      const range = document.createRange();
+      const caretNode = document.createElement('span');
+      caretNode.id = 'caretNode';
+      range.selectNodeContents(contentEditableRef.current);
+      range.collapse(false);
+      range.insertNode(caretNode);
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+    } else if (autofocus) {
+      //select the other textbox
+      const parentOtherElement = document.getElementById(otherID);
+      const otherTextbox = parentOtherElement?.querySelector<HTMLDivElement>('div[contenteditable="true"]');
+      otherTextbox?.focus();
     }
-      
-  if (urlText || (autofocus && !urlText)) {
-    onInputChange();
-  }
   
-
-}, []);
+    if (urlText) {
+      onInputChange();
+    }
+  }, []);
 
   return null;
 }
@@ -103,7 +99,6 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
   };
   
   const handleInput = () => {
-
     onInputChange();
     
     updateURLTimeout.current ? clearTimeout(updateURLTimeout.current) : null;
@@ -787,9 +782,13 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
     };
   },[]);
 
-  const handleFocus = () => { // this is might too restrictive in preventing scrolling
+  const handleFocus = (e: React.FocusEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    
     const scrollPosition = window.scrollY;
     window.scrollTo({ top: scrollPosition });
+
+    handleInput(); // this hack ensures visual cube update
   }; 
   
   useEffect(() => {
@@ -804,14 +803,10 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
     document.addEventListener('selectionchange', handleCaretChange);
     document.addEventListener('keydown', handleCommand);
 
-    contentEditableRef.current?.addEventListener('focus', handleFocus);
-
     return () => {
 
       document.removeEventListener('selectionchange', handleCaretChange);
       document.removeEventListener('keydown', handleCommand);
-
-      contentEditableRef.current?.removeEventListener('focus', handleFocus);
 
       updateURLTimeout.current ? clearTimeout(updateURLTimeout.current) : null;
 
@@ -831,11 +826,13 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
         onCopy={handleCopy}
         onPaste={handlePaste}
         onBlur={passURLupdate}
-        onFocus={handleInput} // this hack ensures a visual cube update
+        onFocus={handleFocus}
         dangerouslySetInnerHTML={{ __html: html }}
         spellCheck={false}
         inputMode="text"
         role="textbox"
+        autoCorrect="off"
+        autoCapitalize="characters" // annoying for comments and rotations. Could implement custom fix.
       /> 
     </>
   );

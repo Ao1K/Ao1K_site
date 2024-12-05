@@ -433,11 +433,6 @@ export default function Recon() {
     updateURL('title', e.target.value);
   }
 
-  const handleFocus = () => { // this is might too restrictive in preventing scrolling
-    const scrollPosition = window.scrollY;
-    window.scrollTo({ top: scrollPosition });
-  }; 
-
   const handleCommand = (e: KeyboardEvent) => {
 
     if (e.ctrlKey && e.key === 'm') {
@@ -532,13 +527,11 @@ export default function Recon() {
     
     document.addEventListener('selectionchange', storeLastSelection);
     document.addEventListener('keydown', handleCommand);
-    document.addEventListener('focus', handleFocus);
 
     return () => {
 
       document.removeEventListener('selectionchange', storeLastSelection);
       document.addEventListener('keydown', handleCommand);
-      document.removeEventListener('focus', handleFocus);
 
     };
   }, []);
@@ -572,7 +565,7 @@ export default function Recon() {
                 name={`scramble`}
                 ref={scrambleEditorRef}
                 trackMoves={trackMoves}
-                autofocus={true}
+                autofocus={false}
                 moveHistory={moveHistory}
                 updateHistoryBtns={handleHistoryBtnUpdate}
                 html={scrambleHTML}
@@ -598,7 +591,7 @@ export default function Recon() {
               name={`solution`}
               ref={solutionEditorRef} 
               trackMoves={trackMoves} 
-              autofocus={false} 
+              autofocus={true} 
               moveHistory={moveHistory}
               updateHistoryBtns={handleHistoryBtnUpdate}
               html={solutionHTML}
