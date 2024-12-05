@@ -11,8 +11,13 @@ interface PlayerProps {
   animationTimes: number[];
 }
 
-const Player = React.memo(({ scramble, solution, speed, animationTimes }: PlayerProps) => {
+interface RenderRefProps {
+  scramble: string;
+  solution: string;
+  animationTimes: number[];
+}
 
+const Player = React.memo(({ scramble, solution, speed, animationTimes }: PlayerProps) => {
   const playerRef = useRef<TwistyPlayer | null>(null);
   
   const divRef = useRef<HTMLDivElement>(null);
@@ -22,7 +27,7 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
   const lastAnimationTimes = useRef<number[]>([]);
   const lastSpeed = useRef<number>(0);
 
-  const lastRenderRef = useRef<PlayerProps>({ scramble: scramble, solution: solution, speed: speed, animationTimes: animationTimes });
+  const lastRenderRef = useRef<RenderRefProps>({ scramble: scramble, solution: solution, animationTimes: animationTimes });
   
   const calcCubeSpeed = (speed: number) => {
     if (speed === 100) {
@@ -227,6 +232,12 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
   }
 
   const calcMoveBetweenSingles = (singleBeforeChange: string, singleAfterChange: string): string | undefined => {
+
+    if (!singleBeforeChange || !singleAfterChange) { // this check may be unnecessary
+      console.warn('move modified detected but found no move');
+      return '';
+    }
+
     const singleBeforeChangeRoot = singleBeforeChange[0];
     const singleAfterChangeRoot = singleAfterChange[0];
     
@@ -246,7 +257,7 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
     let delta = 0;
     
     // we're only interested in handling cases that require a single character to be typed or deleted
-    // this switch statement could be tweaked extensively based on preference. Possibly user preference.
+    // this switch statement could be tweaked extensively based on preference. Possibly individual user preference.
     switch (beforeAfter) {
       case " '":
         delta = -2;
@@ -414,11 +425,10 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
   // handles all visual cube updates
   const displayMoves = () => {
   
-    // four cases for single move change:
-    // 1. new move added
-    // 2. move removed
-    // 3. move selection changed by one move. Not yet implemented.
-    // 4. move modified. Ignored for now. Possibly too unintuitive to user to implement.
+    // three cases for single move change:
+    // 1. number of moves changed by one
+    // 2. move selection changed by one.
+    // 3. move modified.
 
     const isScrambleSelected = animationTimes.length === 1 && animationTimes[0] === 1;
 
@@ -437,11 +447,11 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
 
     if (Math.abs(movecountDelta) === 1) {
       handleSingleMovecountChange(moves, lastMoves, movecountDelta);
-    } else if (movecountDelta === 0) {
+    } else if (movecountDelta === 0 && moves.length > 0) {
         const animationSelectionDelta = animationTimes.length - lastAnimationTimes.current.length;
       if (Math.abs(animationSelectionDelta) === 1) {
         handleSingleMoveSwitch();
-      } else if (animationSelectionDelta === 0) {
+      } else if (animationSelectionDelta === 0 && animationTimes.length > 0) {
         handleSingleMoveModify();
       } else {
         setInstantPlayerProps();
@@ -456,16 +466,18 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
   const anyMoveChange = () => {
     if (lastRenderRef.current.scramble !== scramble) return true;
     if (lastRenderRef.current.solution !== solution) return true;
-    if (lastRenderRef.current.speed !== speed) return true;
     if (lastRenderRef.current.animationTimes !== animationTimes) return true;
     return false;
   }
 
   if (anyMoveChange()) {
     displayMoves();
+  } else if (lastSpeed.current !== speed && playerRef.current) { // only speed changed
+    playerRef.current.tempoScale = cubeSpeed;
+    lastSpeed.current = speed;
   }
 
-  lastRenderRef.current = { scramble: scramble, solution: solution, speed: speed, animationTimes: animationTimes };
+  lastRenderRef.current = { scramble: scramble, solution: solution, animationTimes: animationTimes };
   
   let scene: THREE.Scene;
   let camera: THREE.PerspectiveCamera;
