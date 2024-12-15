@@ -15,3 +15,8 @@ start text: RUF \n LUF. Replace copy paste in LUF \n LUF instead. Timestamp snap
 If textbox begins with an invalid character string (ex: ff) then rotation prefixing will fail and spans are not correctly parsed.
 
 Encode "(" and ")". These characters can break "copy solve".
+
+Adding a commented line or empty line can totally break the player after that line. Miscounted lines. 
+I'm over-filtering out empty lines from the state variables. Need to handle them instead.
+
+tps not in printout

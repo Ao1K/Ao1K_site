@@ -9,10 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@aws-amplify/ui-react-storage": "^3.4.1",
     "@babel/plugin-transform-class-properties": "^7.25.9",
     "@babel/plugin-transform-object-rest-spread": "^7.25.9",
-    "aws-amplify": "^6.10.0",
     "core-js": "^3.39.0",
     "cubing": "^0.51.0",
     "glob": "^11.0.0",
@@ -25,8 +23,6 @@
     "three": "^0.165.0"
   },
   "devDependencies": {
-    "@aws-amplify/backend": "^1.8.0",
-    "@aws-amplify/backend-cli": "^1.4.2",
     "@types/lodash.debounce": "^4.0.9",
     "@types/node": "^20",
     "@types/react": "^18",
@@ -34,8 +30,6 @@
     "@types/sanitize-html": "^2.11.0",
     "@types/three": "^0.161.2",
     "autoprefixer": "^10.0.1",
-    "aws-cdk": "^2.170.0",
-    "aws-cdk-lib": "^2.170.0",
     "constructs": "^10.4.2",
     "esbuild": "^0.24.0",
     "eslint": "^8",
