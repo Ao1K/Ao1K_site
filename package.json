@@ -11,6 +11,7 @@
   "dependencies": {
     "@babel/plugin-transform-class-properties": "^7.25.9",
     "@babel/plugin-transform-object-rest-spread": "^7.25.9",
+    "aws-sdk": "^2.1692.0",
     "core-js": "^3.39.0",
     "cubing": "^0.51.0",
     "glob": "^11.0.0",

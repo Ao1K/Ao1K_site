@@ -419,8 +419,29 @@ export default function Recon() {
     oldSelectionRef.current.range = range;
     oldSelectionRef.current.textbox = textbox;
     oldSelectionRef.current.status = 'updated';
+  }
 
+  const showDailyScramble = async () => {
+    try {
+      const response = await fetch('/api/get-daily-scramble');
+      if (!response.ok) {
+        console.error('Failed to get daily scramble response:', response.statusText);
+        return;
+      }
+      const data = await response.json();
+      const dailyScramble = data.message;
+      
+      if (!dailyScramble) {
+        console.error('No daily scramble in response:', data);
+        return;
+      }
+      
+      const scrambleMessage = `<div><span class="text-gray-500">//&nbsp;Scramble&nbsp;of&nbsp;the&nbsp;day:</span></div><div><span class="text-light">${dailyScramble}</span></div>`;
+      scrambleEditorRef.current?.transform(scrambleMessage); // force update inside MovesTextEditor
 
+    } catch (error) {
+      console.error('Failed to get daily scramble:', error);
+    }
   }
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -520,6 +541,11 @@ export default function Recon() {
     }
     if (scrambleRef.current) {
       setPlayerParams(prev => ({ ...prev, scramble: scrambleRef.current }));
+    }
+
+    if (!Array.from(urlParams.values()).filter(val => val !== '').length) { 
+      // if no URL query values or empty string values, then show daily scramble
+      showDailyScramble();
     }
   }, []);
 
