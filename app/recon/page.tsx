@@ -31,6 +31,8 @@ import TitleWithPlaceholder from "../components/TitleInput";
 import TopButton from "../components/TopButton";
 import { customDecodeURL } from '../composables/urlEncoding';
 
+import getDailyScramble from '../composables/getDailyScramble';
+
 export interface MoveHistory {
   history: string[][];
   index: number;
@@ -423,20 +425,14 @@ export default function Recon() {
 
   const showDailyScramble = async () => {
     try {
-      const response = await fetch('/api/get-daily-scramble');
-      if (!response.ok) {
-        console.error('Failed to get daily scramble response:', response.statusText);
-        return;
-      }
-      const data = await response.json();
-      const dailyScramble = data.message;
+      const dailyScramble = await getDailyScramble();
       
       if (!dailyScramble) {
-        console.error('No daily scramble in response:', data);
+        console.error('No daily scramble returned');
         return;
       }
       
-      const scrambleMessage = `<div><span class="text-gray-500">//&nbsp;Scramble&nbsp;of&nbsp;the&nbsp;day:</span></div><div><span class="text-light">${dailyScramble}</span></div>`;
+      const scrambleMessage = `<div><span class="text-gray-500">//&nbsp;daily&nbsp;scramble:</span></div><div><span class="text-light">${dailyScramble}</span></div>`;
       scrambleEditorRef.current?.transform(scrambleMessage); // force update inside MovesTextEditor
 
     } catch (error) {
@@ -543,7 +539,7 @@ export default function Recon() {
       setPlayerParams(prev => ({ ...prev, scramble: scrambleRef.current }));
     }
 
-    if (!Array.from(urlParams.values()).filter(val => val !== '').length) { 
+    if (!Array.from(urlParams.values()).filter(val => val !== '' && val !== 'undefined').length) { 
       // if no URL query values or empty string values, then show daily scramble
       showDailyScramble();
     }
