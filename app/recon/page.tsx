@@ -33,6 +33,12 @@ import { customDecodeURL } from '../composables/urlEncoding';
 
 import getDailyScramble from '../composables/getDailyScramble';
 
+import { Amplify } from 'aws-amplify';
+import outputs from "../../amplify_outputs.json"
+
+Amplify.configure(outputs);
+
+
 export interface MoveHistory {
   history: string[][];
   index: number;
@@ -426,10 +432,10 @@ export default function Recon() {
   const showDailyScramble = async () => {
     try {
       const dailyScramble = await getDailyScramble();
+      console.log('daily scramble:', dailyScramble);
       
       if (!dailyScramble) {
-        console.error('No daily scramble returned');
-        return;
+        throw new Error('Failed to get daily scramble');
       }
       
       const scrambleMessage = `<div><span class="text-gray-500">//&nbsp;daily&nbsp;scramble:</span></div><div><span class="text-light">${dailyScramble}</span></div>`;
