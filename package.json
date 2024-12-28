@@ -14,7 +14,7 @@
     "aws-amplify": "^6.10.3",
     "aws-sdk": "^2.1692.0",
     "core-js": "^3.39.0",
-    "cubing": "^0.51.0",
+    "cubing": "^0.53.8",
     "glob": "^11.0.0",
     "lodash.debounce": "^4.0.8",
     "next": "^14.2.4",
@@ -23,7 +23,7 @@
     "react-dom": "^18.3.1",
     "rimraf": "^6.0.1",
     "sanitize-html": "^2.13.0",
-    "three": "^0.165.0"
+    "three": "0.170.0"
   },
   "devDependencies": {
     "@aws-amplify/backend": "^1.9.0",
