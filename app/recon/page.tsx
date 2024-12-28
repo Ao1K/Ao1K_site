@@ -30,14 +30,8 @@ import { TransformHTMLprops } from "../composables/transformHTML";
 import TitleWithPlaceholder from "../components/TitleInput";
 import TopButton from "../components/TopButton";
 import { customDecodeURL } from '../composables/urlEncoding';
-
 import getDailyScramble from '../composables/getDailyScramble';
-
-import { Amplify } from 'aws-amplify';
-import outputs from "../../amplify_outputs.json"
-
-Amplify.configure(outputs);
-
+import { randomScrambleForEvent } from 'cubing/scramble';
 
 export interface MoveHistory {
   history: string[][];
@@ -182,7 +176,7 @@ export default function Recon() {
 
   const debouncedSetSpeed = debounce((value: number) => {
     setSpeed(value);
-  }, 300); // Set a reasonable debounce delay
+  }, 300);
 
   const handleSpeedChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value);
@@ -430,16 +424,21 @@ export default function Recon() {
   }
 
   const showDailyScramble = async () => {
+
     try {
-      const dailyScramble = await getDailyScramble();
-      console.log('daily scramble:', dailyScramble);
-      
-      if (!dailyScramble) {
-        throw new Error('Failed to get daily scramble');
+      const data = await getDailyScramble(new Date());
+
+      if (data === undefined) {
+        console.error('No daily scramble found.');
+        return;
       }
+
+      console.log('daily scramble:', data);
+      return;
       
-      const scrambleMessage = `<div><span class="text-gray-500">//&nbsp;daily&nbsp;scramble:</span></div><div><span class="text-light">${dailyScramble}</span></div>`;
-      scrambleEditorRef.current?.transform(scrambleMessage); // force update inside MovesTextEditor
+      
+      // const scrambleMessage = `<div><span class="text-gray-500">//&nbsp;Scramble&nbsp;of&nbsp;the&nbsp;day:</span></div><div><span class="text-light">${dailyScramble}</span></div>`;
+      // scrambleEditorRef.current?.transform(scrambleMessage); // force update inside MovesTextEditor
 
     } catch (error) {
       console.error('Failed to get daily scramble:', error);
@@ -545,7 +544,7 @@ export default function Recon() {
       setPlayerParams(prev => ({ ...prev, scramble: scrambleRef.current }));
     }
 
-    if (!Array.from(urlParams.values()).filter(val => val !== '' && val !== 'undefined').length) { 
+    if (!Array.from(urlParams.values()).filter(val => val !== '').length) { 
       // if no URL query values or empty string values, then show daily scramble
       showDailyScramble();
     }
