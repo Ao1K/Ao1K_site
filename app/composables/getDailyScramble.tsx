@@ -13,50 +13,43 @@ Amplify.configure(outputs);
 
 const client = generateClient<Schema>();
 
-const getDailyScramble = async (day: Date, attempt: number = 0) => {
-
-  console.log('attempt:', attempt);
-
-  if (attempt >= 1) {
-    console.error("Could not get daily scramble");
-    return;
-  }
+const getDailyScramble = async (day: Date) => {
 
   const isoDate = day.toISOString().split('T')[0];
-  console.log('isoDate:', isoDate);
   
-  const { data } = await client.models.DailyScrambles.list({
-    // filter: { date: { eq: isoDate } },
-  });
+  const { data } = await client.models.DailyScrambles.list();
 
-  // console.log('deleting:', data);
+  // testing: delete all daily scrambles
   // for (const item of data) {
   //   console.log('deleting:', item);
   //   await client.models.DailyScrambles.delete({ id: item.id });
   // }
 
-  if (!data || data.length === 0) {
-    const puzzleType = "333";
-    createDailyScramble(isoDate, puzzleType);
-    getDailyScramble(day, attempt + 1);
-
-  } else {
-    console.log('data', data);
-    const [{ date, scramble3x3 }] = data;
-    return { date, scramble3x3 };
+  // inefficiently check for existing daily scramble
+  for (const item of data) {
+    if (item.date === isoDate) {
+      return { date: item.date, scramble3x3: item.scramble3x3 };
+    }
   }
+
+  // else, create a new daily scramble
+  const puzzleType = "333";
+  const newScram = createDailyScramble(isoDate, puzzleType);
+  return newScram;
+
 }
 
 
 const createDailyScramble = async (isoDate: string, puzzleType: string) => {
   const scramObj = await getScram(puzzleType);
-  console.log('scramObj:', scramObj);
   const scram = scramObj.toString();
-  console.log('scram:', scram);
-  // await client.models.DailyScrambles.create({
-  //   date: isoDate,
-  //   scramble3x3: scram,
-  // });
+
+  await client.models.DailyScrambles.create({
+    date: isoDate,
+    scramble3x3: scram,
+  });
+
+  return { date: isoDate, scramble3x3: scram };
 }
 
 const getScram = async (puzzleType: string) => {

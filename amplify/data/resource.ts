@@ -4,7 +4,7 @@ const schema = a.schema({
   DailyScrambles: a.model({
       date: a.date(),
       scramble3x3: a.string(),
-    }).authorization(allow => allow.publicApiKey().to(['read', 'create', 'delete'])),
+    }).authorization(allow => allow.publicApiKey().to(['read', 'create'])),
   
   // getDaily: a
   //   .query()

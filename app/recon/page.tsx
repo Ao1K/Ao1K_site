@@ -1,6 +1,6 @@
 'use client';
 import debounce from 'lodash.debounce';
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from 'react';
 import MovesTextEditor from "../components/MovesTextEditor";
 import SpeedSlider from "../components/SpeedSlider";
 
@@ -31,7 +31,6 @@ import TitleWithPlaceholder from "../components/TitleInput";
 import TopButton from "../components/TopButton";
 import { customDecodeURL } from '../composables/urlEncoding';
 import getDailyScramble from '../composables/getDailyScramble';
-import { randomScrambleForEvent } from 'cubing/scramble';
 
 export interface MoveHistory {
   history: string[][];
@@ -433,12 +432,11 @@ export default function Recon() {
         return;
       }
 
-      console.log('daily scramble:', data);
-      return;
+      const dailyScramble = data.scramble3x3;
+      const date = data.date;     
       
-      
-      // const scrambleMessage = `<div><span class="text-gray-500">//&nbsp;Scramble&nbsp;of&nbsp;the&nbsp;day:</span></div><div><span class="text-light">${dailyScramble}</span></div>`;
-      // scrambleEditorRef.current?.transform(scrambleMessage); // force update inside MovesTextEditor
+      const scrambleMessage = `<div><span class="text-gray-500">//&nbsp;Scramble&nbsp;of&nbsp;the&nbsp;day</span></div><div><span class="text-gray-500">//&nbsp;${date}</span></div><div><span class="text-light">${dailyScramble}</span></div>`;
+      scrambleEditorRef.current?.transform(scrambleMessage); // force update inside MovesTextEditor
 
     } catch (error) {
       console.error('Failed to get daily scramble:', error);
