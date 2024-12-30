@@ -1,6 +1,6 @@
 'use client';
 import debounce from 'lodash.debounce';
-import { useState, useRef, useEffect, lazy } from "react";
+import { useState, useRef, useEffect, lazy, Suspense } from 'react';
 import MovesTextEditor from "../../components/recon/MovesTextEditor";
 import SpeedSlider from "../../components/recon/SpeedSlider";
 
@@ -50,8 +50,8 @@ export default function Recon() {
   const allMoves = useRef<string[][][]>([[[]], [[]]]);
   const moveLocation = useRef<[number, number, number]>([0, 0, 0]);
 
-  const [speed, setSpeed] = useState<number>(25); // allows debounced speed updates to Player
-  const [localSpeed, setLocalSpeed] = useState<number>(25); // allows smooth slider input rendering
+  const [speed, setSpeed] = useState<number>(30); // allows debounced speed updates to Player
+  const [localSpeed, setLocalSpeed] = useState<number>(30) // allows smooth slider input rendering
 
   const scrambleRef = useRef<string>('');
   const [solution, setSolution] = useState<string>('');
@@ -178,10 +178,9 @@ export default function Recon() {
     setSpeed(value);
   }, 300);
 
-  const handleSpeedChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value);
-    setLocalSpeed(value); // Update the local state immediately
-    debouncedSetSpeed(value); // Debounce the state update
+  const handleSpeedChange = (speed: number) => {
+    setLocalSpeed(speed); // Update the local state immediately
+    debouncedSetSpeed(speed); // Debounce the state update
   };
 
   const handleSolveTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -584,7 +583,7 @@ export default function Recon() {
           <TopButton id="copy" text="Copy Solve" shortcutHint="Ctrl+Q" onClick={handleCopySolve} icon={<CopyIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
           <TopButton id="share" text="Copy URL" shortcutHint="Ctrl+Shift+S" onClick={handleShare} icon={<ShareIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
         </div>
-      </div> {/* place-content-end works best to keep command success popup and tool hint popup on screen */}
+      </div>
       <div id="scramble-area" className="px-3 mt-3 flex flex-col">
         <div className="text-xl text-dark_accent font-medium">Scramble</div>
         <div id="scramble">
@@ -603,17 +602,19 @@ export default function Recon() {
       <div id="player-box" className="px-3 relative flex flex-col my-6 w-full justify-center items-center">
         <div id="cube-highlight" className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-full blur-sm bg-primary w-[calc(100%-1.5rem)]"></div>
         <div id="cube_model" className="flex aspect-video h-full max-h-96 bg-dark z-10 w-full">
-          <TwistyPlayer scramble={playerParams.scramble} solution={playerParams.solution} speed={speed} animationTimes={playerParams.animationTimes}/>
+          <Suspense fallback={<div className="text-light">Loading cube...</div>}>
+            <TwistyPlayer scramble={playerParams.scramble} solution={playerParams.solution} speed={speed} animationTimes={playerParams.animationTimes}/>
+          </Suspense>
         </div>
       </div>
-      <div id="bottom-bar" className="px-3 static flex flex-row items-center place-content-end justify-center text-light w-full" ref={bottomBarRef}>
-        <SpeedSlider speed={localSpeed} onChange={handleSpeedChange}/>
+      <div id="bottom-bar" className="px-3 space-x-1 static flex flex-row items-center place-content-end justify-start text-light w-full" ref={bottomBarRef}>
+        <SpeedDropdown speed={localSpeed} handleSpeedChange={handleSpeedChange}/>
         <Toolbar buttons={toolbarButtons} containerRef={bottomBarRef}/>
       </div>
-      <div id="datafields" className="max-h-[calc(100vh/4)] overflow-y-auto w-full items-start transition-width duration-500 ease-linear">
+      <div id="datafields" className="w-full items-start transition-width duration-500 ease-linear">
         <div id="solution-area" className="px-3 mt-3 mb-6 flex flex-col w-full">
           <div className="text-xl text-dark_accent font-medium w-full">Solution</div>
-          <div id="solution">
+          <div className="" id="solution">
             <MovesTextEditor 
               name={`solution`}
               ref={solutionEditorRef} 
@@ -628,7 +629,7 @@ export default function Recon() {
         </div>
         <div id="time-area" className="px-3 flex flex-col w-full">
           <div className="text-xl text-dark_accent font-medium w-full">Time</div>
-          <div id="time-stats" className="flex flex-row flex-wrap text-nowrap items-center mb-4 w-full gap-y-2">
+          <div id="time-stats" className="flex flex-row flex-wrap text-nowrap items-center w-full gap-y-2">
           <div id="time-field" className="border border-light flex flex-row items-center justify-start">
             <input
               id="time-input"
@@ -650,7 +651,7 @@ export default function Recon() {
         </div>
         </div>
       </div>
-      <div id="blur-border" className="h-[20px] blur-xl bg-primary mt-1 mb-12"/>
+      <div id="blur-border" className="h-[4px] blur-sm bg-primary my-32"/>
     </div>
   );
 }
