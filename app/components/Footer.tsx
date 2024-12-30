@@ -13,14 +13,14 @@ export default function Footer(): JSX.Element {
 
   return (
     <footer className="col-span-full bg-dark">
-      <div className="text-gray-300 justify-center items-center col-start-2 col-span-1 py-12 h-1/3">
+      <div className="text-gray-300 justify-center items-center col-start-2 col-span-1 h-1/3 mb-24">
          
         <div className="flex flex-col items-center ">
           <div className={`mb-3 justify-items-center`}>
             <div className={`text-2xl  font-bold ${glory.variable} font-modern`}>AVERAGE OF ONE THOUSAND</div>
-            <div className='w-full h-[2px] bg-primary mt-5 mb-3'></div>
+            {/* <div className='w-full h-[2px] mt-5 mb-3'></div>
             <Tagline />
-            <div className='w-full h-[2px] bg-primary mt-3'></div>
+            <div className='w-full h-[2px] mt-3'></div> */}
           </div>
         </div>
         

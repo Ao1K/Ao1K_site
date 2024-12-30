@@ -470,12 +470,18 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
     return false;
   }
 
-  if (anyMoveChange()) {
-    displayMoves();
-  } else if (lastSpeed.current !== speed && playerRef.current) { // only speed changed
-    playerRef.current.tempoScale = cubeSpeed;
-    lastSpeed.current = speed;
+  const startAnyUpdate = async () => {
+    if (anyMoveChange()) {
+      displayMoves();
+
+      
+    } else if (lastSpeed.current !== speed && playerRef.current) { // only speed changed
+      playerRef.current.tempoScale = cubeSpeed;
+      lastSpeed.current = speed;
+    }
   }
+
+  startAnyUpdate();
 
   lastRenderRef.current = { scramble: scramble, solution: solution, animationTimes: animationTimes };
   
@@ -532,6 +538,8 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
 
       
       scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x161018);
+      
       const geometry = new THREE.BoxGeometry(1, 1, 1);
       const material = new THREE.MeshBasicMaterial({ color: 0xFFFF00 });
       const mesh = new THREE.Mesh(geometry, material);

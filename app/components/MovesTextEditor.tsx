@@ -25,6 +25,11 @@ const EditorLoader = ({ editorRef: contentEditableRef, onInputChange, name, auto
   // useSearchParams is a hook. Storing searchParams here prevents it from being called again and causing reloads.
   const searchParams = useSearchParams();
   
+  
+  if (name === 'solution') {
+    // add max hight and overflow handling to solution textbox
+    contentEditableRef.current?.classList.add('max-h-[calc(100vh/4)]', 'overflow-y-auto');
+  }
 
   useEffect(() => {
     const urlText = searchParams.get(name);
@@ -37,6 +42,7 @@ const EditorLoader = ({ editorRef: contentEditableRef, onInputChange, name, auto
     }
 
     if (autofocus && urlText && !otherURLtext) { // TODO: `&& !otherURLtext` isn't desired, but an unknown bug causes animation desync otherwise.
+
       //adds caretNode span, which then is processed by onInputChange
       const selection = window.getSelection();
       const range = document.createRange();
@@ -821,7 +827,7 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
       <div
         contentEditable
         ref={contentEditableRef}
-        className="bg-dark text-left rounded-sm resize-none text-xl min-h-[4.7rem] p-2 max-w-full caret-light border border-primary focus:border-1 ff-space-adjust"
+        className="bg-dark text-left rounded-sm resize-none text-lg min-h-[4.7rem] p-2 max-w-full caret-light border border-primary focus:border-1 ff-space-adjust"
         onInput={handleInput}
         onCopy={handleCopy}
         onPaste={handlePaste}
