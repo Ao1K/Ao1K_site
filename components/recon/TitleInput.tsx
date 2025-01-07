@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { titlePlaceholders } from '../utils/titlePlaceholders';
+import { titlePlaceholders } from '../../utils/titlePlaceholders';
 
 interface InputWithPlaceholderProps {
   solveTitle: string;

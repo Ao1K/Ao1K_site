@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
-import InfoIcon from './icons/info';
-import CloseIcon from './icons/close';
+import InfoIcon from '../icons/info';
+import CloseIcon from '../icons/close';
 
 const WIDTH = 300; //px
 
@@ -20,7 +20,7 @@ export default function ReconTimeHelpInfo() {
   };
 
   //todo: ideally, width and height of popup should be determined right away, and then top and left set accordingly.
-  const handlePopupPosition = (event: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
+  const handlePopupCreation = (event: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
     const iconRect = event.currentTarget.getBoundingClientRect();
     const popup = document.getElementById('popup');
     
@@ -73,7 +73,7 @@ export default function ReconTimeHelpInfo() {
 
   return (
     <div className="relative">
-      <div className="cursor-pointer" onClick={handlePopupPosition} onTouchStart={handlePopupPosition} onTouchEnd={handleClose}>
+      <div className="cursor-pointer" onClick={handlePopupCreation} onTouchStart={handlePopupCreation} onTouchEnd={handleClose}>
         <InfoIcon className="text-dark_accent" />
       </div>
       <div
