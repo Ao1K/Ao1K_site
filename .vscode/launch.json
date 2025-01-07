@@ -8,7 +8,7 @@
       "type": "chrome",
       "request": "launch",
       "name": "chrome+vscode debug",
-      "url": "http://localhost:3000/recon",
+      "url": "http://localhost:3000/notimer",
       "webRoot": "${workspaceFolder}",
     }
   ]

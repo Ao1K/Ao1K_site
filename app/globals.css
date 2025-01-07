@@ -107,3 +107,17 @@ input[type='range']::-moz-range-track {
   font-variant-ligatures: none;
   letter-spacing: normal;
 }
+
+.scrollbar-hidden {
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+  scrollbar-width: none; /* Firefox */
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none; /* Safari and Chrome */
+}
+
+/* Always show a background scrollbar */
+.scroll-always::-webkit-scrollbar {
+  overflow-y: scroll; /* Ensure the scrollbar is always there */
+}

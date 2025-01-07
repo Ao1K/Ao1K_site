@@ -2,8 +2,7 @@ import React from "react";
 
 import "./globals.css";
 
-import Header from "./components/Header";
-import Footer from "./components/Footer";
+import Header from "../components/Header";
 
 import type { Metadata } from "next";
 import { Rubik } from "next/font/google";
@@ -56,8 +55,8 @@ export default async function RootLayout({
           </main>
           
           <div id="right-margin" className="block bg-dark h-full -z-10"></div> 
-          
-          <Footer/>
+
+          {/* <Footer /> is stored in individual pages due to NoTimer not having a footer */}
         </body>
       </html>
     </>
