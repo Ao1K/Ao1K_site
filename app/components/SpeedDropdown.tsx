@@ -1,5 +1,5 @@
-import SpeedIcon from '../icons/speed';
-import DropdownIcon from '../icons/dropdown';
+import SpeedIcon from './icons/speed';
+import DropdownIcon from './icons/dropdown';
 import { useState, useEffect } from 'react';
 
 interface SpeedSliderProps {

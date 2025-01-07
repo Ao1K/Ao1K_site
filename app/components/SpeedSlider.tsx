@@ -1,5 +1,5 @@
 import React from 'react';
-import SpeedIcon from '../icons/speed';
+import SpeedIcon from '../components/icons/speed';
 
 interface SpeedSliderProps {
     speed: number;

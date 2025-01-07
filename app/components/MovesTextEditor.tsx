@@ -1,15 +1,15 @@
 'use client';
 
-import React, { useImperativeHandle, forwardRef, useEffect, Suspense } from 'react';
+import React, { useImperativeHandle, forwardRef, useEffect, useMemo, useState, memo, Suspense } from 'react';
 import { useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import sanitizeHtml from 'sanitize-html';
 
-import validateTextInput from "../../composables/recon/validateTextInput";
-import validationToMoves from "../../composables/recon/validationToMoves";
-import updateURL from '../../composables/recon/updateURL';
+import validateTextInput from "../composables/validateTextInput";
+import validationToMoves from "../composables/validationToMoves";
+import updateURL from '../composables/updateURL';
 
-import { customDecodeURL } from '../../composables/recon/urlEncoding';
+import { customDecodeURL } from '../composables/urlEncoding';
 
 export const colorDict = [ // can't be in /utils folder due to automatic tailwind style purging. probably.
   { key: 'move', value: 'text-light'},
