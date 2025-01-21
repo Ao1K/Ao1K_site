@@ -2,7 +2,7 @@
 import debounce from 'lodash.debounce';
 import { useState, useRef, useEffect, lazy, Suspense } from 'react';
 import MovesTextEditor from "../../components/recon/MovesTextEditor";
-import SpeedSlider from "../../components/recon/SpeedSlider";
+import SpeedDropdown from "../../components/recon/SpeedDropdown";
 
 import Toolbar from "../../components/recon/Toolbar";
 
@@ -602,7 +602,7 @@ export default function Recon() {
       <div id="player-box" className="px-3 relative flex flex-col my-6 w-full justify-center items-center">
         <div id="cube-highlight" className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-full blur-sm bg-primary w-[calc(100%-1.5rem)]"></div>
         <div id="cube_model" className="flex aspect-video h-full max-h-96 bg-dark z-10 w-full">
-          <Suspense fallback={<div className="text-light">Loading cube...</div>}>
+          <Suspense fallback={<div className="flex w-full h-full justify-center items-center text-light">Loading cube...</div>}>
             <TwistyPlayer scramble={playerParams.scramble} solution={playerParams.solution} speed={speed} animationTimes={playerParams.animationTimes}/>
           </Suspense>
         </div>
