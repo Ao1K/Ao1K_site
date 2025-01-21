@@ -41,8 +41,8 @@ export default async function RootLayout({
         
         <body
           className={`min-h-screen pt-16 grid overflow-auto bg-primary-900
-            grid-cols-[1fr,minmax(0,6fr),1fr] 
-            md:grid-cols-[1fr,minmax(0,4fr),1fr] 
+            grid-cols-[1fr,minmax(0,8fr),1fr] 
+            md:grid-cols-[1fr,minmax(0,5fr),1fr] 
             lg:grid-cols-[1fr,minmax(0,3fr),1fr] 
             xl:grid-cols-[3fr,minmax(0,4fr),3fr] `}
         >

@@ -38,7 +38,7 @@ const ResponsiveButtonRow = ({ buttons, containerRef }: ButtonRowProps) => {
       const isSubstantialCollapse = remainingButtons >= moreToolsBtnEquiv;
 
 
-      if ((totalWidth + 450) > (container.clientWidth + moreToolsBtnWidth) && (isSubstantialCollapse || isCollapsing)) { // 450 is approx width of speed slider.
+      if ((totalWidth + 250 ) > (container.clientWidth + moreToolsBtnWidth) && (isSubstantialCollapse || isCollapsing)) { // 68 is approx width of speed dropdown. 250 is random.
         overflow.push(button);
         isCollapsing = true;
       } else {
