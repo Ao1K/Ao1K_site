@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
-import InfoIcon from './icons/info';
-import CloseIcon from './icons/close';
+import InfoIcon from '../icons/info';
+import CloseIcon from '../icons/close';
 
 const WIDTH = 300; //px
 

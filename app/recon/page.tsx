@@ -4,32 +4,32 @@ import { useState, useRef, useEffect, lazy, Suspense } from 'react';
 import MovesTextEditor from "../../components/recon/MovesTextEditor";
 import SpeedDropdown from "../../components/recon/SpeedDropdown";
 
-import Toolbar from "../components/Toolbar";
+import Toolbar from "../../components/Toolbar";
 
 import ReconTimeHelpInfo from "../../components/recon/ReconTimeHelpInfo";
 import TPSInfo from "../../components/recon/TPSInfo";
 import updateURL from "../../composables/recon/updateURL";
 
-import type { EditorRef } from "../components/MovesTextEditor";
+import type { EditorRef } from "../../components/recon/MovesTextEditor";
 
-import UndoIcon from "../components/icons/undo";
-import RedoIcon from "../components/icons/redo";
-import CatIcon from "../components/icons/cat";
-import MirrorM from "../components/icons/mirrorM";
-import MirrorS from "../components/icons/mirrorS";
-import TrashIcon from "../components/icons/trash";
-import CopyIcon from "../components/icons/copy";
-import ShareIcon from "../components/icons/share";
+import UndoIcon from "../../components/icons/undo";
+import RedoIcon from "../../components/icons/redo";
+import CatIcon from "../../components/icons/cat";
+import MirrorM from "../../components/icons/mirrorM";
+import MirrorS from "../../components/icons/mirrorS";
+import TrashIcon from "../../components/icons/trash";
+import CopyIcon from "../../components/icons/copy";
+import ShareIcon from "../../components/icons/share";
 
-import addCat from "../composables/addCat";
-import { mirrorHTML_M, mirrorHTML_S, removeComments, rotateHTML_X, rotateHTML_Y, rotateHTML_Z } from "../composables/transformHTML";
-import isSelectionInTextbox from "../composables/isSelectionInTextbox";
-import { TransformHTMLprops } from "../composables/transformHTML";
+import addCat from "../../composables/recon/addCat";
+import { mirrorHTML_M, mirrorHTML_S, removeComments, rotateHTML_X, rotateHTML_Y, rotateHTML_Z } from "../../composables/recon/transformHTML";
+import isSelectionInTextbox from "../../composables/recon/isSelectionInTextbox";
+import { TransformHTMLprops } from "../../composables/recon/transformHTML";
 
-import TitleWithPlaceholder from "../components/TitleInput";
-import TopButton from "../components/TopButton";
-import { customDecodeURL } from '../composables/urlEncoding';
-import getDailyScramble from '../composables/getDailyScramble';
+import TitleWithPlaceholder from "../../components/recon/TitleInput";
+import TopButton from "../../components/recon/TopButton";
+import { customDecodeURL } from '../../composables/recon/urlEncoding';
+import getDailyScramble from '../../composables/recon/getDailyScramble';
 
 export interface MoveHistory {
   history: string[][];
@@ -44,7 +44,7 @@ interface OldSelectionRef {
   textbox: string | null;
 }
 
-const TwistyPlayer = lazy(() => import("../../components/TwistyPlayer"));
+const TwistyPlayer = lazy(() => import("../../components/recon/TwistyPlayer"));
 
 export default function Recon() {
   const allMoves = useRef<string[][][]>([[[]], [[]]]);
@@ -601,7 +601,7 @@ export default function Recon() {
       <div id="player-box" className="px-3 relative flex flex-col my-6 w-full justify-center items-center">
         <div id="cube-highlight" className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-full blur-sm bg-primary w-[calc(100%-1.5rem)]"></div>
         <div id="cube_model" className="flex aspect-video h-full max-h-96 bg-dark z-10 w-full">
-          <Suspense fallback={<div className="flex w-full h-full justify-center items-center text-light">Loading cube...</div>}>
+          <Suspense fallback={<div className="flex text-xl w-full h-full justify-center items-center text-light">Loading cube...</div>}>
             <TwistyPlayer scramble={playerParams.scramble} solution={playerParams.solution} speed={speed} animationTimes={playerParams.animationTimes}/>
           </Suspense>
         </div>

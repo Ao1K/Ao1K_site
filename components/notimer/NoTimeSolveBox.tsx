@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { debounce, lte } from "lodash";
 import CloseIcon from "../../components/icons/close";
 import WriteIcon from "../../components/icons/write";
-import ConfirmationBox from "../../components/ConfirmationBox";
+import ConfirmationBox from "../ConfirmationBox";
 import sanitizeHtml from 'sanitize-html';
 import { shapesTable } from '../../utils/shapesTable';
 
