@@ -2,5 +2,6 @@
   "search.exclude": {
     "**/node_modules": false,
     "**/node_modules/testing-removed-this-one": true
-  }
+  },
+  "editor.tabSize": 2
 }
