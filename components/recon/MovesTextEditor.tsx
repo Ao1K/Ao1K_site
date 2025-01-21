@@ -12,13 +12,13 @@ import updateURL from '../../composables/recon/updateURL';
 import { customDecodeURL } from '../../composables/recon/urlEncoding';
 
 export const colorDict = [ // can't be in /utils folder due to automatic tailwind style purging. probably.
-  { key: 'move', value: 'text-light'},
+  { key: 'move', value: 'text-primary-100'},
   { key: 'comment', value: 'text-gray-500'},
-  { key: 'space', value: 'text-light'},
+  { key: 'space', value: 'text-primary-100'},
   { key: 'invalid', value: 'text-red-500'},
   { key: 'paren', value: 'text-paren'},
   { key: 'rep', value: 'text-paren'},
-  { key: 'image', value: 'text-light'}, // wip
+  { key: 'image', value: 'text-primary-100'}, // wip
 ];
 
 const EditorLoader = ({ editorRef: contentEditableRef, onInputChange, name, autofocus }: { editorRef: React.RefObject<any>, onInputChange: () => void, name: string, autofocus: boolean})  => {
@@ -332,7 +332,7 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
         let colorEntry = colorDict.find((color) => color.key === type);
         if (!colorEntry) {
           console.error(`Color not found for type: ${type}`);
-          colorEntry = { key: 'not found', value: 'text-light' };
+          colorEntry = { key: 'not found', value: 'text-primary-100' };
         }
         const color = colorEntry.value;
     
@@ -815,13 +815,11 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
 
   return (
     <>
-      <Suspense fallback={null}>
-        <EditorLoader editorRef={contentEditableRef} onInputChange={onInputChange} name={name} autofocus={autofocus} />   
-      </Suspense>
+      <EditorLoader editorRef={contentEditableRef} onInputChange={onInputChange} name={name} autofocus={autofocus} />   
       <div
         contentEditable
         ref={contentEditableRef}
-        className="bg-dark text-left rounded-sm resize-none text-xl min-h-[4.7rem] p-2 max-w-full caret-light border border-primary focus:border-1 ff-space-adjust"
+        className="text-left rounded-sm resize-none text-lg min-h-[4.7rem] p-2 max-w-full caret-primary-200 border border-neutral-600 hover:border-primary-100 bg-primary-800 ff-space-adjust"
         onInput={handleInput}
         onCopy={handleCopy}
         onPaste={handlePaste}

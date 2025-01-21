@@ -28,7 +28,7 @@ export default function ConfirmationBox(props: ConfirmationBoxProps) {
   };
 
   return (
-    <div className="fixed z-50 inset-0 flex items-center justify-center bg-light bg-opacity-50">
+    <div className="fixed z-50 inset-0 flex items-center justify-center bg-primary-100 bg-opacity-50">
       <div className="bg-white p-6 rounded shadow-lg relative max-w-[400px] w-full">
         <div className="absolute top-2 right-2 py-1 px-3 text-xl cursor-pointer whitespace-pre-wrap" onClick={handleClose}>&times;</div>
         {messageLines.map((line, index) => (
@@ -48,7 +48,7 @@ export default function ConfirmationBox(props: ConfirmationBoxProps) {
           <button 
             onClick={handleConfirm} 
             className={`px-4 py-2 rounded border-dark select-none
-              ${isConfirmDefault ? 'bg-blue-500 hover:bg-light_accent text-light' : 'bg-neutral-400 hover:bg-primary text-dark'}`}
+              ${isConfirmDefault ? 'bg-blue-500 hover:bg-primary-100_accent text-primary-100' : 'bg-neutral-400 hover:bg-neutral-600 text-dark'}`}
           >
             {confirm}
           </button>
@@ -56,7 +56,7 @@ export default function ConfirmationBox(props: ConfirmationBoxProps) {
           <button 
             onClick={handleDeny} 
             className={`px-4 py-2 rounded border-dark select-none
-              ${!isConfirmDefault ? 'bg-blue-500 hover:bg-light_accent text-light' : 'bg-neutral-400 hover:bg-primary text-dark'}`}
+              ${!isConfirmDefault ? 'bg-blue-500 hover:bg-primary-100_accent text-primary-100' : 'bg-neutral-400 hover:bg-neutral-600 text-dark'}`}
           >
             {deny}
           </button>

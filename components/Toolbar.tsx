@@ -87,13 +87,13 @@ const ResponsiveButtonRow = ({ buttons, containerRef }: ButtonRowProps) => {
         <div className="relative" ref={moreToolsRef}>
           <button
             id="moreToolsBtn"
-            className="flex flex-row align-middle whitespace-nowrap h-8 px-2 py-1 rounded-sm hover:bg-primary border border-primary text-light select-none" 
+            className="flex flex-row align-middle whitespace-nowrap h-8 px-2 py-1 rounded-sm hover:bg-neutral-600 border border-neutral-600 text-primary-100 select-none" 
             onClick={toggleOverflowBtnVisibility}>
               More Tools
           </button>
           
           {overflowBtnVisibility && (
-            <div className="flex flex-col absolute right-0 -space-y-1 bg-dark shadow-lg border border-gray-200 px-1 rounded-md z-50">
+            <div className="flex flex-col absolute right-0 -space-y-1 bg-primary-900 shadow-lg border border-gray-200 px-1 rounded-md z-50">
               {overflowButtons.map(button => (
                 <ToolbarButton key={button.id} {...button} isOverflow={true} />
               ))}

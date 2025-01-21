@@ -40,7 +40,7 @@ export default async function RootLayout({
         
         
         <body
-          className={`min-h-screen pt-16 grid overflow-auto bg-dark
+          className={`min-h-screen pt-16 grid overflow-auto bg-primary-900
             grid-cols-[1fr,minmax(0,6fr),1fr] 
             md:grid-cols-[1fr,minmax(0,4fr),1fr] 
             lg:grid-cols-[1fr,minmax(0,3fr),1fr] 
@@ -48,13 +48,13 @@ export default async function RootLayout({
         >
           <Header />
           
-          <div id="left-margin" className="block bg-dark h-full -z-10"></div> 
+          <div id="left-margin" className="block bg-primary-900 h-full -z-10"></div> 
           
-          <main className="col-start-2 flex flex-col bg-dark">
+          <main className="col-start-2 flex flex-col bg-primary-900">
             {children}
           </main>
           
-          <div id="right-margin" className="block bg-dark h-full -z-10"></div> 
+          <div id="right-margin" className="block bg-primary-900 h-full -z-10"></div> 
 
           {/* <Footer /> is stored in individual pages due to NoTimer not having a footer */}
         </body>

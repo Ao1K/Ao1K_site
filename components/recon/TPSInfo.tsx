@@ -16,5 +16,5 @@ export default function TPSInfo({ moveCount, solveTime }: TPSInfoProps) {
     tpsString = "(-- tps)";
   }
 
-  return <div className="text-light mx-2 text-xl">{tpsString}</div>;
+  return <div className="text-primary-100 mx-2 text-xl">{tpsString}</div>;
 };

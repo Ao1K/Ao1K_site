@@ -239,7 +239,7 @@ export default function NoTimeSolveBox(props: NoTimeSolveBoxProps) {
           </div>
         );
       })}
-      <button className="flex px-1 m-2 hover:bg-light rounded-full border-dark text-dark font-semibold select-none" onClick={() => addCheckBox()}>+ Add Item</button>
+      <button className="flex px-1 m-2 hover:bg-primary-100 rounded-full border-dark text-dark font-semibold select-none" onClick={() => addCheckBox()}>+ Add Item</button>
       <div id={`edit-confirm-popup-${location}`} className="hidden">
         <ConfirmationBox 
           confirmationMsg='NOTE: Editing will KEEP statistics for this item. To make a brand new item, click Cancel, then click the "Add Item" button.' 

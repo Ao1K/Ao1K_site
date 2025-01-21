@@ -5,6 +5,7 @@ import MovesTextEditor from "../../components/recon/MovesTextEditor";
 import SpeedDropdown from "../../components/recon/SpeedDropdown";
 
 import Toolbar from "../../components/Toolbar";
+import Footer from "../../components/Footer";
 
 import ReconTimeHelpInfo from "../../components/recon/ReconTimeHelpInfo";
 import TPSInfo from "../../components/recon/TPSInfo";
@@ -229,12 +230,12 @@ export default function Recon() {
 
       if (condition) {
         ref.current.setAttribute("disabled", "true");
-        ref.current.classList.remove("text-light");
-        ref.current.classList.add("text-primary", "pointer-events-none");
+        ref.current.classList.remove("text-primary-100");
+        ref.current.classList.add("text-neutral-700", "pointer-events-none");
       } else {
         ref.current.removeAttribute("disabled");
-        ref.current.classList.remove("text-primary", "pointer-events-none");
-        ref.current.classList.add("text-light");
+        ref.current.classList.remove("text-neutral-700", "pointer-events-none");
+        ref.current.classList.add("text-primary-100");
       }
     });
   };
@@ -435,7 +436,7 @@ export default function Recon() {
       const dailyScramble = data.scramble3x3;
       const date = data.date;     
       
-      const scrambleMessage = `<div><span class="text-gray-500">//&nbsp;Scramble&nbsp;of&nbsp;the&nbsp;day</span></div><div><span class="text-gray-500">//&nbsp;${date}</span></div><div><span class="text-light">${dailyScramble}</span></div>`;
+      const scrambleMessage = `<div><span class="text-gray-500">//&nbsp;Scramble&nbsp;of&nbsp;the&nbsp;day</span></div><div><span class="text-gray-500">//&nbsp;${date}</span></div><div><span class="text-primary-100">${dailyScramble}</span></div>`;
       scrambleEditorRef.current?.transform(scrambleMessage); // force update inside MovesTextEditor
 
     } catch (error) {
@@ -574,7 +575,7 @@ export default function Recon() {
   ];
 
   return (
-    <div id="main_page" className="col-start-2 col-span-1 flex flex-col bg-dark">
+    <div id="main_page" className="col-start-2 col-span-1 flex flex-col bg-primary-900">
       <div id="top-bar" className="px-3 flex flex-row flex-wrap items-center place-content-end gap-2 mt-8 mb-3">
         <TitleWithPlaceholder solveTitle={solveTitle} handleTitleChange={handleTitleChange} />
         <div className="flex-none flex flex-row space-x-1 pr-2 text-dark_accent">
@@ -599,14 +600,14 @@ export default function Recon() {
         </div>
       </div>
       <div id="player-box" className="px-3 relative flex flex-col my-6 w-full justify-center items-center">
-        <div id="cube-highlight" className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-full blur-sm bg-primary w-[calc(100%-1.5rem)]"></div>
-        <div id="cube_model" className="flex aspect-video h-full max-h-96 bg-dark z-10 w-full">
-          <Suspense fallback={<div className="flex text-xl w-full h-full justify-center items-center text-light">Loading cube...</div>}>
+        <div id="cube-highlight" className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-full blur-sm bg-primary-900 w-[calc(100%-1.5rem)]"></div>
+        <div id="cube_model" className="flex aspect-video h-full max-h-96 bg-primary-900 z-10 w-full">
+          <Suspense fallback={<div className="flex text-xl w-full h-full justify-center items-center text-primary-100">Loading cube...</div>}>
             <TwistyPlayer scramble={playerParams.scramble} solution={playerParams.solution} speed={speed} animationTimes={playerParams.animationTimes}/>
           </Suspense>
         </div>
       </div>
-      <div id="bottom-bar" className="px-3 space-x-1 static flex flex-row items-center place-content-end justify-start text-light w-full" ref={bottomBarRef}>
+      <div id="bottom-bar" className="px-3 space-x-1 static flex flex-row items-center place-content-end justify-start text-primary-100 w-full" ref={bottomBarRef}>
         <SpeedDropdown speed={localSpeed} handleSpeedChange={handleSpeedChange}/>
         <Toolbar buttons={toolbarButtons} containerRef={bottomBarRef}/>
       </div>
@@ -629,20 +630,20 @@ export default function Recon() {
         <div id="time-area" className="px-3 flex flex-col w-full">
           <div className="text-xl text-dark_accent font-medium w-full">Time</div>
           <div id="time-stats" className="flex flex-row flex-wrap text-nowrap items-center w-full gap-y-2">
-          <div id="time-field" className="border border-light flex flex-row items-center justify-start">
+          <div id="time-field" className="border border-neutral-600 group flex flex-row items-center justify-start">
             <input
               id="time-input"
               type="number" 
               placeholder="00.000" 
-              className="pt-2 pb-2 pl-2 text-xl text-light bg-dark focus:outline-none rounded-sm box-content no-spinner w-[4.25rem]"
+              className="pt-2 pb-2 px-2 text-xl text-primary-100 bg-primary-900 group-focus:border-primary-100 hover:bg-primary-800 rounded-sm box-content no-spinner w-[4.25rem]"
               value={solveTime}
               onChange={handleSolveTimeChange}
               onWheel={(e) => e.currentTarget.blur()}
               autoComplete="off"
               />
-            <div className="text-light ml-2 pr-2 text-xl">sec</div> 
+            <div className="text-primary-100 pr-2 text-xl">sec</div> 
           </div>
-          <div className="text-light ml-2 text-xl">{totalMoves} stm </div> 
+          <div className="text-primary-100 ml-2 text-xl">{totalMoves} stm </div> 
           <div className="flex-nowrap text-nowrap items-center flex flex-row">
             <TPSInfo moveCount={totalMoves} solveTime={solveTime} tpsRef={tpsRef} />
             <ReconTimeHelpInfo />
@@ -650,7 +651,8 @@ export default function Recon() {
         </div>
         </div>
       </div>
-      <div id="blur-border" className="h-[4px] blur-sm bg-primary my-32"/>
+      <div id="blur-border" className="h-[4px] blur-sm bg-neutral-600 my-32"/>
+      <Footer />
     </div>
   );
 }

@@ -19,7 +19,7 @@ export default function Header(): JSX.Element {
   };
 
   return (
-    <div className="fixed bg-white text-light_accent w-full z-50 h-16 top-0 right-0">
+    <div className="fixed bg-white text-primary-100_accent w-full z-50 h-16 top-0 right-0">
       <nav className="mx-auto flex justify-between w-full">
 
         <img

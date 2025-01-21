@@ -30,7 +30,7 @@ const Tagline = () => {
 
   return (
     <div
-      className={`hover:text-light`}
+      className={`hover:text-primary-100`}
       onMouseEnter={handleMouseEnter}
     >
       find your {hovering ? displayText : 'statistical'} significance
