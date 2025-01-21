@@ -815,7 +815,9 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
 
   return (
     <>
-      <EditorLoader editorRef={contentEditableRef} onInputChange={onInputChange} name={name} autofocus={autofocus} />   
+      <Suspense fallback={null}>
+        <EditorLoader editorRef={contentEditableRef} onInputChange={onInputChange} name={name} autofocus={autofocus} />   
+      </Suspense>
       <div
         contentEditable
         ref={contentEditableRef}
