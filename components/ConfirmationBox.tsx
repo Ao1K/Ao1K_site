@@ -41,7 +41,7 @@ export default function ConfirmationBox(props: ConfirmationBoxProps) {
             className="mr-2 select-none"
             readOnly
           />
-          <label className='pointer-events-none select-none'>Don't show this again</label>
+          <label className='pointer-events-none select-none'>Don&apos;t show this again</label>
         </div>}
         <div className="flex justify-end space-x-2">
 

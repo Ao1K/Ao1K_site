@@ -1,12 +1,11 @@
 'use client';
 import debounce from 'lodash.debounce';
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, lazy } from "react";
 import MovesTextEditor from "../../components/recon/MovesTextEditor";
 import SpeedSlider from "../../components/recon/SpeedSlider";
 
 import Toolbar from "../../components/recon/Toolbar";
 
-import TwistyPlayer from "../../components/TwistyPlayer";
 import ReconTimeHelpInfo from "../../components/recon/ReconTimeHelpInfo";
 import TPSInfo from "../../components/recon/TPSInfo";
 import updateURL from "../../composables/recon/updateURL";
@@ -44,6 +43,8 @@ interface OldSelectionRef {
   range: Range | null;
   textbox: string | null;
 }
+
+const TwistyPlayer = lazy(() => import("../../components/TwistyPlayer"));
 
 export default function Recon() {
   const allMoves = useRef<string[][][]>([[[]], [[]]]);

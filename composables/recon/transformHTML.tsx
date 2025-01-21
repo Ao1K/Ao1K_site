@@ -1,4 +1,4 @@
-import { colorDict } from '../components/MovesTextEditor';
+import { colorDict } from '../../components/recon/MovesTextEditor';
 import simplifyRotations from './simplifyRotations';
 
 const VALID_SPAN_CLASS = colorDict.find((dict) => dict.key === 'move')!.value;
