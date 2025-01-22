@@ -52,7 +52,7 @@ export default function ToolbarButton({speed, handleSpeedChange}: SpeedSliderPro
       >
         <div className="flex justify-center items-center w-full select-none space-x-2">
           <SpeedIcon className="text-primary-100" />
-          <DropdownIcon className={`align-middle h-full transition-transform duration-300 ${isRotated ? '' : 'rotate-180'}`}/>
+          <DropdownIcon className={`align-middle h-full transition-transform duration-300 ${isRotated ? 'rotate-180' : ''}`}/>
         </div>
       </button>
 

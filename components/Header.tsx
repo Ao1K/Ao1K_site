@@ -19,7 +19,7 @@ export default function Header(): JSX.Element {
   };
 
   return (
-    <div className="fixed bg-white text-primary-100_accent w-full z-50 h-16 top-0 right-0">
+    <div className="fixed bg-white text-light_accent w-full z-50 h-16 top-0 right-0">
       <nav className="mx-auto flex justify-between w-full">
 
         <img
@@ -40,9 +40,10 @@ export default function Header(): JSX.Element {
           By Chet
         </div>
 
-        <div className="sm:hidden flex justify-end">
-          <button onClick={toggleSidebar} className="px-3">
-          <ListIcon />
+        <div className="sm:hidden flex flex-row justify-end">
+          <button onClick={toggleSidebar} className="px-3 flex flex-row space-x-2 items-center">
+            <ListIcon />
+            <div className="text-xl">Tools</div>
           </button>
         </div>
       </nav>

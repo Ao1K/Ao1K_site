@@ -48,7 +48,7 @@ export default function ConfirmationBox(props: ConfirmationBoxProps) {
           <button 
             onClick={handleConfirm} 
             className={`px-4 py-2 rounded border-dark select-none
-              ${isConfirmDefault ? 'bg-blue-500 hover:bg-primary-100_accent text-primary-100' : 'bg-neutral-400 hover:bg-neutral-600 text-dark'}`}
+              ${isConfirmDefault ? 'bg-blue-500 hover:bg-light_accent text-primary-100' : 'bg-neutral-400 hover:bg-neutral-600 text-dark'}`}
           >
             {confirm}
           </button>
@@ -56,7 +56,7 @@ export default function ConfirmationBox(props: ConfirmationBoxProps) {
           <button 
             onClick={handleDeny} 
             className={`px-4 py-2 rounded border-dark select-none
-              ${!isConfirmDefault ? 'bg-blue-500 hover:bg-primary-100_accent text-primary-100' : 'bg-neutral-400 hover:bg-neutral-600 text-dark'}`}
+              ${!isConfirmDefault ? 'bg-blue-500 hover:bg-light_accent text-primary-100' : 'bg-neutral-400 hover:bg-neutral-600 text-dark'}`}
           >
             {deny}
           </button>
