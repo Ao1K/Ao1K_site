@@ -17,6 +17,16 @@ interface RenderRefProps {
   animationTimes: number[];
 }
 
+const CUBE_COLORS = {
+  red: '#FF0000',    // red
+  green: '#0CEC00',  // green
+  blue: '#003CFF',   // blue
+  yellow: '#EEFF00', // yellow
+  orange: '#FF7F00', // orange
+  white: '#ffffff',  // white
+};
+
+
 const Player = React.memo(({ scramble, solution, speed, animationTimes }: PlayerProps) => {
   const playerRef = useRef<TwistyPlayer | null>(null);
   
@@ -594,8 +604,13 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
           mesh.rotation.set(label.rotation.x, label.rotation.y, label.rotation.z);
           
           cube.add(mesh);
+                    
         });
+        
+        
       });
+      
+      setStickerColors(cube);
       
       scene.add(cube);
       
@@ -636,6 +651,37 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
     }
     
   }
+
+  const hexToRgb = (hex: string) => {
+    const bigint = parseInt(hex.replace('#', ''), 16);
+    const r = (bigint >> 16) & 255;
+    const g = (bigint >> 8) & 255;
+    const b = bigint & 255;
+    return [r, g, b];
+  };
+
+
+  const setStickerColors = (cube: any) => {
+    if (!playerRef.current) return;
+    const stickerColors = cube.kpuzzleFaceletInfo;
+    if (!stickerColors) return;
+    
+    const red = hexToRgb(CUBE_COLORS.red);
+    const green = hexToRgb(CUBE_COLORS.green);
+    const blue = hexToRgb(CUBE_COLORS.blue);
+    const yellow = hexToRgb(CUBE_COLORS.yellow);
+    const orange = hexToRgb(CUBE_COLORS.orange);
+    const white = hexToRgb(CUBE_COLORS.white);
+
+    // not sure why I can just set the centers, but I'm not complaining
+    cube.kpuzzleFaceletInfo.CENTERS[0][0].facelet.material.color.setRGB(...white.map(val => val / 255));
+    cube.kpuzzleFaceletInfo.CENTERS[1][0].facelet.material.color.setRGB(...orange.map(val => val / 255));
+    cube.kpuzzleFaceletInfo.CENTERS[2][0].facelet.material.color.setRGB(...green.map(val => val / 255));
+    cube.kpuzzleFaceletInfo.CENTERS[3][0].facelet.material.color.setRGB(...red.map(val => val / 255));
+    cube.kpuzzleFaceletInfo.CENTERS[4][0].facelet.material.color.setRGB(...blue.map(val => val / 255));
+    cube.kpuzzleFaceletInfo.CENTERS[5][0].facelet.material.color.setRGB(...yellow.map(val => val / 255));
+  }
+
 
   useEffect(() => {
 
