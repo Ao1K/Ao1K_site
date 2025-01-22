@@ -18,12 +18,11 @@ const ResponsiveButtonRow = ({ buttons, containerRef }: ButtonRowProps) => {
     if (!container) return;
 
     let totalWidth = 0;
-    let regButtoonWidth = 40; // assumed width of a button
+    let regButtonWidth = 40; // assumed width of a button
     let visible: ButtonProps[] = [];
     let overflow: ButtonProps[] = [];
     let moreToolsBtnWidth = document.querySelector('#moreToolsBtn')?.clientWidth || MIN_MORE_TOOLS_WIDTH; // default needed for initial render
-
-    const moreToolsBtnEquiv = 2 // equivalent number of buttons that the moreToolsBtn occupies
+    let speedDropdownWidth = 68; 
 
     let isCollapsing = false;
 
@@ -35,10 +34,12 @@ const ResponsiveButtonRow = ({ buttons, containerRef }: ButtonRowProps) => {
       //console.log('totalWidth', totalWidth)
 
 
-      const isSubstantialCollapse = remainingButtons >= moreToolsBtnEquiv;
+      const isSubstantialCollapse = remainingButtons >= 3;
+      // console.log('isSubstantialCollapse', isSubstantialCollapse)
+      // console.log('isCollapsing', isCollapsing)
+      // console.log(totalWidth + moreToolsBtnWidth + speedDropdownWidth, container.clientWidth)
 
-
-      if ((totalWidth + 250 ) > (container.clientWidth + moreToolsBtnWidth) && (isSubstantialCollapse || isCollapsing)) { // 68 is approx width of speed dropdown. 250 is random.
+      if (((totalWidth + moreToolsBtnWidth + speedDropdownWidth + 20) > (container.clientWidth )) && (isSubstantialCollapse || isCollapsing)) {
         overflow.push(button);
         isCollapsing = true;
       } else {
