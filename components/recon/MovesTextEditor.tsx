@@ -25,8 +25,7 @@ const EditorLoader = ({ editorRef: contentEditableRef, onInputChange, name, auto
   // useSearchParams is a hook. Storing searchParams here prevents it from being called again and causing reloads.
   const searchParams = useSearchParams();
   
-
-  useEffect(() => {
+  const handleStartupProcess = () => {
     const urlText = searchParams.get(name);
     const otherID = name === 'scramble' ? 'solution' : 'scramble';
     const otherURLtext = searchParams.get(otherID);
@@ -57,6 +56,10 @@ const EditorLoader = ({ editorRef: contentEditableRef, onInputChange, name, auto
     if (urlText) {
       onInputChange();
     }
+  };
+
+  useEffect(() => {
+    handleStartupProcess();
   }, []);
 
   return null;
@@ -821,7 +824,7 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
       <div
         contentEditable
         ref={contentEditableRef}
-        className="text-left rounded-sm resize-none text-lg min-h-[4.7rem] p-2 max-w-full caret-primary-200 border border-neutral-600 hover:border-primary-100 bg-primary-800 ff-space-adjust"
+        className="text-left rounded-sm resize-none text-lg p-2 max-w-full caret-primary-200 border border-neutral-600 hover:border-primary-100 bg-primary-800 ff-space-adjust min-h-[4.7rem] lg:max-h-[15.1rem] max-h-[10rem] overflow-y-auto"
         onInput={handleInput}
         onCopy={handleCopy}
         onPaste={handlePaste}

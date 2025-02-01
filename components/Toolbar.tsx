@@ -29,7 +29,7 @@ const ResponsiveButtonRow = ({ buttons, containerRef }: ButtonRowProps) => {
     for (let i = 0; i < buttons.length; i++) {
       const button = buttons[i];
       const remainingButtons = buttons.length - i;
-      const buttonWidth = container.querySelector(`#${button.id}`)?.clientWidth || 40;
+      const buttonWidth = container.querySelector(`#${button.id}`)?.clientWidth || regButtonWidth;
       totalWidth = totalWidth + buttonWidth + 8;
       //console.log('totalWidth', totalWidth)
 
