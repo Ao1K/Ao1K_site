@@ -18,12 +18,12 @@ interface RenderRefProps {
 }
 
 const CUBE_COLORS = {
-  red: '#FF0000',    // red
-  green: '#0CEC00',  // green
-  blue: '#003CFF',   // blue
-  yellow: '#EEFF00', // yellow
-  orange: '#FF7F00', // orange
-  white: '#ffffff',  // white
+  red: '#FF0000',
+  green: '#0CEC00',
+  blue: '#003CFF',
+  yellow: '#EEFF00',
+  orange: '#FF7F00',
+  white: '#ffffff',
 };
 
 
