@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { debounce, lte } from "lodash";
+import { addCheck, updateCheck, deleteCheck } from "../../composables/notimer/dbUtils";
 import CloseIcon from "../../components/icons/close";
 import WriteIcon from "../../components/icons/write";
 import ConfirmationBox from "../ConfirmationBox";
@@ -19,16 +19,24 @@ export interface Check {
 //   handleToggle: (id: number) => void; // toggles checked state
 // }
 
+export interface handleSetChecks {
+  (
+    checks: Check[],
+    action: 'add' | 'update' | 'delete',
+    check: Check // check that action impacts
+  ): void;
+}
+
 export interface NoTimeSolveBoxProps {
   checks: Check[];
-  setChecks: (checks: Check[]) => void;
+  handleSetChecks: handleSetChecks;
   showEditConfirmation: boolean;
   setShowEditConfirmation: (showEditConfirmation: boolean) => void;
   location: 'pre' | 'post';
 }
 
 export default function NoTimeSolveBox(props: NoTimeSolveBoxProps) {
-  const { checks, setChecks, showEditConfirmation, setShowEditConfirmation, location } = props;
+  const { checks, handleSetChecks, showEditConfirmation, setShowEditConfirmation, location } = props;
   const filteredChecks = checks ? checks.filter((check) => check.location === location) : [];
 
   const MAX_CHECK_TEXT_LENGTH = 500;
@@ -61,46 +69,52 @@ export default function NoTimeSolveBox(props: NoTimeSolveBoxProps) {
 
     const newCheck: Check = { id: newId, checked: false, text: '', location: location };
     const oldChecks = checks ? checks : [];
-    console.log('adding check', location);
-    setChecks([...oldChecks, newCheck]);
+    // console.log('adding check', location);
+
+    handleSetChecks([...oldChecks, newCheck], 'add', newCheck);
+
     lastEditID.current = newId;
     newCheckAdded.current = true;
   };
 
+  const updateCheckText = (id: number, newText: string) => {
 
-  const updateCheckText = (id: number, newText: string, readOnly?: boolean) => {
-    if (readOnly === undefined) { readOnly = true; }
 
     // set check back to read-only
     const textInput = document.getElementById(`check-text-${location + id}`) as HTMLDivElement;
     if (textInput) {
+      console.log('found input:', textInput);
       textInput.contentEditable = 'false';
+      textInput.style.pointerEvents = 'none';
+      textInput.style.userSelect = 'none';
     }
 
     const clickableDiv = document.getElementById(`clickable-check-${location + id}`);
-    if (clickableDiv) {
+
+    if (document.activeElement !== textInput && clickableDiv) {
+      // console.log('focus is not on text input. Making clickable. Editable=false');
       clickableDiv.style.pointerEvents = 'auto';
-      clickableDiv.style.userSelect = 'text';
+      clickableDiv.style.userSelect = 'auto';
+      isEditingCheck.current = false;
     }
 
+    let updatedCheck: Check | undefined;
     const newChecks = checks.map((check) => {
       if (check.id === id) {
-        return { ...check, text: newText };
+        updatedCheck = { ...check, text: newText };
+        return updatedCheck;
       }
       return check;
     });
 
-    console.log('new checks:', newText);
-    setChecks(newChecks)
-    
-    isEditingCheck.current = false;
+    updatedCheck ? handleSetChecks(newChecks, 'update', updatedCheck) : console.error('updatedCheck text change is undefined'); 
   };
 
   const handleEdit = (id: number) => {
-    console.log('id calling handleEdit:', id);
+    // console.log('id calling handleEdit:', id);
     lastEditID.current = id;
 
-    console.log('showEdit?:', showEditConfirmation);
+    // console.log('showEdit?:', showEditConfirmation);
 
     if (showEditConfirmation === undefined || showEditConfirmation) {
       const popup = document.getElementById(`edit-confirm-popup-${location}`);
@@ -114,24 +128,52 @@ export default function NoTimeSolveBox(props: NoTimeSolveBoxProps) {
 
   const handleToggle = (id: number) => {
     
-    console.log('isEditing:', isEditingCheck.current);
-    if (isEditingCheck.current) return;
+    // console.log('isEditing:', isEditingCheck.current);
+    if (isEditingCheck.current) {
+      // console.log('skipping toggle')
+      return;
+    }
 
+    console.log('toggling:', id);
+
+    let updatedCheck: Check | undefined;
     const newChecks = checks.map((check) => {
       if (check.id === id) {
-        return { ...check, checked: !check.checked };
+        updatedCheck = { ...check, checked: !check.checked };
+        return updatedCheck;
       }
       return check;
     });
 
-    setChecks(newChecks);
+    updatedCheck ? handleSetChecks(newChecks, 'update', updatedCheck) : console.error('updatedCheck toggle is undefined');
+  };
+
+  const handleDeleteConfirmed = () => {
+    const id = lastEditID.current;
+    const deletedCheck = checks.find((check) => check.id === id);
+    if (!deletedCheck) {
+      return;
+    }
+
+    const newChecks = checks.filter((check) => check.id !== id);
+
+    handleSetChecks(newChecks, 'delete', deletedCheck);
+
+    const popup = document.getElementById(`delete-confirm-popup-${location}`);
+    if (popup) {
+      popup.style.display = 'none';
+    }
+    
   };
 
   const handleDelete = (id: number) => {
-    const newChecks = checks.filter((check) => check.id !== id);
-
-    setChecks(newChecks);
+    lastEditID.current = id;
+    const popup = document.getElementById(`delete-confirm-popup-${location}`);
+    if (popup) {
+      popup.style.display = 'block';
+    }
   };
+
 
   const handleEditConfirmed = (isClosedForever?: boolean) => {
 
@@ -143,10 +185,11 @@ export default function NoTimeSolveBox(props: NoTimeSolveBoxProps) {
     const id = lastEditID.current;
 
     isClosedForever === undefined ?  null : setShowEditConfirmation(!isClosedForever);
-    console.log('showEdit?:', showEditConfirmation);
+    // console.log('showEdit?:', showEditConfirmation);
 
     const clickableDiv = document.getElementById(`clickable-check-${location + id}`) as HTMLDivElement;
     if (clickableDiv) {
+      // console.log('setting clickable div to UNclickable')
       clickableDiv.style.pointerEvents = 'none';
       clickableDiv.style.userSelect = 'none';
     }
@@ -154,41 +197,46 @@ export default function NoTimeSolveBox(props: NoTimeSolveBoxProps) {
     const textInput = document.getElementById(`check-text-${location + id}`) as HTMLDivElement;
     if (textInput) {
       textInput.contentEditable = 'true';
+      textInput.style.pointerEvents = 'auto';
+      textInput.style.userSelect = 'auto';
       textInput.focus();
+
+      // attempt to put caret at end
+      const range = document.createRange();
+      const selection = window.getSelection();
+      range.selectNodeContents(textInput);
+      range.collapse(false);
+      selection!.removeAllRanges();
+      selection!.addRange(range);
+
+      isEditingCheck.current = true;
     }
   };
 
-  const closeConfirmation = (isClosedForever: boolean) => {
-    const popup = document.getElementById(`edit-confirm-popup-${location}`);
+  const closeEditConfirmation = (id: string, isClosedForever: boolean) => {
+    const popup = document.getElementById(id);
     if (popup) {
       popup.style.display = 'none';
     }
     
-    console.log('forever:', isClosedForever);
     setShowEditConfirmation(!isClosedForever);
-    console.log('showEdit?:', showEditConfirmation);
   };
 
-  const handleTextChange = (id: number, readOnly: boolean) => {
-    isEditingCheck.current = true;
-    console.log('isEditing:', isEditingCheck.current);
-    console.log('change or blur detected');
+  const handleTextChange = (id: number) => {
+
     const textInput = document.getElementById(`check-text-${location + id}`) as HTMLDivElement;
     let text = textInput ? sanitizeHtml(textInput.innerHTML, sanitizeConf) : '';
-    // const text = textInput ? textInput.innerHTML : ''; // TESTING ONLY
 
+    text ? text = text.slice(0, MAX_CHECK_TEXT_LENGTH) : null;
+
+    updateCheckText(id, text);
     
-    if (text) {
-      text = text.slice(0, MAX_CHECK_TEXT_LENGTH);
-
-      updateCheckText(id, text, readOnly);
-    }
     
   };
 
-  useEffect(() => { // "needed" because new check must be rendered before it can be focused on
+  useEffect(() => { // useEffect "needed" because new check must be rendered before it can be focused on
     if (newCheckAdded.current) {
-      console.log('new check added:', newCheckAdded.current);
+      // console.log('new check added:', newCheckAdded.current);
       newCheckAdded.current = false; // Reset the ref
       handleEditConfirmed();
     }
@@ -197,7 +245,7 @@ export default function NoTimeSolveBox(props: NoTimeSolveBoxProps) {
 
   return (
     <div className="w-5/6 min-w-5/6">
-      <div className="italic">{location === 'pre' ? 'Pre-solve' : 'Post-solve'} checklist</div>
+      <div className="italic select-none">{location === 'pre' ? 'Pre-solve' : 'Post-solve'} checklist</div>
       {filteredChecks && filteredChecks.map((check) => {
         const { id, checked, text, location } = check;
         // returns checkbox items
@@ -206,7 +254,7 @@ export default function NoTimeSolveBox(props: NoTimeSolveBoxProps) {
   
             <div 
               id={`clickable-check-${location + id}`} 
-              className="flex flex-row max-w-[100%-200px] overflow-auto grow align-middle justify-start border-dark border-b hover:bg-slate-400 bg-transparent" 
+              className="flex flex-row max-w-[100%-200px] overflow-auto grow align-middle justify-start border-dark border-b hover:bg-slate-400 bg-transparent cursor-pointer" 
               onClick={() => handleToggle(id)}
             >
               
@@ -223,8 +271,8 @@ export default function NoTimeSolveBox(props: NoTimeSolveBoxProps) {
                   id={`check-text-${location + id}`}
                   className="bg-transparent break-words justify-start w-full z-10 px-2 pl-3 pointer-events-none select-none"
                   dangerouslySetInnerHTML={{ __html: text }}
-                  onChange={() => handleTextChange(id, false)} 
-                  onBlur={() => handleTextChange(id, true)}
+                  onChange={() => handleTextChange(id)} 
+                  onBlur={() => handleTextChange(id)}
                   autoSave="false"
                   draggable={false}
                   spellCheck={true}
@@ -242,13 +290,27 @@ export default function NoTimeSolveBox(props: NoTimeSolveBoxProps) {
       <button className="flex px-1 m-2 hover:bg-primary-100 rounded-full border-dark text-dark font-semibold select-none" onClick={() => addCheckBox()}>+ Add Item</button>
       <div id={`edit-confirm-popup-${location}`} className="hidden">
         <ConfirmationBox 
-          confirmationMsg='NOTE: Editing will KEEP statistics for this item. To make a brand new item, click Cancel, then click the "Add Item" button.' 
+          confirmationMsg='NOTE: Editing will KEEP statistics for this item. To start tracking a new item, click Cancel, then click the "Add Item" button.' 
           confirm="Edit" 
           deny="Cancel" 
+          confirmStyle="bg-blue-500 hover:bg-light_accent text-primary-100"
+          denyStyle='bg-neutral-400 hover:bg-neutral-600 text-dark'
           onConfirm={(isClosedForever) => handleEditConfirmed(isClosedForever)} 
           allowCloseForever={true} 
-          onDeny={(isClosedForever) => closeConfirmation(isClosedForever)} 
-          isConfirmDefault={false} 
+          onDeny={(isClosedForever) => closeEditConfirmation(`edit-confirm-popup-${location}`, isClosedForever)} 
+        />
+      </div>
+      <div id={`delete-confirm-popup-${location}`} className="hidden">
+        <ConfirmationBox 
+          confirmationMsg='Delete this item? This cannot be undone.\n '
+          // TODO for desktop: messageByline='Bypass this warning by holding Ctrl when deleting.' 
+          confirm="Delete" 
+          deny="Cancel" 
+          confirmStyle="bg-red-500 hover:bg-red-700 text-white"
+          denyStyle='bg-neutral-400 hover:bg-neutral-600 text-dark'
+          onConfirm={() => handleDeleteConfirmed()} 
+          allowCloseForever={false} 
+          onDeny={() => closeEditConfirmation(`delete-confirm-popup-${location}`, false)} 
         />
       </div>
     </div>

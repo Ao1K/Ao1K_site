@@ -14,13 +14,13 @@ export interface NotimerSolve {
   puzzleType: string;
   solveDateTime: Date;
   solveResult: number; // in milliseconds
-  solveModifier: string; // DNF, +2, or OK
+  solveModifier: "DNF" | "+2" | "OK";
   comment: string | null;
 }
 
 const db = new Dexie('ChecksDatabase') as Dexie & {
-  solveTable: EntityTable<NotimerSolve, 'id'>;
-  checkTable: EntityTable<dbCheck, 'id'>;
+  solveTable: EntityTable<NotimerSolve, 'id'>; // stores all solves
+  checkTable: EntityTable<dbCheck, 'id'>; // stores all instances of checks for all solves
 };
 
 db.version(1).stores({
