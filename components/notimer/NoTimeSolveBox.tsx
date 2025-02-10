@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { addCheck, updateCheck, deleteCheck } from "../../composables/notimer/dbUtils";
+import { addCheck, updateCheck, getLastCheck } from "../../composables/notimer/dbUtils";
 import CloseIcon from "../../components/icons/close";
 import WriteIcon from "../../components/icons/write";
 import ConfirmationBox from "../ConfirmationBox";
@@ -10,14 +10,9 @@ export interface Check {
   id: number;
   checked: boolean;
   text: string;
+  textID: number;
   location: 'pre' | 'post';
 }
-
-// export interface CheckBoxProps extends Check {
-//   editChecked: (id: number, state: boolean) => void; // cycles between checked, unchecked, and null
-//   editText: (id: number) => void; // updates text, maintains id
-//   handleToggle: (id: number) => void; // toggles checked state
-// }
 
 export interface handleSetChecks {
   (
@@ -50,46 +45,40 @@ export default function NoTimeSolveBox(props: NoTimeSolveBoxProps) {
   };
   
 
-  const getHighestId = (checks: Check[]) => {
-    let highest = 0;
-    if (!checks || checks.length === 0) {
-      return highest;
-    }
+  const getHighestCheckID = async (): Promise<number> => {
+    let highestID = await getLastCheck().then((check) => check ? check.id : 0);
+    return highestID;
+  }
 
-    checks.forEach((check) => {
-      if (check.id > highest) {
-        highest = check.id;
-      }
-    });
-    return highest;
-  };
+  const addCheckBox = async () => {
+    const newCheckID = await getHighestCheckID() + 1;
 
-  const addCheckBox = () => {
-    const newId = getHighestId(checks) + 1;
+    // presume templateID
+    const highestTextID = checks.reduce((acc, check) => check.textID > acc ? check.textID : acc, 0);
+    const nextTextID = highestTextID + 1;
 
-    const newCheck: Check = { id: newId, checked: false, text: '', location: location };
+    const newCheck: Check = { id: newCheckID, checked: false, text: '', textID: nextTextID, location: location };
     const oldChecks = checks ? checks : [];
-    // console.log('adding check', location);
 
     handleSetChecks([...oldChecks, newCheck], 'add', newCheck);
 
-    lastEditID.current = newId;
+    lastEditID.current = newCheckID;
+    console.log('lastEditID (addCheckBox):', lastEditID.current);
     newCheckAdded.current = true;
   };
 
-  const updateCheckText = (id: number, newText: string) => {
-
+  const updateCheckText = (checkID: number, newText: string) => {
 
     // set check back to read-only
-    const textInput = document.getElementById(`check-text-${location + id}`) as HTMLDivElement;
+    const textInput = document.getElementById(`check-text-${location + checkID}`) as HTMLDivElement;
     if (textInput) {
-      console.log('found input:', textInput);
+      // console.log('found input:', textInput);
       textInput.contentEditable = 'false';
       textInput.style.pointerEvents = 'none';
       textInput.style.userSelect = 'none';
     }
 
-    const clickableDiv = document.getElementById(`clickable-check-${location + id}`);
+    const clickableDiv = document.getElementById(`clickable-check-${location + checkID}`) as HTMLDivElement;
 
     if (document.activeElement !== textInput && clickableDiv) {
       // console.log('focus is not on text input. Making clickable. Editable=false');
@@ -100,7 +89,7 @@ export default function NoTimeSolveBox(props: NoTimeSolveBoxProps) {
 
     let updatedCheck: Check | undefined;
     const newChecks = checks.map((check) => {
-      if (check.id === id) {
+      if (check.id === checkID) {
         updatedCheck = { ...check, text: newText };
         return updatedCheck;
       }
@@ -111,8 +100,10 @@ export default function NoTimeSolveBox(props: NoTimeSolveBoxProps) {
   };
 
   const handleEdit = (id: number) => {
+    
     // console.log('id calling handleEdit:', id);
-    lastEditID.current = id;
+    lastEditID.current = id;    
+    console.log('lastEditID (handleEdit):', lastEditID.current);
 
     // console.log('showEdit?:', showEditConfirmation);
 
@@ -149,6 +140,7 @@ export default function NoTimeSolveBox(props: NoTimeSolveBoxProps) {
   };
 
   const handleDeleteConfirmed = () => {
+    console.log('deleting:', lastEditID.current);
     const id = lastEditID.current;
     const deletedCheck = checks.find((check) => check.id === id);
     if (!deletedCheck) {
@@ -168,6 +160,7 @@ export default function NoTimeSolveBox(props: NoTimeSolveBoxProps) {
 
   const handleDelete = (id: number) => {
     lastEditID.current = id;
+    console.log('lastEditID (handleDelete):', lastEditID.current);
     const popup = document.getElementById(`delete-confirm-popup-${location}`);
     if (popup) {
       popup.style.display = 'block';
@@ -183,19 +176,21 @@ export default function NoTimeSolveBox(props: NoTimeSolveBoxProps) {
     }
 
     const id = lastEditID.current;
+    console.log('focusing on id:', id);
 
     isClosedForever === undefined ?  null : setShowEditConfirmation(!isClosedForever);
     // console.log('showEdit?:', showEditConfirmation);
 
-    const clickableDiv = document.getElementById(`clickable-check-${location + id}`) as HTMLDivElement;
+    const clickableDiv = document.getElementById(`#clickable-check-${location + id}`) as HTMLDivElement;
     if (clickableDiv) {
-      // console.log('setting clickable div to UNclickable')
+      console.log('setting clickable div to UNclickable:', clickableDiv);
       clickableDiv.style.pointerEvents = 'none';
       clickableDiv.style.userSelect = 'none';
     }
 
     const textInput = document.getElementById(`check-text-${location + id}`) as HTMLDivElement;
     if (textInput) {
+      console.log('found input:', textInput);
       textInput.contentEditable = 'true';
       textInput.style.pointerEvents = 'auto';
       textInput.style.userSelect = 'auto';
@@ -247,7 +242,7 @@ export default function NoTimeSolveBox(props: NoTimeSolveBoxProps) {
     <div className="w-5/6 min-w-5/6">
       <div className="italic select-none">{location === 'pre' ? 'Pre-solve' : 'Post-solve'} checklist</div>
       {filteredChecks && filteredChecks.map((check) => {
-        const { id, checked, text, location } = check;
+        const { id, checked, text, textID, location } = check;
         // returns checkbox items
         return (
           <div key={id} id={`checkbox-item-${location + id}`} className="px-2 flex align-middle justify-start hover:bg-slate-400 bg-transparent text-dark group">
@@ -259,7 +254,7 @@ export default function NoTimeSolveBox(props: NoTimeSolveBoxProps) {
             >
               
               <div className="pr-4 font-semibold items-center flex pointer-events-none select-none text-md w-8" >
-                {id > 100 ? shapesTable[Math.floor(id / 100)] + shapesTable[id % 100] : shapesTable[id]
+                {textID > 100 ? shapesTable[Math.floor(textID / 100)] + shapesTable[textID % 100] : shapesTable[textID]
                 // for ids greater than 100, the first shape represents how many 100s there are in id. The second shape represents the remainder.
                 // if there's more than 10,000 shapes or so, rip
                 }
@@ -290,7 +285,7 @@ export default function NoTimeSolveBox(props: NoTimeSolveBoxProps) {
       <button className="flex px-1 m-2 hover:bg-primary-100 rounded-full border-dark text-dark font-semibold select-none" onClick={() => addCheckBox()}>+ Add Item</button>
       <div id={`edit-confirm-popup-${location}`} className="hidden">
         <ConfirmationBox 
-          confirmationMsg='NOTE: Editing will KEEP statistics for this item. To start tracking a new item, click Cancel, then click the "Add Item" button.' 
+          confirmationMsg='NOTE: Editing this checklist item will KEEP the data that was associated with it. To start tracking a new item, click Cancel, then click the "Add Item" button.' 
           confirm="Edit" 
           deny="Cancel" 
           confirmStyle="bg-blue-500 hover:bg-light_accent text-primary-100"
@@ -302,12 +297,13 @@ export default function NoTimeSolveBox(props: NoTimeSolveBoxProps) {
       </div>
       <div id={`delete-confirm-popup-${location}`} className="hidden">
         <ConfirmationBox 
-          confirmationMsg='Delete this item? This cannot be undone.\n '
+          confirmationMsg='Delete this item? Deleting this item will KEEP the data that was associated with it, but the item cannot be added back to the checklist.\n '
+          // TODO: allow re-adding deleted items?
           // TODO for desktop: messageByline='Bypass this warning by holding Ctrl when deleting.' 
           confirm="Delete" 
           deny="Cancel" 
           confirmStyle="bg-red-500 hover:bg-red-700 text-white"
-          denyStyle='bg-neutral-400 hover:bg-neutral-600 text-dark'
+          denyStyle='bg-neutral-200 hover:bg-neutral-300 text-dark'
           onConfirm={() => handleDeleteConfirmed()} 
           allowCloseForever={false} 
           onDeny={() => closeEditConfirmation(`delete-confirm-popup-${location}`, false)} 

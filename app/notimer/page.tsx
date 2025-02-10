@@ -1,10 +1,10 @@
 "use client";
 import { useState, useEffect, useLayoutEffect, useRef } from "react";
-import { debounce } from "lodash";
+import { debounce, get } from "lodash";
 import { randomScrambleForEvent } from 'cubing/scramble';
 // import { db } from "../../composables/notimer/db";
-import { getLastSolve, getNextSolve, getPreviousSolve, getChecks, getSolve, addCheck, addSolve, deleteCheck, updateCheck, updateSolve } from "../../composables/notimer/dbUtils";
-import type { dbCheck, NotimerSolve } from "../../composables/notimer/db";
+import { getLastSolve, getNextSolve, getPreviousSolve, getChecks, getSolve, addCheck, addSolve, deleteCheck, updateCheck, updateSolve, addCheckTemplate, getCheckTemplate, updateCheckTemplate, deleteCheckTemplate, getLastCheck } from "../../composables/notimer/dbUtils";
+import type { dbCheck, CheckTemplate, NotimerSolve } from "../../composables/notimer/db";
 
 
 import NoTimeSolveBox, { Check, NoTimeSolveBoxProps, handleSetChecks } from "../../components/notimer/NoTimeSolveBox";
@@ -16,11 +16,12 @@ import NoTimeSolveBox, { Check, NoTimeSolveBoxProps, handleSetChecks } from "../
 
 interface solveCard extends NotimerSolve {
   color: string;
+  checks: Check[] | [];
 }
 
 export default function NoTimer() {
   // console.log('reloading page');
-  const BOX_COUNT = 3; // must be > 2 or scroll effect will cause infinite loop
+  const CARD_COUNT = 3; // must be > 2 or scroll effect will cause infinite loop
   const PUZZLE_TYPE = "333";
 
   const [isLoaded, setIsLoaded] = useState(false);
@@ -28,7 +29,6 @@ export default function NoTimer() {
   const [solveCards, setSolveCards] = useState<solveCard[]>([]);
   const [pendingScrollAction, setPendingScrollAction] = useState<string | null>(null);
   const [showEditConfirmation, setShowEditConfirmation] = useState<boolean>(true);
-  const [checks, setChecks] = useState<Check[]>([]);
   const activeID = useRef<number>(0);
   const nextScram = useRef<string>('');
   const startingPage = useRef<number>(0);
@@ -52,6 +52,9 @@ export default function NoTimer() {
 
     let newCards: solveCard[] = [];
     for (let i = 0; i < count; i++) {
+      const dbChecks: dbCheck[] = await getChecks(i + startID);
+      const parsedChecks: Check[] = await parseDbChecks(dbChecks) ?? [];
+
       newCards.push({ 
         color: '#ece6ef', 
         id: i + startID,
@@ -61,6 +64,7 @@ export default function NoTimer() {
         solveResult: 0,
         solveModifier: "OK" as "OK" | "DNF" | "+2",
         comment: null,
+        checks: parsedChecks,
       });
     }
     setSolveCards((prev) =>
@@ -68,42 +72,97 @@ export default function NoTimer() {
     );
   };
 
-  const parseIndexedChecks = (indexedChecks: dbCheck[]) => {
-    return indexedChecks.map((check) => {
+  const parseDbChecks = async (indexedChecks: dbCheck[]): Promise<Check[]> => {
+    return Promise.all(indexedChecks.map(async (check) => {
+
+      const checkTemplate = await getCheckTemplate(check.checkTemplateId);
+      const text = checkTemplate ? checkTemplate.text : '';
+
+      console.log('parsing check:', check.id);
+
       return { // remove notimerSolveId from dbCheck
         id: check.id,
         checked: check.checked,
-        text: check.text,
+        text: text,
+        textID: check.checkTemplateId,
         location: check.location,
       };
-    });
+    }));
   }
 
   const createCardData = async (solve: NotimerSolve | undefined, id: number): Promise<solveCard> => {
-    if (!solve) {
-      return {
-        color: '#ece6ef',
-        id: id,
-        scramble: await getScram(PUZZLE_TYPE).then((scram) => scram.toString()),
-        puzzleType: PUZZLE_TYPE,
-        solveDateTime: new Date(),
-        solveResult: 0,
-        solveModifier: "OK",
-        comment: null,
-      };
-    }
+    let checks: Check[] = [];
+    
+    async function getChecksFromLastSolve() {
+      const lastSolve = await getLastSolve();
+      if (!lastSolve) return [];
 
+      const lastChecks = await getChecks(lastSolve.id);
+      if (!lastChecks || lastChecks.length === 0) return [];
+
+      const parsedChecks = await parseDbChecks(lastChecks);
+      return parsedChecks.map(check => ({...check, checked: false}));
+    }
+    
+    if (solve) {
+      const dbChecks = await getChecks(solve.id);
+      checks = dbChecks && dbChecks.length > 0 
+        ? await parseDbChecks(dbChecks)
+        : await getChecksFromLastSolve();
+
+      return {
+        color: '#e446ef',
+        id: solve.id,
+        scramble: solve.scramble,
+        puzzleType: solve.puzzleType,
+        solveDateTime: solve.solveDateTime,
+        solveResult: solve.solveResult,
+        solveModifier: solve.solveModifier,
+        comment: solve.comment,
+        checks,
+      };
+    } 
+
+    // if (!solve)
+    checks = await getChecksFromLastSolve();
     return {
-      color: '#e446ef',
-      id: solve.id,
-      scramble: solve.scramble,
-      puzzleType: solve.puzzleType,
-      solveDateTime: solve.solveDateTime,
-      solveResult: solve.solveResult,
-      solveModifier: solve.solveModifier,
-      comment: solve.comment,
+      color: '#ece6ef',
+      id: id,
+      scramble: await getScram(PUZZLE_TYPE).then((scram) => scram.toString()),
+      puzzleType: PUZZLE_TYPE,
+      solveDateTime: new Date(),
+      solveResult: 0,
+      solveModifier: "OK",
+      comment: null,
+      checks,
     };
-  }
+  };
+
+  const isAllUnchecked = (checks: Check[]): Boolean => {
+    return checks.every((check) => !check.checked);
+  };
+
+  const updateCardsWithChecks = async (newChecks: Check[]) => {
+    const lastSolveID = await getLastSolve().then((solve) => solve?.id) ?? -10; // -10 arbitrarily assures it won't match any card.id
+    setSolveCards((prev) => {
+      return prev.map((card) => {
+        if (card.id === activeID.current) {
+          return { ...card, checks: newChecks };
+
+        // check if last or 2nd last solve hasn't been reached. If so, add checks.
+        } else if ((card.id === lastSolveID || card.id === lastSolveID - 1) && isAllUnchecked(newChecks)) {
+          console.log('updating last(ish) solve with new checks, card.id:', card.id);
+          return { ...card, checks: newChecks };
+        
+        } else {
+          return card;
+        }
+      });
+    });
+  };
+    
+
+  
 
   const getOriginalSolveID = async () => {
     const lastSolve = await getLastSolve();
@@ -114,186 +173,156 @@ export default function NoTimer() {
     }
   }
 
-  const shiftActiveBoxToLower = async (): Promise<[number, number]> => { // displays bottom box and preloads box below that
+  const shiftActiveCardToLower = async (): Promise<number> => { // displays bottom box and preloads box below that
     const shiftedCards = solveCards.slice(1); // removes first box
-    const lowestCard = shiftedCards[shiftedCards.length - 1]; // assumes 2nd to last box is one being displayed on screen
     
     const oldID = shiftedCards[shiftedCards.length - 2].id;
-    // activeID.current = lowestCard.id; // shouldn't be needed. Handled in handleScroll.
 
-    //preload next box (the one below activeID)
+    //preload next card (the one below activeID)
     const nextSolve = await getNextSolve(activeID.current + 1);
-    // BUG: new indexeddb entry hasn't been completed, so getOriginalSolveID will return the same ID as activeID
     const nextSolveID = nextSolve ? nextSolve.id : await getOriginalSolveID();
     const nextSolveCard = await createCardData(nextSolve, nextSolveID);
     
     setSolveCards([...shiftedCards, nextSolveCard]);
 
-    return [oldID, activeID.current];
+    return oldID
   };
 
 
 
-  const shiftActiveBoxToUpper = async () => { // load box on top
+  const shiftActiveCardToUpper = async (): Promise<number> => { // load box on top
     const shiftedCards = solveCards.slice(0, solveCards.length - 1);
-    const highestCard = shiftedCards[0];
 
     const oldID = shiftedCards[1].id;
-    // activeID.current = highestCard.id; // shouldn't be needed. Handled in handleScroll.
 
-    //preload prev box (the one above activeID)
+    //preload prev card (the one above activeID)
     const prevSolve = await getPreviousSolve(activeID.current - 1);
-    const prevID = prevSolve ? prevSolve.id : await getOriginalSolveID(); // possible bug: if shiftActiveBoxToLower was called, this might have the same activeID
+    const prevID = prevSolve ? prevSolve.id : await getOriginalSolveID();
     const prevSolveCard = await createCardData(prevSolve, prevID);
-    console.log('1+', shiftedCards.length);
+
     setSolveCards([prevSolveCard, ...shiftedCards]);
 
-    return [oldID, activeID.current];
+    return oldID
   };
 
   const addOrUpdateSolve = async (solve: NotimerSolve) => {
     const id = solve.id;
     const existingSolve = await getSolve(id);
     if (existingSolve) {
-      console.log('updating solve', id);
       updateSolve(id, solve);
     } else {
-      console.log('adding solve', id);
       addSolve(solve);
     }
   };
 
-  const addOrUpdateCheck = async (check: dbCheck) => {
-    const id = check.id;
-    const existingCheck = await getChecks(id);
-    if (existingCheck) {
-      updateCheck(id, check);
-    } else {
-      addCheck(check);
-    }
+  const getHighestCheckID = async (): Promise<number> => {
+    let highestID = await getLastCheck().then((check) => check ? check.id : 0);
+    return highestID;
   }
+
+  const createNextChecks = async (): Promise<Check[]> => {
+    //return old checks but with checked = false, and new ids
+
+    let i = await getHighestCheckID();
+
+    const activeChecks = solveCards.find((card) => card.id === activeID.current)?.checks;
+
+    const nextChecks = activeChecks?.map((check) => {
+      i++;
+      console.log('creating new check with id:', i);
+      return {
+        id: i,
+        checked: false,
+        text: check.text,
+        textID: check.textID,
+        location: check.location,
+      };
+    }) ?? [];
+
+    return nextChecks
+  };
+
+
+  const processChecks = async (): Promise<Check[]> => {
+    let nextDbChecks: dbCheck[] = await getChecks(activeID.current);
+    let nextChecks: Check[];
+
+    if (nextDbChecks) {
+      nextChecks = await parseDbChecks(nextDbChecks);
+    } else {
+      nextChecks = await createNextChecks();
+      saveLatestChecks(activeID.current);
+    }
+    return nextChecks;
+  };
 
 
   const handleScrollDown = async () => {
     console.log('scrolling down');
 
-    const [oldID, newID] = await shiftActiveBoxToLower();
+    const oldID = await shiftActiveCardToLower();
 
-    let scram = solveCards.find((card) => card.id === oldID)?.scramble;
-    if (!scram) {
-      console.warn('scramble not found');
-      scram = '';
-    }
-
-    const scrambleDiv = document.getElementById(`scramble-${newID}`);
-    if (scrambleDiv) {
-      scrambleDiv.innerText = nextScram.current;
-    }
-    
-    // now get solve if it exists. Create otherwise. Then get checks.
-    const solve = await getSolve(newID);
-    const indexedChecks = await getChecks(newID);
-    let latestChecks = parseIndexedChecks(indexedChecks);
-
-    if (!latestChecks) {
-      // return old checks
-      const oldChecks = checks.map((check) => {
-        return {
-          id: check.id,
-          checked: false,
-          text: check.text,
-          location: check.location,
-        };
-      });
-
-      latestChecks = oldChecks;
-    }
-
-    latestChecks.forEach(async (check) => {
-      await addOrUpdateCheck({
-        id: check.id,
-        notimerSolveId: newID,
-        checked: check.checked,
-        text: check.text,
-        location: check.location,
-      });
-    });
-
-    setChecks(latestChecks); // these do not need to be saved to indexeddb
+    const nextChecks = await processChecks();
+    updateCardsWithChecks(nextChecks);
 
     nextScram.current = await getScram(PUZZLE_TYPE).then((scram) => scram.toString());
+
   };
 
+
   const handleScrollUp = async () => {
-    const [oldID, newID] = await shiftActiveBoxToUpper();
-    const oldScrambleDiv = document.getElementById(`scramble-${oldID}`);
-    let scram: string = '';
-    if (oldScrambleDiv) {
-      scram = oldScrambleDiv.innerText
-    }
+    console.log('scrolling up');
+    console.trace();
 
-    const scrambleDiv = document.getElementById(`scramble-${newID}`);
-    if (scrambleDiv) {
-      scrambleDiv.innerText = nextScram.current;
-    }
+    const oldID = await shiftActiveCardToUpper();
 
-    // now get solve if it exists. Create otherwise. Then get checks.
-    const solve = await getSolve(newID);
-    const indexedChecks = await getChecks(newID);
-    const latestChecks = parseIndexedChecks(indexedChecks);
-
-    if (!latestChecks) {
-      // return old checks
-      const oldChecks = checks.map((check) => {
-        return {
-          id: check.id,
-          checked: false,
-          text: check.text,
-          location: check.location,
-        };
-      });
-
-      setChecks(oldChecks); // these do not need to be saved to indexeddb
-    } else {
-      setChecks(latestChecks); // these do not need to be saved to indexeddb
-    }
+    const prevChecks = await processChecks();
+    updateCardsWithChecks(prevChecks);
 
     nextScram.current = await getScram(PUZZLE_TYPE).then((scram) => scram.toString());
   }
 
+
   const handleScroll = debounce( async (e) => {
-
-    const container = document.getElementById("scrollContainer");
-    if (!container) return;
-
-    const currentCard = solveCards.find((card) => card.id === activeID.current);
-
-    const currentSolve = {
-      id: activeID.current,
-      scramble: currentCard?.scramble ?? '',
-      puzzleType: currentCard?.puzzleType ?? PUZZLE_TYPE,
-      solveDateTime: currentCard?.solveDateTime ?? new Date(),
-      solveResult: 0,
-      solveModifier: "OK" as "OK" | "DNF" | "+2",
-      comment: null,
-    }
-
-    console.log('handling scroll');
-    console.log('currentSolve', currentSolve);
-    await addOrUpdateSolve(currentSolve);
+    console.log('scroll triggered');
 
     // TODO: deleting solve will need custom scroll logic
     // TODO: handling case where user wants to scroll to end will need custom logic
-
+    
+    const container = document.getElementById("scrollContainer");
+    if (!container) return;    
+    
     const { scrollTop, clientHeight, scrollHeight } = container;
     const endingPage = Math.floor((scrollTop + 0.5 * clientHeight) / clientHeight);
-
     if (endingPage === startingPage.current) return;
+
     
     startingPage.current = endingPage;
 
+    const oldID = activeID.current;
     activeID.current = solveCards[endingPage].id;
+    
     console.log('activeID set to', activeID.current);
+    
+    const currentCard = solveCards.find((card) => card.id === activeID.current);
+
+    if (currentCard) {
+      const currentSolve = {
+        id: activeID.current,
+        scramble: currentCard.scramble ,
+        puzzleType: currentCard.puzzleType ,
+        solveDateTime: currentCard.solveDateTime,
+        solveResult: currentCard.solveResult,
+        solveModifier: currentCard.solveModifier as "OK" | "DNF" | "+2",
+        comment: null,
+      }
+
+      console.log('currentSolve', currentSolve);
+      await addOrUpdateSolve(currentSolve);
+    }
+
+    // TODO: handle case where scroll from page 1 to 2. Need to add checks not just currentSolve.
+    saveLatestChecks(activeID.current);
 
     if (scrollTop + clientHeight >= scrollHeight && endingPage === 2) {
       setPendingScrollAction("down");
@@ -304,41 +333,57 @@ export default function NoTimer() {
     console.log('adding latest solve');
     await addLatestSolve();
 
-  }, 200, { leading: false, trailing: true,  });
+  }, 50, { leading: false, trailing: true,  });
 
 
 
 
 
   const mountCards = async () => {
-    console.log('adding cards');
-    //find if there's any solve data
+    // find if there's any solve data
     const lastSolve = await getLastSolve();
     if (lastSolve) {
 
       const latestID = lastSolve.id;
-      addCards(BOX_COUNT, 'bottom', latestID);
+      addCards(CARD_COUNT, 'bottom', latestID);
+      
+      activeID.current = latestID;
 
       const indexedChecks = await getChecks(latestID);
-      const latestChecks = parseIndexedChecks(indexedChecks);
-      setChecks(latestChecks);
+      const latestChecks = await parseDbChecks(indexedChecks);
+      updateCardsWithChecks(latestChecks);
 
     } else {
-      addCards(BOX_COUNT, 'bottom', 0);
+      addCards(CARD_COUNT, 'bottom', 0);
       activeID.current = 0;
       addLatestSolve();
     }
   }
   
-  const saveLatestChecks = () => {
+  const saveLatestChecks = (id: number | null) => {
+    const solveID = id ?? activeID.current;
+    const checks = solveCards.find((card) => card.id === solveID)?.checks;
+    if (!checks) return;
+
     checks.forEach(async (check) => {
-      await addCheck({
-        id: check.id,
-        notimerSolveId: activeID.current,
-        checked: check.checked,
-        text: check.text,
-        location: check.location,
-      });
+
+      let existingCheckTemplate = await getCheckTemplate(undefined, check.text);
+      if (!existingCheckTemplate) {
+        await addCheckTemplate(check.text);
+        existingCheckTemplate = await getCheckTemplate(undefined, check.text);
+      }
+
+      const templateID = existingCheckTemplate!.id;
+      const existingCheck = (await getChecks(solveID)).find((check) => check.checkTemplateId === templateID);
+      if (!existingCheck) {
+        const newCheck = {
+          notimerSolveId: solveID,
+          checkTemplateId: templateID,
+          checked: false,
+          location: check.location,
+        };
+        await addCheck(newCheck);
+      }
     });
   }
 
@@ -356,7 +401,7 @@ export default function NoTimer() {
       }
     }
 
-    console.log('saving activeID solve:', activeID.current);
+    // console.log('saving activeID solve:', activeID.current);
 
     const newSolve = {
       id: activeID.current,
@@ -368,41 +413,89 @@ export default function NoTimer() {
       comment: null,
     };
 
-    console.log('adding latest solve');
+    // console.log('adding latest solve');
     await addOrUpdateSolve(newSolve);
   };
 
   const handleAddCheck = async (actionCheck: Check) => {
+
+    let existingCheckTemplate = await getCheckTemplate(undefined, actionCheck.text);
+    if (!existingCheckTemplate) {
+      await addCheckTemplate(actionCheck.text);
+      existingCheckTemplate = await getCheckTemplate(undefined, actionCheck.text);
+    }
+
+    const templateID = existingCheckTemplate?.id ?? 0;
+
     await addCheck({
-      id: actionCheck.id,
+      // id: actionCheck.id,
       notimerSolveId: activeID.current,
+      checkTemplateId: templateID,
       checked: actionCheck.checked,
-      text: actionCheck.text,
       location: actionCheck.location,
     });
   };
 
   const handleUpdateCheck = async (actionCheck: Check) => {
 
-    const updatedCheck = {
-      id: actionCheck.id,
-      notimerSolveId: activeID.current,
-      checked: actionCheck.checked,
-      text: actionCheck.text,
-      location: actionCheck.location,
+    const checks = solveCards.find((card) => card.id === activeID.current)?.checks;
+
+    const oldText = checks?.find((check) => check.id === actionCheck.id)?.text ?? '';
+
+    const existingCheckTemplate = await getCheckTemplate(undefined, oldText);
+
+    // create or update template
+    let templateID;
+    if (existingCheckTemplate) {
+      templateID = existingCheckTemplate.id;
+      
+      // update check template if text has changed
+      if (oldText !== actionCheck.text) {
+        const template = { id: templateID, text: actionCheck.text };
+        await updateCheckTemplate(templateID, template);
+      }
+
+    } else {
+      console.log('adding new check template with text:', actionCheck.text);
+      await addCheckTemplate(actionCheck.text);
+      const newCheckTemplate = await getCheckTemplate(undefined, actionCheck.text);
+      templateID = newCheckTemplate?.id ?? 0;
     }
 
-    await updateCheck(actionCheck.id, updatedCheck);
+    // create or update check
+    const existingCheck = (await getChecks(activeID.current)).find((check) => check.checkTemplateId === templateID);
+    let updatedCheck;
+    if (existingCheck) {
+      updatedCheck = {
+        id: existingCheck.id,
+        notimerSolveId: activeID.current,
+        checkTemplateId: templateID,
+        checked: actionCheck.checked,
+        location: actionCheck.location,
+      }
+      await updateCheck(existingCheck.id, updatedCheck);
+
+    } else {
+      addCheck({
+        // id: actionCheck.id,
+        notimerSolveId: activeID.current,
+        checkTemplateId: templateID,
+        checked: actionCheck.checked,
+        location: actionCheck.location,
+      })
+    }
   };
+
+  const handleDeleteCheck = async (id: number) => {
+    // todo: check if any relavant checks aren't getting deleted, such as in card after id
+    await deleteCheck(id);
+  };
+  
 
 
   const handleSetChecks: handleSetChecks = async (newChecks, action, actionCheck ) => {
-    
-    console.log('handling set checks');
-    await addLatestSolve();
-
-    setChecks(newChecks);
-
+        
+    // todo: moves confirmation boxes out to page level to avoid having to manage lasteditid state in several NoTimeSolveBox components
     switch (action) {
       case 'add':
         handleAddCheck(actionCheck);
@@ -411,17 +504,20 @@ export default function NoTimer() {
         handleUpdateCheck(actionCheck);
         break;
       case 'delete':
-        deleteCheck(actionCheck.id);
+        handleDeleteCheck(actionCheck.id);
         break;
       default:
         break;
     }
+    
+    updateCardsWithChecks(newChecks);
+
+
   };
 
   useEffect(() => {
     const loadContent = async () => {
       await mountCards();
-      console.log('boxes mounted');
       setIsLoaded(true);
     };
   
@@ -436,7 +532,7 @@ export default function NoTimer() {
   // Ensure scroll adjustment happens before rendering new boxes
   useLayoutEffect(() => {
     if (!pendingScrollAction) return;
-
+    console.log('handling pending scroll action:', pendingScrollAction);
     const action = pendingScrollAction;
     setPendingScrollAction(null);
 
@@ -474,10 +570,10 @@ export default function NoTimer() {
           className="h-[calc(100vh-64px)] snap-start flex flex-col space-y-4 items-center justify-center"
           style={{ backgroundColor: card.color }}
         >
-          <NoTimeSolveBox checks={checks} handleSetChecks={handleSetChecks} location={'pre'} showEditConfirmation={showEditConfirmation} setShowEditConfirmation={setShowEditConfirmation}/>
+          <NoTimeSolveBox checks={card.checks} handleSetChecks={handleSetChecks} location={'pre'} showEditConfirmation={showEditConfirmation} setShowEditConfirmation={setShowEditConfirmation}/>
           <div className="text-2xl font-regular select-none">Scramble {card.id}</div>
           <div id={`scramble-${card.id}`} className="text-2xl font-medium px-5 text-center pb-2 select-all">{card.scramble}</div>
-          <NoTimeSolveBox checks={checks} handleSetChecks={handleSetChecks} location={'post'} showEditConfirmation={showEditConfirmation} setShowEditConfirmation={setShowEditConfirmation}/>
+          <NoTimeSolveBox checks={card.checks} handleSetChecks={handleSetChecks} location={'post'} showEditConfirmation={showEditConfirmation} setShowEditConfirmation={setShowEditConfirmation}/>
         </div>
       ))}
     </div>
