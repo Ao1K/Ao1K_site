@@ -108,7 +108,7 @@ export default function NoTimeSolveBox(props: NoTimeSolveBoxProps) {
     // console.log('showEdit?:', showEditConfirmation);
 
     if (showEditConfirmation === undefined || showEditConfirmation) {
-      const popup = document.getElementById(`edit-confirm-popup-${location}`);
+      const popup = document.getElementById(`edit-confirm-popup`);
       if (popup) {
         popup.style.display = 'block';
       }
@@ -119,9 +119,9 @@ export default function NoTimeSolveBox(props: NoTimeSolveBoxProps) {
 
   const handleToggle = (id: number) => {
     
-    // console.log('isEditing:', isEditingCheck.current);
+    console.log('isEditing:', isEditingCheck.current);
     if (isEditingCheck.current) {
-      // console.log('skipping toggle')
+      console.log('skipping toggle')
       return;
     }
 
@@ -151,7 +151,7 @@ export default function NoTimeSolveBox(props: NoTimeSolveBoxProps) {
 
     handleSetChecks(newChecks, 'delete', deletedCheck);
 
-    const popup = document.getElementById(`delete-confirm-popup-${location}`);
+    const popup = document.getElementById(`delete-confirm-popup`);
     if (popup) {
       popup.style.display = 'none';
     }
@@ -161,7 +161,7 @@ export default function NoTimeSolveBox(props: NoTimeSolveBoxProps) {
   const handleDelete = (id: number) => {
     lastEditID.current = id;
     console.log('lastEditID (handleDelete):', lastEditID.current);
-    const popup = document.getElementById(`delete-confirm-popup-${location}`);
+    const popup = document.getElementById(`delete-confirm-popup`);
     if (popup) {
       popup.style.display = 'block';
     }
@@ -170,7 +170,7 @@ export default function NoTimeSolveBox(props: NoTimeSolveBoxProps) {
 
   const handleEditConfirmed = (isClosedForever?: boolean) => {
 
-    const popup = document.getElementById(`edit-confirm-popup-${location}`);
+    const popup = document.getElementById(`edit-confirm-popup`);
     if (popup) {
       popup.style.display = 'none';
     }
@@ -181,7 +181,7 @@ export default function NoTimeSolveBox(props: NoTimeSolveBoxProps) {
     isClosedForever === undefined ?  null : setShowEditConfirmation(!isClosedForever);
     // console.log('showEdit?:', showEditConfirmation);
 
-    const clickableDiv = document.getElementById(`#clickable-check-${location + id}`) as HTMLDivElement;
+    const clickableDiv = document.getElementById(`clickable-check-${location + id}`) as HTMLDivElement;
     if (clickableDiv) {
       console.log('setting clickable div to UNclickable:', clickableDiv);
       clickableDiv.style.pointerEvents = 'none';
@@ -194,6 +194,7 @@ export default function NoTimeSolveBox(props: NoTimeSolveBoxProps) {
       textInput.contentEditable = 'true';
       textInput.style.pointerEvents = 'auto';
       textInput.style.userSelect = 'auto';
+      // TODO: for some reason, the previous check-text div's id is set to the next id. So there's two checks with the same id. Fix.
       textInput.focus();
 
       // attempt to put caret at end
@@ -283,32 +284,34 @@ export default function NoTimeSolveBox(props: NoTimeSolveBoxProps) {
         );
       })}
       <button className="flex px-1 m-2 hover:bg-primary-100 rounded-full border-dark text-dark font-semibold select-none" onClick={() => addCheckBox()}>+ Add Item</button>
-      <div id={`edit-confirm-popup-${location}`} className="hidden">
-        <ConfirmationBox 
-          confirmationMsg='NOTE: Editing this checklist item will KEEP the data that was associated with it. To start tracking a new item, click Cancel, then click the "Add Item" button.' 
-          confirm="Edit" 
-          deny="Cancel" 
-          confirmStyle="bg-blue-500 hover:bg-light_accent text-primary-100"
-          denyStyle='bg-neutral-400 hover:bg-neutral-600 text-dark'
-          onConfirm={(isClosedForever) => handleEditConfirmed(isClosedForever)} 
-          allowCloseForever={true} 
-          onDeny={(isClosedForever) => closeEditConfirmation(`edit-confirm-popup-${location}`, isClosedForever)} 
-        />
-      </div>
-      <div id={`delete-confirm-popup-${location}`} className="hidden">
-        <ConfirmationBox 
-          confirmationMsg='Delete this item? Deleting this item will KEEP the data that was associated with it, but the item cannot be added back to the checklist.\n '
-          // TODO: allow re-adding deleted items?
-          // TODO for desktop: messageByline='Bypass this warning by holding Ctrl when deleting.' 
-          confirm="Delete" 
-          deny="Cancel" 
-          confirmStyle="bg-red-500 hover:bg-red-700 text-white"
-          denyStyle='bg-neutral-200 hover:bg-neutral-300 text-dark'
-          onConfirm={() => handleDeleteConfirmed()} 
-          allowCloseForever={false} 
-          onDeny={() => closeEditConfirmation(`delete-confirm-popup-${location}`, false)} 
-        />
-      </div>
+      {location === 'pre' && (
+        <>
+          <div id={`edit-confirm-popup`} className="hidden">
+            <ConfirmationBox 
+              confirmationMsg='NOTE: Editing this checklist item will KEEP the data that was associated with it. To start tracking a new item, click Cancel, then click the "Add Item" button.' 
+              confirm="Edit" 
+              deny="Cancel" 
+              confirmStyle="bg-blue-500 hover:bg-light_accent text-primary-100"
+              denyStyle='bg-neutral-400 hover:bg-neutral-600 text-dark'
+              onConfirm={(isClosedForever) => handleEditConfirmed(isClosedForever)} 
+              allowCloseForever={true} 
+              onDeny={(isClosedForever) => closeEditConfirmation(`edit-confirm-popup`, isClosedForever)} 
+            />
+          </div>
+          <div id={`delete-confirm-popup`} className="hidden">
+            <ConfirmationBox 
+              confirmationMsg='Delete this item? Deleting this item will KEEP the data that was associated with it, but the item cannot be added back to the checklist.\n '
+              confirm="Delete" 
+              deny="Cancel" 
+              confirmStyle="bg-red-500 hover:bg-red-700 text-white"
+              denyStyle='bg-neutral-200 hover:bg-neutral-300 text-dark'
+              onConfirm={() => handleDeleteConfirmed()} 
+              allowCloseForever={false} 
+              onDeny={() => closeEditConfirmation(`delete-confirm-popup`, false)} 
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }

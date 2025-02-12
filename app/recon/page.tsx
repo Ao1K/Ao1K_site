@@ -31,6 +31,7 @@ import TitleWithPlaceholder from "../../components/recon/TitleInput";
 import TopButton from "../../components/recon/TopButton";
 import { customDecodeURL } from '../../composables/recon/urlEncoding';
 import getDailyScramble from '../../composables/recon/getDailyScramble';
+import VideoHelpPrompt from '../../components/recon/VideoHelpPrompt';
 
 export interface MoveHistory {
   history: string[][];
@@ -577,6 +578,7 @@ export default function Recon() {
 
   return (
     <div id="main_page" className="col-start-2 col-span-1 flex flex-col bg-primary-900">
+      <VideoHelpPrompt videoId="iIipycBl0iY" />
       <div id="top-bar" className="px-3 flex flex-row flex-wrap items-center place-content-end gap-2 mt-8 mb-3">
         <TitleWithPlaceholder solveTitle={solveTitle} handleTitleChange={handleTitleChange} />
         <div className="flex-none flex flex-row space-x-1 pr-2 text-dark_accent">
