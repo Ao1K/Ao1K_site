@@ -10,9 +10,12 @@ import type { dbCheck, CheckTemplate, NotimerSolve } from "../../composables/not
 import NoTimeSolveBox, { Check, NoTimeSolveBoxProps, handleSetChecks } from "../../components/notimer/NoTimeSolveBox";
 
 
-// the act of updating a check should save it to indexeddb
-// the act of scrolling should save the previous box to indexeddb
-// deleting a box should be a thing
+// todo: deleting a card should be a thing
+// todo: allow scroll to bottom
+// todo: handle edge case were user gets stuck at bottom or top card. 
+//          Default to off if user is on first card of page load. 
+//          Add sufficient debouncing in case user isn't actually stuck there. Or some sort of logic, anyway, to check it's not normal scroll.
+//          scroll should be handled once user releases click
 
 interface solveCard extends NotimerSolve {
   color: string;
@@ -557,25 +560,27 @@ export default function NoTimer() {
   // todo, add debounce indicator across the bottom of the screen. Then show simple down arrow, indicating scrolling is allowed.
 
   return (
-    <div
-      id="scrollContainer"
-      className="h-[calc(100vh-64px)] overflow-y-scroll snap-y snap-mandatory " //scrollbar-hidden
-      onScroll={handleScroll}
-      ref={containerRef}
-    >
-      {/* <h1>Do you ever find yourself rushing to start solves? Do you keep ignoring bad habits? This tool is for you.</h1> */}
-      { solveCards.map((card, index) => (
-        <div
-          key={card.id}
-          className="h-[calc(100vh-64px)] snap-start flex flex-col space-y-4 items-center justify-center"
-          style={{ backgroundColor: card.color }}
-        >
-          <NoTimeSolveBox checks={card.checks} handleSetChecks={handleSetChecks} location={'pre'} showEditConfirmation={showEditConfirmation} setShowEditConfirmation={setShowEditConfirmation}/>
-          <div className="text-2xl font-regular select-none">Scramble {card.id}</div>
-          <div id={`scramble-${card.id}`} className="text-2xl font-medium px-5 text-center pb-2 select-all">{card.scramble}</div>
-          <NoTimeSolveBox checks={card.checks} handleSetChecks={handleSetChecks} location={'post'} showEditConfirmation={showEditConfirmation} setShowEditConfirmation={setShowEditConfirmation}/>
-        </div>
-      ))}
-    </div>
+    <div>
+      <div
+        id="scrollContainer"
+        className="h-[calc(100vh-64px)] overflow-y-scroll snap-y snap-mandatory " //scrollbar-hidden
+        onScroll={handleScroll}
+        ref={containerRef}
+      >
+        {/* <h1>Do you ever find yourself rushing to start solves? Do you keep ignoring bad habits? This tool is for you.</h1> */}
+        { solveCards.map((card, index) => (
+          <div
+            key={card.id}
+            className="h-[calc(100vh-64px)] snap-start flex flex-col space-y-4 items-center justify-center"
+            style={{ backgroundColor: card.color }}
+          >
+            <NoTimeSolveBox checks={card.checks} handleSetChecks={handleSetChecks} location={'pre'} showEditConfirmation={showEditConfirmation} setShowEditConfirmation={setShowEditConfirmation}/>
+            <div className="text-2xl font-regular select-none">Scramble {card.id}</div>
+            <div id={`scramble-${card.id}`} className="text-2xl font-medium px-5 text-center pb-2 select-all">{card.scramble}</div>
+            <NoTimeSolveBox checks={card.checks} handleSetChecks={handleSetChecks} location={'post'} showEditConfirmation={showEditConfirmation} setShowEditConfirmation={setShowEditConfirmation}/>
+          </div>
+        ))}
+      </div>
+  </div>
   );
 }
