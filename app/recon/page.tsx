@@ -64,7 +64,7 @@ export default function Recon() {
   const [scrambleHTML, setScrambleHTML] = useState<string>('');
   const [solutionHTML, setSolutionHTML] = useState<string>('');
     
-  const tpsRef = useRef<string>('');
+  const tpsRef = useRef<HTMLDivElement>(null);
   const scrambleEditorRef = useRef<EditorRef>(null);
   const solutionEditorRef = useRef<EditorRef>(null);
   const undoRef = useRef<HTMLButtonElement>(null);
@@ -334,8 +334,8 @@ export default function Recon() {
     const time = solveTime ? `${solveTime}` : '';
     const stm = totalMoves ? `${totalMoves} stm` : '';
     let tpsString = '';
-    if (tpsRef.current && tpsRef.current !== '(-- tps)') {
-      tpsString = tpsRef.current;
+    if (tpsRef.current && tpsRef.current.innerHTML !== '(-- tps)') {
+      tpsString = tpsRef.current.innerHTML;
     }
     const url = window.location.href;
     let printout = "";
@@ -344,7 +344,8 @@ export default function Recon() {
     scramble ? printout += `${scramble}\n\n` : '';
     solution ? printout += `Solution:\n${solution}\n\n` : '';
 
-    time ? printout += `${time} sec ` : '';
+    time ? printout += `${time} sec` : '';
+    time && stm ? printout += `, ` : ' ';
     stm ? printout += `${stm} ` : '';
     tpsString ? printout += `${tpsString}` : '';
     printout += '\n';

@@ -19,4 +19,4 @@ Encode "(" and ")". These characters can break "copy solve".
 Adding a commented line or empty line can totally break the player after that line. Miscounted lines. 
 I'm over-filtering out empty lines from the state variables. Need to handle them instead.
 
-tps not in printout
+removing comment button is buggy and only removes comment text that is selected and not entire comment

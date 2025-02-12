@@ -1,12 +1,12 @@
 interface TPSInfoProps {
   moveCount: number;
   solveTime: number | string;
-  tpsRef: React.MutableRefObject<string>;
+  tpsRef: React.RefObject<HTMLDivElement>;
 }
 
 
 
-export default function TPSInfo({ moveCount, solveTime }: TPSInfoProps) {
+export default function TPSInfo({ moveCount, solveTime, tpsRef }: TPSInfoProps) {
 
   let tpsString = "";
   if (solveTime && typeof solveTime === 'number' && solveTime > 0) {
@@ -16,5 +16,5 @@ export default function TPSInfo({ moveCount, solveTime }: TPSInfoProps) {
     tpsString = "(-- tps)";
   }
 
-  return <div className="text-primary-100 mx-2 text-xl">{tpsString}</div>;
+  return <div ref={tpsRef} className="text-primary-100 mx-2 text-xl">{tpsString}</div>;
 };
