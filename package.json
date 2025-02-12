@@ -32,7 +32,7 @@
   },
   "devDependencies": {
     "@aws-amplify/backend": "^1.9.0",
-    "@aws-amplify/backend-cli": "^1.4.3",
+    "@aws-amplify/backend-cli": "^1.4.9",
     "@types/js-cookie": "^3.0.6",
     "@types/json-schema": "^7.0.15",
     "@types/lodash.debounce": "^4.0.9",
@@ -45,7 +45,7 @@
     "@types/uuid": "^10.0.0",
     "@types/wrap-ansi": "^8.0.2",
     "autoprefixer": "^10.0.1",
-    "aws-cdk-lib": "^2.173.1",
+    "aws-cdk-lib": "^2.178.1",
     "constructs": "^10.4.2",
     "esbuild": "^0.24.0",
     "eslint": "^8",
