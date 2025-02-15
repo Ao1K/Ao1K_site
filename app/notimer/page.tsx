@@ -1,10 +1,11 @@
 "use client";
-import { useState, useEffect, useLayoutEffect, useRef } from "react";
-import { debounce, get } from "lodash";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
+import { debounce } from "lodash";
 import { randomScrambleForEvent } from 'cubing/scramble';
 // import { db } from "../../composables/notimer/db";
 import { getLastSolve, getNextSolve, getPreviousSolve, getChecks, getSolve, addCheck, addSolve, deleteCheck, updateCheck, updateSolve, addCheckTemplate, getCheckTemplate, updateCheckTemplate, deleteCheckTemplate, getLastCheck } from "../../composables/notimer/dbUtils";
 import type { dbCheck, CheckTemplate, NotimerSolve } from "../../composables/notimer/db";
+import ConfirmationBox from "../../components/ConfirmationBox";
 
 
 import NoTimeSolveBox, { Check, NoTimeSolveBoxProps, handleSetChecks } from "../../components/notimer/NoTimeSolveBox";
@@ -17,7 +18,7 @@ import NoTimeSolveBox, { Check, NoTimeSolveBoxProps, handleSetChecks } from "../
 //          Add sufficient debouncing in case user isn't actually stuck there. Or some sort of logic, anyway, to check it's not normal scroll.
 //          scroll should be handled once user releases click
 
-interface solveCard extends NotimerSolve {
+interface SolveCard extends NotimerSolve {
   color: string;
   checks: Check[] | [];
 }
@@ -29,12 +30,20 @@ export default function NoTimer() {
 
   const [isLoaded, setIsLoaded] = useState(false);
 
-  const [solveCards, setSolveCards] = useState<solveCard[]>([]);
+  const [solveCards, setSolveCards] = useState<SolveCard[]>([]);
+  
   const [pendingScrollAction, setPendingScrollAction] = useState<string | null>(null);
+  const [isInteracting, setIsInteracting] = useState<boolean>(false);
+
   const [showEditConfirmation, setShowEditConfirmation] = useState<boolean>(true);
   const activeID = useRef<number>(0);
   const nextScram = useRef<string>('');
   const startingPage = useRef<number>(0);
+  const [editStatus, setEditStatus] = useState<'none' | number>('none');
+  const [deleteStatus, setDeleteStatus] = useState<'none' | number>('none');
+
+  
+  const lastCheckEditID = useRef<number>(-1);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -53,7 +62,7 @@ export default function NoTimer() {
 
   const addCards = async (count: number, direction: "top" | "bottom", startID: number) => {
 
-    let newCards: solveCard[] = [];
+    let newCards: SolveCard[] = [];
     for (let i = 0; i < count; i++) {
       const dbChecks: dbCheck[] = await getChecks(i + startID);
       const parsedChecks: Check[] = await parseDbChecks(dbChecks) ?? [];
@@ -82,6 +91,7 @@ export default function NoTimer() {
       const text = checkTemplate ? checkTemplate.text : '';
 
       console.log('parsing check:', check.id);
+      console.trace();
 
       return { // remove notimerSolveId from dbCheck
         id: check.id,
@@ -93,26 +103,40 @@ export default function NoTimer() {
     }));
   }
 
-  const createCardData = async (solve: NotimerSolve | undefined, id: number): Promise<solveCard> => {
+  const createCardData = async (solve: NotimerSolve | undefined, id: number): Promise<SolveCard> => {
     let checks: Check[] = [];
+    console.log('creating card data for cardID:', id);
     
-    async function getChecksFromLastSolve() {
+    async function deriveChecksFromLastSolve() {
+      // takes the last solve in the DB and modifies them to create new checks
+
       const lastSolve = await getLastSolve();
       if (!lastSolve) return [];
 
       const lastChecks = await getChecks(lastSolve.id);
       if (!lastChecks || lastChecks.length === 0) return [];
 
-      const parsedChecks = await parseDbChecks(lastChecks);
-      return parsedChecks.map(check => ({...check, checked: false}));
+      const highestCheckID = lastChecks.reduce((acc, check) => check.id > acc ? check.id : acc, 0);
+      let i = highestCheckID;
+
+      const parsedChecks: Check[] = await parseDbChecks(lastChecks);
+      return parsedChecks.map(check => {
+        i++;
+        console.log('creating check with id:', i);
+        return({...check, checked: false, id: i});
+      });
     }
     
     if (solve) {
       const dbChecks = await getChecks(solve.id);
-      checks = dbChecks && dbChecks.length > 0 
-        ? await parseDbChecks(dbChecks)
-        : await getChecksFromLastSolve();
 
+      let checks: Check[] = [];
+      if (dbChecks && dbChecks.length > 0) {
+        checks = await parseDbChecks(dbChecks);
+      } else {
+        checks = await deriveChecksFromLastSolve();
+      }
+      
       return {
         color: '#e446ef',
         id: solve.id,
@@ -127,7 +151,7 @@ export default function NoTimer() {
     } 
 
     // if (!solve)
-    checks = await getChecksFromLastSolve();
+    checks = await deriveChecksFromLastSolve();
     return {
       color: '#ece6ef',
       id: id,
@@ -147,6 +171,7 @@ export default function NoTimer() {
 
   const updateCardsWithChecks = async (newChecks: Check[]) => {
     const lastSolveID = await getLastSolve().then((solve) => solve?.id) ?? -10; // -10 arbitrarily assures it won't match any card.id
+
     setSolveCards((prev) => {
       return prev.map((card) => {
         if (card.id === activeID.current) {
@@ -177,7 +202,8 @@ export default function NoTimer() {
   }
 
   const shiftActiveCardToLower = async (): Promise<number> => { // displays bottom box and preloads box below that
-    const shiftedCards = solveCards.slice(1); // removes first box
+    const shiftedCards: SolveCard[] = solveCards.slice(1); // removes first box
+    console.log('shifting cards. Orig solve cards:', solveCards);
     
     const oldID = shiftedCards[shiftedCards.length - 2].id;
 
@@ -185,6 +211,7 @@ export default function NoTimer() {
     const nextSolve = await getNextSolve(activeID.current + 1);
     const nextSolveID = nextSolve ? nextSolve.id : await getOriginalSolveID();
     const nextSolveCard = await createCardData(nextSolve, nextSolveID);
+    console.log('shifting cards. Shifted cards:', shiftedCards, 'nextSolveCard:', nextSolveCard);
     
     setSolveCards([...shiftedCards, nextSolveCard]);
 
@@ -254,7 +281,7 @@ export default function NoTimer() {
       nextChecks = await parseDbChecks(nextDbChecks);
     } else {
       nextChecks = await createNextChecks();
-      saveLatestChecks(activeID.current);
+      await saveLatestChecks(activeID.current);
     }
     return nextChecks;
   };
@@ -286,58 +313,60 @@ export default function NoTimer() {
   }
 
 
-  const handleScroll = debounce( async (e) => {
-    console.log('scroll triggered');
+  const handleScroll = useCallback(
+    debounce( async (e) => {
+      console.log('scroll triggered');
 
-    // TODO: deleting solve will need custom scroll logic
-    // TODO: handling case where user wants to scroll to end will need custom logic
-    
-    const container = document.getElementById("scrollContainer");
-    if (!container) return;    
-    
-    const { scrollTop, clientHeight, scrollHeight } = container;
-    const endingPage = Math.floor((scrollTop + 0.5 * clientHeight) / clientHeight);
-    if (endingPage === startingPage.current) return;
+      // TODO: deleting solve will need custom scroll logic
+      // TODO: handling case where user wants to scroll to end will need custom logic
+      
+      const container = document.getElementById("scrollContainer");
+      if (!container) return;    
+      
+      const { scrollTop, clientHeight, scrollHeight } = container;
+      const endingPage = Math.floor((scrollTop + 0.5 * clientHeight) / clientHeight);
+      if (endingPage === startingPage.current) return;
 
-    
-    startingPage.current = endingPage;
+      
+      startingPage.current = endingPage;
 
-    const oldID = activeID.current;
-    activeID.current = solveCards[endingPage].id;
-    
-    console.log('activeID set to', activeID.current);
-    
-    const currentCard = solveCards.find((card) => card.id === activeID.current);
+      const oldID = activeID.current;
+      const currentCard = solveCards[endingPage];
+      activeID.current = currentCard.id;
+      
+      console.log('activeID set to', activeID.current);
+      
 
-    if (currentCard) {
-      const currentSolve = {
-        id: activeID.current,
-        scramble: currentCard.scramble ,
-        puzzleType: currentCard.puzzleType ,
-        solveDateTime: currentCard.solveDateTime,
-        solveResult: currentCard.solveResult,
-        solveModifier: currentCard.solveModifier as "OK" | "DNF" | "+2",
-        comment: null,
+      if (currentCard) {
+        const currentSolve = {
+          id: activeID.current,
+          scramble: currentCard.scramble ,
+          puzzleType: currentCard.puzzleType ,
+          solveDateTime: currentCard.solveDateTime,
+          solveResult: currentCard.solveResult,
+          solveModifier: currentCard.solveModifier as "OK" | "DNF" | "+2",
+          comment: null,
+        }
+
+        console.log('currentSolve', currentSolve);
+        await addOrUpdateSolve(currentSolve);
       }
 
-      console.log('currentSolve', currentSolve);
-      await addOrUpdateSolve(currentSolve);
-    }
+      // TODO: handle case where scroll from page 1 to 2. Need to add checks not just currentSolve.
+      await saveLatestChecks(activeID.current);
 
-    // TODO: handle case where scroll from page 1 to 2. Need to add checks not just currentSolve.
-    saveLatestChecks(activeID.current);
+      const fudgeFactor = 10; // px
+      if ((scrollTop + clientHeight) >= (scrollHeight - fudgeFactor) && endingPage === 2) {
+        setPendingScrollAction("down");
+      } else if (scrollTop === 0) {
+        setPendingScrollAction("up");
+      }
 
-    if (scrollTop + clientHeight >= scrollHeight && endingPage === 2) {
-      setPendingScrollAction("down");
-    } else if (scrollTop === 0) {
-      setPendingScrollAction("up");
-    }
+      console.log('adding latest solve');
+      await addLatestSolve();
 
-    console.log('adding latest solve');
-    await addLatestSolve();
-
-  }, 50, { leading: false, trailing: true,  });
-
+    }, 50, { leading: false, trailing: true,  }), [isInteracting]
+  );
 
 
 
@@ -363,7 +392,7 @@ export default function NoTimer() {
     }
   }
   
-  const saveLatestChecks = (id: number | null) => {
+  const saveLatestChecks = async (id: number | null) => {
     const solveID = id ?? activeID.current;
     const checks = solveCards.find((card) => card.id === solveID)?.checks;
     if (!checks) return;
@@ -490,11 +519,8 @@ export default function NoTimer() {
   };
 
   const handleDeleteCheck = async (id: number) => {
-    // todo: check if any relavant checks aren't getting deleted, such as in card after id
     await deleteCheck(id);
   };
-  
-
 
   const handleSetChecks: handleSetChecks = async (newChecks, action, actionCheck ) => {
         
@@ -515,8 +541,77 @@ export default function NoTimer() {
     
     updateCardsWithChecks(newChecks);
 
+    console.log('FINISHED SCROLL. cards:', solveCards);
+
 
   };
+
+  const closeEditConfirmation = (id: string, isClosedForever: boolean) => {
+    const popup = document.getElementById(id);
+    if (popup) {
+      popup.style.display = 'none';
+    }
+    
+    setShowEditConfirmation(!isClosedForever);
+  };
+
+  const closeDeleteConfirmation = (id: string) => {
+    const popup = document.getElementById(id);
+    if (popup) {
+      popup.style.display = 'none';
+    }
+  };
+
+  const handleDeleteConfirmed = () => {
+    console.log('deleting:', lastCheckEditID.current);
+    
+    const popup = document.getElementById(`delete-confirm-popup`);
+    if (popup) {
+      popup.style.display = 'none';
+    }
+
+    const id = lastCheckEditID.current;
+
+    let deletedCheck: Check | null = null;
+    let newCards: SolveCard[] = [];
+
+    solveCards.forEach((card) => {
+      const oldChecks = card.checks;
+
+      // filter out deleted check and set deleted check
+      const newChecks = card.checks.reduce<Check[]>((acc, check) => {
+        if (check.id === id) {
+
+          deletedCheck = check;
+
+          return acc;
+        }
+        
+        acc.push(check);
+        return acc;
+      }, []);
+
+      // if no newChecks, continue
+      if (oldChecks.length === newChecks.length) return;
+
+      if (!deletedCheck) return;
+
+      newCards.push({ ...card, checks: newChecks });
+
+      handleSetChecks(newChecks, 'delete', deletedCheck);
+    }); 
+
+    setSolveCards(newCards);   
+  };
+
+  const handleEditConfirmed = (isClosedForever?: boolean) => {
+    isClosedForever !== undefined ? setShowEditConfirmation(!isClosedForever) : null;
+    const popup = document.getElementById(`edit-confirm-popup`);
+    if (popup) {
+      popup.style.display = 'none';
+    }
+    setEditStatus(lastCheckEditID.current);
+  }; 
 
   useEffect(() => {
     const loadContent = async () => {
@@ -549,6 +644,21 @@ export default function NoTimer() {
       case "delete": // TODO
         break;
     }
+
+    const onPointerDown = () => setIsInteracting(true);
+    const onPointerUp = () => {
+      setIsInteracting(false);
+      handleScroll;
+    }
+
+    window.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('pointerup', onPointerUp);
+
+    return () => {
+      window.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('pointerup', onPointerUp);
+    }
+
   }, [pendingScrollAction]);
 
 
@@ -569,18 +679,63 @@ export default function NoTimer() {
       >
         {/* <h1>Do you ever find yourself rushing to start solves? Do you keep ignoring bad habits? This tool is for you.</h1> */}
         { solveCards.map((card, index) => (
+          console.log('drawing card. index:', index, 'checks:', card.checks),
           <div
             key={card.id}
             className="h-[calc(100vh-64px)] snap-start flex flex-col space-y-4 items-center justify-center"
             style={{ backgroundColor: card.color }}
           >
-            <NoTimeSolveBox checks={card.checks} handleSetChecks={handleSetChecks} location={'pre'} showEditConfirmation={showEditConfirmation} setShowEditConfirmation={setShowEditConfirmation}/>
+            <NoTimeSolveBox 
+              checks={card.checks}
+              handleSetChecks={handleSetChecks}
+              location={'pre'}
+              showEditConfirmation={showEditConfirmation}
+              editStatus={editStatus}
+              setEditStatus={setEditStatus}
+              deleteStatus={deleteStatus}
+              setDeleteStatus={setDeleteStatus}
+              lastEditID={lastCheckEditID}
+            />
             <div className="text-2xl font-regular select-none">Scramble {card.id}</div>
             <div id={`scramble-${card.id}`} className="text-2xl font-medium px-5 text-center pb-2 select-all">{card.scramble}</div>
-            <NoTimeSolveBox checks={card.checks} handleSetChecks={handleSetChecks} location={'post'} showEditConfirmation={showEditConfirmation} setShowEditConfirmation={setShowEditConfirmation}/>
+            <NoTimeSolveBox 
+              checks={card.checks}
+              handleSetChecks={handleSetChecks}
+              location={'post'}
+              showEditConfirmation={showEditConfirmation}
+              editStatus={editStatus}
+              setEditStatus={setEditStatus}
+              deleteStatus={deleteStatus}
+              setDeleteStatus={setDeleteStatus}
+              lastEditID={lastCheckEditID}
+            />          
           </div>
         ))}
       </div>
+          <div id={`edit-confirm-popup`} className="hidden">
+            <ConfirmationBox 
+              confirmationMsg='NOTE: Editing this checklist item will KEEP the data that was associated with it. To start tracking a new item, click Cancel, then click the "Add Item" button.' 
+              confirm="Edit" 
+              deny="Cancel" 
+              confirmStyle="bg-blue-500 hover:bg-light_accent text-primary-100"
+              denyStyle='bg-neutral-400 hover:bg-neutral-600 text-dark'
+              onConfirm={(isClosedForever) => handleEditConfirmed(isClosedForever)} 
+              allowCloseForever={true} 
+              onDeny={(isClosedForever) => closeEditConfirmation(`edit-confirm-popup`, isClosedForever)} 
+            />
+          </div>
+          <div id={`delete-confirm-popup`} className="hidden">
+            <ConfirmationBox 
+              confirmationMsg='Delete this item? Deleting this item will KEEP the data that was associated with it, but the item cannot be added back to the checklist.\n '
+              confirm="Delete" 
+              deny="Cancel" 
+              confirmStyle="bg-red-500 hover:bg-red-700 text-white"
+              denyStyle='bg-neutral-200 hover:bg-neutral-300 text-dark'
+              onConfirm={() => handleDeleteConfirmed()} 
+              allowCloseForever={false} 
+              onDeny={() => closeDeleteConfirmation(`delete-confirm-popup`)} 
+            />
+          </div>
   </div>
   );
 }

@@ -2,7 +2,6 @@ import React, { useRef, useState, useEffect } from 'react';
 import { addCheck, updateCheck, getLastCheck } from "../../composables/notimer/dbUtils";
 import CloseIcon from "../../components/icons/close";
 import WriteIcon from "../../components/icons/write";
-import ConfirmationBox from "../ConfirmationBox";
 import sanitizeHtml from 'sanitize-html';
 import { shapesTable } from '../../utils/shapesTable';
 
@@ -26,17 +25,22 @@ export interface NoTimeSolveBoxProps {
   checks: Check[];
   handleSetChecks: handleSetChecks;
   showEditConfirmation: boolean;
-  setShowEditConfirmation: (showEditConfirmation: boolean) => void;
   location: 'pre' | 'post';
+  editStatus: 'none' | number;
+  setEditStatus: (editStatus: 'none' | number) => void;
+  deleteStatus: 'none' | number;
+  setDeleteStatus: (deleteStatus: 'none' | number) => void;
+  lastEditID: React.MutableRefObject<number>;
 }
 
 export default function NoTimeSolveBox(props: NoTimeSolveBoxProps) {
-  const { checks, handleSetChecks, showEditConfirmation, setShowEditConfirmation, location } = props;
+  const { checks, handleSetChecks, showEditConfirmation, 
+    location, editStatus, setEditStatus, deleteStatus, setDeleteStatus, lastEditID } = props;
+
   const filteredChecks = checks ? checks.filter((check) => check.location === location) : [];
 
   const MAX_CHECK_TEXT_LENGTH = 500;
   
-  const lastEditID = useRef<number>(-1);
   const newCheckAdded = useRef<boolean>();
   const isEditingCheck = useRef<boolean>();
 
@@ -113,7 +117,7 @@ export default function NoTimeSolveBox(props: NoTimeSolveBoxProps) {
         popup.style.display = 'block';
       }
     } else {
-      handleEditConfirmed(true);
+      handleEditConfirmed(id);
     }
   };
 
@@ -139,25 +143,6 @@ export default function NoTimeSolveBox(props: NoTimeSolveBoxProps) {
     updatedCheck ? handleSetChecks(newChecks, 'update', updatedCheck) : console.error('updatedCheck toggle is undefined');
   };
 
-  const handleDeleteConfirmed = () => {
-    console.log('deleting:', lastEditID.current);
-    const id = lastEditID.current;
-    const deletedCheck = checks.find((check) => check.id === id);
-    if (!deletedCheck) {
-      return;
-    }
-
-    const newChecks = checks.filter((check) => check.id !== id);
-
-    handleSetChecks(newChecks, 'delete', deletedCheck);
-
-    const popup = document.getElementById(`delete-confirm-popup`);
-    if (popup) {
-      popup.style.display = 'none';
-    }
-    
-  };
-
   const handleDelete = (id: number) => {
     lastEditID.current = id;
     console.log('lastEditID (handleDelete):', lastEditID.current);
@@ -168,19 +153,7 @@ export default function NoTimeSolveBox(props: NoTimeSolveBoxProps) {
   };
 
 
-  const handleEditConfirmed = (isClosedForever?: boolean) => {
-
-    const popup = document.getElementById(`edit-confirm-popup`);
-    if (popup) {
-      popup.style.display = 'none';
-    }
-
-    const id = lastEditID.current;
-    console.log('focusing on id:', id);
-
-    isClosedForever === undefined ?  null : setShowEditConfirmation(!isClosedForever);
-    // console.log('showEdit?:', showEditConfirmation);
-
+  const handleEditConfirmed = (id: number) => {
     const clickableDiv = document.getElementById(`clickable-check-${location + id}`) as HTMLDivElement;
     if (clickableDiv) {
       console.log('setting clickable div to UNclickable:', clickableDiv);
@@ -209,14 +182,12 @@ export default function NoTimeSolveBox(props: NoTimeSolveBoxProps) {
     }
   };
 
-  const closeEditConfirmation = (id: string, isClosedForever: boolean) => {
-    const popup = document.getElementById(id);
-    if (popup) {
-      popup.style.display = 'none';
-    }
-    
-    setShowEditConfirmation(!isClosedForever);
-  };
+  const prevEditStatus = useRef<'none' | number>('none');
+
+  if (editStatus !== 'none' && editStatus !== prevEditStatus.current) {
+    handleEditConfirmed(editStatus);
+    prevEditStatus.current = editStatus;
+  }
 
   const handleTextChange = (id: number) => {
 
@@ -234,7 +205,7 @@ export default function NoTimeSolveBox(props: NoTimeSolveBoxProps) {
     if (newCheckAdded.current) {
       // console.log('new check added:', newCheckAdded.current);
       newCheckAdded.current = false; // Reset the ref
-      handleEditConfirmed();
+      handleEditConfirmed(lastEditID.current);
     }
   }, [checks]);
 
@@ -284,34 +255,6 @@ export default function NoTimeSolveBox(props: NoTimeSolveBoxProps) {
         );
       })}
       <button className="flex px-1 m-2 hover:bg-primary-100 rounded-full border-dark text-dark font-semibold select-none" onClick={() => addCheckBox()}>+ Add Item</button>
-      {location === 'pre' && (
-        <>
-          <div id={`edit-confirm-popup`} className="hidden">
-            <ConfirmationBox 
-              confirmationMsg='NOTE: Editing this checklist item will KEEP the data that was associated with it. To start tracking a new item, click Cancel, then click the "Add Item" button.' 
-              confirm="Edit" 
-              deny="Cancel" 
-              confirmStyle="bg-blue-500 hover:bg-light_accent text-primary-100"
-              denyStyle='bg-neutral-400 hover:bg-neutral-600 text-dark'
-              onConfirm={(isClosedForever) => handleEditConfirmed(isClosedForever)} 
-              allowCloseForever={true} 
-              onDeny={(isClosedForever) => closeEditConfirmation(`edit-confirm-popup`, isClosedForever)} 
-            />
-          </div>
-          <div id={`delete-confirm-popup`} className="hidden">
-            <ConfirmationBox 
-              confirmationMsg='Delete this item? Deleting this item will KEEP the data that was associated with it, but the item cannot be added back to the checklist.\n '
-              confirm="Delete" 
-              deny="Cancel" 
-              confirmStyle="bg-red-500 hover:bg-red-700 text-white"
-              denyStyle='bg-neutral-200 hover:bg-neutral-300 text-dark'
-              onConfirm={() => handleDeleteConfirmed()} 
-              allowCloseForever={false} 
-              onDeny={() => closeEditConfirmation(`delete-confirm-popup`, false)} 
-            />
-          </div>
-        </>
-      )}
     </div>
   );
 }
