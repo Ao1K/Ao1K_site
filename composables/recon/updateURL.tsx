@@ -21,7 +21,7 @@ export default function updateURL(queryName: string, textToEncode: string | null
         if (currentParams.has(queryName)) {
             currentParams.delete(queryName);
             const newQueryString = currentParams.toString();
-            window.history.replaceState({}, '', `${window.location.pathname}?${newQueryString}`);
+            window.history.pushState({}, '', `${window.location.pathname}?${newQueryString}`);
         }
         return;
     }
@@ -31,5 +31,5 @@ export default function updateURL(queryName: string, textToEncode: string | null
 
     currentParams.set(queryName, newParam);
     const newQueryString = currentParams.toString();
-    window.history.replaceState({}, '', `${window.location.pathname}?${newQueryString}`); // used to use useRouter, but it was reloading the page
+    window.history.pushState({}, '', `${window.location.pathname}?${newQueryString}`); // used to use useRouter, but it was reloading the page
 }
