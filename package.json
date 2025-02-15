@@ -47,7 +47,7 @@
     "autoprefixer": "^10.0.1",
     "aws-cdk-lib": "^2.173.1",
     "constructs": "^10.4.2",
-    "esbuild": "^0.24.0",
+    "esbuild": "^0.25.0",
     "eslint": "^8",
     "eslint-config-next": "14.1.0",
     "postcss": "^8",

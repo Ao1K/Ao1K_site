@@ -366,7 +366,7 @@ const MovesTextEditor = forwardRef<EditorRef, EditorProps>(({ name, trackMoves, 
         if (type === prevNonspaceType || (type === 'space' && paintedMatch)) {
           paintedMatch = paintedMatch.replace(/<\/span>$/, matchString + '</span>');
         } else {
-          paintedMatch += `<span class='${color}'>${matchString}</span>`;
+          paintedMatch += `<span class="${color}">${matchString}</span>`;
         }
     
         if (type !== 'space') {
