@@ -40,7 +40,7 @@ export default function VideoHelpPrompt({ videoId }: { videoId: string }) {
             className="flex p-3 bg-primary-800 rounded-l-md text-primary-100 font-regular select-none border border-primary-100"
             onClick={openVideo}
           >
-            <Youtube className="w-6 h-6 mr-2 text-primary-100" />
+            <Youtube className="min-w-6 min-h-6 mr-2 text-primary-100" />
             How to use this
           </button>
             <button
@@ -62,11 +62,11 @@ export default function VideoHelpPrompt({ videoId }: { videoId: string }) {
           onClick={closeVideo}
         >
           <div 
-            className="relative bg-white w-[90%] max-w-[800px] p-4" 
+            className="relative bg-white w-[90%] max-w-[1400px] p-4 pr-12" 
             onClick={(e) => e.stopPropagation()}
           >
             <button
-              className="absolute top-2 right-2 px-2 text-xl"
+              className="absolute top-2 right-2 px-2 text-3xl"
               onClick={closeVideo}
             >
               &times;

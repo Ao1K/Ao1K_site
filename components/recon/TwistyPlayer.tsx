@@ -693,8 +693,6 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
       backView: 'none',
       background: 'none',
       controlPanel: 'none',
-      // experimentalDragInput: 'auto',
-      // experimentalMovePressInput: 'basic',
       
       experimentalSetupAlg: scramble,
       alg: solution,
@@ -716,14 +714,13 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
     
     return () => {
       window.removeEventListener('resize', handleResize);
-      //divRef.current?.removeChild(playerRef.current!);
     }
   }, []);
 
   return (
     <div
       ref={divRef}
-      className="w-full h-full"
+      className="w-full h-full border border-primary-700 rounded-sm"
      >
       <div ref={hiddenRef} className="hidden w-1/2 h-1/2"></div>
     </div> 
@@ -733,10 +730,3 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
 
 Player.displayName = 'Player';
 export default Player;
-
-
-
-// NOTE:
-// access kpuzzleFaceletInfo to change cube colors, etc
-// for example:
-//  cube.kpuzzleFaceletInfo.CENTERS[0][0]);
