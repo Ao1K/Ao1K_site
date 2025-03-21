@@ -7,9 +7,23 @@
     {
       "type": "chrome",
       "request": "launch",
-      "name": "chrome+vscode debug",
-      "url": "http://localhost:3000/notimer",
-      "webRoot": "${workspaceFolder}",
+      "name": "Chrome debug",
+      "url": "http://localhost:3000/recon",
+      "webRoot": "${workspaceFolder}"
+    },
+    {
+      "type": "msedge",
+      "request": "launch",
+      "name": "Edge debug",
+      "url": "http://localhost:3000/recon",
+      "webRoot": "${workspaceFolder}"
+    },
+    {
+      "type": "firefox",
+      "request": "launch",
+      "name": "Firefox debug",
+      "url": "http://localhost:3000/recon",
+      "webRoot": "${workspaceFolder}"
     }
   ]
 }
