@@ -45,7 +45,7 @@ export default async function RootLayout({
             md:grid-cols-[1fr,minmax(0,5fr),1fr] 
             lg:grid-cols-[1fr,minmax(0,3fr),1fr] 
             xl:grid-cols-[3fr,minmax(0,4fr),3fr] `}
-        >
+          >
           <Header />
           
           <div id="left-margin" className="block bg-primary-900 h-full -z-10"></div> 
