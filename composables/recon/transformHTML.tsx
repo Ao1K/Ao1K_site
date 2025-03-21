@@ -1,3 +1,4 @@
+import { cloneElement } from 'react';
 import { colorDict } from '../../components/recon/MovesTextEditor';
 import simplifyRotations from '../recon/simplifyRotations';
 
@@ -113,65 +114,72 @@ const replacementTable_Z: { [key: string]: string } = {
 
 function parseSelection(range: Range, textbox: string, processFunction: (text: string, isFirstTransform: boolean) => string): string | null {
 
-  let isFirstTransform = true;
+  let isFirstTransform = { current: true };
 
   const parentElement = document.getElementById(textbox);
   const container = parentElement!.querySelector<HTMLDivElement>('div[contenteditable="true"]');
+
 
   if (!container) {
     console.error('textbox not found');
     return null;
   }
+
+  console.log('container:', container.innerHTML);
   
-  function exploreAndProcess(node: Node): Node {
-    if (node.nodeType === Node.ELEMENT_NODE) { // caretNodes are never a parent node and are handled by processFunction.
-      const element = node as HTMLElement;
-      const nodeRange = document.createRange();
-      nodeRange.selectNodeContents(element);
-
-    // TODO: to properly check the boundararies of the selection within each span,
-      // would need to grab selection and range.
-        // const selection = window.getSelection();
-        // const range = selection.getRangeAt(0);
-      // then somehow compare that range to the range of the span, and expand the selection until the end of span or until it reaches a &nbsp;.
-      // then split the spans accordingly and pass to processFunction.
-
-      const startIsBeforeEndOfChild = range.compareBoundaryPoints(Range.START_TO_END, nodeRange) === 1;
-      const endIsAfterStartOfChild = range.compareBoundaryPoints(Range.END_TO_START, nodeRange) === -1;
-      const isWithinRange = startIsBeforeEndOfChild && endIsAfterStartOfChild;
-
-      let clonedElement = element.cloneNode() as HTMLElement;
-
-      if (isWithinRange && element.tagName === "SPAN") {
-        let html = element.outerHTML;
-
-        html = processFunction(html, isFirstTransform);
-
-        isFirstTransform = false;
-
-        clonedElement.innerHTML = html;
-
-      } else if (isWithinRange) {
-        for (const child of Array.from(element.childNodes)) {
-          clonedElement.appendChild(exploreAndProcess(child));
-        }
-
-      } else {
-        clonedElement = element.cloneNode(true) as HTMLElement;
-      }
-
-      return clonedElement;
-    } else {
-      return node.cloneNode(true);
-    }
-  }
-
-  const resultContainer = exploreAndProcess(container) as HTMLDivElement;
+  const resultContainer = exploreAndProcess(container, range, processFunction, isFirstTransform) as HTMLDivElement;
+  console.log('resultContainer:', resultContainer.innerHTML);
   return resultContainer.innerHTML;
 
 }
 
+function exploreAndProcess(
+  node: Node,
+  range: Range,
+  processFunction: (text: string, isFirstTransform: boolean) => string,
+  isFirstTransform: { current: boolean }
+): Node {
+  let clonedElement: Node;
+  
+  if (node.nodeType !== Node.ELEMENT_NODE) {
+    return node.cloneNode();
+  }
 
+  const element = node as HTMLElement;
+  const nodeRange = document.createRange();
+  nodeRange.selectNodeContents(element);
+  const startIsBeforeEnd = range.compareBoundaryPoints(Range.START_TO_END, nodeRange) === 1;
+  const endIsAfterStart = range.compareBoundaryPoints(Range.END_TO_START, nodeRange) === -1;
+  const isWithinRange = startIsBeforeEnd && endIsAfterStart;
+
+  if (isWithinRange && element.tagName === "SPAN") {
+    const oldHTML = element.outerHTML;
+    const newHTML = processFunction(oldHTML, isFirstTransform.current);
+    if (oldHTML !== newHTML) {
+      isFirstTransform.current = false;
+      if (newHTML === "") {
+        clonedElement = document.createTextNode("");
+      } else {
+        const tempContainer = document.createElement("div");
+        tempContainer.innerHTML = newHTML;
+        clonedElement = tempContainer.firstChild ? tempContainer.firstChild.cloneNode(true) : document.createTextNode("");
+      }
+    } else {
+      clonedElement = element.cloneNode(true);
+    }
+  } else if (isWithinRange) {
+    clonedElement = element.cloneNode(false) as HTMLElement;
+    for (const child of Array.from(element.childNodes)) {
+      (clonedElement as HTMLElement).appendChild(
+        exploreAndProcess(child, range, processFunction, isFirstTransform)
+      );
+    }
+  } else {
+    clonedElement = element.cloneNode(true);
+  }
+
+  return clonedElement;
+}
 
 const reportMove = (move: string): string => {
   console.warn(`Move  "${move}" is not supported`);
@@ -219,7 +227,8 @@ const adjustCaretPostitionInSplits = (splits: { split: string, isMatch: boolean 
 
 const transformSplitMatches = (splits: { split: string, isMatch: boolean }[], replacementTable: { [key: string]: string }, caretPlaceholder: string, placeholderLength: number): string[] => {
   let transformedSplits: string[] = [];
-  const splitPattern = new RegExp(`(&nbsp;)`, 'g');
+  const splitPattern = new RegExp(`( )`, 'g');
+
 
   splits.forEach(({ split, isMatch }) => {
     if (!isMatch) {
@@ -230,7 +239,7 @@ const transformSplitMatches = (splits: { split: string, isMatch: boolean }[], re
     const moveParts = split.split(splitPattern);
 
     let transformedMoveParts = moveParts.reduce((acc, movePart) => {
-      if (movePart === "" || splitPattern.test(movePart)) {
+      if (movePart === "" || movePart === " ") {
         return acc + movePart;
       }
 
@@ -247,10 +256,10 @@ const transformSplitMatches = (splits: { split: string, isMatch: boolean }[], re
 };
 
 const getCurrentRotationPrefix = (text: string): string => {
-  const prefixRegex = new RegExp(`^(&nbsp;)*((x|y|z)('|2'|2|)(&nbsp;|$)+)+`); 
+  const prefixRegex = new RegExp(`^( )*((x|y|z)('|2'|2|)( |$)+)+`); 
   // matches: 
    // 1. start of string
-   // 2. zero or more &nbsp;
+   // 2. zero or more spaces
    // 3. one of any rotation
    // 4. one or more space or end of string
    // 5. repeat 3-4 one or more times
@@ -262,10 +271,10 @@ const getCurrentRotationPrefix = (text: string): string => {
 
 
 const getNewRotationPrefix = (currentPrefix: string, rotation: string): string => {
-  currentPrefix = currentPrefix.replace(/(&nbsp;)+/g, ' ').trim();
+  currentPrefix = currentPrefix.replace(/( )+/g, ' ').trim();
   let newPrefix = (rotation + ' ' + currentPrefix).trim();
 
-  newPrefix = simplifyRotations(newPrefix).join('&nbsp;');
+  newPrefix = simplifyRotations(newPrefix).join(' ');
 
   return newPrefix;
 }
@@ -295,6 +304,7 @@ const transformTextInValidSpans = (text: string, replacementTable: { [key: strin
 
   const caretPlaceholder  = '&placeholder;';
   const placeholderLength = caretPlaceholder.length;
+
   text = text.replace(/<span id="caretNode"><\/span>/, caretPlaceholder);
   const hasPlaceholder = text.includes(caretPlaceholder);
 
@@ -320,9 +330,9 @@ const transformTextInValidSpans = (text: string, replacementTable: { [key: strin
 
         transformedSplitText[i] = transformedSplitText[i]
           .replace(oldRotationPrefix, '')
-          .replace(/^(&nbsp;)+/g, ''); // remove leading spaces
+          .replace(/^( )+/g, ''); // remove leading spaces
 
-          newRotationPrefix ? transformedSplitText[i] = newRotationPrefix + '&nbsp;' + transformedSplitText[i] : null;
+          newRotationPrefix ? transformedSplitText[i] = newRotationPrefix + ' ' + transformedSplitText[i] : null;
         break;
       }
     }
@@ -356,15 +366,27 @@ export const mirrorHTML_S: TransformHTMLprops = (range, textbox) => {
 };
 
 export const removeComments: TransformHTMLprops = (range, textbox) => {
+
   function processRemoveComments(text: string): string {
+    const caretSpan = new RegExp(`<span id="caretNode"><\/span>`, 'g');
+    const containsCaret = text.match(caretSpan) !== null;
+    if (containsCaret) {
+      text = text.replace(caretSpan, '');
+    }
+
     const commentSpan = new RegExp(`<span class="${COMMENT_SPAN_CLASS}">(.*?)<\/span>`, 'g');
-    return text.replaceAll(commentSpan, '');
+    text = text.replaceAll(commentSpan, '');
+
+    if (containsCaret) {
+      text = text + '<span id="caretNode"></span>';
+    }
+    return text;
   }
   
   return parseSelection(range, textbox, processRemoveComments);
 }
 
-// roatation functions will break if VALID_SPAN_CLASS is ever not used for rotations.
+// rotation functions will break if VALID_SPAN_CLASS does not include all valid classes that a process applies to.
 // can fix by turning VALID_SPAN_CLASS into an array of valid classes that's passed into parseSelection as an argument.
 export const rotateHTML_X: TransformHTMLprops = (range, textbox) => {
   function processRotateX(text: string, isFirstRotation: boolean): string {

@@ -62,10 +62,10 @@ export default function ToolbarButton({speed, handleSpeedChange}: SpeedSliderPro
 
       {isRotated ? 
         <div className="flex flex-col bg-primary-900 absolute -translate-x-[4px] place-items-start text-primary-100 px-1 pb-1 text-sm">
-          <button className={`hover:bg-neutral-600 py-1 border border-neutral-600 ${speed === slow ? 'bg-primary' : null } w-16`} onClick={() => setSpeed(slow)}>Slow</button>
-          <button className={`hover:bg-neutral-600 py-1 border border-neutral-600 ${speed === medium ? 'bg-primary' : null } w-16`} onClick={() => setSpeed(medium)}>Medium</button>
-          <button className={`hover:bg-neutral-600 py-1 border border-neutral-600 ${speed === fast ? 'bg-primary' : null } w-16`} onClick={() => setSpeed(fast)}>Fast</button>
-          <button className={`hover:bg-neutral-600 py-1 border border-neutral-600 ${speed === instant ? 'bg-primary' : null } w-16`} onClick={() => setSpeed(instant)}>Instant</button>
+          <button className={`hover:bg-neutral-600 py-1 border border-neutral-600 ${speed === slow ? 'bg-neutral-600 pointer-events-none' : null } w-16`} onClick={() => setSpeed(slow)}>Slow</button>
+          <button className={`hover:bg-neutral-600 py-1 border border-neutral-600 ${speed === medium ? 'bg-neutral-600 pointer-events-none' : null } w-16`} onClick={() => setSpeed(medium)}>Medium</button>
+          <button className={`hover:bg-neutral-600 py-1 border border-neutral-600 ${speed === fast ? 'bg-neutral-600 pointer-events-none' : null } w-16`} onClick={() => setSpeed(fast)}>Fast</button>
+          <button className={`hover:bg-neutral-600 py-1 border border-neutral-600 ${speed === instant ? 'bg-neutral-600 pointer-events-none' : null } w-16`} onClick={() => setSpeed(instant)}>Instant</button>
         </div>
       : null }
     </div>

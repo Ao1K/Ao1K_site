@@ -38,15 +38,23 @@ function initializeValidation(text: string): MovesValidation[] {
     }
 
     if (char === '&') {
-      if (text.substring(i, i + 6) === '&nbsp;' ) {
-        validation.push([' ', 'space', undefined]);
+      let semicolonIndex = text.indexOf(';', i);
 
-        i += 5;
-      }
-      if (text.substring(i, i + 4) === '&lt;' || text.substring(i, i + 4) === '&gt;') {
-        console.log('invalid html tag: ' + text.substring(i, i + 4));
-        validation.push([text.substring(i, i + 4), 'invalid', undefined]);
-        i += 3;
+      if (semicolonIndex !== -1) {
+        
+        let entity = text.substring(i, semicolonIndex + 1);
+        
+        if (entity === '&nbsp;') {
+          console.warn('non-breaking space entity: ' + entity); // these shouldn't be used any more
+          validation.push([' ', 'space', undefined]);
+        } else if (entity === '&lt;' || entity === '&gt;') {
+          // console.log('invalid html tag: ' + entity);
+          validation.push([entity, 'invalid', undefined]);
+        } else {
+          // console.warn('unrecognized entity: ' + entity);
+          validation.push(['$'.repeat(entity.length), 'invalid', undefined]);
+        }
+        i = semicolonIndex;
       }
       continue;
     }

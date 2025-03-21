@@ -1,22 +1,7 @@
 Informal Bugs/Todo List. Not guaranteed to be complete or accurate.
 ===================================================================
 
-Trying to add a newline seems to have caused a disconnect in the moveplayer and the textbox selection
-- newlines should be allowed between existing lines
-
-Rapidly clearing the entire textbox causes URL not to update
-- having trouble reproducing
-
-htmlUpdateMatrix is including html that did not update
-
-start text: RUF \n LUF. Replace copy paste in LUF \n LUF instead. Timestamp snaps to end on 2nd line.
-- having trouble reproducing
-
-If textbox begins with an invalid character string (ex: ff) then rotation prefixing will fail and spans are not correctly parsed.
-
 Encode "(" and ")". These characters can break "copy solve".
+ - unable to reproduce
 
-Adding a commented line or empty line can totally break the player after that line. Miscounted lines. 
-I'm over-filtering out empty lines from the state variables. Need to handle them instead.
-
-removing comment button is buggy and only removes comment text that is selected and not entire comment
+ Place info popup due center-of-page on mobile. Or at least make popup placement more intuitive.

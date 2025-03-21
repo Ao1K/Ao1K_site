@@ -15,21 +15,21 @@ const replaceText = (text: string) => {
 
 export default function updateURL(queryName: string, textToEncode: string | null) {
 
-    const currentParams = new URLSearchParams(window.location.search);
+  const currentParams = new URLSearchParams(window.location.search);
 
-    if (!textToEncode) {
-        if (currentParams.has(queryName)) {
-            currentParams.delete(queryName);
-            const newQueryString = currentParams.toString();
-            window.history.pushState({}, '', `${window.location.pathname}?${newQueryString}`);
-        }
-        return;
-    }
+  if (!textToEncode) {
+      if (currentParams.has(queryName)) {
+          currentParams.delete(queryName);
+          const newQueryString = currentParams.toString();
+          window.history.pushState({}, '', `${window.location.pathname}?${newQueryString}`);
+      }
+      return;
+  }
 
-    const text = replaceText(textToEncode);
-    const newParam = encodeURIComponent(text);
+  const text = replaceText(textToEncode);
+  const newParam = encodeURIComponent(text);
 
-    currentParams.set(queryName, newParam);
-    const newQueryString = currentParams.toString();
-    window.history.pushState({}, '', `${window.location.pathname}?${newQueryString}`); // used to use useRouter, but it was reloading the page
+  currentParams.set(queryName, newParam);
+  const newQueryString = currentParams.toString();
+  window.history.pushState({}, '', `${window.location.pathname}?${newQueryString}`); // used to use useRouter, but it was reloading the page
 }
