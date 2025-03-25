@@ -80,11 +80,11 @@ export default function Recon() {
 
   const findPrevNonEmptyLine = (moves: string[][], lineIndex: number, idIndex: number): number => {
     for (let i = lineIndex; i >= 0; i--) {
-      if (moves && moves[i]) {
+      if (moves && moves[i]?.length > 0) {
         return i;
       }
     }
-    return 0;
+    return -1;
   }
 
   const updateTotalMoves = (moves: string[][]) => {
@@ -93,7 +93,13 @@ export default function Recon() {
     setTotalMoves(moveCount);
   }
 
+  const findLastMoveInLine = (moves: string[][], lineIndex: number): number => {
+    const lastMoveIndex = moves[lineIndex] ? moves[lineIndex].length : -1; // not length - 1 because it's the number of moves before the caret
+    return lastMoveIndex;
+  }
+
   const shouldSkipUpdate = (moves: string[][], idIndex: number, lineIndex: number, moveIndex: number): boolean => {
+
     const currentMoves = allMoves.current[idIndex];
     const movesSame = currentMoves.length === moves.length && 
       currentMoves.every((line, i) => 
@@ -138,14 +144,13 @@ export default function Recon() {
       return [0];
     }
 
-    let prevMoveTimes: number[] = [];
-    const lineIndexCorrection = moveIndex === -1 ? 1 : 0;
+    let newMoveTimes: number[] = [];
 
     // push in moves from previous lines
-    for (let i = 0; i < lineIndex + lineIndexCorrection; i++) {
+    for (let i = 0; i < lineIndex; i++) {
       const lineTimes = moveAnimationTimes[i];
       const isEmptyLine = lineTimes?.every(time => time === 0) && lineTimes.length === 1;
-      if (lineTimes && !isEmptyLine) prevMoveTimes.push(...moveAnimationTimes[i]);
+      if (lineTimes && !isEmptyLine) newMoveTimes.push(...moveAnimationTimes[i]);
     }
 
     // push in moves from current line, up to moveIndex
@@ -153,11 +158,11 @@ export default function Recon() {
       const time = moveAnimationTimes[lineIndex]?[j] : 0;
       const isEmptyMove = time === 0;
       if (moveAnimationTimes[lineIndex] && !isEmptyMove) {
-        prevMoveTimes.push(moveAnimationTimes[lineIndex][j]);
+        newMoveTimes.push(moveAnimationTimes[lineIndex][j]);
       }
     }
 
-    return prevMoveTimes;
+    return newMoveTimes;
     
   };
 
@@ -167,18 +172,27 @@ export default function Recon() {
       lineIndex: number, // the line number of the caret 
       moveIndex: number, // the number of moves before the caret on its line 
       moves: string[][], // the moves in the textbox of id 
-      moveCounts: number[], 
       moveAnimationTimes: number[][],
     ) => {
+
+      // pretend caret is at end of the last line that has a move
+      if (moves[lineIndex]?.length === 0) {
+        const adjustedLineIndex = findPrevNonEmptyLine(moves, lineIndex, idIndex);
+        const adjustedMoveIndex = findLastMoveInLine(moves, adjustedLineIndex);
+
+        if (adjustedLineIndex !== -1 && adjustedMoveIndex !== -1) {
+          lineIndex = adjustedLineIndex;
+          moveIndex = adjustedMoveIndex;
+        }
+      }
+
       if (shouldSkipUpdate(moves, idIndex, lineIndex, moveIndex)) {
         return;
       }
+
       idIndex === 1 ? updateTotalMoves(moves) : null;
       let [sol, scram] = initMoves(moves, idIndex, lineIndex, moveIndex);
-      if(!moves[lineIndex]) {
-        moveIndex = -1;
-        lineIndex = findPrevNonEmptyLine(moves, lineIndex, idIndex);
-      }
+
       let animationTimes = findAnimationTimes(idIndex, lineIndex, moveIndex, moveAnimationTimes);
       moveLocation.current = [idIndex, lineIndex, moveIndex];
       allMoves.current[idIndex] = [...moves];
@@ -297,7 +311,6 @@ export default function Recon() {
     if (!range || !textbox) return;
 
     let newHTML = transformType(range, textbox!) ?? '';
-    console.log('newHTML:', newHTML);
     textbox === 'solution' ? 
       solutionEditorRef.current!.transform(newHTML) : // can handle html or plaintext
       scrambleEditorRef.current!.transform(newHTML)
@@ -418,7 +431,6 @@ export default function Recon() {
 
   const storeLastSelection = () => {
     if (oldSelectionRef.current.status === 'locked') {
-      //console.log('selection is locked');
       return;
     }
 
@@ -433,9 +445,7 @@ export default function Recon() {
 
     if (selection && isSelectionInTextbox(selection)) {
       range = selection.getRangeAt(0).cloneRange();
-      //console.log('range:', range, range.toString());
       textbox = getTextboxOfSelection(range);
-      //console.log('selection in textbox:', textbox);
     }
 
     if (!range || !textbox) return;
@@ -584,7 +594,7 @@ export default function Recon() {
     return () => {
 
       document.removeEventListener('selectionchange', storeLastSelection);
-      document.addEventListener('keydown', handleCommand);
+      document.removeEventListener('keydown', handleCommand);
 
     };
   }, []);

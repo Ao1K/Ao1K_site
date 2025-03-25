@@ -23,7 +23,7 @@ const CUBE_COLORS = {
   blue: '#003CFF',
   yellow: '#EEFF00',
   orange: '#FF7F00',
-  white: '#ffffff',
+  white: '#FFFFFF',
 };
 
 
@@ -37,7 +37,7 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
   const lastAnimationTimes = useRef<number[]>([]);
   const lastSpeed = useRef<number>(0);
 
-  const lastRenderRef = useRef<RenderRefProps>({ scramble: scramble, solution: solution, animationTimes: animationTimes });
+  const lastRenderRef = useRef<RenderRefProps>({ scramble, solution, animationTimes });
   
   const calcCubeSpeed = (speed: number) => {
     if (speed === 100) {
@@ -456,12 +456,18 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
     
 
     if (Math.abs(movecountDelta) === 1) {
+      // case 1
+      console.log('count change detected');
       handleSingleMovecountChange(moves, lastMoves, movecountDelta);
     } else if (movecountDelta === 0 && moves.length > 0) {
         const animationSelectionDelta = animationTimes.length - lastAnimationTimes.current.length;
       if (Math.abs(animationSelectionDelta) === 1) {
+        // case 2
+        console.log('selection change detected');
         handleSingleMoveSwitch();
       } else if (animationSelectionDelta === 0 && animationTimes.length > 0) {
+        // case 3
+        console.log('modify detected');
         handleSingleMoveModify();
       } else {
         setInstantPlayerProps();
@@ -473,21 +479,30 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
     }
   }
 
-  const anyMoveChange = () => {
-    if (lastRenderRef.current.scramble !== scramble) return true;
-    if (lastRenderRef.current.solution !== solution) return true;
-    if (lastRenderRef.current.animationTimes !== animationTimes) return true;
+  const isMoveChange = () => {
+    if (lastRenderRef.current.scramble !== scramble) {
+      return true;
+    }
+    if (lastRenderRef.current.solution !== solution) {
+      return true;
+    }
+    if (lastRenderRef.current.animationTimes !== animationTimes) {
+      console.log('animation times changed');
+      console.log('old:', lastRenderRef.current.animationTimes);
+      console.log('new:', animationTimes);
+      return true;
+    }
     return false;
   }
 
-  if (anyMoveChange()) {
+  if (isMoveChange()) {
     displayMoves();
   } else if (lastSpeed.current !== speed && playerRef.current) { // only speed changed
     playerRef.current.tempoScale = cubeSpeed;
     lastSpeed.current = speed;
   }
 
-  lastRenderRef.current = { scramble: scramble, solution: solution, animationTimes: animationTimes };
+  lastRenderRef.current = { scramble, solution, animationTimes };
   
   let scene: THREE.Scene;
   let camera: THREE.PerspectiveCamera;
