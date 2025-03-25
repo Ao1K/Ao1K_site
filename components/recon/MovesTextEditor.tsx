@@ -67,7 +67,7 @@ const EditorLoader = ({ editorRef: contentEditableRef, onInputChange, name, auto
 
 interface EditorProps {
   name: string;
-  trackMoves: (idIndex: number, lineIndex: number, caretIndex: number, moves: string[][], moveCounts: number[], moveAnimationTimes: number[][]) => void;
+  trackMoves: (idIndex: number, lineIndex: number, caretIndex: number, moves: string[][], moveAnimationTimes: number[][]) => void;
   autofocus: boolean;
   moveHistory: React.MutableRefObject<any>;
   updateHistoryBtns: () => void;
@@ -115,9 +115,8 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
     // remove empty divs
     html = html.replace(/<div><\/div>/g, '');
     let lines = splitHTMLintoLines(html);
-    // console.log('lines after splitting:', lines);
+
     lines = cleanLines(lines);    
-    // console.log('lines after cleaning:', lines);
     
     return lines;
   }
@@ -167,7 +166,6 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
     const paintedHTML = htmlUpdateMatrix.map((line, i) => {
       
       if (!textboxMovesRef.current[i]) {
-        //console.log('moveStatus not found at line', i, "for textbox", idIndex);
         textboxMovesRef.current[i] = [''];
       }
 
@@ -302,10 +300,7 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
 
     idIndex === 0 ?
       moveHistory.current.history[i] = [html, '<unchanged>'] : 
-      moveHistory.current.history[i] = ['<unchanged>', html];
-
-    //console.table(moveHistory.current.history);
-    
+      moveHistory.current.history[i] = ['<unchanged>', html];    
   }
 
   function updateLine(validation: [string, string, number?][], line: string): [string, number | null] {
@@ -507,7 +502,7 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
     setHTML(newHTMLlines);
 
     // 7
-    trackMoves(idIndex, lineOffsetRef.current, moveOffsetRef.current, textboxMovesRef.current, oldLineMoveCounts.current, oldMoveAnimationTimes.current);
+    trackMoves(idIndex, lineOffsetRef.current, moveOffsetRef.current, textboxMovesRef.current, oldMoveAnimationTimes.current);
     // setCaretToCaretNode();
   };
 
@@ -552,20 +547,23 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
       node = contentEditableRef.current.firstChild
     }
 
-    if (node) {
+    if (node && selection) {
 
       // on certain browsers (firefox), <br> tags don't seem to be added automatically for newlines
       if (node.nodeType === Node.ELEMENT_NODE && 
-          (node as Element).tagName === 'DIV' &&
-          !(node as Element).querySelector('br')) {
+      (node as Element).tagName === 'DIV' &&
+      !(node as Element).querySelector('br')) {
         (node as Element).appendChild(document.createElement('br'));
       }
       
-      range.setStart(node, selection!.focusOffset);
-      range.setEnd(node, selection!.focusOffset);
-      range.insertNode(caretNode);      
+      try {
+        range.setStart(node, selection.focusOffset);
+        range.setEnd(node, selection.focusOffset);
+        range.insertNode(caretNode);      
+      } catch (e) {
+        console.error('Error in insertCaretNode:', e);
+      }
     }
-
   };
 
   const setCaretToCaretNode = () => {
@@ -586,35 +584,63 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
     e.clipboardData?.setData('text/plain', text);
   };
 
+  const getAncestors = (node: Node, stopNode: Node): HTMLElement[] => {
+    const ancestors: HTMLElement[] = [];
+    let curr: Node | null = node;
+    while (curr && curr !== stopNode) {
+      if (curr.parentElement && curr.parentElement !== stopNode) {
+        ancestors.push(curr.parentElement);
+      }
+      curr = curr.parentNode;
+    }
+    return ancestors;
+  };
+  
   const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
     e.stopPropagation();
     e.preventDefault();
   
-    let text = e.clipboardData.getData('text');
+    let text = e.clipboardData.getData("text");
+    let sanitizedText = sanitizeHtml(text, sanitizeConf).replace(/’/g, "'");
   
-    let sanitizedText = sanitizeHtml(text, sanitizeConf);
-    sanitizedText = sanitizedText.replace(/’/g, "'"); // certain apps generate fancy apostrophes
-
     const selection = window.getSelection();
-    if (selection) {
+    if (selection && contentEditableRef.current) {
+      const container = contentEditableRef.current;
       const range = selection.getRangeAt(0);
+      
+      const startAncestors = getAncestors(range.startContainer, container);
+      const endAncestors = getAncestors(range.endContainer, container);
+      const affected = new Set([...startAncestors, ...endAncestors]);
+      
       range.deleteContents();
-  
-      insertCaretNode();
+      
+      // remove empty parent nodes
+      affected.forEach((el) => {
+        if (el.textContent?.trim() === "") {
+          el.parentElement?.removeChild(el);
+        }
+      });
 
-      const lines = sanitizedText.split('\n');
-      lines.reverse();
-      lines.forEach((line) => {
-
-        const tempElement = document.createElement('div');
+      const lines = sanitizedText.split("\n").reverse();
+      lines.forEach((line, index) => {
+        const tempElement = document.createElement("div");
         tempElement.innerHTML = line;
-
+        
+        // Add caret node to the last line
+        if (index === 0) { // First element in reversed array is the last line
+          const caretNode = document.createElement('span');
+          caretNode.id = 'caretNode';
+          tempElement.appendChild(caretNode);
+        }
+        
         range.insertNode(tempElement);
       });
-  
-      range.collapse(false);
-    }
 
+      // existing selection invalid. Clear and reset to new caret.
+      selection.removeAllRanges();
+      setCaretToCaretNode();
+    }
+  
     setHTML(contentEditableRef.current!.innerHTML);
     onInputChange();
   };
@@ -630,10 +656,7 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
   
     const range = selection.getRangeAt(0);
     return !range.collapsed && (range.startContainer !== range.endContainer || range.startOffset !== range.endOffset);
-  };
-
-
-  
+  };  
 
   const handleCaretChange = () => {
 
@@ -645,7 +668,6 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
     const prevHTML = contentEditableRef.current!.innerHTML;
     insertCaretNode();
     if (prevHTML === contentEditableRef.current!.innerHTML) {
-      //console.log('no change');
       return;
     }
 
@@ -693,7 +715,7 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
 
     if (lineOffsetRef.current !== -1) {
       caretLine ? setHTML(contentEditableRef.current!.innerHTML): null; // ensures html will not be set during mounting
-      trackMoves(idIndex, lineOffsetRef.current, moveOffsetRef.current, textboxMovesRef.current, oldLineMoveCounts.current, oldMoveAnimationTimes.current);
+      trackMoves(idIndex, lineOffsetRef.current, moveOffsetRef.current, textboxMovesRef.current, oldMoveAnimationTimes.current);
     }
   };
 
