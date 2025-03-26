@@ -124,11 +124,8 @@ function parseSelection(range: Range, textbox: string, processFunction: (text: s
     console.error('textbox not found');
     return null;
   }
-
-  console.log('container:', container.innerHTML);
   
   const resultContainer = exploreAndProcess(container, range, processFunction, isFirstTransform) as HTMLDivElement;
-  console.log('resultContainer:', resultContainer.innerHTML);
   return resultContainer.innerHTML;
 
 }

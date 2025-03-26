@@ -457,17 +457,14 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
 
     if (Math.abs(movecountDelta) === 1) {
       // case 1
-      console.log('count change detected');
       handleSingleMovecountChange(moves, lastMoves, movecountDelta);
     } else if (movecountDelta === 0 && moves.length > 0) {
         const animationSelectionDelta = animationTimes.length - lastAnimationTimes.current.length;
       if (Math.abs(animationSelectionDelta) === 1) {
         // case 2
-        console.log('selection change detected');
         handleSingleMoveSwitch();
       } else if (animationSelectionDelta === 0 && animationTimes.length > 0) {
         // case 3
-        console.log('modify detected');
         handleSingleMoveModify();
       } else {
         setInstantPlayerProps();
@@ -487,9 +484,6 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
       return true;
     }
     if (lastRenderRef.current.animationTimes !== animationTimes) {
-      console.log('animation times changed');
-      console.log('old:', lastRenderRef.current.animationTimes);
-      console.log('new:', animationTimes);
       return true;
     }
     return false;

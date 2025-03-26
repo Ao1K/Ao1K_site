@@ -7,6 +7,10 @@ import WriteIcon from './icons/write';
 // import TimerIcon from './icons/timer';
 import ListIcon from './icons/list';
 
+const versionList = {
+  "recon": "v0.2",
+}
+
 export default function Header(): JSX.Element {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
 
@@ -17,6 +21,7 @@ export default function Header(): JSX.Element {
   const closeSidebar = () => {
     setSidebarOpen(false);
   };
+
 
   return (
     <div className="fixed bg-white text-light_accent w-full z-40 h-16 top-0 right-0">
@@ -31,7 +36,7 @@ export default function Header(): JSX.Element {
           <div onClick={closeSidebar}>
           {/* <HeaderNavLink href="/" title="Practice" icon={<TimerIcon />} /> */}
           </div>
-          <HeaderNavLink href="/recon" title="Reconstruct" icon={<WriteIcon />} />
+          <HeaderNavLink href="/recon" title="Reconstruct" icon={<WriteIcon />} version={versionList['recon']}/>
           {/* <HeaderNavLink href="/algs" title="Learn" icon={<DatabaseIcon />} /> */}
         </div>
 
@@ -59,7 +64,7 @@ export default function Header(): JSX.Element {
         onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the sidebar
         >
         {/* <HeaderNavLink href="/" title="Practice" icon={<TimerIcon />} /> */}
-        <HeaderNavLink href="/recon" title="Reconstruct" icon={<WriteIcon />} />
+        <HeaderNavLink href="/recon" title="Reconstruct" icon={<WriteIcon />} version={versionList['recon']}/>
         {/* <HeaderNavLink href="/algs" title="Learn" icon={<DatabaseIcon />} /> */}
         {/* <Link href="/not a link" className="block mt-4">
           Profile

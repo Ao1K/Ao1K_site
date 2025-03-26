@@ -35,7 +35,6 @@ export default function ReconTimeHelpInfo() {
   const handleClose = () => {
     // Prevent handleClose if handleOpen has just triggered
     if (openTriggeredRef.current) return;
-    console.log('handleClose');
     if (popupRef_wide.current) popupRef_wide.current.style.display = 'none';
     if (popupRef_narrow.current) popupRef_narrow.current.style.display = 'none';
   };
@@ -97,7 +96,6 @@ export default function ReconTimeHelpInfo() {
 
   useEffect(() => {
     const updateIsWide = debounce(() => {
-      console.log('updateIsWide: ', window.innerWidth > WIDTH_THRESHOLD);
       handleClose();
       popupRef_wide.current?.style.removeProperty('display');
       popupRef_narrow.current?.style.removeProperty('display');
