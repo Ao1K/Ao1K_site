@@ -122,9 +122,7 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
     html = html.replace(/\n/g, '<br></div><div>');
     // (firefox)
     html = html.replace(/>(<br>)<[^/]/g, '>$1</div><div><');    
-
     let lines = splitHTMLintoLines(html);
-
     lines = cleanLines(lines);    
     
     return lines;
@@ -453,6 +451,10 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
   }
   
   const divIsEmpty = (divHtml: string): boolean => {
+    
+    // count caret node as content
+    if (/<span id="caretNode">/i.test(divHtml)) return false;
+
     const inner = divHtml.replace(/^<div>([\s\S]*)<\/div>$/i, '$1');
     const withoutSpans = inner.replace(/<\/?span[^>]*>/gi, '');
     return withoutSpans === '';
