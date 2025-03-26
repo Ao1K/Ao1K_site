@@ -100,8 +100,9 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
     allowedAttributes: { span: ["className","class"]}
   };
   
-  const handleInput = (resetCaret?: boolean) => {
-    onInputChange(resetCaret);
+  const handleInput = () => {
+
+    onInputChange();
     
     updateURLTimeout.current ? clearTimeout(updateURLTimeout.current) : null;
     updateURLTimeout.current = setTimeout(passURLupdate, 500);
@@ -114,6 +115,14 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
 
     // remove empty divs
     html = html.replace(/<div><\/div>/g, '');
+
+    // replace newlines with div split
+    // newlines are created by pressing shift+enter 
+    // (chrome)
+    html = html.replace(/\n/g, '<br></div><div>');
+    // (firefox)
+    html = html.replace(/>(<br>)<[^/]/g, '>$1</div><div><');    
+
     let lines = splitHTMLintoLines(html);
 
     lines = cleanLines(lines);    
@@ -400,12 +409,14 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
 
   const splitHTMLintoLines = (html: string): string[] => {
     const lines: string[] = [];
+
     const segments = splitByDiv(html);
     for (const segment of segments) {
+
       if (isDivBlock(segment)) {
         if (!divIsEmpty(segment)) lines.push(segment);
       } else {
-        const outsideLines = processOutsideDiv(segment);
+        const outsideLines = splitByBr(segment);
         for (const line of outsideLines) {
           if (line !== "") lines.push(line);
         }
@@ -431,6 +442,11 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
     }
     return segments;
   }
+
+  const innerIsEmpty = (line: string): boolean => {
+    const withoutSpans = line.replace(/<\/?span[^>]*>/gi, '');
+    return withoutSpans === '';
+  }
   
   const isDivBlock = (segment: string): boolean => {
     return /^<div>[\s\S]*<\/div>$/i.test(segment);
@@ -442,7 +458,7 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
     return withoutSpans === '';
   }
   
-  const processOutsideDiv = (segment: string): string[] => {
+  const splitByBr = (segment: string): string[] => {
     const withoutSpaces = segment.replace(/\s/g, '');
     if (/^(<br>)+$/i.test(withoutSpaces)) {
       const count = (segment.match(/<br>/gi) || []).length;
@@ -453,7 +469,7 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
   }
 
 
-  const onInputChange = (resetCaret?: boolean) => {    
+  const onInputChange = () => {    
     // core functionality of the input change sequence:
     // 1. Store existing caret node. Textbox caret is later restored via useEffect.
     // 2. The lines of in the textbox are found. Changes are pushed into updateMatrix.
@@ -467,11 +483,7 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
     // 7. Cube visualization state passed to page through trackMoves().
 
     // 1
-    // if (resetCaret === true || resetCaret === undefined) {
-      insertCaretNode();
-    // } else {
-    // }
-
+    insertCaretNode();
 
     // 2
     let htmlLines = htmlToLineArray(contentEditableRef.current!.innerHTML);
@@ -877,11 +889,7 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
 
   const handleFocus = (e: React.FocusEvent<HTMLDivElement>) => {
     e.preventDefault();
-    
-    // const scrollPosition = window.scrollY;
-    // window.scrollTo({ top: scrollPosition });
-    const resetCaret = false;
-    handleInput(resetCaret); // this hack ensures visual cube update
+    handleInput(); // this hack ensures visual cube update
   }; 
   
   useEffect(() => {
