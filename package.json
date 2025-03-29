@@ -27,6 +27,7 @@
     "react-dom": "^18.3.1",
     "rimraf": "^6.0.1",
     "sanitize-html": "^2.13.0",
+    "sr-puzzlegen": "^1.0.4",
     "three": "0.170.0",
     "webpack": "^5.97.1"
   },

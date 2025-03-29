@@ -5,10 +5,11 @@ type MovesValidation = [string, string, number?];
 const MAX_3X3_REPS = 1260;
 
 
-export default function validateText(text: string) {
+export default function validateText(text: string) { 
+  // accepts a single line of text.
+  // Performs several side-effects to MovesValidation and then returns it.
   
   let validation = initializeValidation(text);
-  //assignHTMLvalidation(validation);
   assignCommentValidation(validation);
   const iterationArray: number[] = textToIterate(validation)
   //console.log('iterationArray: ' + iterationArray);
@@ -17,46 +18,84 @@ export default function validateText(text: string) {
   assignSpaceValidation(validation, iterationArray);
   assignMoveValidation(validation, iterationArray);
 
-    // return starterArray;
+  console.log('validation after all: ')
+  console.table(validation);
   return validation;
 }
 
+const handleAmpersand = (i: number, text: string, validation: MovesValidation[]): number => {
+  let semicolonIndex = text.indexOf(';', i);
 
+  if (semicolonIndex !== -1) {
+    
+    let entity = text.substring(i, semicolonIndex + 1);
+    
+    if (entity === '&nbsp;') {
+      // non-breaking spaces not used any more
+      validation.push([' ', 'space', undefined]);
+    } else if (entity === '&lt;' || entity === '&gt;') {
+      console.warn('invalid html tag: ' + entity);
+      validation.push([entity, 'invalid', undefined]);
+    } else {
+      console.warn('unrecognized entity: ' + entity);
+      validation.push(['$'.repeat(entity.length), 'invalid', undefined]);
+    }
+    i = semicolonIndex;
+  }
+
+  return i;
+}
+
+const handleAngleBrackets = (i: number, text: string, validation: MovesValidation[]): number => {
+  let htmlTagEnd = text.indexOf('>', i);
+  let htmlTagType = findHTMLtagType(text.substring(i, htmlTagEnd)); // newlineHTML or stylingHTML
+  validation.push([text.substring(i,htmlTagEnd+1), htmlTagType, undefined]);
+  i = htmlTagEnd;
+
+  return i;
+}
+
+const handleHashtag = (i: number, text: string, validation: MovesValidation[]): number => {
+  
+  // stop assigning hashtag at space, <, or &
+  const endpoints = [text.indexOf(' ', i), text.indexOf('<', i), text.indexOf('&', i)].filter(idx => idx !== -1);
+  let hashtagEnd = endpoints.length ? Math.min(...endpoints) : text.length;
+
+  if (hashtagEnd === -1) {
+    // probably hit end of line
+    hashtagEnd = text.length;
+  }
+  
+  let hashtag = text.substring(i, hashtagEnd);
+  hashtag.split('').forEach((char) => {0.
+    validation.push([char, 'hashtag', undefined]);
+  });
+  i = hashtagEnd - 1; // -1 because need to check space char
+
+  return i;
+}
 
 function initializeValidation(text: string): MovesValidation[] {
   let validation: MovesValidation[] = [];
   //console.log('text: ' + text);
   for (let i = 0; i < text.length; i++) {
     let char = text[i];
-
-    if (char === '<') {
-      let htmlTagEnd = text.indexOf('>', i);
-      let htmlTagType = findHTMLtagType(text.substring(i, htmlTagEnd));
-      validation.push([text.substring(i,htmlTagEnd+1), htmlTagType, undefined]);
-      i = htmlTagEnd;
+    
+    switch (char) {
+      case '<': // such as <br> or <div>
+      i = handleAngleBrackets(i, text, validation);
       continue;
-    }
 
-    if (char === '&') {
-      let semicolonIndex = text.indexOf(';', i);
-
-      if (semicolonIndex !== -1) {
-        
-        let entity = text.substring(i, semicolonIndex + 1);
-        
-        if (entity === '&nbsp;') {
-          console.warn('non-breaking space entity: ' + entity); // these shouldn't be used any more
-          validation.push([' ', 'space', undefined]);
-        } else if (entity === '&lt;' || entity === '&gt;') {
-          // console.log('invalid html tag: ' + entity);
-          validation.push([entity, 'invalid', undefined]);
-        } else {
-          // console.warn('unrecognized entity: ' + entity);
-          validation.push(['$'.repeat(entity.length), 'invalid', undefined]);
-        }
-        i = semicolonIndex;
-      }
+      case '&': // such as &amp;
+      i = handleAmpersand(i, text, validation);
       continue;
+
+      case '#': // such as user hashtag #pic
+      i = handleHashtag(i, text, validation);
+      continue;
+
+      default:
+      break;
     }
 
     validation.push([char, 'unknown', undefined]);
@@ -82,6 +121,8 @@ function assignCommentValidation(validation: MovesValidation[]) {
     if (commentStart === -1) {
       commentStart = findIfCommentStart(i, validation);
     }
+
+    // if commentStart is found, and we reach the end of the validation array or a newline, then we have found the end of the comment
     if (commentStart !== -1 && (i === validation.length - 1 || validation[i][1] === 'newlineHTML')) {
       commentEnd = i;
       assignComments(commentStart, commentEnd, validation);
@@ -115,7 +156,7 @@ function findIfCommentStart(i: number, validation: MovesValidation[]): number {
 
 function assignComments(commentStart: number, commentEnd: number, validation: MovesValidation[]) {
   for (let j = commentStart; j <= commentEnd; j++) {
-    if (validation[j][1] === "stylingHTML" || validation[j][1] === "newlineHTML") {
+    if (validation[j][1] === "stylingHTML" || validation[j][1] === "newlineHTML" || validation[j][1] === "hashtag") {
       continue;
     }
     validation[j][1] = "comment";
@@ -123,10 +164,9 @@ function assignComments(commentStart: number, commentEnd: number, validation: Mo
 }
 
 function textToIterate(validation: MovesValidation[]) {
-  // expand this to limit re-validation to only the effected area of text
   let iterationArray = [];
   for (let i=0; i < validation.length; i++) {
-    if (validation[i][1] === "comment" || validation[i][1] === "newlineHTML" || validation[i][1] === "stylingHTML") {
+    if (validation[i][1] === "comment" || validation[i][1] === "newlineHTML" || validation[i][1] === "stylingHTML" || validation[i][1] === "hashtag") {
       continue;
     } else { iterationArray.push(i);}
   }
@@ -268,7 +308,7 @@ function validateMove(move: string, validation: MovesValidation[], iterationArra
   if (regex.test(move)) {
     validationKeyword = "move"
   }
-  
+
   for (let i = start; i <= end; i++) {
     const type = validation[iterationArray[i]][1];
     if (type === 'unknown') {

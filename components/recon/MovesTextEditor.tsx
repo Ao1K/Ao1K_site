@@ -18,7 +18,7 @@ export const colorDict = [ // can't be in /utils folder due to automatic tailwin
   { key: 'invalid', value: 'text-red-500'},
   { key: 'paren', value: 'text-paren'},
   { key: 'rep', value: 'text-paren'},
-  { key: 'image', value: 'text-primary-100'}, // wip
+  { key: 'hashtag', value: 'text-orange-300'}, // wip
 ];
 
 const EditorLoader = ({ editorRef: contentEditableRef, onInputChange, name, autofocus }: { editorRef: React.RefObject<any>, onInputChange: () => void, name: string, autofocus: boolean})  => {
@@ -35,6 +35,7 @@ const EditorLoader = ({ editorRef: contentEditableRef, onInputChange, name, auto
       contentEditableRef.current.innerText = decodedText;
     }
 
+    
     if (autofocus && urlText && !otherURLtext) { // TODO: `&& !otherURLtext` isn't desired, but an unknown bug causes animation desync otherwise.
       //adds caretNode span, which then is processed by onInputChange
       const selection = window.getSelection();
@@ -52,7 +53,6 @@ const EditorLoader = ({ editorRef: contentEditableRef, onInputChange, name, auto
       const otherTextbox = parentOtherElement?.querySelector<HTMLDivElement>('div[contenteditable="true"]');
       otherTextbox?.focus();
     }
-  
     if (urlText) {
       onInputChange();
     }
@@ -155,6 +155,7 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
         if (type === 'move' || type === 'rep') {
           continue;
         } else {
+          console.log('breaking at:', i, 'type:', type, 'validation:', validation[i][0]);
           break;
         }
       }
@@ -197,8 +198,11 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
         if (caretIndex !== null) {
           let caretSplitIndex = findEndOfMoveOnCaret(validation, caretIndex);
   
-          const movesBeforeCaret = validationToMoves(validation.slice(0, caretSplitIndex + 1));
-          const movesAfterCaret = validationToMoves(validation.slice(caretSplitIndex + 1));
+          const movesBeforeCaret = validationToMoves(validation.slice(0, caretSplitIndex + 1)); // before and including move at caret
+          const movesAfterCaret = validationToMoves(validation.slice(caretSplitIndex + 1)); // after caret
+
+          console.log('movesBeforeCaret:', movesBeforeCaret, 'movesAfterCaret:', movesAfterCaret);
+
           moves = movesBeforeCaret.concat(movesAfterCaret);
 
           lineOffsetRef.current = i; // could be wrong in certain situations? (copy-paste)
@@ -220,8 +224,8 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
     
         return newHTMLline;
       } else {
-
-        return oldHTMLlines.current[i];}
+        return oldHTMLlines.current[i];
+      }
 
     });
     
@@ -474,7 +478,7 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
     // 1. Store existing caret node. Textbox caret is later restored via useEffect.
     // 2. The lines of in the textbox are found. Changes are pushed into updateMatrix.
     // 3. Based on updateMatrix, lines in textbox are painted by functional class (valid, invalid, paren, etc).
-    // 4. Concurrently,
+    // 4. Concurrently, get data for updating refs
           // moveCount is stored for the purposes of undo/redo. 
           // moveAnimationTimes stored for the purpose of skipping to specific moves in the model playback.
           // MoveHistory updated.
