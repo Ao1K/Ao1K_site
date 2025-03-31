@@ -31,7 +31,6 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
   const playerRef = useRef<TwistyPlayer | null>(null);
   
   const divRef = useRef<HTMLDivElement>(null);
-  const hiddenRef = useRef<HTMLDivElement>(null);
   const lastSolution = useRef<string>('');
   const lastScramble = useRef<string>('');
   const lastAnimationTimes = useRef<number[]>([]);
@@ -532,7 +531,7 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
   };
 
   const createCustomScene = async () => {
-    hiddenRef.current!.appendChild(playerRef.current!); 
+    divRef.current!.appendChild(playerRef.current!); 
     
     await playerRef.current!.connectedCallback();
     
@@ -541,8 +540,8 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
     
     if (divRef.current && cube && !scene) {
       
-      while (hiddenRef.current!.firstChild) {
-        hiddenRef.current!.removeChild(hiddenRef.current!.firstChild);
+      while (divRef.current!.firstChild) {
+        divRef.current!.removeChild(divRef.current!.firstChild);
       }
 
 
@@ -730,10 +729,7 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
     <div
       ref={divRef}
       className="w-full h-full border border-primary-700 rounded-sm"
-     >
-      <div ref={hiddenRef} className="hidden w-1/2 h-1/2"></div>
-    </div> 
-    
+    />
   );
 });
 

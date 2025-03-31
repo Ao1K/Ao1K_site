@@ -15,7 +15,7 @@
     "aws-amplify": "^6.10.3",
     "aws-sdk": "^2.1692.0",
     "core-js": "^3.39.0",
-    "cubing": "^0.53.8",
+    "cubing": "^0.55.2",
     "dexie": "^4.0.10",
     "dexie-react-hooks": "^1.1.7",
     "glob": "^11.0.0",

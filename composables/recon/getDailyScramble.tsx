@@ -34,7 +34,7 @@ const getDailyScramble = async (day: Date) => {
 
   // else, create a new daily scramble
   const puzzleType = "333";
-  const newScram = createDailyScramble(isoDate, puzzleType);
+  const newScram = await createDailyScramble(isoDate, puzzleType);
   return newScram;
 
 }
