@@ -1,14 +1,36 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { TwistyPlayer } from 'cubing/twisty';
 import * as THREE from 'three';
 import type { Object3D } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import type { MutableRefObject } from 'react';
+import type { Object3DEventMap } from 'three/src/core/Object3D.js';
+import ContextMenu from './ContextMenu';
+import PlayerControls from './PlayerControls';
+import type { ControllerRequestOptions } from './_PageContent';
 
 interface PlayerProps {
   scramble: string;
   solution: string;
   speed: number;
-  animationTimes: number[];
+  animationTimes: number[]; // all times of animations up to but not including the current move
+  cubeRef: MutableRefObject<Object3D<Object3DEventMap> | null>;
+  onCubeStateUpdate: () => void;
+  handleControllerRequest: (request: ControllerRequestOptions) => void;
+  controllerButtonsStatus: {
+    fullLeft: string;
+    stepLeft: string;
+    playPause: string;
+    stepRight: string;
+    fullRight: string;
+  };
+  setControllerButtonsStatus: React.Dispatch<React.SetStateAction<{
+    fullLeft: string;
+    stepLeft: string;
+    playPause: string;
+    stepRight: string;
+    fullRight: string;
+  }>>;
 }
 
 interface RenderRefProps {
@@ -17,7 +39,7 @@ interface RenderRefProps {
   animationTimes: number[];
 }
 
-const CUBE_COLORS = {
+export const CUBE_COLORS = {
   red: '#FF0000',
   green: '#0CEC00',
   blue: '#003CFF',
@@ -27,7 +49,17 @@ const CUBE_COLORS = {
 };
 
 
-const Player = React.memo(({ scramble, solution, speed, animationTimes }: PlayerProps) => {
+const Player = React.memo(({ 
+  scramble, 
+  solution, 
+  speed, 
+  animationTimes, 
+  cubeRef, 
+  onCubeStateUpdate,
+  handleControllerRequest,
+  controllerButtonsStatus,
+  setControllerButtonsStatus
+}: PlayerProps) => {
   const playerRef = useRef<TwistyPlayer | null>(null);
   
   const divRef = useRef<HTMLDivElement>(null);
@@ -37,7 +69,20 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
   const lastSpeed = useRef<number>(0);
 
   const lastRenderRef = useRef<RenderRefProps>({ scramble, solution, animationTimes });
+
   
+  // Context menu state
+  const [contextMenu, setContextMenu] = useState<{
+    isVisible: boolean;
+    position: { x: number; y: number };
+  }>({
+    isVisible: true,
+    position: { x: 0, y: 0 }
+  });
+  
+  const [showControls, setShowControls] = useState<boolean>(true);
+  const [flashingButtons, setFlashingButtons] = useState<Set<string>>(new Set());
+
   const calcCubeSpeed = (speed: number) => {
     if (speed === 100) {
       return 1000;
@@ -48,6 +93,60 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
 
   const cubeSpeed = calcCubeSpeed(speed);
   const isInstant = cubeSpeed === 1000;
+
+  const handleFlash = (buttonId: string) => {
+    console.log('Flashing button:', buttonId);
+    setFlashingButtons(prev => {
+      const newSet = new Set(prev);
+      newSet.add(buttonId);
+      return newSet;
+    });
+    
+    setTimeout(() => {
+      setFlashingButtons(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(buttonId);
+        return newSet;
+      });
+    }, 150);
+  };
+
+  const handleFullLeft = () => {
+    handleFlash('fullLeft');
+    handleControllerRequest({ type: 'fullLeft' });
+  }
+
+  const handleStepLeft = () => {
+    handleFlash('stepLeft');
+    handleControllerRequest({ type: 'stepLeft' });
+  }
+
+  const handlePause = () => {
+    handleFlash('playPause');
+    handleControllerRequest({ type: 'pause' });
+  }
+
+  const handlePlay = () => {
+    handleFlash('playPause');
+    handleControllerRequest({ type: 'play' });
+  }
+
+  const handleReplay = () => {
+    handleFlash('playPause');
+    handleControllerRequest({ type: 'replay' });
+  }
+
+  const handleStepRight = () => {
+    handleFlash('stepRight');
+    handleControllerRequest({ type: 'stepRight' });
+  }
+
+  const handleFullRight = () => {
+    handleFlash('fullRight');
+    handleControllerRequest({ type: 'fullRight' });
+  }
+
+
   
   const setInstantPlayerProps = () => {
 
@@ -66,6 +165,9 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
     if (lastAnimationTimes.current !== animationTimes) {
       playerRef.current.timestamp = animationTimes.reduce((acc, val) => acc + val, 0);
     } 
+
+    onCubeStateUpdate();
+
   }
 
   const updateLastPlayerProps = (sol: string | undefined, animTimes: number[] | undefined) => {
@@ -350,7 +452,22 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
     return {singleMove: singleMoveChange, movesBefore: leftBeforeChange + " " + singleBeforeChange};
   }
 
-  const manifestSingleChange = (singleMoveChange: string, movesBeforeChange: string, delta: number) => {
+  const passOnNewCubeState = (algBeforeSingle: string, algAfterSingle: string, timestampBeforeSingle: number, timeArrayAfterSingle: number[]) => {
+    if (!playerRef.current) return;
+    
+    // Set to final state instantly
+    // playerRef.current.alg = algAfterSingle;
+    // playerRef.current.timestamp = findTimestamp(timeArrayAfterSingle, algAfterSingle);
+
+    onCubeStateUpdate();
+    
+    // playerRef.current.alg = algBeforeSingle;
+    // playerRef.current.timestamp = timestampBeforeSingle;
+  }
+
+  const displaySingleChange = (singleMoveChange: string, movesBeforeChange: string, delta: number) => {
+    // delta represents the direction of the change, where positive means left to right
+
     const algBeforeSingle = findAlgBeforeSingle(singleMoveChange, movesBeforeChange, delta); 
     const timeBeforeSingle = findTimestamp(animationTimes, algBeforeSingle);
     const algAfterSingle = findAlgAfterSingle(singleMoveChange, movesBeforeChange, delta);
@@ -359,17 +476,19 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
     if (!playerRef.current) return;
     
     playerRef.current.alg = algBeforeSingle;
-
     playerRef.current.timestamp = timeBeforeSingle;
 
     updateLastPlayerProps(solution, timeArrayAfterSingle);
-      
+
+    passOnNewCubeState(algBeforeSingle, algAfterSingle, timeBeforeSingle, timeArrayAfterSingle);
+    
+    // perform the animated move
     try {
       playerRef.current.experimentalAddMove(singleMoveChange);
     } catch (e) {
       console.error('Failed to add move:', singleMoveChange);
       setInstantPlayerProps();
-    }  
+    }
   }
 
   const handleSingleMovecountChange = (moves: string[], lastMoves: string[], moveChangeDelta: number) => {
@@ -387,7 +506,7 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
       return;
     } 
       
-    manifestSingleChange(singleMoveChange, movesBeforeChange, moveChangeDelta);
+    displaySingleChange(singleMoveChange, movesBeforeChange, moveChangeDelta);
 
   }
 
@@ -406,7 +525,7 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
       
     let delta = isForward ? 1 : -1;
 
-    manifestSingleChange(singleMoveChange, movesBeforeChange, delta);
+    displaySingleChange(singleMoveChange, movesBeforeChange, delta);
     
   }
 
@@ -426,7 +545,7 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
       
     let delta = 0;
 
-    manifestSingleChange(singleMoveChange, movesBeforeChange, delta);
+    displaySingleChange(singleMoveChange, movesBeforeChange, delta);
     
   }
 
@@ -435,9 +554,9 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
   const displayMoves = () => {
   
     // three cases for single move change:
-    // 1. number of moves changed by one
-    // 2. move selection changed by one.
-    // 3. move modified.
+    // 1. number of moves changed by one (ex: R U| → R U F|)
+    // 2. move selection changed by one (ex: R U |F → R U| F)
+    // 3. move modified (ex: R U| F → R U'| F2)
 
     const isScrambleSelected = animationTimes.length === 1 && animationTimes[0] === 1;
 
@@ -530,6 +649,71 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
     return cube;
   };
 
+  const addFaceLabels = () => {
+    const loader = new THREE.TextureLoader();      
+    const labels: { file: string, position: { x: number, y: number, z: number }, rotation: { x: number, y: number, z: number } }[] = [
+      {
+        file: '/U.svg',
+        position: { x: 0, y: 2, z: 0 },
+        rotation: { x: -Math.PI / 2, y: 0, z: 0 }
+      },
+      {
+        file: '/D.svg',
+        position: { x: 0, y: -2, z: 0 },
+        rotation: { x: Math.PI / 2, y: 0, z: 0 }
+      },
+      {
+        file: '/R.svg',
+        position: { x: 2, y: 0, z: 0 },
+        rotation: { x: 0, y: Math.PI / 2, z: 0 }
+      },
+      {
+        file: '/L.svg',
+        position: { x: -2, y: 0, z: 0 },
+        rotation: { x: 0, y: -Math.PI / 2, z: 0 }
+      },
+      {
+        file: '/B.svg',
+        position: { x: 0, y: 0, z: -2 },
+        rotation: { x: 0, y: Math.PI, z: 0 }
+      },
+      {
+        file: '/F.svg',
+        position: { x: 0, y: 0, z: 2 },
+        rotation: { x: 0, y: 0, z: 0 }
+      }
+    ];
+
+    // add  R, L, U, D, F, B labels
+    labels.forEach(label => {
+      const texture = loader.load(label.file, () => {
+        texture.generateMipmaps = true;
+        texture.minFilter = THREE.LinearMipmapLinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        const maxAnisotropy = renderer.capabilities.getMaxAnisotropy()
+        // texture.anisotropy = Math.min(16, maxAnisotropy);
+        texture.anisotropy = maxAnisotropy;
+        
+                  
+        const material = new THREE.MeshBasicMaterial({ 
+          map: texture, 
+          transparent: true 
+        });
+        
+        const geometry = new THREE.PlaneGeometry(1.1, 1.6);
+        const mesh = new THREE.Mesh(geometry, material);
+        
+        mesh.position.set(label.position.x, label.position.y, label.position.z);
+        mesh.rotation.set(label.rotation.x, label.rotation.y, label.rotation.z);
+        
+        cube.add(mesh);
+                  
+      });
+      
+      
+    });
+  }
+
   const createCustomScene = async () => {
     divRef.current!.appendChild(playerRef.current!); 
     
@@ -540,87 +724,25 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
     
     if (divRef.current && cube && !scene) {
       
-      while (divRef.current!.firstChild) {
-        divRef.current!.removeChild(divRef.current!.firstChild);
+      // Find and remove any <twisty-player> elements.
+      let twistyPlayerElement = divRef.current.querySelector('twisty-player');
+      while (twistyPlayerElement) {
+        divRef.current.removeChild(twistyPlayerElement);
+        twistyPlayerElement = divRef.current.querySelector('twisty-player');
       }
-
 
       divRef.current.style.width = '100%';
       divRef.current.style.height = '100%';
 
-      
       scene = new THREE.Scene();
-      const geometry = new THREE.BoxGeometry(1, 1, 1);
-      const material = new THREE.MeshBasicMaterial({ color: 0xFFFF00 });
-      const mesh = new THREE.Mesh(geometry, material);
-      
-      const loader = new THREE.TextureLoader();
-      
-      const labels: { file: string, position: { x: number, y: number, z: number }, rotation: { x: number, y: number, z: number } }[] = [
-        {
-          file: '/U.svg',
-          position: { x: 0, y: 2, z: 0 },
-          rotation: { x: -Math.PI / 2, y: 0, z: 0 }
-        },
-        {
-          file: '/D.svg',
-          position: { x: 0, y: -2, z: 0 },
-          rotation: { x: Math.PI / 2, y: 0, z: 0 }
-        },
-        {
-          file: '/R.svg',
-          position: { x: 2, y: 0, z: 0 },
-          rotation: { x: 0, y: Math.PI / 2, z: 0 }
-        },
-        {
-          file: '/L.svg',
-          position: { x: -2, y: 0, z: 0 },
-          rotation: { x: 0, y: -Math.PI / 2, z: 0 }
-        },
-        {
-          file: '/B.svg',
-          position: { x: 0, y: 0, z: -2 },
-          rotation: { x: 0, y: Math.PI, z: 0 }
-        },
-        {
-          file: '/F.svg',
-          position: { x: 0, y: 0, z: 2 },
-          rotation: { x: 0, y: 0, z: 0 }
-        }
-      ];
 
-      // add  R, L, U, D, F, B labels
-      labels.forEach(label => {
-        const texture = loader.load(label.file, () => {
-          texture.generateMipmaps = true;
-          texture.minFilter = THREE.LinearMipmapLinearFilter;
-          texture.magFilter = THREE.LinearFilter;
-          const maxAnisotropy = renderer.capabilities.getMaxAnisotropy()
-          // texture.anisotropy = Math.min(16, maxAnisotropy);
-          texture.anisotropy = maxAnisotropy;
-          
-                    
-          const material = new THREE.MeshBasicMaterial({ 
-            map: texture, 
-            transparent: true 
-          });
-          
-          const geometry = new THREE.PlaneGeometry(1.1, 1.6);
-          const mesh = new THREE.Mesh(geometry, material);
-          
-          mesh.position.set(label.position.x, label.position.y, label.position.z);
-          mesh.rotation.set(label.rotation.x, label.rotation.y, label.rotation.z);
-          
-          cube.add(mesh);
-                    
-        });
-        
-        
-      });
-      
+      addFaceLabels();
       setStickerColors(cube);
       
       scene.add(cube);
+      cubeRef.current = cube;
+
+      console.log('Cube loaded:', cube);
       
       const aspectRatio = divRef.current.clientWidth / divRef.current.clientHeight;
       camera = new THREE.PerspectiveCamera(75, aspectRatio, 0.1, 5);
@@ -657,6 +779,8 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
       camera.updateProjectionMatrix();
       renderer.setSize(divRef.current.clientWidth, divRef.current.clientHeight);
     }
+
+    console.log('cube: ', playerRef.current?.experimentalCurrentThreeJSPuzzleObject());
     
   }
 
@@ -702,6 +826,7 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
       background: 'none',
       controlPanel: 'none',
       
+      
       experimentalSetupAlg: scramble,
       alg: solution,
       
@@ -717,19 +842,100 @@ const Player = React.memo(({ scramble, solution, speed, animationTimes }: Player
     
     createCustomScene();
 
-    window.addEventListener('resize', handleResize);
-
-    
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    }
   }, []);
 
+  const handleContextMenu = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    
+    console.log('handle context menu')
+
+    // Always show context menu at new position, even if one is already visible
+    setContextMenu({
+      isVisible: true,
+      position: { x: e.clientX, y: e.clientY }
+    });
+  };
+
+  const handleToggleControls = () => {
+    setShowControls(prev => !prev);
+  };
+
+  useEffect(() => {
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    // Handle if this div has focus OR if focus is on any element within this container
+    const isWithinContainer = divRef.current?.contains(document.activeElement as Node);
+    if (document.activeElement !== e.currentTarget && !isWithinContainer) return;
+    
+    switch (e.key) {
+      case ' ': // Spacebar
+        e.preventDefault();
+        if (controllerButtonsStatus.playPause === 'play') {
+          handlePause();
+        } else if (controllerButtonsStatus.playPause === 'pause') {
+          handlePlay();
+        } else if (controllerButtonsStatus.playPause === 'replay') {
+          handleReplay();
+        }
+        break;
+      case 'ArrowLeft':
+        e.preventDefault();
+        handleStepLeft();
+        break;
+      case 'ArrowRight':
+        e.preventDefault();
+        handleStepRight();
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        handleFullLeft();
+        break;
+      case 'ArrowDown':
+        e.preventDefault();
+        handleFullRight();
+        break;
+    }
+  };
+
   return (
-    <div
-      ref={divRef}
-      className="w-full h-full border border-primary-700 rounded-sm"
-    />
+    <>
+      <div
+        ref={divRef}
+        className="w-full h-full border border-neutral-600 hover:border-primary-100 rounded-sm relative"
+        onClick={() => setContextMenu(prev => ({ ...prev, isVisible: false }))}
+        onContextMenu={handleContextMenu}
+        onKeyDown={handleKeyDown}
+        tabIndex={2}
+      >
+        <PlayerControls
+          isVisible={showControls}
+          onFullLeft={handleFullLeft}
+          onStepLeft={handleStepLeft}
+          onPause={handlePause}
+          onPlay={handlePlay}
+          onReplay={handleReplay}
+          onStepRight={handleStepRight}
+          onFullRight={handleFullRight}
+          controllerButtonsStatus={controllerButtonsStatus}
+          flashingButtons={flashingButtons}
+          handleFlash={handleFlash}
+        />
+      </div>
+      
+      <ContextMenu
+        isVisible={contextMenu.isVisible}
+        position={contextMenu.position}
+        onClose={() => setContextMenu({ ...contextMenu, isVisible: false })}
+        onToggleControls={handleToggleControls}
+        showControls={showControls}
+      />
+    </>
   );
 });
 

@@ -1,5 +1,6 @@
 'use client';
 import debounce from 'lodash.debounce';
+import { PNG, Type } from "sr-puzzlegen";
 import { useState, useRef, useEffect, lazy, Suspense, useCallback, Profiler } from 'react';
 import MovesTextEditor from "../../components/recon/MovesTextEditor";
 import SpeedDropdown from "../../components/recon/SpeedDropdown";
@@ -11,7 +12,8 @@ import ReconTimeHelpInfo from "../../components/recon/ReconTimeHelpInfo";
 import TPSInfo from "../../components/recon/TPSInfo";
 import updateURL from "../../composables/recon/updateURL";
 
-import type { EditorRef } from "../../components/recon/MovesTextEditor";
+import type { ImperativeRef } from "../../components/recon/MovesTextEditor";
+import type { Object3D } from 'three';
 
 import UndoIcon from "../../components/icons/undo";
 import RedoIcon from "../../components/icons/redo";
@@ -32,6 +34,9 @@ import TopButton from "../../components/recon/TopButton";
 import { customDecodeURL } from '../../composables/recon/urlEncoding';
 import getDailyScramble from '../../composables/recon/getDailyScramble';
 import VideoHelpPrompt from '../../components/recon/VideoHelpPrompt';
+import ImageStack from '../recon/ImageStack';
+import { EventBridgeSchedulerCreateScheduleTask } from 'aws-cdk-lib/aws-stepfunctions-tasks';
+
 
 export interface MoveHistory {
   history: string[][];
@@ -46,39 +51,65 @@ interface OldSelectionRef {
   textbox: string | null;
 }
 
+export interface ControllerRequestOptions {
+  type: 'fullLeft' | 'stepLeft' | 'pause' | 'play' | 'replay' | 'stepRight' | 'fullRight';
+}
+
 const TwistyPlayer = lazy(() => import("../../components/recon/TwistyPlayer"));
 
 export default function Recon() {
-  const allMoves = useRef<string[][][]>([[[]], [[]]]);
+  const allMovesRef = useRef<string[][][]>([[[]], [[]]]);
   const moveLocation = useRef<[number, number, number]>([0, 0, 0]);
 
   const [speed, setSpeed] = useState<number>(30); // allows debounced speed updates to Player
-  const [localSpeed, setLocalSpeed] = useState<number>(30) // allows smooth slider input rendering
+  const [localSpeed, setLocalSpeed] = useState<number>(30) // artifact from when speed was a slider. TODO: Can be removed.
 
-  const scrambleRef = useRef<string>('');``
-  const [solution, setSolution] = useState<string>('');
+  const scrambleRef = useRef<string>(''); // TODO: eliminate and use allMovesRef[0] instead
+  const [solution, setSolution] = useState<string>(''); // TODO: eliminate and use allMovesRef[1] instead
   const [totalMoves, setTotalMoves] = useState<number>(0);
   const [solveTime, setSolveTime] = useState<number|string>('');
   const [solveTitle, setSolveTitle] = useState<string>('');
   const [topButtonAlert, setTopButtonAlert] = useState<[string, string]>(["", ""]); // [id, alert msg]
-    
+  const [isTextboxFocused, setIsTextboxFocused] = useState<boolean>(false);
+
   const [scrambleHTML, setScrambleHTML] = useState<string>('');
   const [solutionHTML, setSolutionHTML] = useState<string>('');
     
   const tpsRef = useRef<HTMLDivElement>(null);
-  const scrambleEditorRef = useRef<EditorRef>(null);
-  const solutionEditorRef = useRef<EditorRef>(null);
+  const scrambleEditorRef = useRef<ImperativeRef>(null);
+  const solutionEditorRef = useRef<ImperativeRef>(null);
   const undoRef = useRef<HTMLButtonElement>(null);
   const redoRef = useRef<HTMLButtonElement>(null);
   const oldSelectionRef = useRef<OldSelectionRef>({ range: null, textbox: null,  status: "init" });
   const bottomBarRef = useRef<HTMLDivElement>(null);
+  const cubeRef = useRef<Object3D | null>(null);
+  const isPlayingRef = useRef<boolean>(false);
+  const loopTimeoutRef = useRef<number|null>(null);
+  const clearLoopTimeout = useCallback(() => {
+    if (loopTimeoutRef.current !== null) {
+      clearTimeout(loopTimeoutRef.current);
+      loopTimeoutRef.current = null;
+    }
+  }, []);
 
   const MAX_EDITOR_HISTORY = 100;
   const moveHistory = useRef<MoveHistory>({ history: [['','']], index: 0, MAX_HISTORY: MAX_EDITOR_HISTORY, status: 'loading' });
 
   const [playerParams, setPlayerParams] = useState<{ animationTimes: number[], solution: string, scramble: string }>({ animationTimes: [], solution: '', scramble: '' });
+  const [controllerButtonsStatus, setControllerButtonsStatus] = useState<{ fullLeft: string, stepLeft: string, stepRight: string, fullRight: string, playPause: string }>({
+    fullLeft: 'disabled',
+    stepLeft: 'disabled',
+    stepRight: 'disabled',
+    fullRight: 'disabled',
+    playPause: 'disabled'
+  });
 
-  const findPrevNonEmptyLine = (moves: string[][], lineIndex: number, idIndex: number): number => {
+
+  /**
+   * Finds the first non-empty line at or before the given line index.
+   * Returns -1 if no non-empty line is found.
+   */
+  const findPrevNonEmptyLine = (moves: string[][], lineIndex: number): number => {
     for (let i = lineIndex; i >= 0; i--) {
       if (moves && moves[i]?.length > 0) {
         return i;
@@ -98,14 +129,48 @@ export default function Recon() {
     return lastMoveIndex;
   }
 
-  const shouldSkipUpdate = (moves: string[][], idIndex: number, lineIndex: number, moveIndex: number): boolean => {
+  /**
+   * Starting from first line of interest, find first line that has a move.
+   * If no line has a move, return -1.
+   */
+  const findLineOfNextMove = (moves: string[][], lineIndex: number): number => {
+    for (let i = lineIndex; i < moves.length; i++) {
+      if (moves[i] && moves[i].length > 0) {
+        return i;
+      }
+    }
+    return -1; // no next move found
+  }
 
-    const currentMoves = allMoves.current[idIndex];
-    const movesSame = currentMoves.length === moves.length && 
-      currentMoves.every((line, i) => 
-        line.length === moves[i]?.length && 
-        line.every((move, j) => move === moves[i][j])
-      );
+  const compareMoves = (currentMoves: string[][], moves: string[][]): boolean => {
+    if (currentMoves.length !== moves.length) {
+      return false;
+    }
+    
+    for (let i = 0; i < currentMoves.length; i++) {
+      const currentLine = currentMoves[i];
+      const newLine = moves[i];
+      
+      if (!newLine || currentLine.length !== newLine.length) {
+
+        return false;
+      }
+      
+      for (let j = 0; j < currentLine.length; j++) {
+        if (currentLine[j] !== newLine[j]) {
+          return false;
+        }
+      }
+    }
+    
+    return true;
+  };
+
+  const movesAndIndexSame = (moves: string[][], idIndex: number, lineIndex: number, moveIndex: number): boolean => {
+
+    const currentMoves = allMovesRef.current[idIndex];
+
+    const movesSame = compareMoves(currentMoves, moves);
 
     const newMoveLocation: [number, number, number] = [idIndex, lineIndex, moveIndex];
     const moveIndexSame = 
@@ -116,10 +181,11 @@ export default function Recon() {
     return movesSame && moveIndexSame;
   }
 
-  const initMoves = (moves: string[][], idIndex: number, lineIndex: number, moveIndex: number): [string, string] => {
+  const initMoves = (moves: string[][], idIndex: number): [string, string] => {
     let sol = "";
     let scram = "";
 
+    // get current values, set reference variable (useRef, useState) to current 
     if (idIndex === 0) {
       scram = moves.flat().join(' ');
       sol = solution;
@@ -134,13 +200,39 @@ export default function Recon() {
     return [sol, scram];
   }
 
-  const findAnimationTimes = (idIndex: number, lineIndex: number, moveIndex: number, moveAnimationTimes: number[][]): number[] => {
+  const findAnimationLengths = (moves: string[]): number[] => {
+    let moveAnimationTimes: number[] = [];
+    const singleTime = 1000;
+    const doubleTime = 1500;
+    const tripleTime = 2000;
+
+    moves.forEach((move) => {
+      if (move.includes('2')) {
+        moveAnimationTimes.push(doubleTime);
+      } else if (move.includes('3')) {
+        moveAnimationTimes.push(tripleTime);
+      } else {
+        moveAnimationTimes.push(singleTime);
+      }
+    });
+
+    return moveAnimationTimes;
+  }
+
+  /**
+   * Calculates the cumulative animation times for moves up to a specific position in the move sequence.
+   * Returns [1] if scramble is selected. 
+   * Returns [0] if there are no moves in the solution.
+   */
+  const findAnimationTimes = (idIndex: number, lineIndex: number, moveIndex: number, moves: string[][]): number[] => {
     
     if (idIndex === 0) {
-      return [1]; // shorthand for scramble
+      return [1]; // scramble moves are not animated
     }
 
-    if (moveAnimationTimes.length === 0) {
+    // hereafter assume working on solution moves
+
+    if (moves.length === 0) {
       return [0];
     }
 
@@ -148,17 +240,23 @@ export default function Recon() {
 
     // push in moves from previous lines
     for (let i = 0; i < lineIndex; i++) {
-      const lineTimes = moveAnimationTimes[i];
-      const isEmptyLine = lineTimes?.every(time => time === 0) && lineTimes.length === 1;
-      if (lineTimes && !isEmptyLine) newMoveTimes.push(...moveAnimationTimes[i]);
+      const lineTimes = findAnimationLengths(moves[i]);
+      const isEmptyLine = 
+        lineTimes === undefined || 
+        (lineTimes?.every(time => time === 0) && lineTimes.length === 1);
+      if (lineTimes && !isEmptyLine) newMoveTimes.push(...lineTimes);
     }
 
-    // push in moves from current line, up to moveIndex
+    // push in moves from current line, up to but not including moveIndex
+    const selectedLineAnimationTimes = findAnimationLengths(moves[lineIndex]);
     for (let j = 0; j < moveIndex; j++) {
-      const time = moveAnimationTimes[lineIndex]?[j] : 0;
-      const isEmptyMove = time === 0;
-      if (moveAnimationTimes[lineIndex] && !isEmptyMove) {
-        newMoveTimes.push(moveAnimationTimes[lineIndex][j]);
+      const time = selectedLineAnimationTimes[j];
+      const isEmptyMove = 
+        time === 0 || 
+        time === undefined; // could be undefined if there's a mismatch between moves and moveIndex
+      if (time === undefined) { console.warn(`Undefined time at line ${lineIndex}, move ${j}.`); }
+      if (selectedLineAnimationTimes && !isEmptyMove) {
+        newMoveTimes.push(time);
       }
     }
 
@@ -166,18 +264,330 @@ export default function Recon() {
     
   };
 
+  // for hashtags (TODO: delete)
+  const memoizedUpdateScrambleRef = useCallback((scram: string) => {
+
+    solutionEditorRef.current?.updateScrambleRef(scram);
+  }, []);
+
+  const interpretCurrentCubeState = () => {
+    // placeholder for interpreting the current cube state
+    // will be used for move completion and better solution icons
+
+    // console.log('Interpreting current cube state...');
+    // console.log('Solution: ', solution);
+    // if (cubeRef.current) {
+    //   // wait one second
+    //   // setTimeout(() => {
+    //     console.log('Cube state interpreted.');
+    //     const cube = cubeRef.current; 
+    //     console.log('Cube: ', cube);
+    //     // access children.matrix and print 4x4 matrix inside
+    //     const matrix = cube!.children[6].matrix.elements;
+    //     matrix.forEach((value, index) => {
+
+    //       // round each to 2 decimal places
+    //       matrix[index] = parseFloat(value.toFixed(2));
+
+    //       // if -0, set to 0
+    //       if (matrix[index] === -0) {
+    //         matrix[index] = 0;
+    //       }
+    //     });
+
+    //     const matrix4x4 = [
+    //       [matrix[0], matrix[1], matrix[2], matrix[3]],
+    //       [matrix[4], matrix[5], matrix[6], matrix[7]],
+    //       [matrix[8], matrix[9], matrix[10], matrix[11]],
+    //       [matrix[12], matrix[13], matrix[14], matrix[15]]
+    //     ];
+    //     console.table(matrix4x4);
+    //   // }, 100);
+    // }
+  };
+
+  const getMoveToLeft = (): [number, number] => {
+    const [idIndex, lineIndex, moveIndex] = moveLocation.current;
+    const moves = allMovesRef.current[idIndex];
+
+    if (idIndex === 0) {
+      return [-1, -1]; // can't go left in scramble textbox
+    } else if (lineIndex === 0 && moveIndex === 0) {
+      return [-1, -1]; // already at the start of solution
+    }
+
+    if (moveIndex > 0) {
+      return [lineIndex, moveIndex - 1]; // just step back one move
+    } else {
+      // go to the end of the previous line
+      const prevLineIndex = findPrevNonEmptyLine(moves, lineIndex - 1);
+      const lastMoveInPrevLine = findLastMoveInLine(moves, prevLineIndex);
+      return [prevLineIndex, lastMoveInPrevLine];
+    }
+  }
+
+  const getMoveToRight = (moves?: string[][]): [number, number] => {
+    const [idIndex, lineIndex, moveIndex] = moveLocation.current;
+    const solutionMoves = moves ? moves : allMovesRef.current[1];
+
+    if (!solutionMoves || solutionMoves.length === 0 || solutionMoves.every(line => !line || line.length === 0)) {
+      console.warn('No solution moves found.');
+      return [-1, -1]; // no moves in solution. Button should have been greyed out.
+    }
+
+    if (idIndex === 0) {
+      // if in scramble textbox, go to first move in solution
+      const firstLineWithMove = findLineOfNextMove(solutionMoves, 0);
+      return [firstLineWithMove, 1]; // go to first move in solution
+    }
+
+
+    if (moveIndex < solutionMoves[lineIndex].length) {
+      return [lineIndex, moveIndex + 1]; // just step forward one move
+    } else {
+
+      const nextLineIndex = findLineOfNextMove(solutionMoves, lineIndex + 1);
+      if (nextLineIndex === -1) {
+        return [-1, -1]; // no next move, stay in place
+      } else {
+        return [nextLineIndex, 0]; // go to first move in next line
+      }
+    }
+
+  }
+
+  /**
+   * get the last move in the solution textbox
+   */
+  const getLastMoveInSolution = (): [number, number] => {
+    
+    const moves = allMovesRef.current[1];
+
+    // get last line. 
+    // If there's no moves on that line, then it wil be handled by trackMoves.
+    const lastLineWithMove = moves.length - 1; 
+    if (lastLineWithMove === -1) {
+      console.warn('No moves found in solution.');
+      return [-1, -1]; // no moves in solution
+    }
+
+    // find last move in last line
+    const lastMoveInLastLine = findLastMoveInLine(moves, lastLineWithMove);
+    return [lastLineWithMove, lastMoveInLastLine];
+  }
+
+  const countMovesBeforeIndex = (idIndex: number): number => {
+    const [_, lineIndex, moveIndex] = moveLocation.current;
+
+    if (idIndex === 0) {
+      return -1; // add this functionality if needed
+    }
+    let count = 0;
+    const moves = allMovesRef.current[idIndex];
+    for (let i = 0; i < lineIndex; i++) {
+      if (moves[i] && moves[i].length > 0) {
+        count += moves[i].length;
+      }
+    }
+    // add moves in current line before moveIndex
+    if (moves[lineIndex] && moveIndex > 0) {
+      count += moves[lineIndex].slice(0, moveIndex).length;
+    }
+
+    return count;
+  }  
+
+  const loopStepRight = (location: [number, number, number] | null) => {
+    if (!isPlayingRef.current) {
+      let [lineIndex, moveIndex] = getMoveToRight();
+      let playPauseStatus = 'disabled';
+      
+      if (lineIndex !== -1 && moveIndex !== -1) {
+        playPauseStatus = 'pause'; // can step right
+      } else {
+        playPauseStatus = 'replay'; // no more moves to step right
+      }
+      if (allMovesRef.current[1].length === 0) { // override if no solution moves
+        playPauseStatus = 'disabled'
+      }
+
+      setControllerButtonsStatus((controllerButtonsStatus) => (
+        { ...controllerButtonsStatus, playPause: playPauseStatus }
+      ));
+      return; // player is not playing, do not step right
+    }
+
+    let [idIndex, lineIndex, moveIndex] = location || moveLocation.current;
+      
+    const animationTimes = playerParams.animationTimes;
+    const solutionMovesBefore = countMovesBeforeIndex(1);
+
+    [lineIndex, moveIndex] = getMoveToRight();
+    if (lineIndex === -1 || moveIndex === -1) {
+      // const playPauseStatus = allMoves[1].length === 0 ? 'disabled' : 'play';
+      // setControllerButtonsStatus((controllerButtonsStatus) => (
+      //   { ...controllerButtonsStatus, stepRight: 'disabled', fullRight: 'disabled', playPause: playPauseStatus }
+      // ));
+      return; // no more moves to step right
+    }
+    memoizedTrackMoves(1, lineIndex, moveIndex, allMovesRef.current[1], 'play');
+    // wait for the next move animation time
+    const timeToWait = animationTimes[solutionMovesBefore] || 1000; // default to 1000ms if undefined
+    
+    loopTimeoutRef.current = window.setTimeout(() => {
+      loopStepRight([1, lineIndex, moveIndex]);
+    // }, timeToWait); // moves with large animation times don't actually take longer. Re-implement timeToWait if this changes
+    }, 1000 - (5 * speed));
+  }
+
+
+  const handleControllerRequest = (request: ControllerRequestOptions) => {
+    clearLoopTimeout();
+    let [_, lineIndex, moveIndex] = moveLocation.current;
+    if (request.type !== 'play' && request.type !== 'replay') {
+      isPlayingRef.current = false;
+    } else {
+      isPlayingRef.current = true;
+    }
+
+    switch (request.type) {
+      case 'fullLeft':
+        memoizedTrackMoves(1, 0, 0, allMovesRef.current[1]);
+        break;
+      case 'stepLeft':
+        [lineIndex, moveIndex] = getMoveToLeft();
+        if (lineIndex !== -1 || moveIndex !== -1) {
+          memoizedTrackMoves(1, lineIndex, moveIndex, allMovesRef.current[1]);
+        }
+        break;
+      case 'pause':
+        setControllerButtonsStatus((controllerButtonsStatus) => (
+          { ...controllerButtonsStatus, playPause: 'pause' }
+        ));
+        break;
+      case 'play':
+        loopStepRight(null);
+        setControllerButtonsStatus((controllerButtonsStatus) => (
+          { ...controllerButtonsStatus, playPause: 'play' }
+        ));
+        break;
+      case 'replay':
+        memoizedTrackMoves(1, 0, 0, allMovesRef.current[1], 'play'); // reset to start of solution
+
+        setTimeout(() => {
+          setControllerButtonsStatus((controllerButtonsStatus) => (
+            { ...controllerButtonsStatus, playPause: 'play' }
+          ));
+          loopStepRight(null);
+        }, 1000);
+        break;
+      case 'stepRight':
+        [lineIndex, moveIndex] = getMoveToRight();
+        if (lineIndex !== -1 || moveIndex !== -1) {
+          memoizedTrackMoves(1, lineIndex, moveIndex, allMovesRef.current[1]);
+        }
+        break;
+      case 'fullRight':
+        [lineIndex, moveIndex] = getLastMoveInSolution();
+        memoizedTrackMoves(1, lineIndex, moveIndex, allMovesRef.current[1]);
+        break;
+      default:
+        console.warn('Unknown controller request type:', request.type);
+        return;
+    }
+  }
+
+  const getControllerButtonsStatus = (idIndex: number, lineIndex: number, moveIndex: number, moves: string[][], playPauseStatus: string): 
+  { 
+    fullLeft: string, stepLeft: string, stepRight: string, fullRight: string, playPause: string 
+  } => {
+    let fullLeft = 'disabled';
+    let stepLeft = 'disabled';
+    let playPause = 'disabled';
+    let stepRight = 'disabled';
+    let fullRight = 'disabled';
+
+
+    let isMoveToRight = false;
+    const solutionMoves = idIndex === 1 ? moves : allMovesRef.current[1];
+    const isSolutionMoves = solutionMoves && solutionMoves.length > 0 && solutionMoves.some(line => line && line.length > 0);
+
+    if (isSolutionMoves) {
+
+      // handle left buttons status
+      const [prevLine, prevMove] = getMoveToLeft();
+      if (prevLine !== -1 || prevMove !== -1) {
+        stepLeft = 'enabled';
+        fullLeft = 'enabled';
+      }
+
+      // handle right buttons status
+      const [nextLine, nextMove] = getMoveToRight(solutionMoves);
+      if (nextLine !== -1 || nextMove !== -1) {
+        stepRight = 'enabled';
+        fullRight = 'enabled';
+        isMoveToRight = true;
+      }
+    }
+    // handle play pause button status
+    // Note: the status is what the player should currently be doing, 
+    // not what the button should look like.
+    // so if the player should be paused,
+    // the status is 'pause'
+    if (!solutionMoves) {
+      playPause = 'disabled';
+    } else {
+
+      switch (playPauseStatus) {
+        case 'play':
+          if (isSolutionMoves && isMoveToRight) {
+            playPause = 'play';
+          } else if (isSolutionMoves && !isMoveToRight) {
+            playPause = 'replay';
+          }
+          break;
+        case 'pause':
+          if (isSolutionMoves && isMoveToRight) {
+            playPause = 'pause';
+          } else if (isSolutionMoves && !isMoveToRight) {
+            playPause = 'replay';
+          }
+          break;
+        case 'replay':
+          if (isSolutionMoves && isMoveToRight) {
+            playPause = 'pause';
+          } else if (isSolutionMoves && !isMoveToRight) {
+            playPause = 'replay';
+          }
+          break;
+        case 'disabled':
+          if (isSolutionMoves && isMoveToRight) {
+            playPause = 'pause';
+          } else if (isSolutionMoves && !isMoveToRight) {
+            playPause = 'replay';
+          }
+          break;
+        default:
+          console.warn('Unknown playPause status:', playPauseStatus);
+          playPause = 'disabled';
+      }
+    }
+    return { fullLeft, stepLeft, stepRight, fullRight, playPause }
+  };
+
+
   const memoizedTrackMoves = useCallback(
     (
       idIndex: number, 
-      lineIndex: number, // the line number of the caret 
+      lineIndex: number, // the line number of the caret, zero-indexed
       moveIndex: number, // the number of moves before the caret on its line 
-      moves: string[][], // the moves in the textbox of id 
-      moveAnimationTimes: number[][],
+      moves: string[][], // the moves in the textbox of id
+      playPauseStatus?: string // the current play/pause status of the player
     ) => {
 
-      // pretend caret is at end of the last line that has a move
       if (moves[lineIndex]?.length === 0) {
-        const adjustedLineIndex = findPrevNonEmptyLine(moves, lineIndex, idIndex);
+        // pretend caret is at end of the last line that has a move
+        const adjustedLineIndex = findPrevNonEmptyLine(moves, lineIndex);
         const adjustedMoveIndex = findLastMoveInLine(moves, adjustedLineIndex);
 
         if (adjustedLineIndex !== -1 && adjustedMoveIndex !== -1) {
@@ -186,20 +596,37 @@ export default function Recon() {
         }
       }
 
-      if (shouldSkipUpdate(moves, idIndex, lineIndex, moveIndex)) {
+      if (movesAndIndexSame(moves, idIndex, lineIndex, moveIndex)) {
+        // console.log('Moves and index are the same, skipping update.');
+        return;
+      }
+
+      if (lineIndex === -1 || moveIndex === -1) {
+        // handles invalid ControllerRequests
         return;
       }
 
       idIndex === 1 ? updateTotalMoves(moves) : null;
-      let [sol, scram] = initMoves(moves, idIndex, lineIndex, moveIndex);
+      let [sol, scram] = initMoves(moves, idIndex);
 
-      let animationTimes = findAnimationTimes(idIndex, lineIndex, moveIndex, moveAnimationTimes);
+      idIndex === 0 ? memoizedUpdateScrambleRef(scram) : null;
+
+      let limitedTimes = findAnimationTimes(idIndex, lineIndex, moveIndex, moves);
       moveLocation.current = [idIndex, lineIndex, moveIndex];
-      allMoves.current[idIndex] = [...moves];
-      setPlayerParams({animationTimes, solution: sol, scramble: scram});
-    },
-    [] // no dependencies if refs and state setters are stable
-  );
+      
+
+      let newMoves = [...allMovesRef.current];
+      newMoves[idIndex] = [...moves];
+      allMovesRef.current = newMoves;
+
+      setIsTextboxFocused(true);
+      setPlayerParams({animationTimes: limitedTimes, solution: sol, scramble: scram});
+
+      playPauseStatus = playPauseStatus || controllerButtonsStatus.playPause;
+      const controllerButtonsEnabled = getControllerButtonsStatus(idIndex, lineIndex, moveIndex, newMoves[idIndex], playPauseStatus);
+      setControllerButtonsStatus(controllerButtonsEnabled)
+
+  }, [scrambleRef, memoizedUpdateScrambleRef, setPlayerParams, solution, setControllerButtonsStatus]);
 
   const memoizedSetScrambleHTML = useCallback((html: string) => {
     setScrambleHTML(html);
@@ -448,6 +875,10 @@ export default function Recon() {
       textbox = getTextboxOfSelection(range);
     }
 
+    if (textbox != 'solution') {
+      setIsTextboxFocused(false)
+    }
+
     if (!range || !textbox) return;
 
     if (range.startContainer === range.endContainer && range.startOffset === range.endOffset) {
@@ -624,7 +1055,7 @@ export default function Recon() {
       </div>
       <div id="scramble-area" className="px-3 mt-3 flex flex-col">
         <div className="text-xl text-dark_accent font-medium">Scramble</div>
-        <div className="border border-neutral-600 hover:border-primary-100 lg:max-h-[15.1rem] max-h-[10rem] overflow-y-auto" id="scramble">
+        <div className="lg:max-h-[15.1rem] max-h-[10rem] overflow-y-auto" id="scramble">
           {/* <Profiler id="scramble-editor" onRender={(id, phase, actualDuration) => console.log(`[Profiler] ${id} took ${actualDuration} ms. Phase: ${phase}`)}> */}
           <MovesTextEditor
             name={`scramble`}
@@ -643,7 +1074,17 @@ export default function Recon() {
         <div id="cube-highlight" className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-full blur-sm bg-primary-900 w-[calc(100%-1.5rem)]"></div>
         <div id="cube_model" className="flex aspect-video h-full max-h-96 bg-primary-900 z-10 w-full">
           <Suspense fallback={<div className="flex text-xl w-full h-full justify-center items-center text-primary-100">Loading cube...</div>}>
-            <TwistyPlayer scramble={playerParams.scramble} solution={playerParams.solution} speed={speed} animationTimes={playerParams.animationTimes}/>
+            <TwistyPlayer 
+              scramble={playerParams.scramble} 
+              solution={playerParams.solution} 
+              speed={speed} 
+              animationTimes={playerParams.animationTimes} 
+              cubeRef={cubeRef}
+              onCubeStateUpdate={interpretCurrentCubeState}
+              handleControllerRequest={handleControllerRequest}
+              controllerButtonsStatus={controllerButtonsStatus}
+              setControllerButtonsStatus={setControllerButtonsStatus}
+            />
           </Suspense>
         </div>
       </div>
@@ -654,17 +1095,20 @@ export default function Recon() {
       <div id="datafields" className="w-full items-start transition-width duration-500 ease-linear">
         <div id="solution-area" className="px-3 mt-3 mb-6 flex flex-col w-full">
           <div className="text-xl text-dark_accent font-medium w-full">Solution</div>
-          <div className="border border-neutral-600 hover:border-primary-100 lg:max-h-[15.1rem] max-h-[10rem] overflow-y-auto" id="solution">
-            <MovesTextEditor 
-              name={`solution`}
-              ref={solutionEditorRef} 
-              trackMoves={memoizedTrackMoves} 
-              autofocus={true} 
-              moveHistory={moveHistory}
-              updateHistoryBtns={memoizedUpdateHistoryBtns}
-              html={solutionHTML}
-              setHTML={memoizedSetSolutionHTML}
-            />
+          <div id="rich-solution-display" className="flex flex-row lg:max-h-[15.1rem] max-h-[10rem] border-none overflow-y-auto">
+            <ImageStack moves={allMovesRef.current} position={moveLocation.current} isTextboxFocused={isTextboxFocused} />
+            <div className="w-full min-w-0" id="solution">
+              <MovesTextEditor 
+                name={`solution`}
+                ref={solutionEditorRef} 
+                trackMoves={memoizedTrackMoves} 
+                autofocus={true} 
+                moveHistory={moveHistory}
+                updateHistoryBtns={memoizedUpdateHistoryBtns}
+                html={solutionHTML}
+                setHTML={memoizedSetSolutionHTML}
+              />
+            </div>
           </div>
         </div>
         <div id="time-area" className="px-3 flex flex-col w-full">
@@ -680,6 +1124,7 @@ export default function Recon() {
               onChange={handleSolveTimeChange}
               onWheel={(e) => e.currentTarget.blur()}
               autoComplete="off"
+              tabIndex={4}
               />
             <div className="text-primary-100 pr-2 text-xl">sec</div> 
           </div>

@@ -2,8 +2,8 @@ import { cloneElement } from 'react';
 import { colorDict } from '../../components/recon/MovesTextEditor';
 import simplifyRotations from '../recon/simplifyRotations';
 
-const VALID_SPAN_CLASS = colorDict.find((dict) => dict.key === 'move')!.value;
-const COMMENT_SPAN_CLASS = colorDict.find((dict) => dict.key === 'comment')!.value;
+const VALID_SPAN_CLASS = colorDict.move
+const COMMENT_SPAN_CLASS = colorDict.comment;
 
 const replacementTable_M: { [key: string]: string } = {
   "U": "U'", "U2": "U2'", "U3": "U3'", "U'": "U", "U2'": "U2", "U3'": "U3",

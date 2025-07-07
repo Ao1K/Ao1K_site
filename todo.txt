@@ -4,6 +4,13 @@ Informal Bugs/Todo List. Not guaranteed to be complete or accurate.
 Encode "(" and ")". These characters can break "copy solve".
  - unable to reproduce
 
+Add move highlighting in solution textbox
+
+Clean up hashtag nonsense. Keep concept for manual alg lookup.
+
+Create step recognition for left side solution icons
+
+Create dynamic icon for animation speed dropdown. Faster should be further to the right. Ideally animate the icon.
 
 
  

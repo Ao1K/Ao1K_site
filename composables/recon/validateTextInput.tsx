@@ -1,4 +1,4 @@
-type MovesValidation = [string, string, number?];
+export type MovesValidation = [string, string, number?];
 //[char, validationKeyword, parenthesisDepth]
 
 
@@ -18,8 +18,8 @@ export default function validateText(text: string) {
   assignSpaceValidation(validation, iterationArray);
   assignMoveValidation(validation, iterationArray);
 
-  console.log('validation after all: ')
-  console.table(validation);
+  // console.log('validation after all: ')
+  // console.table(validation);
   return validation;
 }
 
