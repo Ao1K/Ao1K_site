@@ -8,7 +8,7 @@ import WriteIcon from './icons/write';
 import ListIcon from './icons/list';
 
 const versionList = {
-  "recon": "v0.2",
+  "recon": "v0.3",
 }
 
 export default function Header(): JSX.Element {

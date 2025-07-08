@@ -6,7 +6,7 @@ interface CubeImageProps {
   lineNumber: number;
 }
 
-const cubeImage = ({ moves, lineNumber }: CubeImageProps) => {
+const CubeImage = ({ moves, lineNumber }: CubeImageProps) => {
 
   moves = moves.trim();
 
@@ -57,4 +57,4 @@ const cubeImage = ({ moves, lineNumber }: CubeImageProps) => {
   )
 };
 
-export default cubeImage;
+export default CubeImage;
