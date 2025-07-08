@@ -95,7 +95,6 @@ const Player = React.memo(({
   const isInstant = cubeSpeed === 1000;
 
   const handleFlash = (buttonId: string) => {
-    console.log('Flashing button:', buttonId);
     setFlashingButtons(prev => {
       const newSet = new Set(prev);
       newSet.add(buttonId);
@@ -742,7 +741,7 @@ const Player = React.memo(({
       scene.add(cube);
       cubeRef.current = cube;
 
-      console.log('Cube loaded:', cube);
+      // console.log('Cube loaded:', cube);
       
       const aspectRatio = divRef.current.clientWidth / divRef.current.clientHeight;
       camera = new THREE.PerspectiveCamera(75, aspectRatio, 0.1, 5);
@@ -780,7 +779,7 @@ const Player = React.memo(({
       renderer.setSize(divRef.current.clientWidth, divRef.current.clientHeight);
     }
 
-    console.log('cube: ', playerRef.current?.experimentalCurrentThreeJSPuzzleObject());
+    // console.log('cube: ', playerRef.current?.experimentalCurrentThreeJSPuzzleObject());
     
   }
 
@@ -847,8 +846,6 @@ const Player = React.memo(({
   const handleContextMenu = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
     
-    console.log('handle context menu')
-
     // Always show context menu at new position, even if one is already visible
     setContextMenu({
       isVisible: true,

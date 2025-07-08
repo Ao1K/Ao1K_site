@@ -46,7 +46,6 @@ const ControlsPlaceholder: React.FC<ControlsPlaceholderProps> = ({
   if (!isVisible) return null;
 
   const handleButtonClick = (buttonId: string, action: () => void) => {
-    console.log('Button clicked:', buttonId);
     handleFlash(buttonId);
     action();
   };

@@ -264,10 +264,8 @@ export default function Recon() {
     
   };
 
-  // for hashtags (TODO: delete)
-  const memoizedUpdateScrambleRef = useCallback((scram: string) => {
-
-    solutionEditorRef.current?.updateScrambleRef(scram);
+  const memoizedHighlightMove = useCallback((moveIndex: number, lineIndex: number) => {
+    solutionEditorRef.current?.highlightMove(moveIndex, lineIndex);
   }, []);
 
   const interpretCurrentCubeState = () => {
@@ -609,7 +607,7 @@ export default function Recon() {
       idIndex === 1 ? updateTotalMoves(moves) : null;
       let [sol, scram] = initMoves(moves, idIndex);
 
-      idIndex === 0 ? memoizedUpdateScrambleRef(scram) : null;
+      idIndex === 1 ? memoizedHighlightMove(moveIndex, lineIndex) : null;
 
       let limitedTimes = findAnimationTimes(idIndex, lineIndex, moveIndex, moves);
       moveLocation.current = [idIndex, lineIndex, moveIndex];
@@ -626,7 +624,7 @@ export default function Recon() {
       const controllerButtonsEnabled = getControllerButtonsStatus(idIndex, lineIndex, moveIndex, newMoves[idIndex], playPauseStatus);
       setControllerButtonsStatus(controllerButtonsEnabled)
 
-  }, [scrambleRef, memoizedUpdateScrambleRef, setPlayerParams, solution, setControllerButtonsStatus]);
+  }, [scrambleRef, memoizedHighlightMove, setPlayerParams, solution, setControllerButtonsStatus]);
 
   const memoizedSetScrambleHTML = useCallback((html: string) => {
     setScrambleHTML(html);

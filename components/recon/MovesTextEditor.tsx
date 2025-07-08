@@ -13,6 +13,8 @@ import { customDecodeURL } from '../../composables/recon/urlEncoding';
 
 import type { Token } from "../../composables/recon/validationToMoves";
 
+const highlightClass = 'text-dark bg-primary-100 backdrop-blur-xs caret-dark';
+
 export const colorDict = {
   move: 'text-primary-100',
   comment: 'text-gray-500',
@@ -21,6 +23,7 @@ export const colorDict = {
   paren: 'text-paren',
   rep: 'text-paren',
   hashtag: 'text-orange-300',
+  highlight: highlightClass,
 };
   
 
@@ -30,13 +33,12 @@ const EditorLoader = ({
   onInputChange, 
   name, 
   autofocus 
-}: 
-{ 
+}: { 
   editorRef: React.RefObject<any>, 
   onInputChange: () => void, 
   name: string, 
-  autofocus: boolean}
-)  => {
+  autofocus: boolean
+})  => {
   // useSearchParams is a hook. Storing searchParams here prevents it from being called again and causing reloads.
   const searchParams = useSearchParams();
   
@@ -95,13 +97,13 @@ export interface ImperativeRef {
   undo: () => void;
   redo: () => void;
   transform: (html: string) => void;
-  updateScrambleRef: (scramble: string) => void;
+  highlightMove: (moveIndex: number, lineIndex: number) => void;
 }
 
 interface Hashtag {
   id: string, // stored as id in the div
   location: [number, number],  // [line number from 0, number of moves before]. Scramble field cannot contain hashtags.
-  hashtag: '#pic' | '#oll' | '#pll' // all valid hashtags
+  hashtag: '#oll' | '#pll' // example possible valid hashtags. Probably abandon this style in favor of a search system.
 }
 
 const MovesTextEditor = memo(forwardRef<ImperativeRef, EditorProps>((
@@ -160,7 +162,7 @@ const MovesTextEditor = memo(forwardRef<ImperativeRef, EditorProps>((
     // (chrome)
     html = html.replace(/\n/g, '<br></div><div>');
     // (firefox)
-    html = html.replace(/>(<br>)<[^/]/g, '>$1</div><div><');    
+    html = html.replace(/>(<br>)<[^/]/g, '>$1</div><div><');
 
     let lines = splitHTMLintoLines(html);
 
@@ -229,17 +231,20 @@ const MovesTextEditor = memo(forwardRef<ImperativeRef, EditorProps>((
       }
 
       if (line) {
+
+        // get html
+        console.log('Processing line.');
         const text = line.replace(/<[^>]+>/g, '');
         const validation = validateTextInput(text);
         
         const [newHTMLline, caretIndex] = updateLine(validation, line);
         
+        // get move and line offsets
         let moves: string[];
-        
         if (caretIndex !== null) {
           let caretSplitIndex = findEndOfWordOnCaret(validation, caretIndex);
   
-          const tokensBeforeCaret = validationToTokens(validation.slice(0, caretSplitIndex + 1)); // before and including move at caret
+          const tokensBeforeCaret = validationToTokens(validation.slice(0, caretSplitIndex)); // before and including move at caret
           const tokensAfterCaret = validationToTokens(validation.slice(caretSplitIndex + 1)); // after caret
           const movesBeforeCaret: string[] = getMovesFromTokens(tokensBeforeCaret);
           const movesAfterCaret: string[] = getMovesFromTokens(tokensAfterCaret);
@@ -343,19 +348,22 @@ const MovesTextEditor = memo(forwardRef<ImperativeRef, EditorProps>((
   }
   
   function processValidation(validation: [string, string, number?][], line: string): { updatedLine: string, caretIndex: number | null } {
+    console.trace();
     let valIndex = 0;
     let valOffset = 0;
     let matchOffset = 0;
   
     let caretIndex: number | null = null;
 
-    line = line.replace(/>[^<>]+<|caretNode">/g, (match) => { //matches the ">" of caretNode to ensure no user text match. 
+    // find strings between ">" and "<" and modify each
+    console.log('Line:', line);
+    line = line.replace(/>[^<>]+<|caretNode">/g, (match) => { // matches the ">" of caretNode to ensure no user text match. 
       if (match === 'caretNode">') {
         caretIndex = valIndex;
         return 'caretNode">';
       }
 
-      match = match.substring(1, match.length - 1);
+      match = match.substring(1, match.length - 1); // remove ">" and "<"
   
       let remainingMatchLength = match.length;
       let paintedMatch = '';
@@ -397,10 +405,18 @@ const MovesTextEditor = memo(forwardRef<ImperativeRef, EditorProps>((
         }
     
         const matchString = match.substring(oldOffset, matchEnd).replace(/\s/g, ' ');
-    
-        if (type === prevNonspaceType || (type === 'space' && paintedMatch)) {
+        
+        const typeContinuationWhitelist = ['move', 'comment', 'space', 'invalid', 'paren', 'rep', 'hashtag'];
+        const isAllowableContinuation = 
+          (type === 'space' 
+          && typeContinuationWhitelist.includes(prevNonspaceType) 
+          && matchString);
+
+        if (type === prevNonspaceType || isAllowableContinuation) {
+          // append match to existing span
           paintedMatch = paintedMatch.replace(/<\/span>$/, matchString + '</span>');
         } else {
+          // create new span
           paintedMatch += `<span class="${color}">${matchString}</span>`;
         }
     
@@ -881,26 +897,58 @@ const MovesTextEditor = memo(forwardRef<ImperativeRef, EditorProps>((
     handleInput();
   }
 
-  const updateExistingHashtags = (scramble: string) => {
-    hashtags.current.forEach((hashtag) => {
-      // TODO: update hashtags to have updated scramble info, everything else same.
-      // id should contain scramble. Then can just replace it.
-      const imageDiv = contentEditableRef.current!.querySelector(`div[id="${hashtag.id}"]`);
-    });
-  };
+  /**
+   * Highlights the requested move in the solution text editor.
+   */
+  const handleHighlightMove = (moveIndex: number, lineIndex: number) => {
+    // if (true) return;
 
-
-  const handleScrambleUpdate = (scramble: string) => {
-    // this is for hashtags and ensuring tags in solution have the scramble info
+    if (!contentEditableRef.current) return;
     if (name === 'scramble') return; 
-    if (!scramble) scramble = '';
-    if (scramble !== oldScrambleMoves.current) {
-      oldScrambleMoves.current = scramble;
-      updateExistingHashtags(scramble);
+    if (moveIndex < 0 || lineIndex < 0) return; // invalid move index or line index
+    if (!contentEditableRef.current.innerHTML.includes('<span')) return; // should only highlight if moves have been painted
+
+    let lines = htmlToLineArray(contentEditableRef.current.innerHTML);
+
+    // restore old highlighted moves to just moves
+    lines = lines.map((line) => {
+      return line.replace(new RegExp(`<span class="${highlightClass}">`, 'g'), '<span class="text-primary-100">');
+    });
+
+    if (lineIndex >= lines.length) return; // invalid line index
+    const line = lines[lineIndex];
+    
+    // iterate through valid spans, counting moves, and highlighting the move at moveIndex
+    const text = line.replace(/<[^>]+>/g, '');    
+    const validation = validateTextInput(text);
+
+    // Create highlighted version of the line
+    
+    const highlightedValidation: [string, string, number?][] = [];
+    let moveCounter = 0;
+    let lastType = ''
+    for (let i = 0; i < validation.length; i++) {
+      const type = validation[i][1];
+      if (type === 'move' && lastType !== 'move') {
+        moveCounter++;
+      }
+      lastType = type;
+      if (type === 'move' && moveCounter === moveIndex) {
+        highlightedValidation.push([validation[i][0], 'highlight', validation[i][2]]);
+      } else {
+        highlightedValidation.push(validation[i]);
+      }
     }
+
+    // apply highlighted class. Do some cleanup.
+    let [ updatedLine, _ ] = updateLine(highlightedValidation, line);
+    
+    lines[lineIndex] = updatedLine;
+
+    // Update the contentEditable with highlighted content
+    const newHTML = lines.join('');
+    contentEditableRef.current.innerHTML = newHTML;
   }
-
-
   
   useImperativeHandle(ref, () => {
     return {
@@ -916,8 +964,8 @@ const MovesTextEditor = memo(forwardRef<ImperativeRef, EditorProps>((
         handleTransform(transformedHTML);
       },
 
-      updateScrambleRef: (scramble: string) => {
-        handleScrambleUpdate(scramble);
+      highlightMove: (moveIndex: number, lineIndex: number) => {
+        handleHighlightMove(moveIndex, lineIndex);
       },
     };
   },[]);
