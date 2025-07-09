@@ -17,7 +17,9 @@ const getDailyScramble = async (day: Date) => {
 
   const isoDate = day.toISOString().split('T')[0];
   
-  const { data } = await client.models.DailyScrambles.list();
+  const { data } = await client.models.DailyScrambles.list({
+    authMode: 'identityPool',
+  });
 
   // testing: delete all daily scrambles
   // for (const item of data) {
@@ -45,9 +47,14 @@ const createDailyScramble = async (isoDate: string, puzzleType: string) => {
   const scram = scramObj.toString();
 
   await client.models.DailyScrambles.create({
-    date: isoDate,
-    scramble3x3: scram,
-  });
+      date: isoDate,
+      scramble3x3: scram,
+    },
+
+    {
+      authMode: 'identityPool',
+    }
+  );
 
   return { date: isoDate, scramble3x3: scram };
 }
