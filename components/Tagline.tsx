@@ -33,7 +33,7 @@ const Tagline = () => {
       className={`hover:text-primary-100`}
       onMouseEnter={handleMouseEnter}
     >
-      find your {hovering ? displayText : 'statistical'} significance
+      Find {hovering ? displayText : 'Statistical'} Significance
     </div>
   );
 };

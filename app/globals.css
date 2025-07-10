@@ -125,3 +125,7 @@ input[type='range']::-moz-range-track {
 .scroll-always::-webkit-scrollbar {
   overflow-y: scroll; /* Ensure the scrollbar is always there */
 }
+
+.force-inline > * {
+  display: inline !important;
+}

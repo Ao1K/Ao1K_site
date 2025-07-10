@@ -6,22 +6,39 @@ import { useSearchParams } from 'next/navigation';
 import sanitizeHtml from 'sanitize-html';
 
 import validateTextInput from "../../composables/recon/validateTextInput";
-import validationToMoves from "../../composables/recon/validationToMoves";
+import validationToTokens from "../../composables/recon/validationToMoves";
 import updateURL from '../../composables/recon/updateURL';
 
 import { customDecodeURL } from '../../composables/recon/urlEncoding';
 
-export const colorDict = [ // can't be in /utils folder due to automatic tailwind style purging. probably.
-  { key: 'move', value: 'text-primary-100'},
-  { key: 'comment', value: 'text-gray-500'},
-  { key: 'space', value: 'text-primary-100'},
-  { key: 'invalid', value: 'text-red-500'},
-  { key: 'paren', value: 'text-paren'},
-  { key: 'rep', value: 'text-paren'},
-  { key: 'image', value: 'text-primary-100'}, // wip
-];
+import type { Token } from "../../composables/recon/validationToMoves";
 
-const EditorLoader = ({ editorRef: contentEditableRef, onInputChange, name, autofocus }: { editorRef: React.RefObject<any>, onInputChange: () => void, name: string, autofocus: boolean})  => {
+const highlightClass = 'text-dark bg-primary-100 backdrop-blur-xs caret-dark';
+
+export const colorDict = {
+  move: 'text-primary-100',
+  comment: 'text-gray-500',
+  space: 'text-primary-100',
+  invalid: 'text-red-500',
+  paren: 'text-paren',
+  rep: 'text-paren',
+  hashtag: 'text-orange-300',
+  highlight: highlightClass,
+};
+  
+
+
+const EditorLoader = ({ 
+  editorRef: contentEditableRef, 
+  onInputChange, 
+  name, 
+  autofocus 
+}: { 
+  editorRef: React.RefObject<any>, 
+  onInputChange: () => void, 
+  name: string, 
+  autofocus: boolean
+})  => {
   // useSearchParams is a hook. Storing searchParams here prevents it from being called again and causing reloads.
   const searchParams = useSearchParams();
   
@@ -35,6 +52,7 @@ const EditorLoader = ({ editorRef: contentEditableRef, onInputChange, name, auto
       contentEditableRef.current.innerText = decodedText;
     }
 
+    
     if (autofocus && urlText && !otherURLtext) { // TODO: `&& !otherURLtext` isn't desired, but an unknown bug causes animation desync otherwise.
       //adds caretNode span, which then is processed by onInputChange
       const selection = window.getSelection();
@@ -52,7 +70,6 @@ const EditorLoader = ({ editorRef: contentEditableRef, onInputChange, name, auto
       const otherTextbox = parentOtherElement?.querySelector<HTMLDivElement>('div[contenteditable="true"]');
       otherTextbox?.focus();
     }
-  
     if (urlText) {
       onInputChange();
     }
@@ -67,21 +84,31 @@ const EditorLoader = ({ editorRef: contentEditableRef, onInputChange, name, auto
 
 interface EditorProps {
   name: string;
-  trackMoves: (idIndex: number, lineIndex: number, caretIndex: number, moves: string[][], moveAnimationTimes: number[][]) => void;
+  trackMoves: (idIndex: number, lineIndex: number, caretIndex: number, moves: string[][]) => void;
   autofocus: boolean;
   moveHistory: React.MutableRefObject<any>;
   updateHistoryBtns: () => void;
   html: string;
   setHTML: (html: string) => void;
+  scrambleMoves?: string; // for hashtags
 }
 
-export interface EditorRef {
+export interface ImperativeRef {
   undo: () => void;
   redo: () => void;
   transform: (html: string) => void;
+  highlightMove: (moveIndex: number, lineIndex: number) => void;
 }
 
-const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMoves, autofocus, moveHistory, updateHistoryBtns, html, setHTML }, ref) => {
+interface Hashtag {
+  id: string, // stored as id in the div
+  location: [number, number],  // [line number from 0, number of moves before]. Scramble field cannot contain hashtags.
+  hashtag: '#oll' | '#pll' // example possible valid hashtags. Probably abandon this style in favor of a search system.
+}
+
+const MovesTextEditor = memo(forwardRef<ImperativeRef, EditorProps>((
+  { name, trackMoves, autofocus, moveHistory, updateHistoryBtns, html, setHTML }, ref
+) => {
   const contentEditableRef = useRef<HTMLDivElement>(null);
   const moveOffsetRef = useRef<number>(0); // number of moves before and at the caret. 0 is at the start of the line before any moves.
   const lineOffsetRef = useRef<number>(0);
@@ -91,7 +118,9 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
 
   const oldHTMLlines = useRef<string[]>(['']);
   const oldLineMoveCounts = useRef<number[]>([0]);
-  const oldMoveAnimationTimes = useRef<number[][]>([[]]); // stores move animation times for each move in each line. Only for solution textbox.
+  const oldScrambleMoves = useRef<string>(''); // for causing handleInput to run
+
+  const hashtags = useRef<Hashtag[]>([]); // unordered list of hashtags.
 
   const idIndex = name === 'scramble' ? 0 : 1;
 
@@ -99,7 +128,16 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
     allowedTags: ["b", "i","br","div"],
     allowedAttributes: { span: ["className","class"]}
   };
+
+  const localColorDict = useRef(JSON.parse(JSON.stringify(colorDict)));
   
+  useEffect(() => {
+    if (name === 'scramble') {
+      // hashtags in scramble currently not allowed
+      localColorDict.current.hashtag = 'text-red-500';
+    }
+  }, []);
+
   const handleInput = () => {
 
     onInputChange();
@@ -109,6 +147,9 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
   };
   
   function htmlToLineArray(html: string) {
+    // strip properties from div tags
+    html = html.replace(/<div[^>]*>/g, '<div>');
+
     // remove obvious nested divs
     html = html.replace(/<div><div>/g, '');
     html = html.replace(/<\/div><\/div>/g, '');
@@ -121,7 +162,11 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
     // (chrome)
     html = html.replace(/\n/g, '<br></div><div>');
     // (firefox)
-    html = html.replace(/>(<br>)<[^/]/g, '>$1</div><div><');    
+    html = html.replace(/>(<br>)<[^/]/g, '>$1</div><div><');
+
+    // remove any old highlight spans and replace with primary text
+    // html = html.replace(new RegExp(`<span class="${highlightClass}">`, 'g'), '<span class="text-primary-100">');
+
     let lines = splitHTMLintoLines(html);
     lines = cleanLines(lines);    
     
@@ -142,17 +187,18 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
     return htmlUpdateMatrix;
   }
 
-  const findEndOfMoveOnCaret = (validation: [string, string, number?][], caretOffset: number) => {
+  const findEndOfWordOnCaret = (validation: [string, string, number?][], caretOffset: number): number => {
     // counts characters
-    // increment caretOffset until it reaches the end of a move or move rep
-
+    // increment caretOffset until it finds the end of the word
+    const validWordTypes = ['move', 'rep', 'hashtag'];
     let i = caretOffset;
     try {
       for (i; i < validation.length; i++) {
         const type = validation[i][1];
-        if (type === 'move' || type === 'rep') {
+        if (validWordTypes.includes(type)) {
           continue;
         } else {
+          // console.log('breaking at:', i, 'type:', type, 'validation:', validation[i][0]);
           break;
         }
       }
@@ -163,7 +209,13 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
     
   };
 
-  function handleHTMLlines(htmlUpdateMatrix: string[], lineMoveCounts: number[], moveAnimationTimes: number[][]): [string[], number[], number[][]] {
+  const getMovesFromTokens = (tokens: Token[]): string[] => {
+    return tokens
+      .filter((token) => token.type === 'move')
+      .map((token) => token.value);
+  }
+
+  const handleHTMLlines = (htmlUpdateMatrix: string[], lineMoveCounts: number[]): [string[], number[]] => {
 
     if (textboxMovesRef.current.length > htmlUpdateMatrix.length) {
       textboxMovesRef.current = textboxMovesRef.current.slice(0, htmlUpdateMatrix.length);
@@ -180,23 +232,24 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
         lineMoveCounts.push(0);
       }
 
-      if (moveAnimationTimes[i] === undefined) {
-        moveAnimationTimes.push([0]);
-      }
-
       if (line) {
+
+        // get html
         const text = line.replace(/<[^>]+>/g, '');
         const validation = validateTextInput(text);
         
         const [newHTMLline, caretIndex] = updateLine(validation, line);
         
+        // get move and line offsets
         let moves: string[];
-        
         if (caretIndex !== null) {
-          let caretSplitIndex = findEndOfMoveOnCaret(validation, caretIndex);
+          let caretSplitIndex = findEndOfWordOnCaret(validation, caretIndex);
   
-          const movesBeforeCaret = validationToMoves(validation.slice(0, caretSplitIndex + 1));
-          const movesAfterCaret = validationToMoves(validation.slice(caretSplitIndex + 1));
+          const tokensBeforeCaret = validationToTokens(validation.slice(0, caretSplitIndex)); // before and including move at caret
+          const tokensAfterCaret = validationToTokens(validation.slice(caretSplitIndex + 1)); // after caret
+          const movesBeforeCaret: string[] = getMovesFromTokens(tokensBeforeCaret);
+          const movesAfterCaret: string[] = getMovesFromTokens(tokensAfterCaret);
+
           moves = movesBeforeCaret.concat(movesAfterCaret);
 
           lineOffsetRef.current = i; // could be wrong in certain situations? (copy-paste)
@@ -204,46 +257,22 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
           moveOffsetRef.current = movesBeforeCaret.length; // not minus 1. 0 represents before any moves.
 
         } else {
-          moves = validationToMoves(validation);
+          // in the future, may need to expand to handle other types of tokens, such as hashtags
+          moves = getMovesFromTokens(validationToTokens(validation));
         }
 
         lineMoveCounts[i] = moves.length;
         textboxMovesRef.current[i] = moves;
-
-        moveAnimationTimes[i] = findAnimationLengths(moves);
-
-        // if first time is 0, remove it
-        moveAnimationTimes[i] = 
-          moveAnimationTimes[i][0] === 0 ? moveAnimationTimes[i].slice(1) : moveAnimationTimes[i];
     
         return newHTMLline;
       } else {
-
-        return oldHTMLlines.current[i];}
+        return oldHTMLlines.current[i];
+      }
 
     });
     
-    return [paintedHTML, lineMoveCounts, moveAnimationTimes];
-  }
-
-  const findAnimationLengths = (moves: string[]) => {
-    const moveAnimationTimes = [0];
-    const singleTime = 1000;
-    const doubleTime = 1500;
-    const tripleTime = 2000;
-
-    moves.forEach((move) => {
-      if (move.includes('2')) {
-        moveAnimationTimes.push(doubleTime);
-      } else if (move.includes('3')) {
-        moveAnimationTimes.push(tripleTime);
-      } else {
-        moveAnimationTimes.push(singleTime);
-      }
-    });
-
-    return moveAnimationTimes;
-  }
+    return [paintedHTML, lineMoveCounts];
+  };
 
   const isQuantifiableMoveChange = (oldMoveCounts: number[], newMoveCounts: number[]) => {
     //Remove trailing zeros. Clean empty count arrays.
@@ -326,13 +355,14 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
   
     let caretIndex: number | null = null;
 
-    line = line.replace(/>[^<>]+<|caretNode">/g, (match) => { //matches the ">" of caretNode to ensure no user text match. 
+    // find strings between ">" and "<" and modify each
+    line = line.replace(/>[^<>]+<|caretNode">/g, (match) => { // matches the ">" of caretNode to ensure no user text match. 
       if (match === 'caretNode">') {
         caretIndex = valIndex;
         return 'caretNode">';
       }
 
-      match = match.substring(1, match.length - 1);
+      match = match.substring(1, match.length - 1); // remove ">" and "<"
   
       let remainingMatchLength = match.length;
       let paintedMatch = '';
@@ -345,12 +375,11 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
         }
         const valLength = validation[valIndex][0].substring(valOffset).length;
         const type = validation[valIndex][1];
-        let colorEntry = colorDict.find((color) => color.key === type);
-        if (!colorEntry) {
+        let color = localColorDict.current[type as keyof typeof localColorDict.current];
+        if (!color) {
           console.error(`Color not found for type: ${type}`);
-          colorEntry = { key: 'not found', value: 'text-primary-100' };
+          color = 'text-primary-100';
         }
-        const color = colorEntry.value;
     
         const allowableMatchOffset = valLength - valOffset;
         let matchEnd = matchOffset + remainingMatchLength;
@@ -375,10 +404,18 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
         }
     
         const matchString = match.substring(oldOffset, matchEnd).replace(/\s/g, ' ');
-    
-        if (type === prevNonspaceType || (type === 'space' && paintedMatch)) {
+        
+        const typeContinuationWhitelist = ['move', 'comment', 'space', 'invalid', 'paren', 'rep', 'hashtag'];
+        const isAllowableContinuation = 
+          (type === 'space' 
+          && typeContinuationWhitelist.includes(prevNonspaceType) 
+          && matchString);
+
+        if (type === prevNonspaceType || isAllowableContinuation) {
+          // append match to existing span
           paintedMatch = paintedMatch.replace(/<\/span>$/, matchString + '</span>');
         } else {
+          // create new span
           paintedMatch += `<span class="${color}">${matchString}</span>`;
         }
     
@@ -471,14 +508,13 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
   }
 
 
-  const onInputChange = () => {    
+  const onInputChange = () => {
     // core functionality of the input change sequence:
     // 1. Store existing caret node. Textbox caret is later restored via useEffect.
     // 2. The lines of in the textbox are found. Changes are pushed into updateMatrix.
     // 3. Based on updateMatrix, lines in textbox are painted by functional class (valid, invalid, paren, etc).
-    // 4. Concurrently,
+    // 4. Concurrently, get data for updating refs
           // moveCount is stored for the purposes of undo/redo. 
-          // moveAnimationTimes stored for the purpose of skipping to specific moves in the model playback.
           // MoveHistory updated.
     // 5. Refs updated.
     // 6. Contenteditable div's and move history buttons' state updated.
@@ -495,11 +531,8 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
     let lineMoveCounts = [...oldLineMoveCounts.current];
     lineMoveCounts = lineMoveCounts.slice(0, htmlLines.length);
 
-    let moveAnimationTimes = [...oldMoveAnimationTimes.current];
-    moveAnimationTimes = moveAnimationTimes.slice(0, htmlLines.length);
-
     // 3, 4
-    [htmlLines, lineMoveCounts, moveAnimationTimes] = handleHTMLlines(htmlUpdateMatrix, lineMoveCounts, moveAnimationTimes);
+    [htmlLines, lineMoveCounts] = handleHTMLlines(htmlUpdateMatrix, lineMoveCounts);
     const newHTMLlines = htmlLines.join('');
     
     // 4
@@ -509,15 +542,13 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
     // 5
     oldHTMLlines.current = htmlLines;
     oldLineMoveCounts.current = lineMoveCounts;
-    oldMoveAnimationTimes.current = moveAnimationTimes;
-    
+
     // 6
     updateHistoryBtns();
     setHTML(newHTMLlines);
 
     // 7
-    trackMoves(idIndex, lineOffsetRef.current, moveOffsetRef.current, textboxMovesRef.current, oldMoveAnimationTimes.current);
-    // setCaretToCaretNode();
+    trackMoves(idIndex, lineOffsetRef.current, moveOffsetRef.current, textboxMovesRef.current);
   };
 
   const cleanLines = (lines: string[]) => {
@@ -613,7 +644,7 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
   const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
     e.stopPropagation();
     e.preventDefault();
-  
+    
     let text = e.clipboardData.getData("text");
     let sanitizedText = sanitizeHtml(text, sanitizeConf).replace(/’/g, "'");
   
@@ -672,6 +703,11 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
     return !range.collapsed && (range.startContainer !== range.endContainer || range.startOffset !== range.endOffset);
   };  
 
+  /**
+   * Handles when user changes caret position.
+   * Gets moveOffset and lineOffset, validates text, and updates move history.
+   * @returns 
+   */
   const handleCaretChange = () => {
 
     if (document.activeElement !== contentEditableRef.current) return;
@@ -711,25 +747,28 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
   
         // accumulate characters before caret
         if (!caretReached) {
-          text = text.replaceAll(/&[a-zA-Z0-9]+;/g, ' ');
+          // text = text.replaceAll(/&[a-zA-Z0-9]+;/g, ' '); // unclear why this was added
           caretOffset += text.length;
         }
       }
       let validation = validateTextInput(fullRawText);
 
-
-
-      let i = findEndOfMoveOnCaret(validation, caretOffset);
+      let i = findEndOfWordOnCaret(validation, caretOffset);
 
       // calculate number of moves before caret
-      let v = validationToMoves(validation.slice(0, i));
-      moveOffsetRef.current = v.length;
+      let tokens = validationToTokens(validation.slice(0, i));
+      let moveTokens = tokens.filter((token) => token.type === 'move').map((token) => token.value);
+      moveOffsetRef.current = moveTokens.length;
     }
 
 
     if (lineOffsetRef.current !== -1) {
-      caretLine ? setHTML(contentEditableRef.current!.innerHTML): null; // ensures html will not be set during mounting
-      trackMoves(idIndex, lineOffsetRef.current, moveOffsetRef.current, textboxMovesRef.current, oldMoveAnimationTimes.current);
+      
+      // clean html for case where user changed caret during move replay
+      let noHighlightHTML = contentEditableRef.current!.innerHTML.replace(new RegExp(`<span class="${highlightClass}">`, 'g'), '<span class="text-primary-100">');
+      
+      caretLine ? setHTML(noHighlightHTML) : null; // ensures html will not be set during mounting
+      trackMoves(idIndex, lineOffsetRef.current, moveOffsetRef.current, textboxMovesRef.current);
     }
   };
 
@@ -871,7 +910,52 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
     handleInput();
   }
 
-  
+  /**
+   * Highlights the requested move in the solution text editor.
+   */
+  const handleHighlightMove = (moveIndex: number, lineIndex: number) => {
+
+    if (!contentEditableRef.current) return;
+    if (name === 'scramble') return; 
+    if (moveIndex < 0 || lineIndex < 0) return; // invalid move index or line index
+    if (!contentEditableRef.current.innerHTML.includes('<span')) return; // should only highlight if moves have been painted
+
+    let lines = htmlToLineArray(contentEditableRef.current.innerHTML);
+
+    if (lineIndex >= lines.length) return; // invalid line index
+    const line = lines[lineIndex];
+    
+    // iterate through valid spans, counting moves, and highlighting the move at moveIndex
+    const text = line.replace(/<[^>]+>/g, '');    
+    const validation = validateTextInput(text);
+
+    // Create highlighted version of the line
+    
+    const highlightedValidation: [string, string, number?][] = [];
+    let moveCounter = 0;
+    let lastType = ''
+    for (let i = 0; i < validation.length; i++) {
+      const type = validation[i][1];
+      if (type === 'move' && lastType !== 'move') {
+        moveCounter++;
+      }
+      lastType = type;
+      if (type === 'move' && moveCounter === moveIndex) {
+        highlightedValidation.push([validation[i][0], 'highlight', validation[i][2]]);
+      } else {
+        highlightedValidation.push(validation[i]);
+      }
+    }
+
+    // apply highlighted class. Do some cleanup.
+    let [ updatedLine, _ ] = updateLine(highlightedValidation, line);
+    
+    lines[lineIndex] = updatedLine;
+
+    // Update the contentEditable with highlighted content
+    const newHTML = lines.join('');
+    contentEditableRef.current.innerHTML = newHTML;
+  }
   
   useImperativeHandle(ref, () => {
     return {
@@ -885,6 +969,10 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
 
       transform: (transformedHTML: string) => {
         handleTransform(transformedHTML);
+      },
+
+      highlightMove: (moveIndex: number, lineIndex: number) => {
+        handleHighlightMove(moveIndex, lineIndex);
       },
     };
   },[]);
@@ -916,6 +1004,9 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
     };
   }, []);
 
+
+  
+
   return (
     <>
       <Suspense fallback={null}>
@@ -924,7 +1015,12 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
       <div
         contentEditable
         ref={contentEditableRef}
-        className="text-left rounded-sm whitespace-pre-wrap break-normal resize-none text-lg p-2 max-w-full caret-primary-200 bg-primary-800 ff-space-adjust min-h-[4.7rem]"
+        className={`
+          text-lg text-left p-2 ff-space-adjust break-normal
+          max-w-full min-h-[4.7rem]
+          rounded-sm whitespace-pre-wrap 
+          border border-neutral-600 focus:border-primary-100 hover:border-primary-100
+          outline-none resize-none caret-primary-200 bg-primary-800 `}
         onInput={() => handleInput()}
         onCopy={handleCopy}
         onPaste={handlePaste}
@@ -936,6 +1032,7 @@ const MovesTextEditor = memo(forwardRef<EditorRef, EditorProps>(({ name, trackMo
         role="textbox"
         autoCorrect="off"
         autoCapitalize="characters" // annoying for comments and rotations. Could implement custom fix.
+        tabIndex={idIndex === 0 ? 1 : 3}
       /> 
     </>
   );
