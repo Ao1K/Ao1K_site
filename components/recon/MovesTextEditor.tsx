@@ -165,7 +165,7 @@ const MovesTextEditor = memo(forwardRef<ImperativeRef, EditorProps>((
     html = html.replace(/>(<br>)<[^/]/g, '>$1</div><div><');
 
     // remove any old highlight spans and replace with primary text
-    // html = html.replace(new RegExp(`<span class="${highlightClass}">`, 'g'), '<span class="text-primary-100">');
+    html = html.replace(new RegExp(`<span class="${highlightClass}">`, 'g'), '<span class="text-primary-100">');
 
     let lines = splitHTMLintoLines(html);
     lines = cleanLines(lines);    
