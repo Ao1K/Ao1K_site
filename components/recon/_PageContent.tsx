@@ -393,25 +393,29 @@ export default function Recon() {
     }
 
     return count;
-  }  
+  } 
+
+  const stopLoopStepRight = () => {
+    let [lineIndex, moveIndex] = getMoveToRight();
+    let playPauseStatus = 'disabled';
+    
+    if (lineIndex !== -1 && moveIndex !== -1) {
+      playPauseStatus = 'pause'; // can step right
+    } else {
+      playPauseStatus = 'replay'; // no more moves to step right
+    }
+    if (allMovesRef.current[1].length === 0) { // override if no solution moves
+      playPauseStatus = 'disabled'
+    }
+
+    setControllerButtonsStatus((controllerButtonsStatus) => (
+      { ...controllerButtonsStatus, playPause: playPauseStatus }
+    ));
+  }
 
   const loopStepRight = (location: [number, number, number] | null) => {
     if (!isPlayingRef.current) {
-      let [lineIndex, moveIndex] = getMoveToRight();
-      let playPauseStatus = 'disabled';
-      
-      if (lineIndex !== -1 && moveIndex !== -1) {
-        playPauseStatus = 'pause'; // can step right
-      } else {
-        playPauseStatus = 'replay'; // no more moves to step right
-      }
-      if (allMovesRef.current[1].length === 0) { // override if no solution moves
-        playPauseStatus = 'disabled'
-      }
-
-      setControllerButtonsStatus((controllerButtonsStatus) => (
-        { ...controllerButtonsStatus, playPause: playPauseStatus }
-      ));
+      stopLoopStepRight();
       return; // player is not playing, do not step right
     }
 
@@ -422,11 +426,15 @@ export default function Recon() {
 
     [lineIndex, moveIndex] = getMoveToRight();
     if (lineIndex === -1 || moveIndex === -1) {
-      // const playPauseStatus = allMoves[1].length === 0 ? 'disabled' : 'play';
-      // setControllerButtonsStatus((controllerButtonsStatus) => (
-      //   { ...controllerButtonsStatus, stepRight: 'disabled', fullRight: 'disabled', playPause: playPauseStatus }
-      // ));
-      return; // no more moves to step right
+      // no more moves to step right
+
+      // assure that controller buttons states are up to date
+      const playPauseStatus = allMovesRef.current[1].length === 0 ? 'disabled' : 'replay';
+      setControllerButtonsStatus((controllerButtonsStatus) => (
+        { ...controllerButtonsStatus, stepRight: 'disabled', fullRight: 'disabled', playPause: playPauseStatus }
+      ));
+      
+      return; 
     }
     memoizedTrackMoves(1, lineIndex, moveIndex, allMovesRef.current[1], 'play');
     // wait for the next move animation time
@@ -450,12 +458,12 @@ export default function Recon() {
 
     switch (request.type) {
       case 'fullLeft':
-        memoizedTrackMoves(1, 0, 0, allMovesRef.current[1]);
+        memoizedTrackMoves(1, 0, 0, allMovesRef.current[1], 'fullLeft');
         break;
       case 'stepLeft':
         [lineIndex, moveIndex] = getMoveToLeft();
         if (lineIndex !== -1 || moveIndex !== -1) {
-          memoizedTrackMoves(1, lineIndex, moveIndex, allMovesRef.current[1]);
+          memoizedTrackMoves(1, lineIndex, moveIndex, allMovesRef.current[1], 'stepLeft');
         }
         break;
       case 'pause':
@@ -482,12 +490,12 @@ export default function Recon() {
       case 'stepRight':
         [lineIndex, moveIndex] = getMoveToRight();
         if (lineIndex !== -1 || moveIndex !== -1) {
-          memoizedTrackMoves(1, lineIndex, moveIndex, allMovesRef.current[1]);
+          memoizedTrackMoves(1, lineIndex, moveIndex, allMovesRef.current[1], 'stepRight');
         }
         break;
       case 'fullRight':
         [lineIndex, moveIndex] = getLastMoveInSolution();
-        memoizedTrackMoves(1, lineIndex, moveIndex, allMovesRef.current[1]);
+        memoizedTrackMoves(1, lineIndex, moveIndex, allMovesRef.current[1], 'fullRight');
         break;
       default:
         console.warn('Unknown controller request type:', request.type);
@@ -508,7 +516,9 @@ export default function Recon() {
 
     let isMoveToRight = false;
     const solutionMoves = idIndex === 1 ? moves : allMovesRef.current[1];
-    const isSolutionMoves = solutionMoves && solutionMoves.length > 0 && solutionMoves.some(line => line && line.length > 0);
+    const isSolutionMoves = solutionMoves 
+      && solutionMoves.length > 0 
+      && solutionMoves.some(line => line && line.length > 0);
 
     if (isSolutionMoves) {
 
@@ -527,6 +537,7 @@ export default function Recon() {
         isMoveToRight = true;
       }
     }
+
     // handle play pause button status
     // Note: the status is what the player should currently be doing, 
     // not what the button should look like.
@@ -566,8 +577,9 @@ export default function Recon() {
           }
           break;
         default:
-          console.warn('Unknown playPause status:', playPauseStatus);
+          console.warn('Unknown playPauseStatus:', playPauseStatus);
           playPause = 'disabled';
+          break;
       }
     }
     return { fullLeft, stepLeft, stepRight, fullRight, playPause }
@@ -580,8 +592,12 @@ export default function Recon() {
       lineIndex: number, // the line number of the caret, zero-indexed
       moveIndex: number, // the number of moves before the caret on its line 
       moves: string[][], // the moves in the textbox of id
-      playPauseStatus?: string // the current play/pause status of the player
+      moveControllerStatus?: string // the current status of loopStepRight
     ) => {
+
+      if (moveControllerStatus !== 'play') {
+        isPlayingRef.current = false; // break out of loopStepRight when status changes
+      }
 
       if (moves[lineIndex]?.length === 0) {
         // pretend caret is at end of the last line that has a move
@@ -607,7 +623,7 @@ export default function Recon() {
       idIndex === 1 ? updateTotalMoves(moves) : null;
       let [sol, scram] = initMoves(moves, idIndex);
 
-      idIndex === 1 ? memoizedHighlightMove(moveIndex, lineIndex) : null;
+      if (idIndex === 1 && moveControllerStatus) memoizedHighlightMove(moveIndex, lineIndex);
 
       let limitedTimes = findAnimationTimes(idIndex, lineIndex, moveIndex, moves);
       moveLocation.current = [idIndex, lineIndex, moveIndex];
@@ -620,7 +636,11 @@ export default function Recon() {
       setIsTextboxFocused(true);
       setPlayerParams({animationTimes: limitedTimes, solution: sol, scramble: scram});
 
-      playPauseStatus = playPauseStatus || controllerButtonsStatus.playPause;
+      const validPlayPauseStatuses = ['play', 'pause', 'replay', 'disabled'];
+      const playPauseStatus = 
+        (moveControllerStatus && validPlayPauseStatuses.includes(moveControllerStatus)) 
+        ? moveControllerStatus : controllerButtonsStatus.playPause;
+
       const controllerButtonsEnabled = getControllerButtonsStatus(idIndex, lineIndex, moveIndex, newMoves[idIndex], playPauseStatus);
       setControllerButtonsStatus(controllerButtonsEnabled)
 

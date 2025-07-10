@@ -164,6 +164,9 @@ const MovesTextEditor = memo(forwardRef<ImperativeRef, EditorProps>((
     // (firefox)
     html = html.replace(/>(<br>)<[^/]/g, '>$1</div><div><');
 
+    // remove any old highlight spans and replace with primary text
+    // html = html.replace(new RegExp(`<span class="${highlightClass}">`, 'g'), '<span class="text-primary-100">');
+
     let lines = splitHTMLintoLines(html);
 
     lines = cleanLines(lines);    
@@ -233,7 +236,6 @@ const MovesTextEditor = memo(forwardRef<ImperativeRef, EditorProps>((
       if (line) {
 
         // get html
-        console.log('Processing line.');
         const text = line.replace(/<[^>]+>/g, '');
         const validation = validateTextInput(text);
         
@@ -348,7 +350,6 @@ const MovesTextEditor = memo(forwardRef<ImperativeRef, EditorProps>((
   }
   
   function processValidation(validation: [string, string, number?][], line: string): { updatedLine: string, caretIndex: number | null } {
-    console.trace();
     let valIndex = 0;
     let valOffset = 0;
     let matchOffset = 0;
@@ -356,7 +357,6 @@ const MovesTextEditor = memo(forwardRef<ImperativeRef, EditorProps>((
     let caretIndex: number | null = null;
 
     // find strings between ">" and "<" and modify each
-    console.log('Line:', line);
     line = line.replace(/>[^<>]+<|caretNode">/g, (match) => { // matches the ">" of caretNode to ensure no user text match. 
       if (match === 'caretNode">') {
         caretIndex = valIndex;
@@ -700,6 +700,11 @@ const MovesTextEditor = memo(forwardRef<ImperativeRef, EditorProps>((
     return !range.collapsed && (range.startContainer !== range.endContainer || range.startOffset !== range.endOffset);
   };  
 
+  /**
+   * Handles when user changes caret position.
+   * Gets moveOffset and lineOffset, validates text, and updates move history.
+   * @returns 
+   */
   const handleCaretChange = () => {
 
     if (document.activeElement !== contentEditableRef.current) return;
@@ -739,7 +744,7 @@ const MovesTextEditor = memo(forwardRef<ImperativeRef, EditorProps>((
   
         // accumulate characters before caret
         if (!caretReached) {
-          text = text.replaceAll(/&[a-zA-Z0-9]+;/g, ' ');
+          // text = text.replaceAll(/&[a-zA-Z0-9]+;/g, ' '); // unclear why this was added
           caretOffset += text.length;
         }
       }
@@ -748,13 +753,18 @@ const MovesTextEditor = memo(forwardRef<ImperativeRef, EditorProps>((
       let i = findEndOfWordOnCaret(validation, caretOffset);
 
       // calculate number of moves before caret
-      let v = validationToTokens(validation.slice(0, i));
-      moveOffsetRef.current = v.length;
+      let tokens = validationToTokens(validation.slice(0, i));
+      let moveTokens = tokens.filter((token) => token.type === 'move').map((token) => token.value);
+      moveOffsetRef.current = moveTokens.length;
     }
 
 
     if (lineOffsetRef.current !== -1) {
-      caretLine ? setHTML(contentEditableRef.current!.innerHTML): null; // ensures html will not be set during mounting
+      
+      // clean html for case where user changed caret during move replay
+      let noHighlightHTML = contentEditableRef.current!.innerHTML.replace(new RegExp(`<span class="${highlightClass}">`, 'g'), '<span class="text-primary-100">');
+      
+      caretLine ? setHTML(noHighlightHTML) : null; // ensures html will not be set during mounting
       trackMoves(idIndex, lineOffsetRef.current, moveOffsetRef.current, textboxMovesRef.current);
     }
   };
@@ -901,7 +911,6 @@ const MovesTextEditor = memo(forwardRef<ImperativeRef, EditorProps>((
    * Highlights the requested move in the solution text editor.
    */
   const handleHighlightMove = (moveIndex: number, lineIndex: number) => {
-    // if (true) return;
 
     if (!contentEditableRef.current) return;
     if (name === 'scramble') return; 
@@ -909,11 +918,6 @@ const MovesTextEditor = memo(forwardRef<ImperativeRef, EditorProps>((
     if (!contentEditableRef.current.innerHTML.includes('<span')) return; // should only highlight if moves have been painted
 
     let lines = htmlToLineArray(contentEditableRef.current.innerHTML);
-
-    // restore old highlighted moves to just moves
-    lines = lines.map((line) => {
-      return line.replace(new RegExp(`<span class="${highlightClass}">`, 'g'), '<span class="text-primary-100">');
-    });
 
     if (lineIndex >= lines.length) return; // invalid line index
     const line = lines[lineIndex];

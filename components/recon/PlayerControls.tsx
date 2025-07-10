@@ -41,8 +41,6 @@ const ControlsPlaceholder: React.FC<ControlsPlaceholderProps> = ({
   handleFlash,
 }) => {
 
-  // console.log('Rendering ControlsPlaceholder with status:', controllerButtonsStatus);
-
   if (!isVisible) return null;
 
   const handleButtonClick = (buttonId: string, action: () => void) => {
