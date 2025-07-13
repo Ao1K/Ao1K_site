@@ -165,10 +165,9 @@ const MovesTextEditor = memo(forwardRef<ImperativeRef, EditorProps>((
     html = html.replace(/>(<br>)<[^/]/g, '>$1</div><div><');
 
     // remove any old highlight spans and replace with primary text
-    // html = html.replace(new RegExp(`<span class="${highlightClass}">`, 'g'), '<span class="text-primary-100">');
+    html = html.replace(new RegExp(`<span class="${highlightClass}">`, 'g'), '<span class="text-primary-100">');
 
     let lines = splitHTMLintoLines(html);
-
     lines = cleanLines(lines);    
     
     return lines;
@@ -489,6 +488,10 @@ const MovesTextEditor = memo(forwardRef<ImperativeRef, EditorProps>((
   }
   
   const divIsEmpty = (divHtml: string): boolean => {
+    
+    // count caret node as content
+    if (/<span id="caretNode">/i.test(divHtml)) return false;
+
     const inner = divHtml.replace(/^<div>([\s\S]*)<\/div>$/i, '$1');
     const withoutSpans = inner.replace(/<\/?span[^>]*>/gi, '');
     return withoutSpans === '';
