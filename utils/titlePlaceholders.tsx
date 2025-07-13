@@ -1,19 +1,22 @@
 export const titlePlaceholders = [
   // shorter is better
   // this list should not contain tips about using the site
+  // avoid periods when clear without them
 
 
   // wit
-  '"You are free and that is why you are lost." - Kafka',
+  '"You are free and that is why you are lost" - Kafka',
   "Commit yourself completely",
   "The better the algorithm for truth, the more dangerous",
   "Words are box-assigners. Not everything belongs in a box.",
   "1. Be respectful. 2. Disagree.",
   "Be the change you want to see in the world",
   "You're doing okay",
-  `Skill is when luck becomes habit`, // unknown/multiple
-  `"You've got to get better, you're all that I got" - AJR`,
+  `Skill is when luck becomes habit`,
   "Good ideas can come from anyone",
+  "You don't have to be good",
+  "Always be learning",
+  "Liberty is the ability to enact your will",
   
   // tips
   "Cheap, generic silicone oil can work just as good as cube lube",
@@ -42,8 +45,13 @@ export const titlePlaceholders = [
   "RUS U perms are probably too risky to use",
   "Use rotations to deal with bad edge orientation",
   "If you want a tutor, you need a friend or money",
+  "Study example solves",
+  "'Rough' is not a turning style",
+  "Use the tips of your fingers to turn the cube",
+  "Destroy bad F2L cases by solving other ones",
   
   // fun
+  "📈",
   "42",
   "No.",
   "UwU",
@@ -61,6 +69,7 @@ export const titlePlaceholders = [
   'Get your ass to Mars',
   "Roux = Flour + Butter",
   "Hey you forgot a title",
+  "Gan 356 Not Recommended",
   "Okayest solve ever okayed",
   "Solve'); DROP TABLE Titles;",
   "I don't know how I got here",
@@ -81,6 +90,7 @@ export const titlePlaceholders = [
   "Also try cubedb.net",
   "Also check out reco.nz",
   "Never code at 2 am",
+  "Now 10% messier code!"
 
   
 ]

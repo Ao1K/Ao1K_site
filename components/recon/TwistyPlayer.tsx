@@ -5,7 +5,7 @@ import type { Object3D } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { MutableRefObject } from 'react';
 import type { Object3DEventMap } from 'three/src/core/Object3D.js';
-import ContextMenu from './ContextMenu';
+import ContextMenuImperative, { ContextMenuHandle } from './ContextMenuImperative';
 import PlayerControls from './PlayerControls';
 import type { ControllerRequestOptions } from './_PageContent';
 
@@ -58,7 +58,7 @@ const Player = React.memo(({
   onCubeStateUpdate,
   handleControllerRequest,
   controllerButtonsStatus,
-  setControllerButtonsStatus
+  setControllerButtonsStatus,
 }: PlayerProps) => {
   const playerRef = useRef<TwistyPlayer | null>(null);
   
@@ -70,16 +70,12 @@ const Player = React.memo(({
 
   const lastRenderRef = useRef<RenderRefProps>({ scramble, solution, animationTimes });
 
-  
-  // Context menu state
-  const [contextMenu, setContextMenu] = useState<{
-    isVisible: boolean;
-    position: { x: number; y: number };
-  }>({
-    isVisible: true,
-    position: { x: 0, y: 0 }
-  });
-  
+  console.log('Player rendered with scramble:', scramble, 'solution:', solution, 'animationTimes:', animationTimes?.length, 'current time:', Date.now());
+  // log everything else
+  console.log('Player rendered with scramble:', scramble, 'solution:', solution, 'animationTimes:', animationTimes?.length, 'current time:', Date.now(), 'playerRef:', playerRef.current);
+  // ref to control the context‐menu without touching Player state
+  const contextMenuRef = useRef<ContextMenuHandle>(null);
+
   const [showControls, setShowControls] = useState<boolean>(true);
   const [flashingButtons, setFlashingButtons] = useState<Set<string>>(new Set());
 
@@ -95,6 +91,7 @@ const Player = React.memo(({
   const isInstant = cubeSpeed === 1000;
 
   const handleFlash = (buttonId: string) => {
+    console.log('Flashing button:', buttonId);
     setFlashingButtons(prev => {
       const newSet = new Set(prev);
       newSet.add(buttonId);
@@ -843,14 +840,10 @@ const Player = React.memo(({
 
   }, []);
 
+  // open the menu imperatively
   const handleContextMenu = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
-    
-    // Always show context menu at new position, even if one is already visible
-    setContextMenu({
-      isVisible: true,
-      position: { x: e.clientX, y: e.clientY }
-    });
+    contextMenuRef.current?.show(e.clientX, e.clientY);
   };
 
   const handleToggleControls = () => {
@@ -905,7 +898,7 @@ const Player = React.memo(({
       <div
         ref={divRef}
         className="w-full h-full border border-neutral-600 hover:border-primary-100 rounded-sm relative"
-        onClick={() => setContextMenu(prev => ({ ...prev, isVisible: false }))}
+        onClick={() => contextMenuRef.current?.close()}
         onContextMenu={handleContextMenu}
         onKeyDown={handleKeyDown}
         tabIndex={2}
@@ -925,16 +918,14 @@ const Player = React.memo(({
         />
       </div>
       
-      <ContextMenu
-        isVisible={contextMenu.isVisible}
-        position={contextMenu.position}
-        onClose={() => setContextMenu({ ...contextMenu, isVisible: false })}
-        onToggleControls={handleToggleControls}
-        showControls={showControls}
-      />
+     {/* now controlled entirely inside its own component */}
+     <ContextMenuImperative
+       ref={contextMenuRef}
+       onToggleControls={handleToggleControls}
+       showControls={showControls}
+     />
     </>
   );
 });
-
 Player.displayName = 'Player';
 export default Player;

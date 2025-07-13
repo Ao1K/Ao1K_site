@@ -30,7 +30,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
       
       {/* Context menu */}
       <div
-        className="fixed z-50 bg-white border border-gray-300 rounded-md shadow-lg py-1 min-w-32"
+        className="fixed z-50 bg-white border border-gray-300 rounded-sm shadow-lg py-1 min-w-32"
         style={{
           left: position.x,
           top: position.y,

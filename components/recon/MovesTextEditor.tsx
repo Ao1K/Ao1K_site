@@ -91,6 +91,7 @@ interface EditorProps {
   html: string;
   setHTML: (html: string) => void;
   scrambleMoves?: string; // for hashtags
+  ref?: React.Ref<ImperativeRef>;
 }
 
 export interface ImperativeRef {
@@ -106,9 +107,16 @@ interface Hashtag {
   hashtag: '#oll' | '#pll' // example possible valid hashtags. Probably abandon this style in favor of a search system.
 }
 
-const MovesTextEditor = memo(forwardRef<ImperativeRef, EditorProps>((
-  { name, trackMoves, autofocus, moveHistory, updateHistoryBtns, html, setHTML }, ref
-) => {
+function MovesTextEditor({
+  name,
+  trackMoves,
+  autofocus,
+  moveHistory,
+  updateHistoryBtns,
+  html,
+  setHTML,
+  ref
+}: EditorProps) {
   const contentEditableRef = useRef<HTMLDivElement>(null);
   const moveOffsetRef = useRef<number>(0); // number of moves before and at the caret. 0 is at the start of the line before any moves.
   const lineOffsetRef = useRef<number>(0);
@@ -118,12 +126,11 @@ const MovesTextEditor = memo(forwardRef<ImperativeRef, EditorProps>((
 
   const oldHTMLlines = useRef<string[]>(['']);
   const oldLineMoveCounts = useRef<number[]>([0]);
-  const oldScrambleMoves = useRef<string>(''); // for causing handleInput to run
-
-  const hashtags = useRef<Hashtag[]>([]); // unordered list of hashtags.
 
   const idIndex = name === 'scramble' ? 0 : 1;
 
+  console.log('Rendering MovesTextEditor:', name);
+  
   const sanitizeConf = {
     allowedTags: ["b", "i","br","div"],
     allowedAttributes: { span: ["className","class"]}
@@ -957,25 +964,23 @@ const MovesTextEditor = memo(forwardRef<ImperativeRef, EditorProps>((
     contentEditableRef.current.innerHTML = newHTML;
   }
   
-  useImperativeHandle(ref, () => {
-    return {
-      undo: () => {
-        handleUndo();
-      },
+  useImperativeHandle(ref, () => ({
+    undo: () => {
+      handleUndo();
+    },
 
-      redo: () => {
-        handleRedo();
-      },
+    redo: () => {
+      handleRedo();
+    },
 
-      transform: (transformedHTML: string) => {
-        handleTransform(transformedHTML);
-      },
+    transform: (transformedHTML: string) => {
+      handleTransform(transformedHTML);
+    },
 
-      highlightMove: (moveIndex: number, lineIndex: number) => {
-        handleHighlightMove(moveIndex, lineIndex);
-      },
-    };
-  },[]);
+    highlightMove: (moveIndex: number, lineIndex: number) => {
+      handleHighlightMove(moveIndex, lineIndex);
+    },
+  }), []);
 
   const handleFocus = (e: React.FocusEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -1036,7 +1041,7 @@ const MovesTextEditor = memo(forwardRef<ImperativeRef, EditorProps>((
       /> 
     </>
   );
-}));
+}
 
 MovesTextEditor.displayName = 'MovesTextEditor';
-export default MovesTextEditor;
+export default memo(MovesTextEditor);

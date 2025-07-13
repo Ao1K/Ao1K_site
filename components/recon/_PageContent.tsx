@@ -51,6 +51,9 @@ interface OldSelectionRef {
   textbox: string | null;
 }
 
+type PlayerParams = { animationTimes: number[]; solution: string; scramble: string };
+
+
 export interface ControllerRequestOptions {
   type: 'fullLeft' | 'stepLeft' | 'pause' | 'play' | 'replay' | 'stepRight' | 'fullRight';
 }
@@ -58,6 +61,7 @@ export interface ControllerRequestOptions {
 const TwistyPlayer = lazy(() => import("../../components/recon/TwistyPlayer"));
 
 export default function Recon() {
+  console.log('Rendering Recon page');
   const allMovesRef = useRef<string[][][]>([[[]], [[]]]);
   const moveLocation = useRef<[number, number, number]>([0, 0, 0]);
 
@@ -95,7 +99,7 @@ export default function Recon() {
   const MAX_EDITOR_HISTORY = 100;
   const moveHistory = useRef<MoveHistory>({ history: [['','']], index: 0, MAX_HISTORY: MAX_EDITOR_HISTORY, status: 'loading' });
 
-  const [playerParams, setPlayerParams] = useState<{ animationTimes: number[], solution: string, scramble: string }>({ animationTimes: [], solution: '', scramble: '' });
+  const [playerParams, setPlayerParams] = useState<PlayerParams>({ animationTimes: [], solution: '', scramble: '' });
   const [controllerButtonsStatus, setControllerButtonsStatus] = useState<{ fullLeft: string, stepLeft: string, stepRight: string, fullRight: string, playPause: string }>({
     fullLeft: 'disabled',
     stepLeft: 'disabled',
@@ -103,6 +107,31 @@ export default function Recon() {
     fullRight: 'disabled',
     playPause: 'disabled'
   });
+
+  // track whether TwistyPlayer is animating
+  const animatingRef = useRef(false);
+  // store the latest params while animating
+  const pendingParamsRef = useRef<PlayerParams|null>(null);
+
+  // replace queue: if idle, dispatch immediately; otherwise overwrite pending
+  const queuePlayerParams = useCallback((p: PlayerParams) => {
+    if (!animatingRef.current) {
+      console.log('Dispatching player params immediately:', p);
+      setPlayerParams(p);
+      animatingRef.current = true;
+      // assume each move animation takes up to 1 s
+      setTimeout(() => {
+        animatingRef.current = false;
+        if (pendingParamsRef.current) {
+          const next = pendingParamsRef.current;
+          pendingParamsRef.current = null;
+          queuePlayerParams(next);
+        }
+      }, 200); // TODO: find event in cubingjs/twisty that actually indicates the end of an animation
+    } else {
+      pendingParamsRef.current = p;
+    }
+  }, [setPlayerParams]);
 
 
   /**
@@ -634,7 +663,8 @@ export default function Recon() {
       allMovesRef.current = newMoves;
 
       setIsTextboxFocused(true);
-      setPlayerParams({animationTimes: limitedTimes, solution: sol, scramble: scram});
+      console.log('Queuing request');
+      queuePlayerParams({animationTimes: limitedTimes, solution: sol, scramble: scram});
 
       const validPlayPauseStatuses = ['play', 'pause', 'replay', 'disabled'];
       const playPauseStatus = 
@@ -644,7 +674,7 @@ export default function Recon() {
       const controllerButtonsEnabled = getControllerButtonsStatus(idIndex, lineIndex, moveIndex, newMoves[idIndex], playPauseStatus);
       setControllerButtonsStatus(controllerButtonsEnabled)
 
-  }, [scrambleRef, memoizedHighlightMove, setPlayerParams, solution, setControllerButtonsStatus]);
+  }, [scrambleRef, memoizedHighlightMove, queuePlayerParams, setPlayerParams, solution, setControllerButtonsStatus]);
 
   const memoizedSetScrambleHTML = useCallback((html: string) => {
     setScrambleHTML(html);
@@ -1074,7 +1104,7 @@ export default function Recon() {
       <div id="scramble-area" className="px-3 mt-3 flex flex-col">
         <div className="text-xl text-dark_accent font-medium">Scramble</div>
         <div className="lg:max-h-[15.1rem] max-h-[10rem] overflow-y-auto" id="scramble">
-          {/* <Profiler id="scramble-editor" onRender={(id, phase, actualDuration) => console.log(`[Profiler] ${id} took ${actualDuration} ms. Phase: ${phase}`)}> */}
+          {/* <Profiler id="scramble-editor" onRender={(id, phase, actualDuration) => console.log(`[Profiler] ${id} took ${actualDuration} ms. Phase: ${phase}`)> */}
           <MovesTextEditor
             name={`scramble`}
             ref={scrambleEditorRef}
