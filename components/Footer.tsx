@@ -8,7 +8,7 @@ const glory = Glory({
   variable: '--font-Glory' 
 });
 
-export default function Footer(): JSX.Element {
+export default function Footer() {
 
 
   return (

@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 const Tagline = () => {
   const [finished, setFinished] = useState<boolean>(false);
   const [hovering, setHovering] = useState<boolean>(false);
-  const [displayText, setDisplayText] = useState<string>('statistical');
+  const [displayText, setDisplayText] = useState<string>('Statistical');
 
   const handleMouseEnter = () => {
     setHovering(true);
@@ -17,7 +17,7 @@ const Tagline = () => {
 
   const startUntyping = (i: number) => {
     const typingInterval = setInterval(() => {
-      setDisplayText('statistical|');
+      setDisplayText('Statistical|');
       if (i > 0) {
         setDisplayText(displayText.slice(0, --i)+'|');
       } else {

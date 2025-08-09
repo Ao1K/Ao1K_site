@@ -6,7 +6,9 @@ import { useSearchParams } from 'next/navigation';
 import sanitizeHtml from 'sanitize-html';
 
 import validateTextInput from "../../composables/recon/validateTextInput";
-import validationToTokens from "../../composables/recon/validationToMoves";
+import validationToTokens, { degroup } from "../../composables/recon/validationToMoves";
+import type { MovesDisplayValidation } from "../../composables/recon/validationToMoves";
+import type { MovesValidation } from "../../composables/recon/validateTextInput";
 import updateURL from '../../composables/recon/updateURL';
 
 import { customDecodeURL } from '../../composables/recon/urlEncoding';
@@ -99,6 +101,8 @@ export interface ImperativeRef {
   redo: () => void;
   transform: (html: string) => void;
   highlightMove: (moveIndex: number, lineIndex: number) => void;
+  removeHighlight: () => void;
+  showSuggestion: (suggestion: string) => void;
 }
 
 interface Hashtag {
@@ -129,8 +133,8 @@ function MovesTextEditor({
 
   const idIndex = name === 'scramble' ? 0 : 1;
 
-  console.log('Rendering MovesTextEditor:', name);
-  
+  const isFocusingRef = useRef<boolean>(false);
+
   const sanitizeConf = {
     allowedTags: ["b", "i","br","div"],
     allowedAttributes: { span: ["className","class"]}
@@ -146,6 +150,7 @@ function MovesTextEditor({
   }, []);
 
   const handleInput = () => {
+    if (!contentEditableRef.current) return;
 
     onInputChange();
     
@@ -253,15 +258,18 @@ function MovesTextEditor({
           let caretSplitIndex = findEndOfWordOnCaret(validation, caretIndex);
   
           const tokensBeforeCaret = validationToTokens(validation.slice(0, caretSplitIndex)); // before and including move at caret
-          const tokensAfterCaret = validationToTokens(validation.slice(caretSplitIndex + 1)); // after caret
           const movesBeforeCaret: string[] = getMovesFromTokens(tokensBeforeCaret);
-          const movesAfterCaret: string[] = getMovesFromTokens(tokensAfterCaret);
-
-          moves = movesBeforeCaret.concat(movesAfterCaret);
+          moveOffsetRef.current = movesBeforeCaret.length; // not minus 1. 0 represents before any moves.
+          
+          // TODO: optimize this.
+          // Can't create tokensAfterCaret because the caret might be in the middle of a group 
+          // [ex: (R U | R' U')2]
+          // would need to create a validation array that includes the caret,
+          // then extract movesBeforeCaret.length from it
+          moves = getMovesFromTokens(validationToTokens(validation));
 
           lineOffsetRef.current = i; // could be wrong in certain situations? (copy-paste)
 
-          moveOffsetRef.current = movesBeforeCaret.length; // not minus 1. 0 represents before any moves.
 
         } else {
           // in the future, may need to expand to handle other types of tokens, such as hashtags
@@ -570,10 +578,10 @@ function MovesTextEditor({
 
   const insertCaretNode = () => {
     
-
+     if (!contentEditableRef.current) return;
     if (document.activeElement !== contentEditableRef.current) return;
-    if (!contentEditableRef.current) return;
     if (moveHistory.current.undo_redo_done === false) return;
+    if (isFocusingRef.current) return;
 
     let existingCaretNode = contentEditableRef.current?.querySelector('#caretNode');
     while (existingCaretNode) {
@@ -619,6 +627,13 @@ function MovesTextEditor({
   };
 
   const setCaretToCaretNode = () => {
+    if (isFocusingRef.current)  {
+      // console.log('aborting setCaretToCaretNode');
+      return;
+    }
+
+    // console.log('continuing setCaretToCaretNode');
+
     const existingCaretNode = contentEditableRef.current?.querySelector('#caretNode');
     if (existingCaretNode) {
       const selection = window.getSelection();
@@ -704,7 +719,7 @@ function MovesTextEditor({
 
   const isMultiSelect = () => {
     const selection = window.getSelection();
-    if (!selection) return false;
+    if (!selection || selection.rangeCount === 0) return false;
   
     const range = selection.getRangeAt(0);
     return !range.collapsed && (range.startContainer !== range.endContainer || range.startOffset !== range.endOffset);
@@ -716,9 +731,12 @@ function MovesTextEditor({
    * @returns 
    */
   const handleCaretChange = () => {
+    // TODO: if the textbox is scramble, a lot of this processing isn't needed.
 
-    if (document.activeElement !== contentEditableRef.current) return;
-    
+    // line below causes race condition with player controls Play function
+    // if (document.activeElement !== contentEditableRef.current) return;
+    if (!contentEditableRef.current) return;
+
     const multiSelect = isMultiSelect();
     if (multiSelect) return;      
 
@@ -917,6 +935,77 @@ function MovesTextEditor({
     handleInput();
   }
 
+  const findEndOfMove = (degroupedValidation: MovesDisplayValidation[], startIndex: number): number => {
+    let i = startIndex;
+    while (i < degroupedValidation.length && degroupedValidation[i][1] === 'move') {
+      i++;
+    }
+    return i;
+  }
+
+  const handleRemoveHighlight = () => {
+    if (!contentEditableRef.current) return;
+    if (name === 'scramble') return; // no highlights in scramble
+
+    const noHighlightHTML = contentEditableRef.current.innerHTML.replace(new RegExp(`<span class="${highlightClass}">`, 'g'), '<span class="text-primary-100">');
+    contentEditableRef.current.innerHTML = noHighlightHTML;
+  }
+
+  /**
+   * Runs through validation array until it finds moveIndex and returns moveDisplayIndex of that move.
+   * @param degroupedValidation 
+   * @returns moveDisplayIndex
+   */
+  const findMoveDisplayIndex = (degroupedValidation: MovesDisplayValidation[], moveIndex: number): number => {
+    let moveCounter = 0;
+    // console.log('degroupedValidation:', degroupedValidation);
+    for (let i = 0; i < degroupedValidation.length; i++) {
+
+      const type = degroupedValidation[i][1];
+      if (type !== 'move') {
+        continue;
+      } else {
+        if (moveCounter === moveIndex - 1) { // moveIndex of 0 is before first move
+          // console.log('found moveDisplayIndex:', degroupedValidation[i][3], 'for moveIndex:', moveIndex);
+          return (degroupedValidation[i][3] + 1);
+        }
+        moveCounter++;
+        i = findEndOfMove(degroupedValidation, i);
+      }
+    }
+    return -1; // not found
+  }
+
+  const addHighlightValidation = (validation: MovesValidation[], moveDisplayIndex: number): MovesValidation[] => {
+    if (validation.length === 0) {
+      console.warn('No moves to highlight');
+      console.info('validation:', validation);
+      return validation;
+    }
+
+    if (moveDisplayIndex < 0) {
+      // acceptably occurs when moveIndex is placed before the first move
+      return validation;
+    }
+
+    const highlightedValidation: MovesValidation[] = [];
+    let moveCounter = 0;
+    let lastType = ''
+    for (let i = 0; i < validation.length; i++) {
+      const type = validation[i][1];
+      if (type === 'move' && lastType !== 'move') {
+        moveCounter++;
+      }
+      lastType = type;
+      if (type === 'move' && moveCounter === moveDisplayIndex) {
+        highlightedValidation.push([validation[i][0], 'highlight', validation[i][2]]);
+      } else {
+        highlightedValidation.push([validation[i][0], type, validation[i][2]]);
+      }
+    }
+    return highlightedValidation
+  }
+
   /**
    * Highlights the requested move in the solution text editor.
    */
@@ -925,7 +1014,9 @@ function MovesTextEditor({
     if (!contentEditableRef.current) return;
     if (name === 'scramble') return; 
     if (moveIndex < 0 || lineIndex < 0) return; // invalid move index or line index
-    if (!contentEditableRef.current.innerHTML.includes('<span')) return; // should only highlight if moves have been painted
+    
+    // should only highlight if moves have been painted
+    if (!contentEditableRef.current.innerHTML.includes('<span')) return; 
 
     let lines = htmlToLineArray(contentEditableRef.current.innerHTML);
 
@@ -935,24 +1026,10 @@ function MovesTextEditor({
     // iterate through valid spans, counting moves, and highlighting the move at moveIndex
     const text = line.replace(/<[^>]+>/g, '');    
     const validation = validateTextInput(text);
+    const newVal = degroup(validation, true) as MovesDisplayValidation[];
+    const moveDisplayIndex = findMoveDisplayIndex(newVal, moveIndex);
 
-    // Create highlighted version of the line
-    
-    const highlightedValidation: [string, string, number?][] = [];
-    let moveCounter = 0;
-    let lastType = ''
-    for (let i = 0; i < validation.length; i++) {
-      const type = validation[i][1];
-      if (type === 'move' && lastType !== 'move') {
-        moveCounter++;
-      }
-      lastType = type;
-      if (type === 'move' && moveCounter === moveIndex) {
-        highlightedValidation.push([validation[i][0], 'highlight', validation[i][2]]);
-      } else {
-        highlightedValidation.push(validation[i]);
-      }
-    }
+    const highlightedValidation: MovesValidation[] = addHighlightValidation(validation, moveDisplayIndex);
 
     // apply highlighted class. Do some cleanup.
     let [ updatedLine, _ ] = updateLine(highlightedValidation, line);
@@ -962,6 +1039,13 @@ function MovesTextEditor({
     // Update the contentEditable with highlighted content
     const newHTML = lines.join('');
     contentEditableRef.current.innerHTML = newHTML;
+  }
+
+  const handleShowSuggestion = (suggestion: string) => {
+    if (!contentEditableRef.current) return;
+    if (name === 'scramble') return; // no suggestions in scramble
+
+    console.log('showing suggestion:', suggestion);
   }
   
   useImperativeHandle(ref, () => ({
@@ -980,19 +1064,32 @@ function MovesTextEditor({
     highlightMove: (moveIndex: number, lineIndex: number) => {
       handleHighlightMove(moveIndex, lineIndex);
     },
+
+    removeHighlight: () => {
+      handleRemoveHighlight();
+    },
+
+    showSuggestion: (suggestion: string) => {
+      handleShowSuggestion(suggestion);
+    },
   }), []);
 
   const handleFocus = (e: React.FocusEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    handleInput(); // this hack ensures visual cube update
+    // isFocusingRef.current = true;
+    // setTimeout(() => {
+    //   isFocusingRef.current = false;
+    // }, 100);
   }; 
   
   useEffect(() => {
     if (!contentEditableRef.current) return;
+    if (isFocusingRef.current) return;
     
     setCaretToCaretNode();
     
   }, [html]);
+
+  useEffect(() => {handleInput()}, [contentEditableRef.current]); // initialize syntax highlighting
 
   useEffect(() => {
     

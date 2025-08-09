@@ -7,11 +7,13 @@ interface ImageStackProps {
 }
 
 const ImageStack = ({position, moves, isTextboxFocused}: ImageStackProps) => {
-
+  
   const lineFocus = (isTextboxFocused && position?.[0] === 1) ? position[1] : -1; // if scram is focused, put focus on same line
   const scramble = moves?.[0]?.map((move) => move.join(' ')).join(' ') || '';
   const solutionLines = moves?.[1]?.map((move) => move.join(' ')) || [''];
-  const height = solutionLines.length * 28 // lg text has 28px line-height
+
+  // TODO: use step information from CubeInterpreter.tsx
+  // TODO: determine line heights from getBoundingClientRect for each div inside solution div.
 
   // console.log('ImageStack position: ', position);
   // console.log('ImageStack scramble: ', scramble);

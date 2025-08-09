@@ -11,7 +11,7 @@ const versionList = {
   "recon": "v0.3",
 }
 
-export default function Header(): JSX.Element {
+export default function Header() {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
 
   const toggleSidebar = () => {

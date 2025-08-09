@@ -1,7 +1,7 @@
 'use client';
 import debounce from 'lodash.debounce';
 import { PNG, Type } from "sr-puzzlegen";
-import { useState, useRef, useEffect, lazy, Suspense, useCallback, Profiler } from 'react';
+import { useState, useRef, useEffect, lazy, Suspense, useCallback, Profiler, useMemo } from 'react';
 import MovesTextEditor from "../../components/recon/MovesTextEditor";
 import SpeedDropdown from "../../components/recon/SpeedDropdown";
 
@@ -18,14 +18,15 @@ import type { Object3D } from 'three';
 import UndoIcon from "../../components/icons/undo";
 import RedoIcon from "../../components/icons/redo";
 import CatIcon from "../../components/icons/cat";
-import MirrorM from "../../components/icons/mirrorM";
-import MirrorS from "../../components/icons/mirrorS";
+// import MirrorM from "../../components/icons/mirrorM"; // ugly
+// import MirrorS from "../../components/icons/mirrorS"; // ugly
 import TrashIcon from "../../components/icons/trash";
 import CopyIcon from "../../components/icons/copy";
 import ShareIcon from "../../components/icons/share";
+import InvertIcon from "../../components/icons/invert";
 
 import addCat from "../../composables/recon/addCat";
-import { mirrorHTML_M, mirrorHTML_S, removeComments, rotateHTML_X, rotateHTML_Y, rotateHTML_Z } from "../../composables/recon/transformHTML";
+import { mirrorHTML_M, mirrorHTML_S, removeComments, rotateHTML_X, rotateHTML_Y, rotateHTML_Z, invertHTML } from "../../composables/recon/transformHTML";
 import isSelectionInTextbox from "../../composables/recon/isSelectionInTextbox";
 import { TransformHTMLprops } from "../../composables/recon/transformHTML";
 
@@ -35,8 +36,11 @@ import { customDecodeURL } from '../../composables/recon/urlEncoding';
 import getDailyScramble from '../../composables/recon/getDailyScramble';
 import VideoHelpPrompt from '../../components/recon/VideoHelpPrompt';
 import ImageStack from '../recon/ImageStack';
-import { EventBridgeSchedulerCreateScheduleTask } from 'aws-cdk-lib/aws-stepfunctions-tasks';
+import { CubeInterpreter } from '../../composables/recon/CubeInterpreter';
+import { AlgCompiler } from '../../utils/AlgCompiler';
 
+// lazy load in compiled-algs.json
+import compiledAlgsData from '../../utils/compiled-algs.json';
 
 export interface MoveHistory {
   history: string[][];
@@ -51,7 +55,7 @@ interface OldSelectionRef {
   textbox: string | null;
 }
 
-type PlayerParams = { animationTimes: number[]; solution: string; scramble: string };
+export type PlayerParams = { animationTimes: number[]; solution: string; scramble: string };
 
 
 export interface ControllerRequestOptions {
@@ -61,7 +65,6 @@ export interface ControllerRequestOptions {
 const TwistyPlayer = lazy(() => import("../../components/recon/TwistyPlayer"));
 
 export default function Recon() {
-  console.log('Rendering Recon page');
   const allMovesRef = useRef<string[][][]>([[[]], [[]]]);
   const moveLocation = useRef<[number, number, number]>([0, 0, 0]);
 
@@ -78,16 +81,18 @@ export default function Recon() {
 
   const [scrambleHTML, setScrambleHTML] = useState<string>('');
   const [solutionHTML, setSolutionHTML] = useState<string>('');
-    
-  const tpsRef = useRef<HTMLDivElement>(null);
+  
+  const [playerParams, setPlayerParams] = useState<PlayerParams>({ animationTimes: [], solution: '', scramble: '' });
+
+  const tpsRef = useRef<HTMLDivElement>(null!);
   const scrambleEditorRef = useRef<ImperativeRef>(null);
   const solutionEditorRef = useRef<ImperativeRef>(null);
-  const undoRef = useRef<HTMLButtonElement>(null);
-  const redoRef = useRef<HTMLButtonElement>(null);
+  const undoRef = useRef<HTMLButtonElement>(null!);
+  const redoRef = useRef<HTMLButtonElement>(null!);
   const oldSelectionRef = useRef<OldSelectionRef>({ range: null, textbox: null,  status: "init" });
-  const bottomBarRef = useRef<HTMLDivElement>(null);
+  const bottomBarRef = useRef<HTMLDivElement>(null!);
   const cubeRef = useRef<Object3D | null>(null);
-  const isPlayingRef = useRef<boolean>(false);
+  const isLoopingRef = useRef<boolean>(false);
   const loopTimeoutRef = useRef<number|null>(null);
   const clearLoopTimeout = useCallback(() => {
     if (loopTimeoutRef.current !== null) {
@@ -99,7 +104,6 @@ export default function Recon() {
   const MAX_EDITOR_HISTORY = 100;
   const moveHistory = useRef<MoveHistory>({ history: [['','']], index: 0, MAX_HISTORY: MAX_EDITOR_HISTORY, status: 'loading' });
 
-  const [playerParams, setPlayerParams] = useState<PlayerParams>({ animationTimes: [], solution: '', scramble: '' });
   const [controllerButtonsStatus, setControllerButtonsStatus] = useState<{ fullLeft: string, stepLeft: string, stepRight: string, fullRight: string, playPause: string }>({
     fullLeft: 'disabled',
     stepLeft: 'disabled',
@@ -108,30 +112,7 @@ export default function Recon() {
     playPause: 'disabled'
   });
 
-  // track whether TwistyPlayer is animating
-  const animatingRef = useRef(false);
-  // store the latest params while animating
-  const pendingParamsRef = useRef<PlayerParams|null>(null);
-
-  // replace queue: if idle, dispatch immediately; otherwise overwrite pending
-  const queuePlayerParams = useCallback((p: PlayerParams) => {
-    if (!animatingRef.current) {
-      console.log('Dispatching player params immediately:', p);
-      setPlayerParams(p);
-      animatingRef.current = true;
-      // assume each move animation takes up to 1 s
-      setTimeout(() => {
-        animatingRef.current = false;
-        if (pendingParamsRef.current) {
-          const next = pendingParamsRef.current;
-          pendingParamsRef.current = null;
-          queuePlayerParams(next);
-        }
-      }, 200); // TODO: find event in cubingjs/twisty that actually indicates the end of an animation
-    } else {
-      pendingParamsRef.current = p;
-    }
-  }, [setPlayerParams]);
+  const cubeInterpreter = useRef<CubeInterpreter | null>(null);
 
 
   /**
@@ -235,6 +216,10 @@ export default function Recon() {
     const doubleTime = 1500;
     const tripleTime = 2000;
 
+    if (!moves || moves.length === 0) {
+      return [0]; // no moves, return 0
+    }
+
     moves.forEach((move) => {
       if (move.includes('2')) {
         moveAnimationTimes.push(doubleTime);
@@ -261,7 +246,7 @@ export default function Recon() {
 
     // hereafter assume working on solution moves
 
-    if (moves.length === 0) {
+    if (!moves || moves.length === 0) {
       return [0];
     }
 
@@ -297,40 +282,24 @@ export default function Recon() {
     solutionEditorRef.current?.highlightMove(moveIndex, lineIndex);
   }, []);
 
+  const memoizedRemoveHighlight = useCallback(() => {
+    solutionEditorRef.current?.removeHighlight();
+  }, []);
+
   const interpretCurrentCubeState = () => {
-    // placeholder for interpreting the current cube state
-    // will be used for move completion and better solution icons
-
-    // console.log('Interpreting current cube state...');
-    // console.log('Solution: ', solution);
-    // if (cubeRef.current) {
-    //   // wait one second
-    //   // setTimeout(() => {
-    //     console.log('Cube state interpreted.');
-    //     const cube = cubeRef.current; 
-    //     console.log('Cube: ', cube);
-    //     // access children.matrix and print 4x4 matrix inside
-    //     const matrix = cube!.children[6].matrix.elements;
-    //     matrix.forEach((value, index) => {
-
-    //       // round each to 2 decimal places
-    //       matrix[index] = parseFloat(value.toFixed(2));
-
-    //       // if -0, set to 0
-    //       if (matrix[index] === -0) {
-    //         matrix[index] = 0;
-    //       }
-    //     });
-
-    //     const matrix4x4 = [
-    //       [matrix[0], matrix[1], matrix[2], matrix[3]],
-    //       [matrix[4], matrix[5], matrix[6], matrix[7]],
-    //       [matrix[8], matrix[9], matrix[10], matrix[11]],
-    //       [matrix[12], matrix[13], matrix[14], matrix[15]]
-    //     ];
-    //     console.table(matrix4x4);
-    //   // }, 100);
+    if (!cubeInterpreter.current) {
+      console.warn('CubeInterpreter is not initialized.');
+      return;
+    }
+    cubeInterpreter.current.updateCurrentState(cubeRef.current); // Gets latest cubeRef.current
+    // cubeInterpreter.analyzeCubeStructure();
+    console.log('cross solved:', cubeInterpreter.current.isCrossSolved());
+    // const rotationIndex = cubeInterpreter.trackUniqueRotation();
+    // if (rotationIndex !== -1) {
+    //   console.log(`Cube is in rotation position: ${rotationIndex}`);
     // }
+    // cubeInterpreter.getPosition(0);
+
   };
 
   const getMoveToLeft = (): [number, number] => {
@@ -369,7 +338,7 @@ export default function Recon() {
     }
 
 
-    if (moveIndex < solutionMoves[lineIndex].length) {
+    if (solutionMoves[lineIndex] && moveIndex < solutionMoves[lineIndex].length) {
       return [lineIndex, moveIndex + 1]; // just step forward one move
     } else {
 
@@ -443,35 +412,41 @@ export default function Recon() {
   }
 
   const loopStepRight = (location: [number, number, number] | null) => {
-    if (!isPlayingRef.current) {
+    if (!isLoopingRef.current) {
       stopLoopStepRight();
       return; // player is not playing, do not step right
     }
 
     let [idIndex, lineIndex, moveIndex] = location || moveLocation.current;
       
-    const animationTimes = playerParams.animationTimes;
-    const solutionMovesBefore = countMovesBeforeIndex(1);
-
+    
     [lineIndex, moveIndex] = getMoveToRight();
     if (lineIndex === -1 || moveIndex === -1) {
       // no more moves to step right
-
+      
       // assure that controller buttons states are up to date
       const playPauseStatus = allMovesRef.current[1].length === 0 ? 'disabled' : 'replay';
       setControllerButtonsStatus((controllerButtonsStatus) => (
         { ...controllerButtonsStatus, stepRight: 'disabled', fullRight: 'disabled', playPause: playPauseStatus }
       ));
       
+      // there may be race conditions with this, but minor and rare
+      memoizedRemoveHighlight();
+
       return; 
     }
+    
     memoizedTrackMoves(1, lineIndex, moveIndex, allMovesRef.current[1], 'play');
-    // wait for the next move animation time
-    const timeToWait = animationTimes[solutionMovesBefore] || 1000; // default to 1000ms if undefined
+    
+    // const animationTimes = playerParams.animationTimes;
+    // const solutionMovesBefore = countMovesBeforeIndex(1);
+    // const timeToWait = animationTimes[solutionMovesBefore] || 1000;
     
     loopTimeoutRef.current = window.setTimeout(() => {
       loopStepRight([1, lineIndex, moveIndex]);
-    // }, timeToWait); // moves with large animation times don't actually take longer. Re-implement timeToWait if this changes
+    // }, timeToWait); 
+    // moves with large animation times don't actually take longer. 
+    // Re-implement timeToWait if this changes
     }, 1000 - (5 * speed));
   }
 
@@ -480,9 +455,9 @@ export default function Recon() {
     clearLoopTimeout();
     let [_, lineIndex, moveIndex] = moveLocation.current;
     if (request.type !== 'play' && request.type !== 'replay') {
-      isPlayingRef.current = false;
+      isLoopingRef.current = false;
     } else {
-      isPlayingRef.current = true;
+      isLoopingRef.current = true;
     }
 
     switch (request.type) {
@@ -513,6 +488,7 @@ export default function Recon() {
           setControllerButtonsStatus((controllerButtonsStatus) => (
             { ...controllerButtonsStatus, playPause: 'play' }
           ));
+
           loopStepRight(null);
         }, 1000);
         break;
@@ -614,6 +590,16 @@ export default function Recon() {
     return { fullLeft, stepLeft, stepRight, fullRight, playPause }
   };
 
+  const handleNewlineSuggestions = () => {
+    if (!solutionEditorRef.current) return;
+
+    const suggestions = cubeInterpreter.current?.getAutocompleteSuggestions();
+    console.log('suggestions:', suggestions);
+    if (suggestions && suggestions.length > 0) {
+      solutionEditorRef.current.showSuggestion(suggestions[0]);
+    }
+  }
+
 
   const memoizedTrackMoves = useCallback(
     (
@@ -623,12 +609,18 @@ export default function Recon() {
       moves: string[][], // the moves in the textbox of id
       moveControllerStatus?: string // the current status of loopStepRight
     ) => {
-
+      // console.log('Tracking moves:', idIndex, lineIndex, moveIndex, moves, moveControllerStatus);
+      // console.trace()
+      
       if (moveControllerStatus !== 'play') {
-        isPlayingRef.current = false; // break out of loopStepRight when status changes
+        isLoopingRef.current = false; // break out of loopStepRight when status changes
       }
 
-      if (moves[lineIndex]?.length === 0) {
+      const isLineEmpty = moves[lineIndex]?.length === 0;
+      if (isLineEmpty) {
+
+        handleNewlineSuggestions();
+
         // pretend caret is at end of the last line that has a move
         const adjustedLineIndex = findPrevNonEmptyLine(moves, lineIndex);
         const adjustedMoveIndex = findLastMoveInLine(moves, adjustedLineIndex);
@@ -663,18 +655,18 @@ export default function Recon() {
       allMovesRef.current = newMoves;
 
       setIsTextboxFocused(true);
-      console.log('Queuing request');
-      queuePlayerParams({animationTimes: limitedTimes, solution: sol, scramble: scram});
+
+      setPlayerParams({animationTimes: limitedTimes, solution: sol, scramble: scram});
 
       const validPlayPauseStatuses = ['play', 'pause', 'replay', 'disabled'];
       const playPauseStatus = 
-        (moveControllerStatus && validPlayPauseStatuses.includes(moveControllerStatus)) 
-        ? moveControllerStatus : controllerButtonsStatus.playPause;
+        (moveControllerStatus && validPlayPauseStatuses.includes(moveControllerStatus))? 
+        moveControllerStatus : controllerButtonsStatus.playPause;
 
       const controllerButtonsEnabled = getControllerButtonsStatus(idIndex, lineIndex, moveIndex, newMoves[idIndex], playPauseStatus);
       setControllerButtonsStatus(controllerButtonsEnabled)
 
-  }, [scrambleRef, memoizedHighlightMove, queuePlayerParams, setPlayerParams, solution, setControllerButtonsStatus]);
+  }, [scrambleRef, memoizedHighlightMove, setPlayerParams, solution, setControllerButtonsStatus]);
 
   const memoizedSetScrambleHTML = useCallback((html: string) => {
     setScrambleHTML(html);
@@ -804,6 +796,7 @@ export default function Recon() {
   const handleRotateX = () => handleTransform(rotateHTML_X);
   const handleRotateY = () => handleTransform(rotateHTML_Y);
   const handleRotateZ = () => handleTransform(rotateHTML_Z);
+  const handleInvert = () => handleTransform(invertHTML);
 
   const handleRemoveComments = () => handleTransform(removeComments);
 
@@ -972,24 +965,23 @@ export default function Recon() {
 
   const handleCommand = (e: KeyboardEvent) => {
 
-    if (e.ctrlKey && e.key === 'm') {
+    if (e.ctrlKey && e.shiftKey && e.key === 'M') {
     
       e.preventDefault();
 
       handleMirrorM();
     }
 
-    if (e.ctrlKey && e.key === 's') {
+    if (e.ctrlKey && e.shiftKey && e.key === 'S') {
 
       e.preventDefault();
 
       handleMirrorS();
     }
 
-    if (e.ctrlKey && e.shiftKey && e.key === 'S') {
+    if (e.ctrlKey && e.key === 's') {
 
       e.preventDefault();
-
       handleShare();
     }
 
@@ -1014,6 +1006,13 @@ export default function Recon() {
       handleRotateZ();
     }
 
+    if (e.ctrlKey && e.key === 'i') {
+
+      e.preventDefault();
+
+      handleInvert();
+    }
+
     if (e.ctrlKey && e.key === '/') {
 
       e.preventDefault();
@@ -1035,6 +1034,17 @@ export default function Recon() {
       handleClearPage();
     }
   };
+
+  const handleCubeLoaded = async () => {
+    if (!cubeRef.current) {
+      console.warn('Cube reference is not set.');
+      return;
+    }
+
+    const { default: algDoc } = await import('../../utils/compiled-algs.json');
+
+    cubeInterpreter.current = new CubeInterpreter(cubeRef.current, algDoc.algorithms);
+  }
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -1081,11 +1091,12 @@ export default function Recon() {
   const toolbarButtons = [
     { id: 'undo', text: 'Undo', shortcutHint: 'Ctrl+Z', onClick: handleUndo, icon: <UndoIcon />, buttonRef: undoRef },
     { id: 'redo', text: 'Redo', shortcutHint: 'Ctrl+Y', onClick: handleRedo, icon: <RedoIcon />, buttonRef: redoRef },
-    { id: 'mirrorM', text: 'Mirror M', shortcutHint: 'Ctrl+M', onClick: handleMirrorM, icon: <MirrorM /> },
-    { id: 'mirrorS', text: 'Mirror S', shortcutHint: 'Ctrl+S', onClick: handleMirrorS, icon: <MirrorS /> },
+    { id: 'mirrorM', text: 'Mirror M', shortcutHint: 'Ctrl+Shift+M', onClick: handleMirrorM, iconText: 'M' },
+    { id: 'mirrorS', text: 'Mirror S', shortcutHint: 'Ctrl+Shift+S', onClick: handleMirrorS, iconText: 'S' },
     { id: 'rotateX', text: 'Rotate X', shortcutHint: 'Ctrl+Shift+X', onClick: handleRotateX, iconText: "X" },
     { id: 'rotateY', text: 'Rotate Y', shortcutHint: 'Ctrl+Shift+Y', onClick: handleRotateY, iconText: "Y" },
     { id: 'rotateZ', text: 'Rotate Z', shortcutHint: 'Ctrl+Shift+Z', onClick: handleRotateZ, iconText: "Z" },
+    { id: 'invert', text: 'Invert', shortcutHint: 'Ctrl+I', onClick: handleInvert, icon: <InvertIcon /> },
     { id: 'cat', text: 'Angus', shortcutHint: 'Cat', onClick: handleAddCat, icon: <CatIcon /> },
     { id: 'removeComments', text: 'Remove Comments', shortcutHint: 'Ctrl+/ ', onClick: handleRemoveComments, iconText: '// ' },
   ];
@@ -1093,12 +1104,16 @@ export default function Recon() {
   return (
     <div id="main_page" className="col-start-2 col-span-1 flex flex-col bg-primary-900">
       <VideoHelpPrompt videoId="iIipycBl0iY" />
+      
+      {/* utility for compiling list of alg hashes */}
+      {/* <AlgCompiler />  */}
+      
       <div id="top-bar" className="px-3 flex flex-row flex-wrap items-center place-content-end gap-2 mt-8 mb-3">
         <TitleWithPlaceholder solveTitle={solveTitle} handleTitleChange={handleTitleChange} />
         <div className="flex-none flex flex-row space-x-1 pr-2 text-dark_accent">
           <TopButton id="trash" text="Clear Page" shortcutHint="Ctrl+Del" onClick={handleClearPage} icon={<TrashIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
           <TopButton id="copy" text="Copy Solve" shortcutHint="Ctrl+Q" onClick={handleCopySolve} icon={<CopyIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
-          <TopButton id="share" text="Copy URL" shortcutHint="Ctrl+Shift+S" onClick={handleShare} icon={<ShareIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
+          <TopButton id="share" text="Copy URL" shortcutHint="Ctrl+S" onClick={handleShare} icon={<ShareIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
         </div>
       </div>
       <div id="scramble-area" className="px-3 mt-3 flex flex-col">
@@ -1120,15 +1135,16 @@ export default function Recon() {
       </div>
       <div id="player-box" className="px-3 relative flex flex-col my-6 w-full justify-center items-center">
         <div id="cube-highlight" className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-full blur-sm bg-primary-900 w-[calc(100%-1.5rem)]"></div>
-        <div id="cube_model" className="flex aspect-video h-full max-h-96 bg-primary-900 z-10 w-full">
+        <div id="cube_model" className="flex h-full aspect-video max-h-96 min-h-[200px] bg-primary-900 select-none z-10 w-full">
           <Suspense fallback={<div className="flex text-xl w-full h-full justify-center items-center text-primary-100">Loading cube...</div>}>
             <TwistyPlayer 
-              scramble={playerParams.scramble} 
-              solution={playerParams.solution} 
               speed={speed} 
-              animationTimes={playerParams.animationTimes} 
               cubeRef={cubeRef}
+              scrambleRequest={playerParams.scramble}
+              solutionRequest={playerParams.solution}
+              animationTimesRequest={playerParams.animationTimes}
               onCubeStateUpdate={interpretCurrentCubeState}
+              handleCubeLoaded={handleCubeLoaded}
               handleControllerRequest={handleControllerRequest}
               controllerButtonsStatus={controllerButtonsStatus}
               setControllerButtonsStatus={setControllerButtonsStatus}
