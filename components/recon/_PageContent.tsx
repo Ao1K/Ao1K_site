@@ -293,7 +293,7 @@ export default function Recon() {
     }
     cubeInterpreter.current.updateCurrentState(cubeRef.current); // Gets latest cubeRef.current
     // cubeInterpreter.analyzeCubeStructure();
-    console.log('cross solved:', cubeInterpreter.current.isCrossSolved());
+    // console.log('cross solved:', cubeInterpreter.current.isCrossSolved());
     // const rotationIndex = cubeInterpreter.trackUniqueRotation();
     // if (rotationIndex !== -1) {
     //   console.log(`Cube is in rotation position: ${rotationIndex}`);
@@ -619,7 +619,7 @@ export default function Recon() {
       const isLineEmpty = moves[lineIndex]?.length === 0;
       if (isLineEmpty) {
 
-        handleNewlineSuggestions();
+        // handleNewlineSuggestions();
 
         // pretend caret is at end of the last line that has a move
         const adjustedLineIndex = findPrevNonEmptyLine(moves, lineIndex);

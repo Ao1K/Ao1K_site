@@ -211,12 +211,55 @@ export class CubeInterpreter {
    * The piece index (from getPieceStart) for each cross, concat'd into a single string
    */
   private readonly crossPieceIndices: { [key: string]: string } = {
-    '0,1,2,3': 'white',
-    '4,5,6,7': 'yellow',
-    '0,4,8,9': 'green',
-    '1,5,8,10': 'red',
-    '2,6,10,11': 'blue',
-    '3,7,9,11': 'orange'
+    '0,1,2,3': 'white', // up
+    '4,5,6,7': 'yellow', // down
+    '0,4,8,9': 'green', // front
+    '1,5,8,10': 'red', // right
+    '2,6,10,11': 'blue', // back
+    '3,7,9,11': 'orange' // left
+  };
+
+  /**
+   * F2L slots organized by corner-edge pairs
+   * Each slot contains a corner and edge that solve together
+   */
+  private readonly f2lSlots: { [key: string]: { corner: number, edge: number, slotColors: [string, string] }[] } = {
+    'white': [ // Down cross F2L (top layer pairs)
+      { corner: 12, edge: 8, slotColors: ['green', 'red'] },  // UFR corner + FR edge
+      { corner: 15, edge: 9, slotColors: ['orange', 'green'] },  // UFL corner + FL edge
+      { corner: 14, edge: 11, slotColors: ['blue', 'orange'] }, // UBL corner + BL edge
+      { corner: 13, edge: 10, slotColors: ['red', 'blue'] }  // UBR corner + BR edge
+    ],
+    'yellow': [ // Up cross F2L (bottom layer pairs)
+      { corner: 16, edge: 8, slotColors: ['red', 'green'] },  // DFR corner + FR edge
+      { corner: 17, edge: 9, slotColors: ['green', 'orange'] },  // DFL corner + FL edge  
+      { corner: 18, edge: 11, slotColors: ['orange', 'blue'] }, // DBL corner + BL edge
+      { corner: 19, edge: 10, slotColors: ['blue', 'red'] }  // DBR corner + BR edge
+    ],
+    'green': [ // Front cross F2L
+      { corner: 12, edge: 1, slotColors: ['red', 'white'] },  // UFR corner + UR edge
+      { corner: 15, edge: 3, slotColors: ['white', 'orange'] },  // UFL corner + UL edge
+      { corner: 16, edge: 5, slotColors: ['yellow', 'red'] },  // DFR corner + DR edge
+      { corner: 17, edge: 7, slotColors: ['orange', 'yellow'] }   // DFL corner + DL edge
+    ],
+    'red': [ // Right cross F2L
+      { corner: 12, edge: 0, slotColors: ['white', 'green'] },  // UFR corner + UF edge
+      { corner: 13, edge: 2, slotColors: ['blue', 'white'] },  // UBR corner + UB edge
+      { corner: 16, edge: 4, slotColors: ['green', 'yellow'] },  // DFR corner + DF edge
+      { corner: 19, edge: 6, slotColors: ['yellow', 'blue'] }   // DBR corner + DB edge
+    ],
+    'blue': [ // Back cross F2L
+      { corner: 13, edge: 1, slotColors: ['white', 'red'] },  // UBR corner + UR edge
+      { corner: 14, edge: 3, slotColors: ['orange', 'white'] },  // UBL corner + UL edge
+      { corner: 19, edge: 5, slotColors: ['red', 'yellow'] },  // DBR corner + DR edge
+      { corner: 18, edge: 7, slotColors: ['yellow', 'orange'] }   // DBL corner + DL edge
+    ],
+    'orange': [ // Left cross F2L
+      { corner: 15, edge: 0, slotColors: ['green', 'white'] },  // UFL corner + UF edge
+      { corner: 14, edge: 2, slotColors: ['white', 'blue'] },  // UBL corner + UB edge
+      { corner: 17, edge: 4, slotColors: ['yellow', 'green'] },  // DFL corner + DF edge
+      { corner: 18, edge: 6, slotColors: ['blue', 'yellow'] }   // DBL corner + DL edge
+    ]
   };
 
   constructor(cube: Object3D | null, algs: Doc[] = []) {
@@ -383,25 +426,6 @@ export class CubeInterpreter {
   }
 
   /**
-   * Sets the solved state by capturing the current cube state
-   * Call this when the cube is in solved position
-   */
-  // should be handled by constructor
-  // public setSolvedState(): void {
-  //   this.currentCubeRotation = this.trackUniqueRotation();
-  //   this.solvedState = this.captureCurrentState();
-  //   if (this.solvedState) {
-  //     this.solvedState.hash = this.solvedHash; // use predetermined solved hash
-  //     console.log('Solved state captured:', this.solvedState);
-  //     console.log('Centers:', this.solvedState.centers);
-  //     console.log('Corners:', this.solvedState.corners);
-  //     console.log('Edges:', this.solvedState.edges);
-  //   } else {
-  //     console.warn('Could not capture solved state. Ensure the cube is loaded and in solved position.');
-  //   }
-  // }
-
-  /**
    * Updates the current state by capturing the cube's current position
    */
   public updateCurrentState(current?: Object3D<Object3DEventMap> | null): void {
@@ -441,6 +465,7 @@ export class CubeInterpreter {
 
     return colorsSolved.length > 0;
   }
+  
 
   /**
    * Checks if F2L (First Two Layers) is solved
@@ -646,7 +671,7 @@ export class CubeInterpreter {
     // ];
     // console.log('Original corner matrix (3x3):', upperLeft3x3);
 
-    cornerMatrix.premultiply(inverseMatrix);
+    cornerMatrix.multiply(inverseMatrix);
 
     // Extract the rotation part (upper-left 3x3) and round
     const elements = cornerMatrix.elements;
@@ -941,7 +966,31 @@ export class CubeInterpreter {
    * @param color 
    * @returns Dictionary for each pair, containing colors, indices, and solve status
    */
-  private getF2LPairStatus(color: string): { pairColors: string, pairIndices: number[], isSolved: boolean }[] {
+  private getF2LPairStatus(color: string): { pairColors: [string, string], pairIndices: [number, number], isSolved: boolean}[] | [] {
+    
+    const slots = this.f2lSlots[color];
+    if (!slots) {
+      console.warn(`No F2L slots found for color: ${color}`);
+      return [{ pairColors: ['',''], pairIndices: [-1,-1], isSolved: false }];
+    }
+
+    const status: {pairColors: [string, string], pairIndices: [number, number], isSolved: boolean}[]  = [];
+    const solvedIndices = this.getSolvedPieces();
+    
+    slots.forEach(slot => {
+      const cornerIndex = slot.corner;
+      const edgeIndex = slot.edge;
+      const isCornerSolved: boolean = !!solvedIndices.find((index) => index === cornerIndex) // undefined is false
+      const isEdgeSolved: boolean = !!solvedIndices.find((index) => index === edgeIndex)
+      if (isCornerSolved && isEdgeSolved) {
+        status.push({pairColors: slot.slotColors, pairIndices: [cornerIndex, edgeIndex], isSolved: true})
+      } else {
+        status.push({pairColors: slot.slotColors, pairIndices: [cornerIndex, edgeIndex], isSolved: false })        
+      }
+    });
+
+    return status
+
   }
 
 
@@ -965,6 +1014,7 @@ export class CubeInterpreter {
         return;
       }
       const pairStatus = this.getF2LPairStatus(color);
+      console.log(`F2L pairs for color ${color}:`, pairStatus);
       const crossArray = crossIndices.split(',').map(Number);
       const query: Query = {
         positions: {
@@ -972,10 +1022,6 @@ export class CubeInterpreter {
       };
       crossArray.forEach((index) => {
         const position = this.getPosition(index);
-        if (position === -1) {
-          console.warn(`Could not determine position for piece at index ${index}`);
-          return;
-        }
 
         // assert type of position is string
         if (typeof position !== 'string') {
@@ -988,28 +1034,43 @@ export class CubeInterpreter {
           must: [position],
         }
       });
-      unsolvedPairIndices.forEach((index) => {
-        const position = this.getPosition(index);
-        if (position === -1) {
-          console.warn(`Could not determine position for piece at index ${index}`);
-          return;
+      pairStatus.forEach((pair) => {
+        if (pair.isSolved) {
+          // pair must stay solved
+
+          const cornerIndex = pair.pairIndices[0];
+          const cornerPosition = this.getPosition(cornerIndex);
+          if (typeof cornerPosition !== 'string') return;
+
+          const edgeIndex = pair.pairIndices[1];
+          const edgePosition = this.getPosition(edgeIndex);
+          if (typeof edgePosition !== 'string') return;
+
+          query.positions[edgeIndex] = {
+            must: [edgePosition]
+          }
+          query.positions[cornerIndex] = {
+            must: [cornerPosition]
+          }
+        } else {
+          // pair may be solved from its current position
+
+          const cornerIndex = pair.pairIndices[0];
+          const cornerPosition = this.getPosition(cornerIndex);
+          if (typeof cornerPosition !== 'string') return;
+
+          const edgeIndex = pair.pairIndices[1];
+          const edgePosition = this.getPosition(edgeIndex);
+          if (typeof edgePosition !== 'string') return;
+
+          query.positions[edgeIndex] = {
+            may: [edgePosition]
+          }
+          query.positions[cornerIndex] = {
+            may: [cornerPosition]
+          }
         }
 
-        // assert type of position is string
-        if (typeof position !== 'string') {
-          console.warn(`Position for index ${index} is not a string: ${position}`);
-          return;
-        }
-
-        if (!query.positions[index]) {
-          query.positions[index] = {
-            may: [position],
-          };
-        }
-        // unsolved f2l piece may be solved
-        if (!query.positions[index].may) {
-          query.positions[index].may = [];
-        }
       });
 
       queries.push(query);
@@ -1045,7 +1106,8 @@ export class CubeInterpreter {
 
     query.limit = 20;
     query.scoreBy = 'may';
-
+    console.log('Query:', query);
+    console.log('current hash:', this.currentState.hash);
     const suggestions = this.algSuggester.searchByPosition(query);
     console.log('Algorithm suggestions:', suggestions);
     return suggestions.map(result => result.id);
