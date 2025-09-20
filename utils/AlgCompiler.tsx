@@ -4,7 +4,7 @@ import type { RawAlg } from "./rawAlgs";
 import { TwistyPlayer } from 'cubing/twisty';
 import { CubeInterpreter } from "../composables/recon/CubeInterpreter";
 import type { Object3D, Object3DEventMap } from 'three';
-import * as THREE from 'three';
+import { Scene, PerspectiveCamera, WebGLRenderer, AmbientLight } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { reverseMove } from '../composables/recon/transformHTML'
 
@@ -87,7 +87,7 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = ({ algs }) => {
       divRef.current.style.width = '100%';
       divRef.current.style.height = '400px'; // Set a fixed height for the compiler
 
-      scene = new THREE.Scene();
+      scene = new Scene();
       scene.add(cube);
 
       cubeRef.current = cube;
@@ -96,7 +96,7 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = ({ algs }) => {
       console.log('Cube loaded for compiler:', cube);
       
       const aspectRatio = divRef.current.clientWidth / divRef.current.clientHeight;
-      camera = new THREE.PerspectiveCamera(75, aspectRatio, 0.1, 5);
+      camera = new PerspectiveCamera(75, aspectRatio, 0.1, 5);
 
       const scaleFactor = (divRef.current.clientHeight * 0.0024) + 0.92;
 
@@ -104,11 +104,11 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = ({ algs }) => {
       camera.position.z = (Math.sqrt(3) / 2) * scaleFactor;
       camera.position.y = (1 / 2) * scaleFactor;
 
-      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer = new WebGLRenderer({ antialias: true });
       renderer.setSize(divRef.current.clientWidth, divRef.current.clientHeight);
       divRef.current.appendChild(renderer.domElement);
 
-      const light = new THREE.AmbientLight(0xffffff, 0.5);
+      const light = new AmbientLight(0xffffff, 0.5);
       scene.add(light);
 
       controls = new OrbitControls(camera, renderer.domElement);
@@ -189,10 +189,14 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = ({ algs }) => {
       for (const angle of angles) {
         try {
           
-          // prefix AUF or rotation to alg
-          const completeAlg = (angle ? `${angle} ` : '') + alg.value; 
+          // add AUF/rotation
+          const completeAlg =  (angle ? `${angle} ` : '') + alg.value;
           
-          const algInverse = getAlgInverse(completeAlg);
+          // Start alg green front, white top.
+          const angleNormalization = (angle ? `${angle} ` : '') // TODO: May need to account for wide moves/rotations in alg.
+          
+          const algInverse = angleNormalization + getAlgInverse(completeAlg);
+          console.log(`Processing Alg: ${completeAlg}, Inverse: ${algInverse}`);
           
           // Set the algorithm on the player
           if (playerRef.current) {
@@ -218,7 +222,7 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = ({ algs }) => {
         } catch (error) {
           console.error(`Error processing algorithm ${alg.value}:`, error);
           compiledData.push({
-            alg: alg.value,
+            alg: alg.value + ' (Does not include AUF/rotation)',
             hash: 'error',
             step: alg.step || '',
           });

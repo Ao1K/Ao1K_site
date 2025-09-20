@@ -592,8 +592,8 @@ export default function Recon() {
 
   const handleNewlineSuggestions = () => {
     if (!solutionEditorRef.current) return;
-
     const suggestions = cubeInterpreter.current?.getAutocompleteSuggestions();
+    // cubeInterpreter.current?.computeAllRotationMappings();
     console.log('suggestions:', suggestions);
     if (suggestions && suggestions.length > 0) {
       solutionEditorRef.current.showSuggestion(suggestions[0]);
@@ -619,7 +619,7 @@ export default function Recon() {
       const isLineEmpty = moves[lineIndex]?.length === 0;
       if (isLineEmpty) {
 
-        // handleNewlineSuggestions();
+        handleNewlineSuggestions();
 
         // pretend caret is at end of the last line that has a move
         const adjustedLineIndex = findPrevNonEmptyLine(moves, lineIndex);
@@ -1106,7 +1106,7 @@ export default function Recon() {
       <VideoHelpPrompt videoId="iIipycBl0iY" />
       
       {/* utility for compiling list of alg hashes */}
-      {/* <AlgCompiler />  */}
+      {/* <AlgCompiler /> */}
       
       <div id="top-bar" className="px-3 flex flex-row flex-wrap items-center place-content-end gap-2 mt-8 mb-3">
         <TitleWithPlaceholder solveTitle={solveTitle} handleTitleChange={handleTitleChange} />
