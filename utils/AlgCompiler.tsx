@@ -206,7 +206,7 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = ({ algs }) => {
             await new Promise(resolve => setTimeout(resolve, 200));
             
             // Update the cube interpreter with current cube state
-            cubeInterpreter.updateCurrentState(cubeRef.current!);
+            cubeInterpreter.setCurrentState(cubeRef.current!);
             const cubeState = cubeInterpreter.getCurrentState();
             const hash = cubeState?.hash || 'unknown';
             

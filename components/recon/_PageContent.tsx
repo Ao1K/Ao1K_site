@@ -291,14 +291,10 @@ export default function Recon() {
       console.warn('CubeInterpreter is not initialized.');
       return;
     }
-    cubeInterpreter.current.updateCurrentState(cubeRef.current); // Gets latest cubeRef.current
-    // cubeInterpreter.analyzeCubeStructure();
-    // console.log('cross solved:', cubeInterpreter.current.isCrossSolved());
-    // const rotationIndex = cubeInterpreter.trackUniqueRotation();
-    // if (rotationIndex !== -1) {
-    //   console.log(`Cube is in rotation position: ${rotationIndex}`);
-    // }
-    // cubeInterpreter.getPosition(0);
+
+    // this isn't needed normally, just for debugging
+    cubeInterpreter.current.setCurrentState(cubeRef.current); // Gets latest cubeRef.current
+
 
   };
 
@@ -591,9 +587,8 @@ export default function Recon() {
   };
 
   const handleNewlineSuggestions = () => {
-    if (!solutionEditorRef.current) return;
-    const suggestions = cubeInterpreter.current?.getAutocompleteSuggestions();
-    // cubeInterpreter.current?.computeAllRotationMappings();
+    if (!solutionEditorRef.current || !cubeInterpreter.current) return;
+    const suggestions = cubeInterpreter.current.getAutocompleteSuggestions();
     console.log('suggestions:', suggestions);
     if (suggestions && suggestions.length > 0) {
       solutionEditorRef.current.showSuggestion(suggestions[0]);

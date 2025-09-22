@@ -878,10 +878,10 @@ const Player = React.memo(({
     playerRef.current!.style.height = '100%';
     playerRef.current!.experimentalFaceletScale = .95;
 
-    console.log('creating scene');
+    // console.log('creating scene');
     createCustomScene();
 
-    console.log('Scene done');
+    // console.log('Scene done');
     // set props after cubeInterpreter is initialized during createCustomScene
     setInstantPlayerProps(scrambleRequest, solutionRequest, animationTimesRequest);
 
