@@ -45,7 +45,7 @@ export default function ToolbarButton({speed, handleSpeedChange}: SpeedSliderPro
   },[]);
 
   return (
-    <div id="speed-dropdown" className={`relative inline-block group`}>
+    <div id="speed-dropdown" className={`relative inline-block group z-30`}>
       <button
         className="flex flex-col align-middle w-16 h-8 px-2 py-1 rounded-sm hover:bg-neutral-600 border border-neutral-600 text-primary-100 select-none"
         onClick={handleClick}

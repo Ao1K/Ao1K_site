@@ -40,9 +40,8 @@ const ControlsPlaceholder: React.FC<ControlsPlaceholderProps> = ({
   flashingButtons,
   handleFlash,
 }) => {
-  const [windowWidth, setWindowWidth] = useState(() => 
-    typeof window !== 'undefined' ? window.innerWidth : 768
-  );
+  const [windowWidth, setWindowWidth] = useState<number | null>(null);
+  const [hasMounted, setHasMounted] = useState(false);
   const resizeTimeoutRef = useRef<NodeJS.Timeout>(null);
 
   const debouncedResize = useCallback(() => {
@@ -56,9 +55,13 @@ const ControlsPlaceholder: React.FC<ControlsPlaceholderProps> = ({
     }, 150);
   }, []);
 
-  // Add resize listener on mount, cleanup on unmount
+  // Set initial window width and add resize listener on mount
   useEffect(() => {
     if (typeof window === 'undefined') return;
+
+    // Set initial window width and mark as mounted
+    setWindowWidth(window.innerWidth);
+    setHasMounted(true);
 
     window.addEventListener('resize', debouncedResize);
     return () => {
@@ -153,6 +156,11 @@ const ControlsPlaceholder: React.FC<ControlsPlaceholderProps> = ({
   const getResponsiveClasses = () => {
     const base = "absolute z-30 rounded-sm p-2 flex-grow items-center justify-center bottom-0 left-0 flex";
 
+    // Use safe defaults until component has mounted and window width is available
+    if (!hasMounted || windowWidth === null) {
+      return `${base} space-x-1`; // Default to larger screen layout
+    }
+
     const isSmallScreen = windowWidth < 768;
     const isLarger = windowWidth >= 768;
 
@@ -161,8 +169,10 @@ const ControlsPlaceholder: React.FC<ControlsPlaceholderProps> = ({
     return `${base} ${sm} ${others}`;
   };
 
+  const responsiveClasses = getResponsiveClasses();
+
   return (
-    <div className={getResponsiveClasses()}>
+    <div className={responsiveClasses}>
       <button 
         onClick={() => handleButtonClick('fullLeft', onFullLeft)} 
         className={getButtonClasses(controllerButtonsStatus.fullLeft, 'fullLeft')} 

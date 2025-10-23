@@ -10,6 +10,7 @@ import PlayerControls from './PlayerControls';
 import { reverseMove } from '../../composables/recon/transformHTML'
 import type { ControllerRequestOptions } from './_PageContent';
 import type { PlayerParams as RenderRefProps } from './_PageContent';
+import Cookies from 'js-cookie';
 
 interface PlayerProps {
   scrambleRequest: string;
@@ -147,7 +148,7 @@ const Player = React.memo(({
 
     if (!playerRef.current) return;
 
-    if (lastScramble.current !== scramble) { 
+    if (lastScramble.current !== scramble) {
       playerRef.current.experimentalSetupAlg = scramble;
     }
 
@@ -609,12 +610,12 @@ const Player = React.memo(({
         if (hasChanged) {
           // console.log('Cube is still moving...');
           lastMatrixStrings = currentMatrices;
-          setTimeout(checkCubeMovement, 50); // Check again in 50ms
+          setTimeout(checkCubeMovement, 100); // Check again in 50ms
         } else {
           // console.log('Cube movement stopped');
           
           // pass on new cubeRef state
-          onCubeStateUpdate();
+          // onCubeStateUpdate();
 
           // handle param updates
           animatingRef.current = false;
@@ -629,7 +630,7 @@ const Player = React.memo(({
       setTimeout(() => {
         lastMatrixStrings = captureCurrentMatrices();
         // console.log('Starting cube movement monitoring...');
-        setTimeout(checkCubeMovement, 100); // Start checking after animation begins
+        setTimeout(checkCubeMovement, 50); // Start checking after animation begins
       }, 10);
       
     } else {
@@ -782,7 +783,7 @@ const Player = React.memo(({
       scene.add(cube);
 
       cubeRef.current = cube;
-      handleCubeLoaded();
+      // handleCubeLoaded();
 
       // console.log('Cube loaded:', cube);
       
@@ -867,14 +868,15 @@ const Player = React.memo(({
       controlPanel: 'none',
       
       
-      experimentalSetupAlg: '',
-      alg: '',
+      experimentalSetupAlg: scrambleRequest || '',
+      alg: solutionRequest || '',
       
       
       tempoScale: cubeSpeed,
     });
 
     playerRef.current!.style.width = '100%';
+    playerRef.current!.style.marginRight = '1px';
     playerRef.current!.style.height = '100%';
     playerRef.current!.experimentalFaceletScale = .95;
 
@@ -894,10 +896,13 @@ const Player = React.memo(({
   };
 
   const handleToggleControls = () => {
+    Cookies.set('showPlayerControls', (!showControls).toString(), { expires: 365 });
     setShowControls(prev => !prev);
   };
 
   useEffect(() => {
+
+    Cookies.get('showPlayerControls') === 'false' ? setShowControls(false) : setShowControls(true);
     window.addEventListener('resize', handleResize);
 
     return () => {
@@ -944,7 +949,7 @@ const Player = React.memo(({
     <>
       <div
         ref={divRef}
-        className="w-full h-full border border-neutral-600 hover:border-primary-100 rounded-sm relative"
+        className="h-full border border-neutral-600 hover:border-primary-100 rounded-t-sm relative bg-black"
         onClick={() => contextMenuRef.current?.close()}
         onContextMenu={handleContextMenu}
         onKeyDown={handleKeyDown}
@@ -964,9 +969,7 @@ const Player = React.memo(({
           handleFlash={handleFlash}
         />
       </div>
-      
-            
-      {/* now controlled entirely inside its own component */}
+    
       <ContextMenuImperative
         ref={contextMenuRef}
         onToggleControls={handleToggleControls}

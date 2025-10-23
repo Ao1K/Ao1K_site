@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useImperativeHandle, forwardRef, useEffect, Suspense, memo } from 'react';
+import React, { useImperativeHandle, forwardRef, useEffect, Suspense, memo, useState } from 'react';
 import { useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import sanitizeHtml from 'sanitize-html';
+import Cookies from 'js-cookie';
 
 import validateTextInput from "../../composables/recon/validateTextInput";
 import validationToTokens, { degroup } from "../../composables/recon/validationToMoves";
@@ -15,6 +16,11 @@ import { customDecodeURL } from '../../composables/recon/urlEncoding';
 
 import type { Token } from "../../composables/recon/validationToMoves";
 
+interface HTMLUpdateItem {
+  html?: string;
+  change: 'modified' | 'none' | 'suggestion';
+}
+
 const highlightClass = 'text-dark bg-primary-100 backdrop-blur-xs caret-dark';
 
 export const colorDict = {
@@ -25,6 +31,7 @@ export const colorDict = {
   paren: 'text-paren',
   rep: 'text-paren',
   hashtag: 'text-orange-300',
+  suggestion: 'text-dark_accent',
   highlight: highlightClass,
 };
   
@@ -103,12 +110,7 @@ export interface ImperativeRef {
   highlightMove: (moveIndex: number, lineIndex: number) => void;
   removeHighlight: () => void;
   showSuggestion: (suggestion: string) => void;
-}
-
-interface Hashtag {
-  id: string, // stored as id in the div
-  location: [number, number],  // [line number from 0, number of moves before]. Scramble field cannot contain hashtags.
-  hashtag: '#oll' | '#pll' // example possible valid hashtags. Probably abandon this style in favor of a search system.
+  getElement: () => HTMLDivElement | null;
 }
 
 function MovesTextEditor({
@@ -125,6 +127,15 @@ function MovesTextEditor({
   const moveOffsetRef = useRef<number>(0); // number of moves before and at the caret. 0 is at the start of the line before any moves.
   const lineOffsetRef = useRef<number>(0);
   const textboxMovesRef = useRef<string[][]>([['']]); // inner array for line of moves, outer array for all lines in textbox 
+  const suggestionRef = useRef<{ full: string; remaining: string } | null>(null);
+  const suggestionStateRef = useRef<'none' | 'showing' | 'dismissed'>('none');
+
+  // Cookie state for first tab use
+  const [firstTabUse, setFirstTabUse] = useState<boolean>(() => {
+    const cookieValue = Cookies.get('firstTabUse');
+    // return cookieValue === null ? true : cookieValue === 'true';
+    return true; // disabled for testing
+  });
 
   const updateURLTimeout = useRef<NodeJS.Timeout | null>(null);
 
@@ -158,7 +169,7 @@ function MovesTextEditor({
     updateURLTimeout.current = setTimeout(passURLupdate, 500);
   };
   
-  function htmlToLineArray(html: string) {
+  const htmlToLineArray = (html: string) => {
     // strip properties from div tags
     html = html.replace(/<div[^>]*>/g, '<div>');
 
@@ -185,16 +196,30 @@ function MovesTextEditor({
     return lines;
   }
   
-  function findHTMLchanges(oldHTML: string[], newHTML: string[]) {
-    const htmlUpdateMatrix: string[] = [];
+  const findHTMLchanges = (oldHTML: string[], newHTML: string[]): HTMLUpdateItem[] => {
+    const htmlUpdateMatrix: HTMLUpdateItem[] = [];
+    const suggestionClass = colorDict['suggestion'];
 
     newHTML.forEach((line, index) => {
       const oldLine = oldHTML[index];
       
-      if (line !== oldLine || !line.includes('span')) { //adds changed lines or lines that are not painted
-        htmlUpdateMatrix.push(line);
+      // Check if line contains suggestions
+      if (line.includes(`class="${suggestionClass}"`)) {
+        htmlUpdateMatrix.push({
+          html: line,
+          change: 'suggestion'
+        });
+      } else if (line !== oldLine || !line.includes('span')) { //adds changed lines or lines that are not painted
+        htmlUpdateMatrix.push({
+          html: line,
+          change: 'modified'
+        });
         
-      } else { htmlUpdateMatrix.push("");}
+      } else { 
+        htmlUpdateMatrix.push({
+          change: 'none'
+        });
+      }
     });
     return htmlUpdateMatrix;
   }
@@ -227,14 +252,101 @@ function MovesTextEditor({
       .map((token) => token.value);
   }
 
-  const handleHTMLlines = (htmlUpdateMatrix: string[], lineMoveCounts: number[]): [string[], number[]] => {
+  const handleLineModified = (updateItem: HTMLUpdateItem, i: number, lineMoveCounts: number[]): string => {
+    const line = updateItem.html || '';
+
+    // get html
+    const text = line.replace(/<[^>]+>/g, '');
+    const validation = validateTextInput(text);
+    
+    const [newHTMLline, caretIndex] = updateLine(validation, line);
+    
+    // get move and line offsets
+    let moves: string[];
+    if (caretIndex !== null) {
+      let caretSplitIndex = findEndOfWordOnCaret(validation, caretIndex);
+
+      const tokensBeforeCaret = validationToTokens(validation.slice(0, caretSplitIndex)); // before and including move at caret
+      const movesBeforeCaret: string[] = getMovesFromTokens(tokensBeforeCaret);
+      moveOffsetRef.current = movesBeforeCaret.length; // not minus 1. 0 represents before any moves.
+      
+      // TODO: could be optimized.
+      // Can't create tokensAfterCaret because the caret might be in the middle of a group 
+      // [ex: (R U | R' U')2]
+      // would need to create a validation array that includes the caret,
+      // then extract movesBeforeCaret.length from it
+      moves = getMovesFromTokens(validationToTokens(validation));
+
+      lineOffsetRef.current = i; // could be wrong in certain situations? (copy-paste)
+
+    } else {
+      // in the future, may need to expand to handle other types of tokens, such as hashtags
+      moves = getMovesFromTokens(validationToTokens(validation));
+    }
+
+    lineMoveCounts[i] = moves.length;
+    textboxMovesRef.current[i] = moves;
+
+    // Reset suggestion state when user types content
+    if (moves.length > 0 || text.trim() !== '') {
+      suggestionStateRef.current = 'none';
+    }
+
+    return newHTMLline;
+  };
+
+  const handleLineSuggestion = (updateItem: HTMLUpdateItem, i: number, lineMoveCounts: number[]): string => {
+    // if there's a suggestion.current.remaining but not .full, it means the suggestion was rejected
+    
+    if (suggestionRef.current === null) {
+      suggestionRef.current = { full: '', remaining: '' };
+    }
+    
+    const line = updateItem.html || '';
+    const text = line.replace(/<[^>]+>/g, '');
+
+    // try to remove duplicate text in suggestion and manual entry
+    let acceptedSuggestion = '';
+    let remainingSuggestion = '';
+
+    const textNotSuggestion = text.replace(suggestionRef.current.remaining, '');
+
+    let isSuggestionMatch = !!suggestionRef.current.full; // if no suggestion, no match possible
+    textNotSuggestion.split('').forEach((char, index) => {
+      if (!suggestionRef.current || suggestionRef.current.full[index] !== char) {
+        isSuggestionMatch = false;
+        return;
+      }
+    });
+    if (isSuggestionMatch) {
+      acceptedSuggestion = textNotSuggestion;
+      remainingSuggestion = suggestionRef.current.full.replace(acceptedSuggestion, '');
+    }
+
+    // get html without suggestion or possible image
+    const htmlWithoutSuggestion = line.replace(suggestionRef.current.remaining, '').replace(/<img[^>]*>/g, '');
+    const validatedHTML = handleLineModified({html: htmlWithoutSuggestion, change: 'modified'}, i, lineMoveCounts);
+    const suggestionClass = colorDict['suggestion'];
+    const tabImageHTML = firstTabUse ? `<img src="/tab.svg" alt="Press Tab" style="display: inline; pointer-events-none; width: 51px; height: 20px; margin-left: 8px; margin-bottom: 4px; vertical-align: middle;" />` : '';
+
+    const suggestionHTML = remainingSuggestion ? `<span class="${suggestionClass}">${remainingSuggestion}</span>${tabImageHTML}` : '';
+    const combinedHTML = validatedHTML.replace(/<br><\/div>$/, `${suggestionHTML}<br></div>`);
+
+    suggestionRef.current = { 
+      full: suggestionRef.current.full,
+      remaining: remainingSuggestion 
+    };
+    return combinedHTML;
+  };
+
+  const handleHTMLlines = (htmlUpdateMatrix: HTMLUpdateItem[], lineMoveCounts: number[]): [string[], number[]] => {
 
     if (textboxMovesRef.current.length > htmlUpdateMatrix.length) {
       textboxMovesRef.current = textboxMovesRef.current.slice(0, htmlUpdateMatrix.length);
     }
 
     // iterate line by line and return painted HTML
-    const paintedHTML = htmlUpdateMatrix.map((line, i) => {
+    const paintedHTML = htmlUpdateMatrix.map((updateItem, i) => {
       
       if (!textboxMovesRef.current[i]) {
         textboxMovesRef.current[i] = [''];
@@ -244,44 +356,14 @@ function MovesTextEditor({
         lineMoveCounts.push(0);
       }
 
-      if (line) {
-
-        // get html
-        const text = line.replace(/<[^>]+>/g, '');
-        const validation = validateTextInput(text);
-        
-        const [newHTMLline, caretIndex] = updateLine(validation, line);
-        
-        // get move and line offsets
-        let moves: string[];
-        if (caretIndex !== null) {
-          let caretSplitIndex = findEndOfWordOnCaret(validation, caretIndex);
-  
-          const tokensBeforeCaret = validationToTokens(validation.slice(0, caretSplitIndex)); // before and including move at caret
-          const movesBeforeCaret: string[] = getMovesFromTokens(tokensBeforeCaret);
-          moveOffsetRef.current = movesBeforeCaret.length; // not minus 1. 0 represents before any moves.
-          
-          // TODO: optimize this.
-          // Can't create tokensAfterCaret because the caret might be in the middle of a group 
-          // [ex: (R U | R' U')2]
-          // would need to create a validation array that includes the caret,
-          // then extract movesBeforeCaret.length from it
-          moves = getMovesFromTokens(validationToTokens(validation));
-
-          lineOffsetRef.current = i; // could be wrong in certain situations? (copy-paste)
-
-
-        } else {
-          // in the future, may need to expand to handle other types of tokens, such as hashtags
-          moves = getMovesFromTokens(validationToTokens(validation));
-        }
-
-        lineMoveCounts[i] = moves.length;
-        textboxMovesRef.current[i] = moves;
-    
-        return newHTMLline;
-      } else {
-        return oldHTMLlines.current[i];
+      switch (updateItem.change) {
+        case 'modified':
+          return handleLineModified(updateItem, i, lineMoveCounts);
+        case 'suggestion':
+          return handleLineSuggestion(updateItem, i, lineMoveCounts);
+        case 'none':
+        default:
+          return oldHTMLlines.current[i];
       }
 
     });
@@ -354,7 +436,7 @@ function MovesTextEditor({
       moveHistory.current.history[i] = ['<unchanged>', html];    
   }
 
-  function updateLine(validation: [string, string, number?][], line: string): [string, number | null] {
+  const updateLine = (validation: [string, string, number?][], line: string): [string, number | null] => {
     line = removeSpansExceptCaret(line);
     line = line.replace(/&nbsp;/g, ' ');
   
@@ -363,7 +445,7 @@ function MovesTextEditor({
     return [updatedLine, caretIndex];
   }
   
-  function processValidation(validation: [string, string, number?][], line: string): { updatedLine: string, caretIndex: number | null } {
+  const processValidation = (validation: [string, string, number?][], line: string): { updatedLine: string, caretIndex: number | null } => {
     let valIndex = 0;
     let valOffset = 0;
     let matchOffset = 0;
@@ -447,7 +529,7 @@ function MovesTextEditor({
     return { updatedLine: line, caretIndex };
   }
   
-  function removeSpansExceptCaret(line: string): string {
+  const removeSpansExceptCaret = (line: string): string => {
     let line2 = '';
     while (line2 !== line) {
       line2 = line.replace(/<span class[^>]+>|<\/span>/g, '');
@@ -492,11 +574,6 @@ function MovesTextEditor({
     }
     return segments;
   }
-
-  const innerIsEmpty = (line: string): boolean => {
-    const withoutSpans = line.replace(/<\/?span[^>]*>/gi, '');
-    return withoutSpans === '';
-  }
   
   const isDivBlock = (segment: string): boolean => {
     return /^<div>[\s\S]*<\/div>$/i.test(segment);
@@ -521,7 +598,6 @@ function MovesTextEditor({
       return segment.split(/<br>/gi);
     }
   }
-
 
   const onInputChange = () => {
     // core functionality of the input change sequence:
@@ -578,7 +654,7 @@ function MovesTextEditor({
 
   const insertCaretNode = () => {
     
-     if (!contentEditableRef.current) return;
+    if (!contentEditableRef.current) return;
     if (document.activeElement !== contentEditableRef.current) return;
     if (moveHistory.current.undo_redo_done === false) return;
     if (isFocusingRef.current) return;
@@ -588,12 +664,11 @@ function MovesTextEditor({
       existingCaretNode.parentNode!.removeChild(existingCaretNode);
       existingCaretNode = contentEditableRef.current.querySelector('#caretNode');
     }
-    
 
     const caretNode = document.createElement('span');
     caretNode.id = 'caretNode';
 
-    const selection = window.getSelection()
+    const selection = window.getSelection();
     const range = document.createRange();
     
     let node = selection?.focusNode;
@@ -751,7 +826,15 @@ function MovesTextEditor({
 
     let lines = htmlToLineArray(contentEditableRef.current!.innerHTML);
 
-    lineOffsetRef.current = lines.findIndex((line) => line.includes('<span id="caretNode">'));
+    const newLineOffset = lines.findIndex((line) => line.includes('<span id="caretNode">'));
+    
+    // Reset suggestion state when moving to a different line
+    if (newLineOffset !== lineOffsetRef.current && newLineOffset !== -1) {
+      suggestionStateRef.current = 'dismissed';
+      // suggestionStateRef.current = 'none';
+    }
+    
+    lineOffsetRef.current = newLineOffset;
 
     caretLine = lines[lineOffsetRef.current];
     let lineTextArray = caretLine?.match(/>[^<>]+<|caretNode">/g);
@@ -798,6 +881,25 @@ function MovesTextEditor({
   };
 
   const handleCommand = (e: KeyboardEvent) => {
+    if (e.key === 'Tab') {
+      if (suggestionRef.current === null || suggestionRef.current.remaining === '') {
+        return; // no suggestion to confirm
+      }
+      e.preventDefault();
+      handleTab();
+    }
+
+    if (e.key === 'Escape') {
+      if (suggestionRef.current && name === 'solution') {
+
+        // use handleLineSuggestion to remove suggestion html
+        suggestionRef.current = { full: '', remaining: suggestionRef.current.remaining };
+        suggestionStateRef.current = 'dismissed';
+        
+        handleInput();
+      }
+    }
+
     if (!e.ctrlKey) return;
 
     if (e.ctrlKey && e.key === 'z') {
@@ -822,6 +924,61 @@ function MovesTextEditor({
     success_one: { start: 'ready'},
     in_progress_two: { fail: 'ready', success: 'ready' },
   };
+
+  /**
+   * Handle tab key confirmation of any suggested text.
+   */
+  const handleTab = () => {
+    if (!contentEditableRef.current) return;
+    if (name === 'scramble') return; // no suggestions in scramble
+    
+    const suggestionClass = colorDict['suggestion'];
+    const moveClass = colorDict['move'];
+    
+    let lines = oldHTMLlines.current;
+    
+    // Check if there are any suggestions to handle
+    let hasSuggestions = false;
+    
+    // Iterate through all lines and replace suggestion spans
+    lines = lines.map(line => {
+      const isCaretOnLine = line.includes('<span id="caretNode">');
+      
+      // Remove all caret nodes from this line
+      let updatedLine = line.replace(/<span id="caretNode"><\/span>/g, '');
+      
+      if (updatedLine.includes(`class="${suggestionClass}"`)) {
+        hasSuggestions = true;
+        
+        // Remove tab instruction image if present
+        updatedLine = updatedLine.replace(/<img src="\/tab\.svg"[^>]*\/>/g, '');
+        
+        // Replace suggestion spans with move spans and add caret node after replacement
+        updatedLine = updatedLine.replace(
+          new RegExp(`<span class="${suggestionClass.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"([^>]*)>([^<]*)</span>`, 'g'),
+          isCaretOnLine ? `<span class="${moveClass}"$1>$2</span><span id="caretNode"></span>` : `<span class="${moveClass}"$1>$2</span>`
+        );
+      }
+      
+      return updatedLine;
+    });
+    
+    const newHTML = lines.join('');
+    contentEditableRef.current.innerHTML = newHTML;
+    setCaretToCaretNode();
+    
+    handleInput();
+
+    suggestionRef.current = null;
+    suggestionStateRef.current = 'none';
+    
+    // Set firstTabUse to false after successful completion
+    if (hasSuggestions && firstTabUse) {
+      // disabled for testing
+      // setFirstTabUse(false);
+      // Cookies.set('firstTabUse', 'false', { expires: 365 });
+    }
+  }
   
   const incrementStatus = (type: 'fail' | 'success') => {
     const nextStatus = statusTransitions[moveHistory.current.status]?.[type];
@@ -1041,11 +1198,90 @@ function MovesTextEditor({
     contentEditableRef.current.innerHTML = newHTML;
   }
 
+  const removeAllSuggestions = (): string[] => {
+    if (!contentEditableRef.current) return [];
+    
+    const lines = htmlToLineArray(contentEditableRef.current.innerHTML);
+    const suggestionClass = colorDict['suggestion'];
+    return lines.map(line => line.replace(new RegExp(`<span class="${suggestionClass}">[^<]*<\/span>(<img[^>]*>)?`, 'g'), ''));
+  }
+
   const handleShowSuggestion = (suggestion: string) => {
     if (!contentEditableRef.current) return;
     if (name === 'scramble') return; // no suggestions in scramble
+    if (suggestionRef.current?.full === suggestion) return; // same suggestion already shown
+    if (suggestionStateRef.current === 'dismissed') return; // suggestion was recently dismissed
 
-    console.log('showing suggestion:', suggestion);
+    let lines = removeAllSuggestions();
+    
+    
+    const isCommentSuggestion = suggestion.startsWith('//');
+    if (isCommentSuggestion) {
+      showCommentSuggestion(lines, suggestion);
+    } else {
+      showMoveSuggestion(lines, suggestion);
+    }
+  }
+
+  const showCommentSuggestion = (lines: string[], suggestion: string) => {
+    // remove caret nodes
+    let existingCaretNode = contentEditableRef.current?.querySelector('#caretNode');
+    while (existingCaretNode) {
+      existingCaretNode.parentNode!.removeChild(existingCaretNode);
+      existingCaretNode = contentEditableRef.current!.querySelector('#caretNode');
+    }
+    const movecount = oldLineMoveCounts.current[lineOffsetRef.current];
+    if (!movecount || movecount === 0) return;
+    // if there's already a comment, return
+    const commentClass = colorDict['comment'];
+    if (lines[lineOffsetRef.current].includes(`class="${commentClass}"`)) return
+
+    const oldLine = lines[lineOffsetRef.current] || '';
+    const suggestionClass = colorDict['suggestion'];
+    const newline = oldLine.replace(/<br>/, ` <span class="${suggestionClass}">${suggestion}</span><span id="caretNode"></span><br>`);
+    lines[lineOffsetRef.current] = newline;
+    oldHTMLlines.current = lines;
+    const newHTML = lines.join('');
+    suggestionRef.current = { 
+      full: suggestion, 
+      remaining: suggestion 
+    };
+    suggestionStateRef.current = 'showing';
+    setHTML(newHTML);
+  }
+
+  const showMoveSuggestion = (lines: string[], suggestion: string) => {
+    // TODO: add check that previous lines are what we expected. Don't want to give outdated suggestion.
+
+    // if there text in the selected line, abort
+    const movecount = oldLineMoveCounts.current[lineOffsetRef.current];
+    if (movecount && movecount > 0) return;
+
+    // remove caret nodes
+    let existingCaretNode = contentEditableRef.current?.querySelector('#caretNode');
+    while (existingCaretNode) {
+      existingCaretNode.parentNode!.removeChild(existingCaretNode);
+      existingCaretNode = contentEditableRef.current!.querySelector('#caretNode');
+    }
+
+    // Add tab instruction image to suggestion if firstTabUse is true
+    const tabInstruction = firstTabUse ? `<img src="/tab.svg" alt="Press Tab" style="display: inline; pointer-events-none; width: 51px; height: 20px; margin-left: 8px; margin-bottom: 4px; vertical-align: middle;" />` : '';
+
+    const suggestionClass = colorDict['suggestion'];
+    const newline = `<div><span id="caretNode"></span><span class="${suggestionClass}">${suggestion}</span>${tabInstruction}<br></div>`;
+    if (lineOffsetRef.current >= lines.length) {
+      lines.push(newline);
+    } else {
+      lines[lineOffsetRef.current] = newline;
+    }
+    oldHTMLlines.current = lines; // update oldHTMLlines to prevent undo/redo issues
+    const newHTML = lines.join('');
+    suggestionRef.current = { 
+      full: suggestion, 
+      remaining: suggestion 
+    };
+    suggestionStateRef.current = 'showing';
+    setHTML(newHTML);
   }
   
   useImperativeHandle(ref, () => ({
@@ -1071,6 +1307,10 @@ function MovesTextEditor({
 
     showSuggestion: (suggestion: string) => {
       handleShowSuggestion(suggestion);
+    },
+
+    getElement: () => {
+      return contentEditableRef.current;
     },
   }), []);
 
@@ -1101,6 +1341,8 @@ function MovesTextEditor({
       document.removeEventListener('selectionchange', handleCaretChange);
       document.removeEventListener('keydown', handleCommand);
 
+      removeAllSuggestions();
+
       updateURLTimeout.current ? clearTimeout(updateURLTimeout.current) : null;
 
     };
@@ -1118,8 +1360,8 @@ function MovesTextEditor({
         contentEditable
         ref={contentEditableRef}
         className={`
-          text-lg text-left p-2 ff-space-adjust break-normal
-          max-w-full min-h-[4.7rem]
+          text-lg text-left ff-space-adjust break-normal p-2
+          min-h-[4.7rem]
           rounded-sm whitespace-pre-wrap 
           border border-neutral-600 focus:border-primary-100 hover:border-primary-100
           outline-none resize-none caret-primary-200 bg-primary-800 `}

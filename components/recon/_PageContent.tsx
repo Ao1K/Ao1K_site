@@ -1,13 +1,12 @@
 'use client';
 import debounce from 'lodash.debounce';
-import { PNG, Type } from "sr-puzzlegen";
+import HiddenPlayer from './HiddenPlayer';
 import { useState, useRef, useEffect, lazy, Suspense, useCallback, Profiler, useMemo } from 'react';
 import MovesTextEditor from "../../components/recon/MovesTextEditor";
 import SpeedDropdown from "../../components/recon/SpeedDropdown";
 
 import Toolbar from "../../components/Toolbar";
-import Footer from "../../components/Footer";
-
+import Footer from "../../components/Footer"; 
 import ReconTimeHelpInfo from "../../components/recon/ReconTimeHelpInfo";
 import TPSInfo from "../../components/recon/TPSInfo";
 import updateURL from "../../composables/recon/updateURL";
@@ -18,12 +17,12 @@ import type { Object3D } from 'three';
 import UndoIcon from "../../components/icons/undo";
 import RedoIcon from "../../components/icons/redo";
 import CatIcon from "../../components/icons/cat";
-// import MirrorM from "../../components/icons/mirrorM"; // ugly
-// import MirrorS from "../../components/icons/mirrorS"; // ugly
 import TrashIcon from "../../components/icons/trash";
 import CopyIcon from "../../components/icons/copy";
 import ShareIcon from "../../components/icons/share";
 import InvertIcon from "../../components/icons/invert";
+
+import Cookies from 'js-cookie';
 
 import addCat from "../../composables/recon/addCat";
 import { mirrorHTML_M, mirrorHTML_S, removeComments, rotateHTML_X, rotateHTML_Y, rotateHTML_Z, invertHTML } from "../../composables/recon/transformHTML";
@@ -32,15 +31,15 @@ import { TransformHTMLprops } from "../../composables/recon/transformHTML";
 
 import TitleWithPlaceholder from "../../components/recon/TitleInput";
 import TopButton from "../../components/recon/TopButton";
+import CopySolveDropdown from "../../components/recon/CopySolveDropdown";
 import { customDecodeURL } from '../../composables/recon/urlEncoding';
 import getDailyScramble from '../../composables/recon/getDailyScramble';
 import VideoHelpPrompt from '../../components/recon/VideoHelpPrompt';
 import ImageStack from '../recon/ImageStack';
 import { CubeInterpreter } from '../../composables/recon/CubeInterpreter';
+import type { StepInfo } from '../../composables/recon/CubeInterpreter';
 import { AlgCompiler } from '../../utils/AlgCompiler';
-
-// lazy load in compiled-algs.json
-import compiledAlgsData from '../../utils/compiled-algs.json';
+import LLpatternBuilder from '../../utils/LLpatternBuilder';
 
 export interface MoveHistory {
   history: string[][];
@@ -78,6 +77,7 @@ export default function Recon() {
   const [solveTitle, setSolveTitle] = useState<string>('');
   const [topButtonAlert, setTopButtonAlert] = useState<[string, string]>(["", ""]); // [id, alert msg]
   const [isTextboxFocused, setIsTextboxFocused] = useState<boolean>(false);
+  const [isShowingBottomBar, setIsShowingBottomBar] = useState<boolean>(true);
 
   const [scrambleHTML, setScrambleHTML] = useState<string>('');
   const [solutionHTML, setSolutionHTML] = useState<string>('');
@@ -85,15 +85,18 @@ export default function Recon() {
   const [playerParams, setPlayerParams] = useState<PlayerParams>({ animationTimes: [], solution: '', scramble: '' });
 
   const tpsRef = useRef<HTMLDivElement>(null!);
-  const scrambleEditorRef = useRef<ImperativeRef>(null);
-  const solutionEditorRef = useRef<ImperativeRef>(null);
+  const scrambleMethodsRef = useRef<ImperativeRef>(null);
+  const solutionMethodsRef = useRef<ImperativeRef>(null);
   const undoRef = useRef<HTMLButtonElement>(null!);
   const redoRef = useRef<HTMLButtonElement>(null!);
   const oldSelectionRef = useRef<OldSelectionRef>({ range: null, textbox: null,  status: "init" });
   const bottomBarRef = useRef<HTMLDivElement>(null!);
-  const cubeRef = useRef<Object3D | null>(null);
+  const cubeRef = useRef<Object3D | null>(null); // todo: delete
+  const hiddenCubeRef = useRef<Object3D | null>(null);
   const isLoopingRef = useRef<boolean>(false);
   const loopTimeoutRef = useRef<number|null>(null);
+  const lineStepsRef = useRef<StepInfo[][]>([]);
+  const acceptedSuggestionsRef = useRef<Map<number, { alg: string; name?: string; step: string }>>(new Map());
   const clearLoopTimeout = useCallback(() => {
     if (loopTimeoutRef.current !== null) {
       clearTimeout(loopTimeoutRef.current);
@@ -279,24 +282,12 @@ export default function Recon() {
   };
 
   const memoizedHighlightMove = useCallback((moveIndex: number, lineIndex: number) => {
-    solutionEditorRef.current?.highlightMove(moveIndex, lineIndex);
+    solutionMethodsRef.current?.highlightMove(moveIndex, lineIndex);
   }, []);
 
   const memoizedRemoveHighlight = useCallback(() => {
-    solutionEditorRef.current?.removeHighlight();
+    solutionMethodsRef.current?.removeHighlight();
   }, []);
-
-  const interpretCurrentCubeState = () => {
-    if (!cubeInterpreter.current) {
-      console.warn('CubeInterpreter is not initialized.');
-      return;
-    }
-
-    // this isn't needed normally, just for debugging
-    cubeInterpreter.current.setCurrentState(cubeRef.current); // Gets latest cubeRef.current
-
-
-  };
 
   const getMoveToLeft = (): [number, number] => {
     const [idIndex, lineIndex, moveIndex] = moveLocation.current;
@@ -367,27 +358,6 @@ export default function Recon() {
     const lastMoveInLastLine = findLastMoveInLine(moves, lastLineWithMove);
     return [lastLineWithMove, lastMoveInLastLine];
   }
-
-  const countMovesBeforeIndex = (idIndex: number): number => {
-    const [_, lineIndex, moveIndex] = moveLocation.current;
-
-    if (idIndex === 0) {
-      return -1; // add this functionality if needed
-    }
-    let count = 0;
-    const moves = allMovesRef.current[idIndex];
-    for (let i = 0; i < lineIndex; i++) {
-      if (moves[i] && moves[i].length > 0) {
-        count += moves[i].length;
-      }
-    }
-    // add moves in current line before moveIndex
-    if (moves[lineIndex] && moveIndex > 0) {
-      count += moves[lineIndex].slice(0, moveIndex).length;
-    }
-
-    return count;
-  } 
 
   const stopLoopStepRight = () => {
     let [lineIndex, moveIndex] = getMoveToRight();
@@ -587,11 +557,20 @@ export default function Recon() {
   };
 
   const handleNewlineSuggestions = () => {
-    if (!solutionEditorRef.current || !cubeInterpreter.current) return;
-    const suggestions = cubeInterpreter.current.getAutocompleteSuggestions();
+    if (!solutionMethodsRef.current || !cubeInterpreter.current) return;
+    const suggestions = cubeInterpreter.current.getAlgSuggestions();
     console.log('suggestions:', suggestions);
     if (suggestions && suggestions.length > 0) {
-      solutionEditorRef.current.showSuggestion(suggestions[0]);
+      const firstSuggestion = suggestions[0];
+      solutionMethodsRef.current.showSuggestion(firstSuggestion.alg);
+      
+      // Track the suggestion metadata for later use in comment generation
+      const currentLineIndex = moveLocation.current[1] + 1; // TODO: need to use different method to get current line. moveLocation may be up-to-date, meaning no +1.
+      acceptedSuggestionsRef.current.set(currentLineIndex, {
+        alg: firstSuggestion.alg,
+        name: firstSuggestion.name,
+        step: firstSuggestion.step
+      });
     }
   }
 
@@ -614,7 +593,8 @@ export default function Recon() {
       const isLineEmpty = moves[lineIndex]?.length === 0;
       if (isLineEmpty) {
 
-        handleNewlineSuggestions();
+        // don't show any suggestions on 0th line (0th line is usually not algorithmic)
+        lineIndex === 0 ? null : handleNewlineSuggestions();
 
         // pretend caret is at end of the last line that has a move
         const adjustedLineIndex = findPrevNonEmptyLine(moves, lineIndex);
@@ -650,7 +630,6 @@ export default function Recon() {
       allMovesRef.current = newMoves;
 
       setIsTextboxFocused(true);
-
       setPlayerParams({animationTimes: limitedTimes, solution: sol, scramble: scram});
 
       const validPlayPauseStatuses = ['play', 'pause', 'replay', 'disabled'];
@@ -703,16 +682,16 @@ export default function Recon() {
   }
 
   const handleUndo = () => {
-    if (scrambleEditorRef.current  && solutionEditorRef.current) {
-      scrambleEditorRef.current.undo();
-      solutionEditorRef.current.undo();
+    if (scrambleMethodsRef.current  && solutionMethodsRef.current) {
+      scrambleMethodsRef.current.undo();
+      solutionMethodsRef.current.undo();
     }
   }
 
   const handleRedo = () => {
-    if (scrambleEditorRef.current  && solutionEditorRef.current) {
-      scrambleEditorRef.current.redo();
-      solutionEditorRef.current.redo();
+    if (scrambleMethodsRef.current  && solutionMethodsRef.current) {
+      scrambleMethodsRef.current.redo();
+      solutionMethodsRef.current.redo();
     }
   }
 
@@ -774,8 +753,8 @@ export default function Recon() {
 
     let newHTML = transformType(range, textbox!) ?? '';
     textbox === 'solution' ? 
-      solutionEditorRef.current!.transform(newHTML) : // can handle html or plaintext
-      scrambleEditorRef.current!.transform(newHTML)
+      solutionMethodsRef.current!.transform(newHTML) : // can handle html or plaintext
+      scrambleMethodsRef.current!.transform(newHTML)
   }
 
   const handleTransform = (transformType: TransformHTMLprops) => {
@@ -797,12 +776,13 @@ export default function Recon() {
 
   const handleClearPage = () => {
     scrambleRef.current = '';
-    scrambleEditorRef.current?.transform('');
+    scrambleMethodsRef.current?.transform('');
     setSolution('');
-    solutionEditorRef.current?.transform('');
+    solutionMethodsRef.current?.transform('');
     setSolveTime('');
     setSolveTitle('');
     setTotalMoves(0);
+    lineStepsRef.current = []; // Clear line steps tracking
     // don't clear moveHistory
 
     updateURL('title', null);
@@ -855,7 +835,181 @@ export default function Recon() {
     url ? printout += `\n[View solve on Ao1K](${url})` : '';
 
     navigator.clipboard.writeText(printout);
-    setTopButtonAlert(["copy", "Solve text copied!"]);
+    setTopButtonAlert(["copy-solve", "Solve text copied!"]);
+  }
+
+  const handleScreenshot = async () => {
+    try {
+      // Dynamically import html2canvas only when needed
+      const html2canvas = (await import('html2canvas')).default;
+      
+      const scrambleDiv = document.getElementById('scramble');
+      const richSolutionDiv = document.getElementById('rich-solution-display');
+      if (!scrambleDiv || !richSolutionDiv) {
+        console.error('Scramble or solution div not found');
+        return;
+      }
+
+      // Create a wrapper to hold both divs
+      const wrapper = document.createElement('div');
+      wrapper.style.position = 'absolute';
+      wrapper.style.left = '-9999px';
+      wrapper.style.width = 'fit-content';
+      wrapper.style.backgroundColor = '#161018'; // bg-dark
+      wrapper.style.padding = '0';
+      wrapper.style.display = 'flex';
+      wrapper.style.flexDirection = 'column';
+      wrapper.style.gap = '0';
+      wrapper.style.padding = '1rem';
+      wrapper.style.border = '1px solid #525252'; // border-neutral-600
+      wrapper.style.borderRadius = '0.5rem'; // rounded-lg
+
+      // Clone scramble div
+      const scrambleClone = scrambleDiv.cloneNode(true) as HTMLElement;
+      scrambleClone.style.width = 'fit-content';
+      scrambleClone.style.maxWidth = 'none';
+      scrambleClone.style.maxHeight = 'none';
+      
+      // Clone solution div
+      const solutionClone = richSolutionDiv.cloneNode(true) as HTMLElement;
+      solutionClone.style.width = 'fit-content';
+      solutionClone.style.maxWidth = 'none';
+      solutionClone.style.maxHeight = 'none';
+      solutionClone.style.overflow = 'visible';
+      
+      // Find the solution textbox div in the clone and set its width
+      const clonedSolutionTextbox = solutionClone.querySelector('#solution') as HTMLElement;
+      if (clonedSolutionTextbox) {
+        clonedSolutionTextbox.style.width = 'fit-content';
+        clonedSolutionTextbox.style.minWidth = '0';
+      }
+
+      // Fix text positioning in both contenteditable divs and remove borders
+      const editableDivs = [scrambleClone, solutionClone].map(clone => 
+        clone.querySelector('div[contenteditable="true"]')
+      ).filter(Boolean) as HTMLElement[];
+      
+      editableDivs.forEach(editableDiv => {
+        editableDiv.style.paddingTop = '0';
+        editableDiv.style.paddingBottom = '1rem';
+        editableDiv.style.paddingLeft = '0.5rem';
+        editableDiv.style.paddingRight = '0.5rem';
+        editableDiv.style.marginTop = '-0.2rem';
+        editableDiv.style.border = '1px solid #525252'; // border-neutral-600
+        editableDiv.style.borderRadius = '0.125rem'; // rounded-sm
+        editableDiv.style.boxSizing = 'border-box';
+        editableDiv.style.lineHeight = '1.6';
+        
+        const childDivs = editableDiv.querySelectorAll('div');
+        childDivs.forEach((div: HTMLElement) => {
+          div.style.marginTop = '0';
+          div.style.marginBottom = '0';
+          div.style.paddingTop = '0';
+        });
+      });
+
+      scrambleClone.style.marginBottom = '1rem';
+      scrambleClone.style.marginTop = '0';
+      scrambleClone.style.paddingTop = '0.25rem';
+
+      solutionClone.style.paddingTop = '0.5rem';
+      solutionClone.style.paddingBottom = '0.25rem';
+
+      // Create info div with time, STM, TPS, and watermark
+      const infoDiv = document.createElement('div');
+      infoDiv.style.display = 'flex';
+      infoDiv.style.justifyContent = 'space-between';
+      infoDiv.style.alignItems = 'center';
+      infoDiv.style.paddingLeft = '0.5rem';
+      infoDiv.style.paddingRight = '0.5rem';
+      infoDiv.style.paddingBottom = '1rem';
+      infoDiv.style.marginTop = '0.5rem';
+      infoDiv.style.color = '#e5e5e5'; // text-neutral-200
+      infoDiv.style.fontSize = '1.125rem'; // text-lg
+      infoDiv.style.fontFamily = 'inherit';
+      
+      // Build info text (left side)
+      const time = solveTime ? `${solveTime}` : '';
+      const stm = totalMoves ? `${totalMoves} stm` : '';
+      let tpsString = '';
+      if (tpsRef.current && tpsRef.current.innerHTML !== '(-- tps)') {
+        tpsString = tpsRef.current.innerHTML;
+      }
+      
+      let infoText = '';
+      if (time) infoText += `${time} sec`;
+      if (time && stm) infoText += `, `;
+      if (stm) infoText += `${stm} `;
+      if (tpsString) infoText += `${tpsString}`;
+      
+      // Left side: stats
+      const statsSpan = document.createElement('span');
+      statsSpan.textContent = infoText;
+      infoDiv.appendChild(statsSpan);
+      
+      // Right side: watermark
+      const watermarkSpan = document.createElement('span');
+      watermarkSpan.textContent = 'Ao1K.com';
+      infoDiv.appendChild(watermarkSpan);
+
+      // Append clones to wrapper
+      wrapper.appendChild(scrambleClone);
+      wrapper.appendChild(solutionClone);
+      wrapper.appendChild(infoDiv);
+      
+      document.body.appendChild(wrapper);
+
+      // Wait for layout to calculate widths
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Get the actual rendered widths after fit-content
+      const scrambleWidth = scrambleClone.offsetWidth;
+      const solutionWidth = solutionClone.offsetWidth;
+      
+      // Set both to the smaller width
+      const minWidth = Math.min(scrambleWidth, solutionWidth);
+      scrambleClone.style.width = `${minWidth}px`;
+      solutionClone.style.width = `${minWidth}px`;
+      if (clonedSolutionTextbox) {
+        clonedSolutionTextbox.style.width = `${minWidth}px`;
+      }
+      infoDiv.style.width = `${minWidth}px`;
+
+      // Wait again for layout adjustment
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      const canvas = await html2canvas(wrapper, {
+        backgroundColor: '#221825',
+        scale: 1,
+        logging: false,
+      });
+
+      // Remove the wrapper
+      document.body.removeChild(wrapper);
+
+      canvas.toBlob(async (blob) => {
+        if (blob) {
+          try {
+            await navigator.clipboard.write([
+              new ClipboardItem({ 'image/png': blob })
+            ]);
+            setTopButtonAlert(["copy-solve", "Screenshot copied!"]);
+          } catch (error) {
+            console.error('Failed to copy screenshot to clipboard:', error);
+            // Fallback: download the image
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'solve-screenshot.png';
+            link.click();
+            URL.revokeObjectURL(url);
+            setTopButtonAlert(["copy-solve", "Screenshot downloaded!"]);
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Failed to take screenshot:', error);
+    }
   }
 
   const handleShare = async () => { 
@@ -941,7 +1095,7 @@ export default function Recon() {
       const date = data.date;     
       
       const scrambleMessage = `// Scramble of the day<br>// ${date}<br>${dailyScramble}`;
-      scrambleEditorRef.current?.transform(scrambleMessage); // force update inside MovesTextEditor
+      scrambleMethodsRef.current?.transform(scrambleMessage); // force update inside MovesTextEditor
 
     } catch (error) {
       console.error('Failed to get daily scramble:', error);
@@ -1030,15 +1184,207 @@ export default function Recon() {
     }
   };
 
-  const handleCubeLoaded = async () => {
-    if (!cubeRef.current) {
-      console.warn('Cube reference is not set.');
+  const updateLineStepsTracking = (steps: StepInfo[]) => {
+    const [idIndex, currentLineIndex, moveIndex] = moveLocation.current;
+    
+    if (idIndex !== 1 || !steps) return;
+    
+    while (lineStepsRef.current.length <= currentLineIndex) {
+      lineStepsRef.current.push([]);
+    }
+    
+    const previousSteps: StepInfo[] = [];
+    for (let i = 0; i < currentLineIndex; i++) {
+      if (lineStepsRef.current[i]) {
+        previousSteps.push(...lineStepsRef.current[i]);
+      }
+    }
+    
+    const oldStepsOnLine = lineStepsRef.current[currentLineIndex] || [];
+
+    // remove steps that were included in previousSteps
+    const stepsOnLine = steps.filter(step => 
+      !previousSteps.some(prevStep => 
+        prevStep.step === step.step && 
+        prevStep.colors.length === step.colors.length &&
+        prevStep.colors.every((color, index) => color === step.colors[index])
+      )
+    );
+
+    if (stepsOnLine.length > 0 && solutionMethodsRef.current) {
+      handleCommentSuggestions(stepsOnLine);
+    }
+    
+    lineStepsRef.current[currentLineIndex] = stepsOnLine;
+    
+    let stepsChanged = false;
+    
+    if (stepsOnLine.length !== oldStepsOnLine.length) {
+      stepsChanged = true;
+    } else {
+      // Check if any existing steps changed
+      stepsOnLine.forEach((step, index) => {
+        if (!oldStepsOnLine[index] || oldStepsOnLine[index].step !== step.step || 
+            oldStepsOnLine[index].colors.every((color, i) => color === step.colors[i]) === false) {
+          stepsChanged = true;
+        }
+      });
+    }
+
+
+    // remove all unknown steps
+    if (stepsChanged) {
+
+      // TODO: recompute steps for subsequent lines via a queuing system on hiddenCube
+
+      lineStepsRef.current.splice(currentLineIndex + 1);
+    }
+  };
+
+  const handleCommentSuggestions = (steps: StepInfo[]) => {
+    if (!solutionMethodsRef.current || !cubeInterpreter.current) return;
+    
+    const stepNames = steps.map(s => s.step);
+    const hasEO = stepNames.includes('eo');
+    const hasCO = stepNames.includes('co');
+    const hasEP = stepNames.includes('ep');
+    const hasCP = stepNames.includes('cp');
+    const hasSolved = stepNames.includes('solved');
+    const hasCross = steps.some(s => s.type === 'cross');
+    const f2lSteps = steps.filter(s => s.type === 'f2l');
+    const llSteps = steps.filter(s => s.type === 'last layer');
+    
+    const currentLineIndex = moveLocation.current[1];
+    
+    if (hasCross && f2lSteps.length > 0) {
+      solutionMethodsRef.current.showSuggestion(`// ${"x".repeat(f2lSteps.length)}cross`);
+      return;
+    }
+    
+    // ZBLL: Check if EO was previously completed (from earlier line)
+    // and now CO + CP + EP are all solved on this line
+    if (hasCO && hasCP && hasEP) {
+      // Check previous lines to see if EO was already completed
+      let eoWasPreviouslyComplete = false;
+      for (let i = 0; i < currentLineIndex; i++) {
+        const prevSteps = lineStepsRef.current[i] || [];
+        if (prevSteps.some(s => s.step === 'eo')) {
+          eoWasPreviouslyComplete = true;
+          break;
+        }
+      }
+      
+      if (eoWasPreviouslyComplete) {
+        solutionMethodsRef.current.showSuggestion('// zbll');
+        return;
+      }
+    }
+    
+    // oll
+    if (hasEO && hasCO && !hasEP && !hasCP) {
+      // Use tracked suggestion name if available
+      const trackedSuggestion = acceptedSuggestionsRef.current.get(currentLineIndex);
+      if (trackedSuggestion && trackedSuggestion.name && (trackedSuggestion.step === 'oll')) {
+        solutionMethodsRef.current.showSuggestion(`// oll ${trackedSuggestion.name}`);
+        return;
+      }
+
+      // fallback if no name available
+      solutionMethodsRef.current.showSuggestion('// oll');
+      return;
+    }
+    
+    // pll
+    let ollWasPreviouslyComplete = false;
+    let eoWasPreviouslyComplete = false;
+    let coWasPreviouslyComplete = false;
+    for (let i = 0; i < currentLineIndex; i++) {
+      const prevSteps = lineStepsRef.current[i] || [];
+      if (prevSteps.some(s => s.step === 'eo')) {
+        eoWasPreviouslyComplete = true;
+      }
+      if (prevSteps.some(s => s.step === 'co')) {
+        coWasPreviouslyComplete = true;
+      }
+    }
+    ollWasPreviouslyComplete = eoWasPreviouslyComplete && coWasPreviouslyComplete;
+    if (hasSolved && !hasEO && !hasCO && ollWasPreviouslyComplete) {
+      // Use tracked suggestion name if available
+      const trackedSuggestion = acceptedSuggestionsRef.current.get(currentLineIndex);
+      if (trackedSuggestion && trackedSuggestion.name && trackedSuggestion.step === 'pll') {
+        solutionMethodsRef.current.showSuggestion(`// pll ${trackedSuggestion.name}`);
+        return;
+      }
+      
+      // fallback if no name available
+      solutionMethodsRef.current.showSuggestion('// pll');
       return;
     }
 
-    const { default: algDoc } = await import('../../utils/compiled-algs.json');
+    // single LL step with name from tracked suggestion
+    const trackedSuggestion = acceptedSuggestionsRef.current.get(currentLineIndex);
+    if (llSteps.length > 0 && trackedSuggestion && trackedSuggestion.name) {
+      solutionMethodsRef.current.showSuggestion(`// ${trackedSuggestion.name}`);
+      return;
+    }
+    
+    // multiple f2l pairs with color initials
+    if (f2lSteps.length > 1) {
+      const pairLabels = f2lSteps.map(pair => {
+        const colorInitials = pair.colors.map(color => color[0].toUpperCase()).join('');
+        return colorInitials;
+      });
+      solutionMethodsRef.current.showSuggestion(`// ${pairLabels.join(' + ')}`);
+      return;
+    }
+    
+    // single f2l pair
+    if (f2lSteps.length === 1) {
+      const colorInitials = f2lSteps[0].colors.map(color => color[0].toUpperCase()).join('');
+      solutionMethodsRef.current.showSuggestion(`// ${colorInitials}`);
+      return;
+    }
+    
+    if (steps.length === 1 && steps[0].step === 'cross' && steps[0].colors.length > 0) {
+      const crossColor = steps[0].colors[0];
+      solutionMethodsRef.current.showSuggestion(`// ${crossColor} cross`);
+      return;
+    }
+    
+    // fallback: Generic step names combined
+    const stepLabels = steps.map(s => s.step).join(' + ');
+    solutionMethodsRef.current.showSuggestion(`// ${stepLabels}`);
+  }
 
-    cubeInterpreter.current = new CubeInterpreter(cubeRef.current, algDoc.algorithms);
+  const handleHiddenCubeUpdate = useCallback(() => {
+    if (!hiddenCubeRef.current) {
+      console.warn('Hidden cube reference is not set.');
+      return;
+    }
+
+    cubeInterpreter.current?.setCurrentState(hiddenCubeRef.current);
+    const steps = cubeInterpreter.current?.getStepsCompleted()
+    console.log('steps completed:', steps);
+    
+    if (steps) {
+      updateLineStepsTracking(steps);
+    }
+  }, []);
+
+  const handleHiddenCubeLoaded = useCallback(async () => {
+    if (!hiddenCubeRef.current) {
+      console.warn('Hidden Cube reference is not set.');
+      return;
+    }
+
+    const { default: algDoc } = await import('../../utils/compiled-exact-algs.json');
+
+    cubeInterpreter.current = new CubeInterpreter(hiddenCubeRef.current, algDoc.algorithms);
+  }, []);
+
+  const toggleShowBottomBar = () => {
+    Cookies.set('isShowingBottomBar', (!isShowingBottomBar).toString(), { expires: 365 });
+    setIsShowingBottomBar(prev => !prev);
   }
 
   useEffect(() => {
@@ -1068,6 +1414,8 @@ export default function Recon() {
       // if no URL query values or empty string values, then show daily scramble
       showDailyScramble();
     }
+
+    Cookies.get('isShowingBottomBar') === 'false' ? setIsShowingBottomBar(false) : setIsShowingBottomBar(true);
   }, []);
 
   useEffect(() => {
@@ -1102,22 +1450,30 @@ export default function Recon() {
       
       {/* utility for compiling list of alg hashes */}
       {/* <AlgCompiler /> */}
+      {/* <LLpatternBuilder /> */}
+      <HiddenPlayer 
+        scramble={playerParams.scramble} 
+        solution={playerParams.solution} 
+        cubeRef={hiddenCubeRef} 
+        animationTimes={playerParams.animationTimes} 
+        onCubeStateUpdate={handleHiddenCubeUpdate} 
+        handleCubeLoaded={handleHiddenCubeLoaded}
+      />
       
       <div id="top-bar" className="px-3 flex flex-row flex-wrap items-center place-content-end gap-2 mt-8 mb-3">
         <TitleWithPlaceholder solveTitle={solveTitle} handleTitleChange={handleTitleChange} />
         <div className="flex-none flex flex-row space-x-1 pr-2 text-dark_accent">
           <TopButton id="trash" text="Clear Page" shortcutHint="Ctrl+Del" onClick={handleClearPage} icon={<TrashIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
-          <TopButton id="copy" text="Copy Solve" shortcutHint="Ctrl+Q" onClick={handleCopySolve} icon={<CopyIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
+          <CopySolveDropdown onCopyText={handleCopySolve} onScreenshot={handleScreenshot} alert={topButtonAlert} setAlert={setTopButtonAlert} />
           <TopButton id="share" text="Copy URL" shortcutHint="Ctrl+S" onClick={handleShare} icon={<ShareIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
         </div>
       </div>
       <div id="scramble-area" className="px-3 mt-3 flex flex-col">
         <div className="text-xl text-dark_accent font-medium">Scramble</div>
         <div className="lg:max-h-[15.1rem] max-h-[10rem] overflow-y-auto" id="scramble">
-          {/* <Profiler id="scramble-editor" onRender={(id, phase, actualDuration) => console.log(`[Profiler] ${id} took ${actualDuration} ms. Phase: ${phase}`)> */}
           <MovesTextEditor
             name={`scramble`}
-            ref={scrambleEditorRef}
+            ref={scrambleMethodsRef}
             trackMoves={memoizedTrackMoves}
             autofocus={false}
             moveHistory={moveHistory}
@@ -1125,12 +1481,10 @@ export default function Recon() {
             html={scrambleHTML}
             setHTML={memoizedSetScrambleHTML}
           />
-          {/* </Profiler> */}
         </div>
       </div>
-      <div id="player-box" className="px-3 relative flex flex-col my-6 w-full justify-center items-center">
-        <div id="cube-highlight" className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-full blur-sm bg-primary-900 w-[calc(100%-1.5rem)]"></div>
-        <div id="cube_model" className="flex h-full aspect-video max-h-96 min-h-[200px] bg-primary-900 select-none z-10 w-full">
+      <div id="player-box" className="px-3 relative flex flex-col mt-6 w-full justify-center items-center">
+        <div id="cube_model" className="flex h-full aspect-video max-h-96 min-h-[200px] bg-primary-900 select-none z-20 w-[100%]">
           <Suspense fallback={<div className="flex text-xl w-full h-full justify-center items-center text-primary-100">Loading cube...</div>}>
             <TwistyPlayer 
               speed={speed} 
@@ -1138,8 +1492,8 @@ export default function Recon() {
               scrambleRequest={playerParams.scramble}
               solutionRequest={playerParams.solution}
               animationTimesRequest={playerParams.animationTimes}
-              onCubeStateUpdate={interpretCurrentCubeState}
-              handleCubeLoaded={handleCubeLoaded}
+              onCubeStateUpdate={()=>{}}
+              handleCubeLoaded={()=>{}}
               handleControllerRequest={handleControllerRequest}
               controllerButtonsStatus={controllerButtonsStatus}
               setControllerButtonsStatus={setControllerButtonsStatus}
@@ -1147,19 +1501,39 @@ export default function Recon() {
           </Suspense>
         </div>
       </div>
-      <div id="bottom-bar" className="px-3 space-x-1 static flex flex-row items-center place-content-end justify-start text-primary-100 w-full" ref={bottomBarRef}>
-        <SpeedDropdown speed={localSpeed} handleSpeedChange={handleSpeedChange}/>
-        <Toolbar buttons={toolbarButtons} containerRef={bottomBarRef}/>
+      <div id="bottom-box" className="mx-3 relative flex flex-col justify-center items-center">        
+        <div id="bottom-box-borders" className={`border-x w-[100%] border-neutral-600 h-14 absolute top-0 z-0 pointer-events-none ${isShowingBottomBar ? 'block' : 'hidden'}`}></div>
+        <div
+          id="bottom-bar"
+          ref={bottomBarRef}
+          className={`w-full px-3 space-x-1 static flex flex-row items-center place-content-end justify-start transform z-10
+              ${isShowingBottomBar ? 'translate-y-0 opacity-100 h-14' : '-translate-y-[100%] opacity-0 pointer-events-none h-0'}`}
+          style={{
+            visibility: isShowingBottomBar ? 'visible' : 'hidden',
+            transition: isShowingBottomBar
+              ? 'transform 300ms linear, opacity 300ms ease-in-out, visibility 0s linear 100ms' : ''
+          }}
+        >
+          <SpeedDropdown speed={localSpeed} handleSpeedChange={handleSpeedChange} />
+          <Toolbar buttons={toolbarButtons} containerRef={bottomBarRef} />
+        </div>
+        <div className="border border-neutral-600 hover:border-primary-100 h-[6px] rounded-b-sm w-full z-0 bg-primary-700 mb-2" onClick={() => toggleShowBottomBar()}></div>
       </div>
       <div id="datafields" className="w-full items-start transition-width duration-500 ease-linear">
-        <div id="solution-area" className="px-3 mt-3 mb-6 flex flex-col w-full">
+        <div id="solution-area" className="px-3 mt-1 mb-6 flex flex-col w-full">
           <div className="text-xl text-dark_accent font-medium w-full">Solution</div>
-          <div id="rich-solution-display" className="flex flex-row lg:max-h-[15.1rem] max-h-[10rem] border-none overflow-y-auto">
-            <ImageStack moves={allMovesRef.current} position={moveLocation.current} isTextboxFocused={isTextboxFocused} />
+          <div id="rich-solution-display" className="flex flex-row lg:max-h-[20rem] max-h-[10rem] border-none overflow-y-auto">
+            <ImageStack 
+              moves={allMovesRef.current}
+              position={moveLocation.current}
+              isTextboxFocused={isTextboxFocused}
+              editableElement={solutionMethodsRef.current?.getElement() || null}
+              lineSteps={lineStepsRef.current}
+            />
             <div className="w-full min-w-0" id="solution">
               <MovesTextEditor 
                 name={`solution`}
-                ref={solutionEditorRef} 
+                ref={solutionMethodsRef} 
                 trackMoves={memoizedTrackMoves} 
                 autofocus={true} 
                 moveHistory={moveHistory}

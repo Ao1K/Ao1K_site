@@ -1,12 +1,58 @@
 Informal Bugs/Todo List. Not guaranteed to be complete or accurate.
 ===================================================================
 
-Encode "(" and ")". These characters can break "copy solve".
- - unable to reproduce
- 
-Create step recognition for left side solution icons
+Hidden cube load safety and exception handling
 
-Create dynamic icon for animation speed dropdown. Faster should be further to the right. Ideally animate the icon.
+Hide tools bar by default
+
+Try a funky faint checkerboard pattern for footer, cubing-esque
+
+Autocomplete for cross. Would need to brute force solutions to partial cross solution input. 
+Or compute a bunch of crosses and just give whatever suggestion still works.
+But we don't wanna just show autocomplete right away. Noisey.
+
+Algs page. For your algs. A tab for your recons (click an icon and expand into a whole new page). A profile system. Oofda.
+
+ZBLS autocomplete:
+Case = f2l && (EO + AUF)
+Noteably, adding U* to start of alg is still the same case.
+So we generate a json specifically for ZBLS with these objects:
+{hash: 'abcd', 'eoIndex': 9, alg: "R U R'"}
+Then we search for hash matches only on f2l pieces. The EO is matched separately.
 
 
- 
+We have three things that need info on which step a line solves:
+  1. Suggestion list popup
+  2. Comment suggester
+  3. Left side icon tray
+#1 needs an updating list
+#2 is easiest. We can just push a suggestion out when a step completes
+#3 ideally needs a ground truth from a hidden cube ref
+
+Since #1 largest requirements, makes sense to build an object around that and give the necessary info out to the other features.
+So create a ref object that keeps and up-to-date list of steps solved on a line
+But we should only give a comment suggestion when caret is in the right spot...
+  So during the up-to-date event, we also send out the current line and move offset
+  So what causes an up-to-date event?
+  Probably just trackMoves. Ez.
+  Can we keep a stable copy of allMoves for suggestion, so that we're sure the moves haven't changed since we started the suggestion process?
+
+
+
+
+Flow of info 
+0. interpretCurrentCubeState() constantly keeps the cube up to date
+1a. user edits textbox
+2a. if there no text in line, send a search request to cubeInterpreter, along with xy position of caret
+3. cubeInterpreter returns suggestion
+4. suggestionBox created, default selected
+5. selected suggestion appears in grey text in textbox
+
+2b. check if there's any suggestions in list that suggestionBox uses
+3. filter to see if any suggestions still work
+4. default suggestion shows up in grey still
+
+1b. a step is newly completed via interpretCurrentCubeState()
+2. suggested step names are passed to MovesTextEditor through an imperative ref
+3. filter to see if any suggestions still work
+4. default suggestion shows up in grey still

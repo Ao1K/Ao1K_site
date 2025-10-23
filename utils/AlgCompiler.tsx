@@ -1,133 +1,81 @@
-import React, { useRef, useState, useCallback, useEffect, MutableRefObject } from 'react';
-import { rawAlgs } from "./rawAlgs";
-import type { RawAlg } from "./rawAlgs";
-import { TwistyPlayer } from 'cubing/twisty';
+import React, { useRef, useState } from 'react';
+import { rawGeneric, rawOLLalgs, rawPLLalgs } from "./rawAlgs";
+import type { ExactAlg, LastLayerAlg } from "./rawAlgs";
 import { CubeInterpreter } from "../composables/recon/CubeInterpreter";
 import type { Object3D, Object3DEventMap } from 'three';
-import { Scene, PerspectiveCamera, WebGLRenderer, AmbientLight } from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { reverseMove } from '../composables/recon/transformHTML'
+import { reverseMove } from '../composables/recon/transformHTML';
+import HiddenPlayer from '../components/recon/HiddenPlayer';
+import type { CompiledLLAlg } from '../composables/recon/LLsuggester';
 
-interface CompiledAlg {
+interface CompiledExactAlg {
   alg: string;
   hash: string;
   step?: string;
 }
 
 interface AlgCompilerProps {
-  algs?: RawAlg[];
+  algs?: ExactAlg[];
 }
-
 
 /**
  * React component for compiling algorithms and rendering a TwistyPlayer
  */
-export const AlgCompiler: React.FC<AlgCompilerProps> = ({ algs }) => {
-  const divRef = useRef<HTMLDivElement>(null);
-  const playerRef = useRef<TwistyPlayer | null>(null);
-  const cubeRef = useRef<Object3D<Object3DEventMap> | null>(null);
+type AlgorithmType = 'exact' | 'oll' | 'pll';
+
+export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
+  const compilerCubeRef = useRef<Object3D<Object3DEventMap> | null>(null);
 
   const [isCompiling, setIsCompiling] = useState(false);
   const [cubeLoaded, setCubeLoaded] = useState(false);
+  const [currentScramble, setCurrentScramble] = useState('');
+  const [currentSolution, setCurrentSolution] = useState('');
+  const [animationTimes, setAnimationTimes] = useState<number[]>([]);
+  const [selectedAlgTypes, setSelectedAlgTypes] = useState<Set<AlgorithmType>>(new Set(['exact', 'oll', 'pll']));
 
-  // Three.js scene variables
-  let scene: THREE.Scene;
-  let camera: THREE.PerspectiveCamera;
-  let renderer: THREE.WebGLRenderer;
-  let controls: OrbitControls;
-  let cube: Object3D;
-
-  const animate = () => {
-    requestAnimationFrame(animate);
-    if (controls && renderer && scene && camera) {
-      controls.update();
-      renderer.render(scene, camera);
-    }
+  // HiddenPlayer callbacks
+  const handleCubeLoaded = () => {
+    setCubeLoaded(true);
+    console.log('Cube loaded for compiler');
   };
 
-  const loadCubeObject = async () => {
-    cube = await playerRef.current!.experimentalCurrentThreeJSPuzzleObject() as unknown as Object3D;
-    let attempts = 0;
-    const maxAttempts = 100; // 10 seconds
-    const waitTime = 100; // ms
-
-    while (!cube && attempts < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, waitTime));
-      cube = await playerRef.current!.experimentalCurrentThreeJSPuzzleObject() as unknown as Object3D;
-      attempts++;
-    }
-
-    if (!cube) {
-      console.error('Failed to load cube object within 10 seconds.');
-      return;
-    }
-    
-    return cube;
+  const handleCubeStateUpdate = () => {
+    // This is called when the cube state changes in HiddenPlayer
+    // The cube state will be read in the compileAlgorithms function
   };
 
-  const createCustomScene = async () => {
-    if (!divRef.current || !playerRef.current) return;
-
-    divRef.current.appendChild(playerRef.current); 
-    
-    await playerRef.current.connectedCallback();
-    
-    let possibleCube = await loadCubeObject();
-    possibleCube ? cube = possibleCube : null;
-    
-    if (divRef.current && cube && !scene) {
-      
-      // Find and remove any <twisty-player> elements.
-      let twistyPlayerElement = divRef.current.querySelector('twisty-player');
-      while (twistyPlayerElement) {
-        divRef.current.removeChild(twistyPlayerElement);
-        twistyPlayerElement = divRef.current.querySelector('twisty-player');
+  const handleAlgTypeToggle = (algType: AlgorithmType) => {
+    setSelectedAlgTypes(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(algType)) {
+        newSet.delete(algType);
+      } else {
+        newSet.add(algType);
       }
-
-      divRef.current.style.width = '100%';
-      divRef.current.style.height = '400px'; // Set a fixed height for the compiler
-
-      scene = new Scene();
-      scene.add(cube);
-
-      cubeRef.current = cube;
-      setCubeLoaded(true);
-
-      console.log('Cube loaded for compiler:', cube);
-      
-      const aspectRatio = divRef.current.clientWidth / divRef.current.clientHeight;
-      camera = new PerspectiveCamera(75, aspectRatio, 0.1, 5);
-
-      const scaleFactor = (divRef.current.clientHeight * 0.0024) + 0.92;
-
-      //zoom level
-      camera.position.z = (Math.sqrt(3) / 2) * scaleFactor;
-      camera.position.y = (1 / 2) * scaleFactor;
-
-      renderer = new WebGLRenderer({ antialias: true });
-      renderer.setSize(divRef.current.clientWidth, divRef.current.clientHeight);
-      divRef.current.appendChild(renderer.domElement);
-
-      const light = new AmbientLight(0xffffff, 0.5);
-      scene.add(light);
-
-      controls = new OrbitControls(camera, renderer.domElement);
-      controls.enableDamping = true;
-      controls.dampingFactor = 0.15;
-      controls.enableZoom = true;
-      controls.enablePan = true;
-      controls.update();
-      
-      animate();
-    }
+      return newSet;
+    });
   };
 
-  const handleResize = () => {
-    if (renderer && camera && divRef.current) {
-      camera.aspect = divRef.current.clientWidth / divRef.current.clientHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(divRef.current.clientWidth, divRef.current.clientHeight);
+  const findAnimationLengths = (moves: string[]): number[] => {
+    let moveAnimationTimes: number[] = [];
+    const singleTime = 1000;
+    const doubleTime = 1500;
+    const tripleTime = 2000;
+
+    if (!moves || moves.length === 0) {
+      return [0]; // no moves, return 0
     }
+
+    moves.forEach((move) => {
+      if (move.includes('2')) {
+        moveAnimationTimes.push(doubleTime);
+      } else if (move.includes('3')) {
+        moveAnimationTimes.push(tripleTime);
+      } else {
+        moveAnimationTimes.push(singleTime);
+      }
+    });
+
+    return moveAnimationTimes;
   };
 
   const getAlgInverse = (alg: string): string => {
@@ -142,71 +90,251 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = ({ algs }) => {
     return reversedAlg.trim();
   };
 
-  const guessAllowedAlgAngles = (step: string): string[] => {
-    switch (step) {
+  const getAllowedAngles = (alg: ExactAlg): string[] => {
+    switch (alg.step) {
       case 'f2l':
-        // don't allow y2. 
-        // y2 should generally not be used, so we don't give users the ability to autocomplete to it
-        return ['', 'y', "y'"]; 
+        if (alg.add_y && alg.add_U) {
+          // allow all combinations of y and U, except any y2
+          return ['', 'y', "y'", 'U', "U'", 'U2', 'y U', "y U'", 'y U2', "y' U", "y' U'", "y' U2"];
+        } else if (alg.add_y) {
+          return ['', 'y', "y'"];
+        } else if (alg.add_U) {
+          return ['', 'U', "U'", 'U2'];
+        } else {
+          return [''];
+        }
       case 'oll':
-        return [ '', 'U', 'U2', "U'"];
       case 'pll':
-        return [ '', 'U', 'U2', "U'"];
-      case 'zbll':
-        return [ '', 'U', 'U2', "U'"];
-      case 'ollcp':
-        return [ '', 'U', 'U2', "U'"];
-      case 'coll':
-        return [ '', 'U', 'U2', "U'"];
-      // TODO: add more options
+        if (alg.add_U) {
+          return ['', 'U', "U'", 'U2'];
+        } else {
+          return [''];
+        }
       default:
-        return [ ];
+        if (alg.add_y && alg.add_U) {
+          // allow all combinations of y and U, including y2 and U2
+          return ['', 'y', "y'", "y2", 'U', "U'", 'U2', 'y U', "y U'", 'y U2', "y' U", "y' U'", "y' U2", "y2 U", "y2 U'", "y2 U2"];
+        } else if (alg.add_y) {
+          return ['', 'y', "y'", "y2"];
+        } else if (alg.add_U) {
+          return ['', 'U', "U'", 'U2'];
+        } else {
+          return [''];
+        }
     }
+  }
+
+  /**
+   * Reorders algorithm by flipping U and y moves using regex
+   * Example: "U2 y' R U R'" becomes "y' U2 R U R'"
+   */
+  const reorderAnglingInAlg = (angle: string, algValue: string): string => {
+    let combined = (angle ? `${angle} ` : '') + algValue;
+    
+    // Use regex to find U move followed by y move and flip them
+    combined = combined.replace(/(U'?2?)\s+(y'?2?)/g, '$2 $1');
+    
+    return combined.trim();
   };
 
   /**
-   * Takes an array of cubing algs, determines the cube hash, then creates a json file and downloads it.
+   * Validates that algorithm doesn't have more than 2 leading rotation/AUF moves
+   * and not more than 1 of each type (U and y)
    */
-  const compileAlgorithms = async (algs?: RawAlg[]) => {
-    if (!cubeLoaded || !cubeRef.current) {
+  const validateAlg = (alg: string): boolean => {
+    const moves = alg.trim().split(/\s+/);
+    const leadingMoves = [];
+    
+    // Get leading U and y moves
+    for (const move of moves) {
+      if (move.match(/^[Uy]['2]?$/)) {
+        leadingMoves.push(move);
+      } else {
+        break;
+      }
+    }
+    
+    // Check if we have more than 2 leading moves
+    if (leadingMoves.length > 2) {
+      console.error(`Invalid algorithm pattern detected: ${alg}. Too many leading rotation/AUF moves (${leadingMoves.length}). Halting processing.`);
+      return false;
+    }
+    
+    // Check if we have more than 1 of each type
+    const uMoves = leadingMoves.filter(move => move.startsWith('U'));
+    const yMoves = leadingMoves.filter(move => move.startsWith('y'));
+    
+    if (uMoves.length > 1) {
+      console.error(`Invalid algorithm pattern detected: ${alg}. Too many leading U moves (${uMoves.length}). Halting processing.`);
+      return false;
+    }
+    
+    if (yMoves.length > 1) {
+      console.error(`Invalid algorithm pattern detected: ${alg}. Too many leading y moves (${yMoves.length}). Halting processing.`);
+      return false;
+    }
+    
+    return true;
+  };
+
+  const compileAllAlgs = async () => {
+    if (selectedAlgTypes.has('exact')) {
+      await compileAlgorithms(rawGeneric, 'Exact');
+    }
+    if (selectedAlgTypes.has('oll')) {
+      await compileAlgorithms(rawOLLalgs, 'LastLayer');
+    }
+    if (selectedAlgTypes.has('pll')) {
+      await compileAlgorithms(rawPLLalgs, 'LastLayer');
+    }
+  };
+
+  const compileAlgorithms = async (algs: ExactAlg[] | LastLayerAlg[], algType: 'Exact' | 'LastLayer') => {
+    if (!cubeLoaded || !compilerCubeRef.current) {
+      console.error('Cube not loaded yet. Please wait for the cube to load before compiling.');
+      return;
+    }
+    switch (algType) {
+      case 'Exact':
+        await compileExactAlgorithms(algs as ExactAlg[]);
+        break;
+      case 'LastLayer':
+        await compileLLalgorithms(algs as LastLayerAlg[]);
+        break;
+      default:
+        console.error(`Unknown algorithm type: ${algType}`);
+    }
+  };
+
+  const removeAngleFromAlg = (alg: string): string => {
+    const moves = alg.trim().split(/\s+/);
+    for (const move in moves) {
+      if (move.match(/^[Uy]['2]?$/)) {
+        moves.shift();
+      } else {
+        break;
+      }
+    }
+    return moves.join(' ').trim();
+  };
+
+  const compileLLalgorithms = async (algs: LastLayerAlg[]) => {
+    if (!cubeLoaded || !compilerCubeRef.current) {
       console.error('Cube not loaded yet. Please wait for the cube to load before compiling.');
       return;
     }
 
-    console.log('Compiling algorithms...');
-    // if no algs, use rawAlgs file
-    if (!algs) {
-      algs = rawAlgs;
+    const cubeInterpreter = new CubeInterpreter(compilerCubeRef.current);
+
+    // Add a small delay to ensure cube is fully initialized
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    const matrixMaps = cubeInterpreter.solvedMatrixMaps;
+    if (!matrixMaps || matrixMaps.size === 0) {
+      console.error('CubeInterpreter solvedMatrixMaps is not available. Cannot proceed with compilation.');
+      return;
     }
 
-    const cubeInterpreter = new CubeInterpreter(cubeRef.current);
-
     // Array to store compiled algorithm data
-    const compiledData: CompiledAlg[] = [];
+    const compiledData: CompiledLLAlg[] = [];
 
     for (const alg of algs) {
-      const angles = alg.allowedAngles ?? guessAllowedAlgAngles(alg.step || '');
+      const cleanedAlg = removeAngleFromAlg(alg.value);
+      const algInverse = getAlgInverse(cleanedAlg);
+
+      setCurrentScramble(''); // No scramble needed for compilation
+      setCurrentSolution(algInverse);
+      setAnimationTimes(findAnimationLengths(algInverse.split(' ')));
+      
+      // Wait for the cube to update
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Update the cube interpreter with current cube state
+      if (compilerCubeRef.current) {
+        cubeInterpreter.setCurrentState(compilerCubeRef.current);
+        console.log('Identifying alg:', alg.value);
+        const { index: caseIndex, refPieceMovement, minMovements } = cubeInterpreter.identifyLLcase(alg.step, alg.value);
+        compiledData.push({
+          alg: alg.value,
+          caseIndex,
+          refPieceMovement,
+          minMovements
+        });
+      }
+    }
+    const step = algs[0]!.step;
+    downloadCompiledAlgs(compiledData, step);
+
+  }
+  /**
+   * Takes an array of cubing algs, determines the cube hash, then creates a json file and downloads it.
+   */
+  const compileExactAlgorithms = async (algs: ExactAlg[]) => {
+    if (!compilerCubeRef.current) {
+      console.error('Cube reference not available. Cannot proceed with compilation.');
+      return;
+    }
+
+    const cubeInterpreter = new CubeInterpreter(compilerCubeRef.current);
+    // Add a small delay to ensure cube is fully initialized
+    await new Promise(resolve => setTimeout(resolve, 100));
+    const matrixMaps = cubeInterpreter.solvedMatrixMaps;
+    if (!matrixMaps || matrixMaps.size === 0) {
+      console.error('CubeInterpreter solvedMatrixMaps is not available. Cannot proceed with compilation.');
+      return;
+    }
+
+    // Array to store compiled algorithm data
+    const compiledData: CompiledExactAlg[] = [];
+
+    for (const alg of algs) {
+      const angles = getAllowedAngles(alg);
       for (const angle of angles) {
         try {
           
-          // add AUF/rotation
-          const completeAlg =  (angle ? `${angle} ` : '') + alg.value;
+          // add AUF/rotation and reorder if needed (y moves should go before U moves)
+          let completeAlg = reorderAnglingInAlg(angle, alg.value);
+          
+          // Validate the algorithm - skip processing if invalid
+          if (!validateAlg(completeAlg)) {
+            continue;
+          }
           
           // Start alg green front, white top.
-          const angleNormalization = (angle ? `${angle} ` : '') // TODO: May need to account for wide moves/rotations in alg.
+          // Extract leading y moves from complete algorithm for normalization
+          const moves = completeAlg.trim().split(/\s+/);
+          const leadingYMoves = [];
+          
+          // Get leading y moves only
+          for (const move of moves) {
+            if (move.match(/^y['2]?$/)) {
+              leadingYMoves.push(move);
+            } else if (!move.match(/^U['2]?$/)) {
+              // Stop if we hit a non-U, non-y move
+              break;
+            }
+          }
+
+          if (leadingYMoves.length > 1) {
+            console.error(`Invalid algorithm pattern detected after cleanup: ${completeAlg}. Too many leading y moves (${leadingYMoves.length}). Halting processing.`);
+            continue;
+          }
+          
+          const angleNormalization = leadingYMoves.length > 0 ? leadingYMoves[0] + ' ' : '';
           
           const algInverse = angleNormalization + getAlgInverse(completeAlg);
           console.log(`Processing Alg: ${completeAlg}, Inverse: ${algInverse}`);
           
-          // Set the algorithm on the player
-          if (playerRef.current) {
-            playerRef.current.alg = algInverse;
-            
-            // Wait for the cube to update
-            await new Promise(resolve => setTimeout(resolve, 200));
-            
-            // Update the cube interpreter with current cube state
-            cubeInterpreter.setCurrentState(cubeRef.current!);
+          setCurrentScramble(''); // No scramble needed for compilation
+          setCurrentSolution(algInverse);
+          setAnimationTimes(findAnimationLengths(algInverse.split(' ')));
+          
+          // Wait for the cube to update
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+          // Update the cube interpreter with current cube state
+          if (compilerCubeRef.current) {
+            cubeInterpreter.setCurrentState(compilerCubeRef.current);
             const cubeState = cubeInterpreter.getCurrentState();
             const hash = cubeState?.hash || 'unknown';
             
@@ -218,6 +346,8 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = ({ algs }) => {
               hash: hash,
               step: alg.step || '',
             });
+          } else {
+            console.error('Cube reference not available');
           }
         } catch (error) {
           console.error(`Error processing algorithm ${alg.value}:`, error);
@@ -230,15 +360,16 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = ({ algs }) => {
       }
     }
     // Create and download JSON file
-    downloadCompiledAlgs(compiledData);
+    downloadCompiledAlgs(compiledData, 'exact');
   };
 
   /**
    * Downloads the compiled algorithms data as a JSON file
    */
-  const downloadCompiledAlgs = (data: CompiledAlg[]) => {
+  const downloadCompiledAlgs = (data: CompiledExactAlg[] | CompiledLLAlg[], step: string) => {
     const jsonData = {
       timestamp: new Date().toISOString(),
+      step,
       totalAlgorithms: data.length,
       algorithms: data
     };
@@ -261,27 +392,7 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = ({ algs }) => {
     console.log(`Downloaded ${data.length} compiled algorithms as JSON file`);
   };
 
-  // Initialize player when component mounts
-  useEffect(() => {
-    playerRef.current = new TwistyPlayer({
-      viewerLink: 'none',
-      puzzle: '3x3x3',
-      backView: 'none',
-      background: 'none',
-      controlPanel: 'none',
-      alg: '',
-    });
 
-    createCustomScene();
-  }, []);
-
-  useEffect(() => {
-    window.addEventListener('resize', handleResize);
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []);
 
   const handleCompileAlgorithms = async () => {
     if (!cubeLoaded) {
@@ -289,9 +400,14 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = ({ algs }) => {
       return;
     }
 
+    if (selectedAlgTypes.size === 0) {
+      alert('Please select at least one algorithm type to compile.');
+      return;
+    }
+
     setIsCompiling(true);
     try {
-      await compileAlgorithms(algs);
+      await compileAllAlgs();
     } catch (error) {
       console.error('Error compiling algorithms:', error);
     } finally {
@@ -300,25 +416,70 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = ({ algs }) => {
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      <div ref={divRef} className="w-full border border-neutral-600 rounded-sm" />
+    <div className="flex flex-col gap-4 text-primary-100">
+      <HiddenPlayer
+        scramble={currentScramble}
+        solution={currentSolution}
+        animationTimes={animationTimes}
+        cubeRef={compilerCubeRef}
+        onCubeStateUpdate={handleCubeStateUpdate}
+        handleCubeLoaded={handleCubeLoaded}
+      />
+      
+      {/* Algorithm Type Selection */}
+      <div className="flex flex-col">
+        <h3 className="text-lg font-semibold">Select Algorithm Types to Compile:</h3>
+        <div className="flex space-x-10">
+          <label className="flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={selectedAlgTypes.has('exact')}
+              onChange={() => handleAlgTypeToggle('exact')}
+              className="w-4 h-4"
+            />
+            <span>Exact (F2L)</span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={selectedAlgTypes.has('oll')}
+              onChange={() => handleAlgTypeToggle('oll')}
+              className="w-4 h-4"
+            />
+            <span>OLL</span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={selectedAlgTypes.has('pll')}
+              onChange={() => handleAlgTypeToggle('pll')}
+              className="w-4 h-4"
+            />
+            <span>PLL</span>
+          </label>
+        </div>
+      </div>
+
       <div className="flex gap-2 items-center">
         <button 
           onClick={handleCompileAlgorithms}
-          disabled={isCompiling || !cubeLoaded}
-          className={`text-white p-3 rounded-sm ${
-            isCompiling || !cubeLoaded 
+          disabled={isCompiling || !cubeLoaded || selectedAlgTypes.size === 0}
+          className={`p-3 rounded-sm border border-primary-100 hover:border-primary-500 ${
+            isCompiling || !cubeLoaded || selectedAlgTypes.size === 0
               ? 'bg-gray-500 cursor-not-allowed' 
               : 'bg-black hover:bg-gray-800'
           }`}
         >
-          {isCompiling ? 'Compiling...' : 'Compile Algorithms'}
+          {isCompiling ? 'Compiling...' : `Compile Selected Algs (${selectedAlgTypes.size} types)`}
         </button>
         {!cubeLoaded && (
-          <span className="text-yellow-600">Loading cube...</span>
+          <span className="">Loading cube...</span>
         )}
         {cubeLoaded && (
-          <span className="text-green-600">Cube ready</span>
+          <span className="">Cube ready</span>
+        )}
+        {selectedAlgTypes.size === 0 && cubeLoaded && (
+          <span className="">Select at least one algorithm type</span>
         )}
       </div>
     </div>

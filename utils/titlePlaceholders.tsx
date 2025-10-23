@@ -17,6 +17,8 @@ export const titlePlaceholders = [
   "You don't have to be good",
   "Always be learning",
   "Liberty is the ability to enact your will",
+  "You're under no requirements",
+  "We are causal creatures",
   
   // tips
   "Cheap, generic silicone oil can work just as good as cube lube",
@@ -81,6 +83,8 @@ export const titlePlaceholders = [
   
   // meta
   "Open source!",
+  "MIT License!",
+  "Let the code be free!",
   "Try on mobile!",
   "Written in typescript",
   "The font is Rubik",
@@ -90,7 +94,7 @@ export const titlePlaceholders = [
   "Also try cubedb.net",
   "Also check out reco.nz",
   "Never code at 2 am",
-  "Now 10% messier code!"
+  "Now 13% messier code!"
 
   
 ]
