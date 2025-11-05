@@ -17,8 +17,6 @@ const ImageStack = ({position, moves, isTextboxFocused, lineSteps, editableEleme
   // const scramble = moves?.[0]?.map((move) => move.join(' ')).join(' ') || '';
   const solutionLines = moves?.[1]?.map((move) => move.join(' ')) || [''];
 
-  // TODO: use step information from CubeInterpreter.tsx
-
   const [, forceRender] = useState({});
   const observerRef = useRef<ResizeObserver | null>(null);
 
@@ -109,6 +107,8 @@ const ImageStack = ({position, moves, isTextboxFocused, lineSteps, editableEleme
     const llSteps = currentSteps.filter(step => step.type === 'last layer');
     const llStepNames = llSteps.map(s => s.step);
     const prevLLSteps = prevSteps.filter(step => step.type === 'last layer').map(s => s.step);
+    const f2lSteps = currentSteps.filter(step => step.type === 'f2l');
+    const crossSteps = currentSteps.filter(step => step.type === 'cross');
     
     if (llStepNames.includes('ep') && llStepNames.includes('cp') && llStepNames.includes('co') && llStepNames.includes('eo')) {
       return { step: '1lll', type: 'last layer', colors: llSteps[0]?.colors || [], caseIndex: null, pattern: prevPattern  };
@@ -134,24 +134,36 @@ const ImageStack = ({position, moves, isTextboxFocused, lineSteps, editableEleme
     if (llStepNames.includes('co') && llStepNames.includes('cp')) {
       return { step: 'cll', type: 'last layer', colors: llSteps[0]?.colors || [], caseIndex: null, pattern: prevPattern  };
     }
+
+    // TODO: currently no strategy for identifying ZBLS and distinguishing from a lucky F2L pair
     
     // Individual LL steps
-    for (const step of llSteps) {
+    if(currentSteps.length === 1 && llSteps.length === 1) {
+      const step = llSteps[0];
       if (step.step === 'eo') return { step: '1st look oll', type: 'last layer', colors: step.colors, caseIndex: null, pattern: prevPattern  };
       if (step.step === 'co') return { step: '2nd look oll', type: 'last layer', colors: step.colors, caseIndex: null, pattern: prevPattern  };
       if (step.step === 'cp') return { step: '1st look pll', type: 'last layer', colors: step.colors, caseIndex: null, pattern: prevPattern  };
       if (step.step === 'ep') return { step: '2nd look pll', type: 'last layer', colors: step.colors, caseIndex: null, pattern: prevPattern  };
     }
     
+    // xcross, xxcross, etc
+    if (crossSteps.length === 1 && f2lSteps.length > 0) {
+      const colors = [...crossSteps[0].colors]; // first color is always cross
+      colors.push(...f2lSteps.flatMap(step => step.colors));
+      return { step: "x".repeat(f2lSteps.length) + 'cross', type: 'cross', colors: colors, caseIndex: null };
+    }
+
     // F2L pairs
-    const f2lSteps = currentSteps.filter(step => step.type === 'f2l');
     if (f2lSteps.length > 1) {
       const uniqueColors = [...new Set(f2lSteps.flatMap(step => step.colors))];
       return { step: 'multislot', type: 'f2l', colors: uniqueColors, caseIndex: null };
+    } else if (f2lSteps.length === 1) {
+      // fails to distinguish f2l from zbls.
+      // OLS is caught by the llSteps check above.
+      return { step: 'pair', type: 'f2l', colors: [...new Set([...f2lSteps[0].colors])], caseIndex: null };
     }
     
     // Cross
-    const crossSteps = currentSteps.filter(step => step.type === 'cross');
     if (crossSteps.length > 0) return crossSteps[crossSteps.length - 1]; // Return the last cross step
     
     // Return the last step if no special handling
@@ -193,7 +205,7 @@ const ImageStack = ({position, moves, isTextboxFocused, lineSteps, editableEleme
       
       if (step === 'cross') {
         return (
-          <svg viewBox="0 0 24 24" className="w-full h-full border border-1 border-neutral-600 hover:border-primary-100">
+          <svg viewBox="0 0 24 24" className="w-full border border-1 border-neutral-600 hover:border-primary-100">
             <rect x="0" y="0" width="8" height="8" fill={'#161018'} />
             <rect x="8" y="0" width="8" height="8" fill={primaryColors[0]} />
             <rect x="16" y="0" width="8" height="8" fill={'#161018'} />
@@ -205,16 +217,105 @@ const ImageStack = ({position, moves, isTextboxFocused, lineSteps, editableEleme
             <rect x="16" y="16" width="8" height="8" fill={'#161018'} />
           </svg>
         );
+      } else if (step === 'xcross' || step === 'xxcross' || step === 'xxxcross' || step === 'xxxxcross') {
+        const crossColor = primaryColors[0];
+        const frontColor = primaryColors[1];
+        const rightColor = primaryColors[2];
+
+        const oppositeColors: Record<string, string> = {
+          [CUBE_COLORS.white]: CUBE_COLORS.yellow,
+          [CUBE_COLORS.yellow]: CUBE_COLORS.white,
+          [CUBE_COLORS.green]: '#0085FF',
+          '#0085FF': CUBE_COLORS.green,
+          [CUBE_COLORS.red]: CUBE_COLORS.orange,
+          [CUBE_COLORS.orange]: CUBE_COLORS.red
+        };
+
+        const backColorHex = Object.entries(oppositeColors).find(([, opposite]) => opposite === frontColor)?.[0] ?? null;
+        const leftColorHex = Object.entries(oppositeColors).find(([, opposite]) => opposite === rightColor)?.[0] ?? null;
+        
+        const backColorCount = backColorHex ? primaryColors.filter(color => color === backColorHex).length : 0;
+        const leftColorCount = leftColorHex ? primaryColors.filter(color => color === leftColorHex).length : 0;
+        const frontColorCount = primaryColors.filter(color => color === frontColor).length;
+        const rightColorCount = primaryColors.filter(color => color === rightColor).length;
+
+        const hasBackColor = backColorCount > 0;
+        const hasRightColor = leftColorCount > 0;
+        const hasFrontColor = frontColorCount > 0;
+        const hasLeftColor = leftColorCount > 0;
+
+        const numberXs = step.length - 'cross'.length;
+        const isBackXCrossSolved = (() => {
+          if (numberXs === 2) return hasBackColor && hasRightColor;
+          if (numberXs === 3) {
+            const sortedCounts = [backColorCount, leftColorCount].sort((a, b) => a - b);
+            return sortedCounts[0] === 1 && sortedCounts[1] === 2;
+          }
+          return numberXs >= 4;
+        })();
+        const isRightXCrossSolved = (() => {
+          if (numberXs === 2 || numberXs === 3) {
+            return rightColorCount === 2;
+          } else if (numberXs === 3) {
+            const sortedCounts: number[] = [frontColorCount, leftColorCount].sort((a, b) => a - b);
+            return sortedCounts[0] === 1 && sortedCounts[1] === 2;
+          }
+          return numberXs >= 4;
+        })();
+        const isLeftXCrossSolved = (() => {
+          if (numberXs === 2 || numberXs === 3) {
+            return frontColorCount === 2;
+          }
+          return numberXs >= 4;
+        })();
+
+        return (
+          <svg viewBox="-15 -19 30 30" className="w-full border border-1 border-neutral-600 hover:border-primary-100">
+            <rect x="-15" y="-19" width="30" height="30" fill="#161018" />
+            <polygon points= "0,0 5,-3 0,-6 -5,-3" fill={crossColor} />
+            <polygon points= "5,-3 0,-6 5,-9 10,-6" fill={crossColor} />
+            <polygon points= "-5,-3 0,-6 -5,-9 -10,-6" fill={crossColor} />
+            <polygon points= "0,-6 5,-9 0,-12 -5,-9" fill={crossColor} />
+            <polygon points= "-5,-9 0,-12 -5,-15 -10,-12" fill={crossColor} />
+            <polygon points= "5,-9 10,-12 5,-15 0,-12" fill={crossColor} />
+
+            <polygon points= "0,-12 5,-15 0,-18 -5,-15" fill={isBackXCrossSolved ? crossColor : '#888888' } />
+            <polygon points= "10,-6 15,-9 10,-12 5,-9" fill={isRightXCrossSolved ? crossColor : '#888888'} />
+            <polygon points= "-10,-6 -5,-9 -10,-12 -15,-9" fill={isLeftXCrossSolved ? crossColor : '#888888'} />
+
+            <polygon points= "0,0 -5,-3 -5,2 0,5" fill={frontColor} />
+            <polygon points= "0,5 -5,2 -5,7 0,10" fill={frontColor} />
+            <polygon points= "-5,-3 -10,-6 -10,-1 -5,2" fill={frontColor} />
+            <polygon points= "-5,2 -10,-1 -10,4 -5,7" fill={frontColor} />
+
+            <polygon points= "-10,-1 -15,-4 -15,1 -10,4" fill={isLeftXCrossSolved ? frontColor : '#888888'} />
+            <polygon points= "-10,-6 -15,-9 -15,-4 -10,-1" fill={isLeftXCrossSolved ? frontColor : '#888888'} />
+            <polygon points= "-10,4 -15,1 -15,6 -10,9" fill={'#888888'} />
+            <polygon points= "-5,7 -10,4 -10,9 -5,12" fill={'#888888'} />
+            <polygon points= "0,10 -5,7 -5,12 0,15" fill={'#888888'} />
+
+            <polygon points= "0,0 5,-3 5,2 0,5" fill={rightColor} />
+            <polygon points= "0,5 5,2 5,7 0,10" fill={rightColor} />
+            <polygon points= "5,-3 10,-6 10,-1 5,2" fill={rightColor}/>
+            <polygon points= "5,2 10,-1 10,4 5,7" fill={rightColor} />
+
+            <polygon points= "10,-1 15,-4 15,1 10,4" fill={isRightXCrossSolved ? rightColor : '#888888'} />
+            <polygon points= "10,-6 15,-9 15,-4 10,-1" fill={isRightXCrossSolved ? rightColor : '#888888'} />
+            <polygon points= "10,4 15,1 15,6 10,9" fill={'#888888'} />
+            <polygon points= "5,7 10,4 10,9 5,12" fill={'#888888'} />
+            <polygon points= "0,10 5,7 5,12 0,15" fill={'#888888'} />
+          </svg>
+        );
       } else if (step === 'pair') {
         return (
-          <svg viewBox="0 0 24 24" className="w-full h-full border border-1 border-neutral-600 hover:border-primary-100">
+          <svg viewBox="0 0 24 24" className="w-full border border-1 border-neutral-600 hover:border-primary-100">
             <polygon points="0,0 24,0 0,24" fill={primaryColors[0]} />
             <polygon points="24,0 24,24 0,24" fill={primaryColors[1]} />
           </svg>
         );
       } else if (step === 'multislot' && primaryColors.length === 3) {
         return (
-          <svg viewBox="0 0 24 24" className="w-full h-full border border-1 border-neutral-600 hover:border-primary-100">
+          <svg viewBox="0 0 24 24" className="w-full border border-1 border-neutral-600 hover:border-primary-100">
             <rect x="0" y="0" width="8" height="24" fill={primaryColors[0]} />
             <rect x="8" y="0" width="8" height="24" fill={primaryColors[1]} />
             <rect x="16" y="0" width="8" height="24" fill={primaryColors[2]} />
@@ -222,7 +323,7 @@ const ImageStack = ({position, moves, isTextboxFocused, lineSteps, editableEleme
         );
       } else if (step === 'multislot' && primaryColors.length === 4) {
         return (
-          <svg viewBox="0 0 24 24" className="w-full h-full border border-1 border-neutral-600 hover:border-primary-100">
+          <svg viewBox="0 0 24 24" className="w-full border border-1 border-neutral-600 hover:border-primary-100">
             <rect x="0" y="0" width="6" height="24" fill={primaryColors[0]} />
             <rect x="6" y="0" width="6" height="24" fill={primaryColors[1]} />
             <rect x="12" y="0" width="6" height="24" fill={primaryColors[2]} />
@@ -232,7 +333,7 @@ const ImageStack = ({position, moves, isTextboxFocused, lineSteps, editableEleme
       } else if (stepType === 'last layer' || stepType === 'solved') {
         const pattern = stepInfo.pattern || [];
         const getCellColor = (row: number, col: number): string => {
-          if (!pattern[row] || pattern[row][col] === undefined) return '#888888'; // pink for undefined
+          if (!pattern[row] || pattern[row][col] === undefined) return '#161018';
           const colorNum = pattern[row][col];
           // Grid numbers run 1-6, map directly to cube colors
           const colorMap: Record<number, string> = {
@@ -243,11 +344,11 @@ const ImageStack = ({position, moves, isTextboxFocused, lineSteps, editableEleme
             5: CUBE_COLORS.red,
             6: CUBE_COLORS.orange
           };
-          return colorMap[colorNum] || '#888888';
+          return colorMap[colorNum] || '#161018';
         };
 
         return (
-          <svg viewBox="0 0 24 24" className="w-full h-full border border-1 border-neutral-600 hover:border-primary-100">
+          <svg viewBox="0 0 24 24" className="w-full border border-1 border-neutral-600 hover:border-primary-100">
             {/* Row 0 - all outer ring (height 3) */}
             <rect x="0" y="0" width="3" height="3" fill={getCellColor(0, 0)} />
             <rect x="3" y="0" width="6" height="3" fill={getCellColor(0, 1)} />
@@ -285,30 +386,25 @@ const ImageStack = ({position, moves, isTextboxFocused, lineSteps, editableEleme
           </svg>
         );
       } else {
+        // backup
         return (
           <svg viewBox="0 0 24 24" className="w-full h-full p-1">
-            <circle cx="12" cy="12" r="6" fill={primaryColors[0]} opacity="0.5" />
+            <circle cx="12" cy="12" r="6" fill={primaryColors[0]} />
           </svg>
         );
       }
     };
 
     return (
-      <div className="relative group w-full h-full">
+      <div className="relative group w-full h-full overflow-visible">
         <div
           id={id}
-          className="w-full flex items-center justify-center"
+          className="w-full flex items-center justify-center overflow-visible transform transition-transform duration-300 ease-out origin-top-left group-hover:scale-150"
           style={{ 
             height: `${height}px`
           }}
         >
           {getStepIcon()}
-        </div>
-        <div className="flex flex-col absolute right-full top-1/2 -translate-y-1/2 mr-2 whitespace-nowrap text-primary-100 bg-primary-900 rounded-md text-sm opacity-0 group-hover:opacity-100 group-hover:delay-100 pointer-events-none select-none z-50 px-2 py-1">
-          <div>{stepInfo.step}</div>
-          {stepInfo.colors.length > 0 && (
-            <div className="text-xs opacity-80">{stepInfo.colors.join(', ')}</div>
-          )}
         </div>
       </div>
     );

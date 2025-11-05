@@ -17,7 +17,6 @@ interface PlayerProps {
   solutionRequest: string;
   speed: number;
   animationTimesRequest: number[]; // all times of animations up to but not including the current move
-  cubeRef: MutableRefObject<Object3D<Object3DEventMap> | null>;
   onCubeStateUpdate: () => void;
   handleCubeLoaded: () => void;
   handleControllerRequest: (request: ControllerRequestOptions) => void;
@@ -51,8 +50,7 @@ const Player = React.memo(({
   scrambleRequest, 
   solutionRequest, 
   speed, 
-  animationTimesRequest, 
-  cubeRef, 
+  animationTimesRequest,
   onCubeStateUpdate,
   handleCubeLoaded,
   handleControllerRequest,
@@ -60,8 +58,9 @@ const Player = React.memo(({
   setControllerButtonsStatus,
 }: PlayerProps) => {
   const playerRef = useRef<TwistyPlayer | null>(null);
-  
+  const cubeRef = useRef<THREE.Object3D<Object3DEventMap> | null>(null);
   const divRef = useRef<HTMLDivElement>(null);
+
   const lastSolution = useRef<string>('');
   const lastScramble = useRef<string>('');
   const lastAnimationTimes = useRef<number[]>([]);
@@ -787,7 +786,7 @@ const Player = React.memo(({
 
       // console.log('Cube loaded:', cube);
       
-      const aspectRatio = divRef.current.clientWidth / divRef.current.clientHeight;
+      const aspectRatio = (divRef.current.clientWidth - 1) / (divRef.current.clientHeight - 1);
       camera = new THREE.PerspectiveCamera(75, aspectRatio, 0.1, 5);
 
       const scaleFactor = (divRef.current.clientHeight * 0.0024) + 0.92; // found through experimentation w/linear system
@@ -797,7 +796,7 @@ const Player = React.memo(({
       camera.position.y = (1 / 2) * scaleFactor;
 
       renderer = new THREE.WebGLRenderer({ antialias: true });
-      renderer.setSize(divRef.current.clientWidth, divRef.current.clientHeight);
+      renderer.setSize(divRef.current.clientWidth - 1, divRef.current.clientHeight - 1);
       divRef.current.appendChild(renderer.domElement);
 
       const light = new THREE.AmbientLight(0xffffff, 0.5); // soft white light
@@ -818,9 +817,9 @@ const Player = React.memo(({
     if (renderer && camera && divRef.current) {
       
       
-      camera.aspect = divRef.current.clientWidth / divRef.current.clientHeight;
+      camera.aspect = (divRef.current.clientWidth -1) / (divRef.current.clientHeight - 1);
       camera.updateProjectionMatrix();
-      renderer.setSize(divRef.current.clientWidth, divRef.current.clientHeight);
+      renderer.setSize(divRef.current.clientWidth - 1, divRef.current.clientHeight - 1);
     }
 
     // console.log('cube: ', playerRef.current?.experimentalCurrentThreeJSPuzzleObject());

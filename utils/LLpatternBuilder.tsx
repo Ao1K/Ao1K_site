@@ -2,9 +2,8 @@ import React, { useRef, useState } from 'react';
 import { ollCases, pllCases } from './llCases';
 import type { ExactAlg } from "./rawAlgs";
 import { CubeInterpreter } from "../composables/recon/CubeInterpreter";
-import type { Object3D, Object3DEventMap } from 'three';
 import { reverseMove } from '../composables/recon/transformHTML';
-import HiddenPlayer from '../components/recon/HiddenPlayer';
+import HiddenPlayer, { HiddenPlayerHandle } from '../components/recon/HiddenPlayer';
 import LLinterpreter from '../composables/recon/LLinterpreter';
 
 interface AlgPattern {
@@ -24,23 +23,15 @@ export interface Case {
  * React component for compiling algorithms using HiddenPlayer to generate algorithm patterns
  */
 export default function LLpatternBuilder() {
-  const generatorCubeRef = useRef<Object3D<Object3DEventMap> | null>(null);
+  const hiddenPlayerRef = useRef<HiddenPlayerHandle>(null);
 
   const [isGenerating, setIsCompiling] = useState(false);
   const [cubeLoaded, setCubeLoaded] = useState(false);
-  const [currentScramble, setCurrentScramble] = useState('');
-  const [currentSolution, setCurrentSolution] = useState('');
-  const [animationTimes, setAnimationTimes] = useState<number[]>([]);
 
   // HiddenPlayer callbacks
   const handleCubeLoaded = () => {
     setCubeLoaded(true);
     console.log('Cube loaded for pattern generation');
-  };
-
-  const handleCubeStateUpdate = () => {
-    // This is called when the cube state changes in HiddenPlayer
-    // The cube state will be read in the generatePatterns function
   };
 
   const getAlgInverse = (alg: string): string => {
@@ -110,8 +101,8 @@ export default function LLpatternBuilder() {
    * Takes an array of cubing algs, determines the cube hash, then creates a json file and downloads it.
    */
   const generatePatterns = async (cases: Case[]) => {
-    if (!cubeLoaded || !generatorCubeRef.current) {
-      console.error('Cube not loaded yet. Please wait for the cube to load before compiling.');
+    if (!cubeLoaded || !hiddenPlayerRef.current) {
+      console.error('Cube not loaded yet. Please wait for the cube to load before generating patterns.');
       return;
     }
 
@@ -121,7 +112,14 @@ export default function LLpatternBuilder() {
       cases = ollCases;
     }
 
-    const cubeInterpreter = new CubeInterpreter(generatorCubeRef.current);
+    // Get initial cube state
+    const initialCube = await hiddenPlayerRef.current.updateCube('', '', []);
+    if (!initialCube) {
+      console.error('Failed to get initial cube state');
+      return;
+    }
+
+    const cubeInterpreter = new CubeInterpreter(initialCube);
     // Add a small delay to ensure cube is fully initialized
     await new Promise(resolve => setTimeout(resolve, 100));
     const matrixMaps = cubeInterpreter.solvedMatrixMaps;
@@ -142,40 +140,38 @@ export default function LLpatternBuilder() {
         const algInverse = getAlgInverse(completeAlg);
         console.log(`Processing Alg: ${completeAlg}, Inverse: ${algInverse}`);
         
-        // Set the algorithm using HiddenPlayer state
-        setCurrentScramble(''); // No scramble needed for pattern generation
-        setCurrentSolution(algInverse);
-        setAnimationTimes(findAnimationLengths(algInverse.split(' ')));
+        // Use imperative API to update cube state
+        // Pass animation times to position cube at the end of the algorithm
+        const animationTimes = findAnimationLengths(algInverse.split(' '));
+        const cube = await hiddenPlayerRef.current.updateCube('', algInverse, animationTimes);
         
-        // Wait for the cube to update
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // Update the cube interpreter with current cube state
-        if (generatorCubeRef.current) {
-          cubeInterpreter.setCurrentState(generatorCubeRef.current);
-          const llPattern = cubeInterpreter.getLLcoloring();
-
-          if (algCase.step !== 'oll' && algCase.step !== 'pll') {
-            //&& algCase.step !== 'zbll' && algCase.step !== 'eo' && algCase.step !== 'onelll') {
-            throw new Error(`Algorithm step "${algCase.step}" is not supported for pattern generation.`);
-          }
-
-          const generator = new LLinterpreter();
-
-          const { key: minimizedPattern, minMovements: _ } = generator.canonicalBase6Key(llPattern, algCase.step);
-
-          console.log('Case index:', algCase.index || -1);
-          
-          
-          // Add to compiled data
-          patternData.push({
-            caseIndex: algCase.index || -1,
-            name: algCase.name,
-            pattern: minimizedPattern,
-          });
-        } else {
-          console.error('Cube reference not available');
+        if (!cube) {
+          console.error('Failed to get cube state for algorithm:', algInverse);
+          continue;
         }
+
+        // Update the cube interpreter with current cube state
+        cubeInterpreter.setCurrentState(cube);
+        const llPattern = cubeInterpreter.getLLcoloring('pattern');
+
+        if (algCase.step !== 'oll' && algCase.step !== 'pll') {
+          //&& algCase.step !== 'zbll' && algCase.step !== 'eo' && algCase.step !== 'onelll') {
+          throw new Error(`Algorithm step "${algCase.step}" is not supported for pattern generation.`);
+        }
+
+        const generator = new LLinterpreter();
+
+        const { key: minimizedPattern, minMovements: _ } = generator.canonicalBase6Key(llPattern, algCase.step);
+
+        console.log('Case index:', algCase.index || -1);
+        
+        
+        // Add to compiled data
+        patternData.push({
+          caseIndex: algCase.index || -1,
+          name: algCase.name,
+          pattern: minimizedPattern,
+        });
       } catch (error) {
         console.error(`Error processing algorithm ${algCase.alg}:`, error);
         patternData.push({
@@ -244,12 +240,8 @@ export default function LLpatternBuilder() {
   return (
     <div className="flex flex-col gap-4">
       <HiddenPlayer
-        scramble={currentScramble}
-        solution={currentSolution}
-        animationTimes={animationTimes}
-        cubeRef={generatorCubeRef}
-        onCubeStateUpdate={handleCubeStateUpdate}
-        handleCubeLoaded={handleCubeLoaded}
+        ref={hiddenPlayerRef}
+        onCubeLoaded={handleCubeLoaded}
       />
       <div className="flex gap-2 items-center">
         <button 

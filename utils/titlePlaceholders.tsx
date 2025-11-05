@@ -17,7 +17,10 @@ export const titlePlaceholders = [
   "You don't have to be good",
   "Always be learning",
   "Liberty is the ability to enact your will",
-  "You're under no requirements",
+  "You're under no requirements", // however...
+  '"You gotta do what the fuck you say" -RA',
+  "Buying a more expensive cube doesn't solve anything",
+  "Only in the mind // Anthropomorphization // The tree never fell",
   "We are causal creatures",
   
   // tips
@@ -93,6 +96,7 @@ export const titlePlaceholders = [
   "Also try alpha.twizzle.net", // may need update eventually
   "Also try cubedb.net",
   "Also check out reco.nz",
+  "SVGs are cool!",
   "Never code at 2 am",
   "Now 13% messier code!"
 

@@ -136,7 +136,32 @@ export class CubeInterpreter {
   private facelets: { faceIdx: number; color: string; colorName: string }[] = [];
   private currentPieces: PieceState[] = [];
   private solvedPieces: PieceState[] = []; // needed only to generate solvedMatrixMaps, which is pre-generated
-  public solvedMatrixMaps: Map<string, { pieceIndex: number, type: string, colorName: string, direction: string }> = new Map();
+  public solvedMatrixMaps: Map<string, { pieceIndex: number, type: string, colorName: string, direction: string }> = new Map([
+    ["0.32,0,0,0,0,0,-0.32,0,0,0.32,0,0", {"pieceIndex":20,"type":"center","colorName":"white","direction":"U"}],
+    ["0.32,0,0,0,0,0.32,0,0,0,0,0.32,0", {"pieceIndex":22,"type":"center","colorName":"green","direction":"F"}],
+    ["0,0,-0.32,0,-0.32,0,0,0,0,0.32,0,0", {"pieceIndex":13,"type":"corner","colorName":"white","direction":"U"}],
+    ["0,0,-0.32,0,0,0.32,0,0,0.32,0,0,0", {"pieceIndex":23,"type":"center","colorName":"red","direction":"R"}],
+    ["-0.32,0,0,0,0,0,0.32,0,0,0.32,0,0", {"pieceIndex":14,"type":"corner","colorName":"white","direction":"U"}],
+    ["-0.32,0,0,0,0,0.32,0,0,0,0,-0.32,0", {"pieceIndex":24,"type":"center","colorName":"blue","direction":"B"}],
+    ["0,0,0.32,0,0.32,0,0,0,0,0.32,0,0", {"pieceIndex":15,"type":"corner","colorName":"white","direction":"U"}],
+    ["0,0,0.32,0,0,0.32,0,0,-0.32,0,0,0", {"pieceIndex":21,"type":"center","colorName":"orange","direction":"L"}],
+    ["-0.32,0,0,0,0,0,-0.32,0,0,-0.32,0,0", {"pieceIndex":17,"type":"corner","colorName":"yellow","direction":"D"}],
+    ["-0.32,0,0,0,0,-0.32,0,0,0,0,0.32,0", {"pieceIndex":17,"type":"corner","colorName":"green","direction":"F"}],
+    ["0,0,0.32,0,-0.32,0,0,0,0,-0.32,0,0", {"pieceIndex":16,"type":"corner","colorName":"yellow","direction":"D"}],
+    ["0,0,0.32,0,0,-0.32,0,0,0.32,0,0,0", {"pieceIndex":19,"type":"corner","colorName":"red","direction":"R"}],
+    ["0.32,0,0,0,0,0,0.32,0,0,-0.32,0,0", {"pieceIndex":25,"type":"center","colorName":"yellow","direction":"D"}],
+    ["0.32,0,0,0,0,-0.32,0,0,0,0,-0.32,0", {"pieceIndex":19,"type":"corner","colorName":"blue","direction":"B"}],
+    ["0,0,-0.32,0,0.32,0,0,0,0,-0.32,0,0", {"pieceIndex":18,"type":"corner","colorName":"yellow","direction":"D"}],
+    ["0,0,-0.32,0,0,-0.32,0,0,-0.32,0,0,0", {"pieceIndex":18,"type":"corner","colorName":"orange","direction":"L"}],
+    ["0,0.32,0,0,-0.32,0,0,0,0,0,0.32,0", {"pieceIndex":8,"type":"edge","colorName":"green","direction":"F"}],
+    ["0,0.32,0,0,0,0,0.32,0,0.32,0,0,0", {"pieceIndex":8,"type":"edge","colorName":"red","direction":"R"}],
+    ["0,-0.32,0,0,0.32,0,0,0,0,0,0.32,0", {"pieceIndex":9,"type":"edge","colorName":"green","direction":"F"}],
+    ["0,-0.32,0,0,0,0,0.32,0,-0.32,0,0,0", {"pieceIndex":9,"type":"edge","colorName":"orange","direction":"L"}],
+    ["0,-0.32,0,0,-0.32,0,0,0,0,0,-0.32,0", {"pieceIndex":10,"type":"edge","colorName":"blue","direction":"B"}],
+    ["0,-0.32,0,0,0,0,-0.32,0,0.32,0,0,0", {"pieceIndex":10,"type":"edge","colorName":"red","direction":"R"}],
+    ["0,0.32,0,0,0.32,0,0,0,0,0,-0.32,0", {"pieceIndex":11,"type":"edge","colorName":"blue","direction":"B"}],
+    ["0,0.32,0,0,0,0,-0.32,0,-0.32,0,0,0", {"pieceIndex":11,"type":"edge","colorName":"orange","direction":"L"}]
+  ]);
   private LLinterpreter = new LLinterpreter();
 
   private readonly colorRotationMap = new Map<string, number[]>([
@@ -375,7 +400,7 @@ export class CubeInterpreter {
    * In the current form, only yellow should be used because we assume cross on bottom.
    */
   private readonly f2lSlots: { [key: string]: { corner: number, edge: number, slotColors: [string, string] }[] } = {
-    'white': [
+    'white': [ // unused
       { corner: 12, edge: 8, slotColors: ['green', 'red'] },  // UFR corner + FR edge
       { corner: 15, edge: 9, slotColors: ['orange', 'green'] },  // UFL corner + FL edge
       { corner: 14, edge: 11, slotColors: ['blue', 'orange'] }, // UBL corner + BL edge
@@ -387,7 +412,7 @@ export class CubeInterpreter {
       { corner: 18, edge: 11, slotColors: ['orange', 'blue'] }, // DBL corner + BL edge
       { corner: 19, edge: 10, slotColors: ['blue', 'red'] }  // DBR corner + BR edge
     ],
-    'green': [ 
+    'green': [ // rest of colors unused
       { corner: 12, edge: 1, slotColors: ['red', 'white'] },  // UFR corner + UR edge
       { corner: 15, edge: 3, slotColors: ['white', 'orange'] },  // UFL corner + UL edge
       { corner: 16, edge: 5, slotColors: ['yellow', 'red'] },  // DFR corner + DR edge
@@ -424,10 +449,10 @@ export class CubeInterpreter {
     this.facelets = this.getColors() || [];
     this.setCurrentState();
     
-    // if pre-generation of solvedMatrixMaps stops working:
-    this.solvedPieces = this.getPieces();
-    this.solvedMatrixMaps = this.getMatrixMaps();
-    this.printSolvedMatrixMaps();
+    // if need to generate solvedMatrixMaps (such as if cube interpretation stops working):
+    // this.solvedPieces = this.getPieces();
+    // this.solvedMatrixMaps = this.getMatrixMaps();
+    // this.printSolvedMatrixMaps();
     
 
     if (algs.length > 0) { // may be []
@@ -856,15 +881,15 @@ export class CubeInterpreter {
   }
 
   /**
-   * Debugging method for viewing the hash used to search for algorithms
+   * Method for passing in a cubingjs cube object to update the current state
    */
-  public setCurrentState(current?: Object3D<Object3DEventMap> | null): void {
+  public setCurrentState(current?: Object3D<Object3DEventMap> | null): StepInfo[] {
     if (current) {
       try {
         this.cube = parseCubeObject(current);
       } catch (error) {
         console.warn('Invalid cube object provided to setCurrentState:', error);
-        return;
+        return [];
       }
     }
 
@@ -873,6 +898,8 @@ export class CubeInterpreter {
     this.currentState = this.calcCurrentState();
 
     this.crossColorsSolved = this.getCrossColorsSolved();
+
+    return this.getStepsCompleted();
   }
 
   private mapEffectiveColorToActual(effectiveColor: string): string {
@@ -1533,7 +1560,6 @@ export class CubeInterpreter {
     let postPairPattern = undefined;
     if (pairsSolved.length === 4 && steps.filter(s => s.type === 'last layer').length === 0) {
       // on last pair, get LL pattern for later steps
-      console.log('Getting LL pattern for last pair step');
       postPairPattern = this.getLLcoloring('exact');
     }
 
@@ -1889,12 +1915,12 @@ export class CubeInterpreter {
       if (isCornerSolved && isEdgeSolved) {
         status.push({pairColors: slot.slotColors, pairIndices: [cornerIndex, edgeIndex], isSolved: true})
       } else {
-        console.log('F2L pair not solved for cross color:', color);
-        console.log('Corner:');
-        this.logPieceColors(cornerIndex);
-        console.log('Edge:');
-        this.logPieceColors(edgeIndex);
-        console.log('is not solved');
+        // console.log('F2L pair not solved for cross color:', color);
+        // console.log('Corner:');
+        // this.logPieceColors(cornerIndex);
+        // console.log('Edge:');
+        // this.logPieceColors(edgeIndex);
+        // console.log('is not solved');
         status.push({pairColors: slot.slotColors, pairIndices: [cornerIndex, edgeIndex], isSolved: false })        
       }
     });
@@ -2250,7 +2276,6 @@ export class CubeInterpreter {
       if (uColor) grid[3][3] = getColorIndex(uColor);
     }
 
-    console.log('Generated LL coloring grid (' + colorOrder + '):', grid);
     return grid;
   }
 
@@ -2284,15 +2309,14 @@ export class CubeInterpreter {
       // ellIndex = this.getELLindex();
       // cllIndex = this.getCLLindex();
     } else {
-      if (steps.find(s => s.step === 'eo') && !steps.find(s => s.step === 'co') && !steps.find(s => s.step === 'ep') && !steps.find(s => s.step === 'cp')) {
+      if ((!steps.find(s => s.step === 'eo') || !steps.find(s => s.step === 'co')) && !steps.find(s => s.step === 'ep') && !steps.find(s => s.step === 'cp')) {
         indices.push(this.LLinterpreter.getStepInfo(LLpattern, 'oll'));
+      }      
+      if (steps.find(s => s.step === 'eo') && !steps.find(s => s.step === 'co') && !steps.find(s => s.step === 'ep') && !steps.find(s => s.step === 'cp')) {
         // zbllIndex = this.LLinterpreter.getStepInfo(LLpattern, 'zbll');
         // onelllIndex = this.LLinterpreter.getStepInfo(LLpattern, 'onelll');
       }
-      if (steps.find(s => s.step === 'eo') && steps.find(s => s.step === 'co') && !steps.find(s => s.step === 'ep') && !steps.find(s => s.step === 'cp')) {
-        indices.push(this.LLinterpreter.getStepInfo(LLpattern, 'pll'));
-      }
-      if (steps.find(s => s.step === 'eo') && steps.find(s => s.step === 'co') && steps.find(s => s.step === 'ep') && !steps.find(s => s.step === 'cp')) {
+      if (steps.find(s => s.step === 'eo') && steps.find(s => s.step === 'co') && !steps.find(s => s.step === 'cp')) { // ep can be solved or not
         indices.push(this.LLinterpreter.getStepInfo(LLpattern, 'pll'));
       }
       if (steps.find(s => s.step === 'eo') && steps.find(s => s.step === 'co') && steps.find(s => s.step === 'ep') && steps.find(s => s.step === 'cp')) {

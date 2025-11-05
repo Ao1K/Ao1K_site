@@ -2,9 +2,8 @@ import React, { useRef, useState } from 'react';
 import { rawGeneric, rawOLLalgs, rawPLLalgs } from "./rawAlgs";
 import type { ExactAlg, LastLayerAlg } from "./rawAlgs";
 import { CubeInterpreter } from "../composables/recon/CubeInterpreter";
-import type { Object3D, Object3DEventMap } from 'three';
 import { reverseMove } from '../composables/recon/transformHTML';
-import HiddenPlayer from '../components/recon/HiddenPlayer';
+import HiddenPlayer, { HiddenPlayerHandle } from '../components/recon/HiddenPlayer';
 import type { CompiledLLAlg } from '../composables/recon/LLsuggester';
 
 interface CompiledExactAlg {
@@ -23,24 +22,16 @@ interface AlgCompilerProps {
 type AlgorithmType = 'exact' | 'oll' | 'pll';
 
 export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
-  const compilerCubeRef = useRef<Object3D<Object3DEventMap> | null>(null);
+  const hiddenPlayerRef = useRef<HiddenPlayerHandle>(null);
 
   const [isCompiling, setIsCompiling] = useState(false);
   const [cubeLoaded, setCubeLoaded] = useState(false);
-  const [currentScramble, setCurrentScramble] = useState('');
-  const [currentSolution, setCurrentSolution] = useState('');
-  const [animationTimes, setAnimationTimes] = useState<number[]>([]);
   const [selectedAlgTypes, setSelectedAlgTypes] = useState<Set<AlgorithmType>>(new Set(['exact', 'oll', 'pll']));
 
   // HiddenPlayer callbacks
   const handleCubeLoaded = () => {
     setCubeLoaded(true);
     console.log('Cube loaded for compiler');
-  };
-
-  const handleCubeStateUpdate = () => {
-    // This is called when the cube state changes in HiddenPlayer
-    // The cube state will be read in the compileAlgorithms function
   };
 
   const handleAlgTypeToggle = (algType: AlgorithmType) => {
@@ -190,7 +181,7 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
   };
 
   const compileAlgorithms = async (algs: ExactAlg[] | LastLayerAlg[], algType: 'Exact' | 'LastLayer') => {
-    if (!cubeLoaded || !compilerCubeRef.current) {
+    if (!cubeLoaded || !hiddenPlayerRef.current) {
       console.error('Cube not loaded yet. Please wait for the cube to load before compiling.');
       return;
     }
@@ -219,12 +210,19 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
   };
 
   const compileLLalgorithms = async (algs: LastLayerAlg[]) => {
-    if (!cubeLoaded || !compilerCubeRef.current) {
+    if (!cubeLoaded || !hiddenPlayerRef.current) {
       console.error('Cube not loaded yet. Please wait for the cube to load before compiling.');
       return;
     }
 
-    const cubeInterpreter = new CubeInterpreter(compilerCubeRef.current);
+    // Get initial cube state
+    const initialCube = await hiddenPlayerRef.current.updateCube('', '', []);
+    if (!initialCube) {
+      console.error('Failed to get initial cube state');
+      return;
+    }
+
+    const cubeInterpreter = new CubeInterpreter(initialCube);
 
     // Add a small delay to ensure cube is fully initialized
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -242,25 +240,25 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
       const cleanedAlg = removeAngleFromAlg(alg.value);
       const algInverse = getAlgInverse(cleanedAlg);
 
-      setCurrentScramble(''); // No scramble needed for compilation
-      setCurrentSolution(algInverse);
-      setAnimationTimes(findAnimationLengths(algInverse.split(' ')));
+      // Use imperative API to update cube state
+      const animationTimes = findAnimationLengths(algInverse.split(' '));
+      const cube = await hiddenPlayerRef.current.updateCube('', algInverse, animationTimes);
       
-      // Wait for the cube to update
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Update the cube interpreter with current cube state
-      if (compilerCubeRef.current) {
-        cubeInterpreter.setCurrentState(compilerCubeRef.current);
-        console.log('Identifying alg:', alg.value);
-        const { index: caseIndex, refPieceMovement, minMovements } = cubeInterpreter.identifyLLcase(alg.step, alg.value);
-        compiledData.push({
-          alg: alg.value,
-          caseIndex,
-          refPieceMovement,
-          minMovements
-        });
+      if (!cube) {
+        console.error('Failed to get cube state for algorithm:', algInverse);
+        continue;
       }
+
+      // Update the cube interpreter with current cube state
+      cubeInterpreter.setCurrentState(cube);
+      console.log('Identifying alg:', alg.value);
+      const { index: caseIndex, refPieceMovement, minMovements } = cubeInterpreter.identifyLLcase(alg.step, alg.value);
+      compiledData.push({
+        alg: alg.value,
+        caseIndex,
+        refPieceMovement,
+        minMovements
+      });
     }
     const step = algs[0]!.step;
     downloadCompiledAlgs(compiledData, step);
@@ -270,12 +268,19 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
    * Takes an array of cubing algs, determines the cube hash, then creates a json file and downloads it.
    */
   const compileExactAlgorithms = async (algs: ExactAlg[]) => {
-    if (!compilerCubeRef.current) {
-      console.error('Cube reference not available. Cannot proceed with compilation.');
+    if (!hiddenPlayerRef.current) {
+      console.error('Hidden player reference not available. Cannot proceed with compilation.');
       return;
     }
 
-    const cubeInterpreter = new CubeInterpreter(compilerCubeRef.current);
+    // Get initial cube state
+    const initialCube = await hiddenPlayerRef.current.updateCube('', '', []);
+    if (!initialCube) {
+      console.error('Failed to get initial cube state');
+      return;
+    }
+
+    const cubeInterpreter = new CubeInterpreter(initialCube);
     // Add a small delay to ensure cube is fully initialized
     await new Promise(resolve => setTimeout(resolve, 100));
     const matrixMaps = cubeInterpreter.solvedMatrixMaps;
@@ -325,30 +330,28 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
           const algInverse = angleNormalization + getAlgInverse(completeAlg);
           console.log(`Processing Alg: ${completeAlg}, Inverse: ${algInverse}`);
           
-          setCurrentScramble(''); // No scramble needed for compilation
-          setCurrentSolution(algInverse);
-          setAnimationTimes(findAnimationLengths(algInverse.split(' ')));
+          // Use imperative API to update cube state
+          const animationTimes = findAnimationLengths(algInverse.split(' '));
+          const cube = await hiddenPlayerRef.current.updateCube('', algInverse, animationTimes);
           
-          // Wait for the cube to update
-          await new Promise(resolve => setTimeout(resolve, 100));
-          
-          // Update the cube interpreter with current cube state
-          if (compilerCubeRef.current) {
-            cubeInterpreter.setCurrentState(compilerCubeRef.current);
-            const cubeState = cubeInterpreter.getCurrentState();
-            const hash = cubeState?.hash || 'unknown';
-            
-            console.log(`Algorithm: ${alg.value}, Hash: ${hash}`);
-            
-            // Add to compiled data
-            compiledData.push({
-              alg: completeAlg,
-              hash: hash,
-              step: alg.step || '',
-            });
-          } else {
-            console.error('Cube reference not available');
+          if (!cube) {
+            console.error('Failed to get cube state for algorithm:', algInverse);
+            continue;
           }
+
+          // Update the cube interpreter with current cube state
+          cubeInterpreter.setCurrentState(cube);
+          const cubeState = cubeInterpreter.getCurrentState();
+          const hash = cubeState?.hash || 'unknown';
+          
+          console.log(`Algorithm: ${alg.value}, Hash: ${hash}`);
+          
+          // Add to compiled data
+          compiledData.push({
+            alg: completeAlg,
+            hash: hash,
+            step: alg.step || '',
+          });
         } catch (error) {
           console.error(`Error processing algorithm ${alg.value}:`, error);
           compiledData.push({
@@ -418,12 +421,8 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
   return (
     <div className="flex flex-col gap-4 text-primary-100">
       <HiddenPlayer
-        scramble={currentScramble}
-        solution={currentSolution}
-        animationTimes={animationTimes}
-        cubeRef={compilerCubeRef}
-        onCubeStateUpdate={handleCubeStateUpdate}
-        handleCubeLoaded={handleCubeLoaded}
+        ref={hiddenPlayerRef}
+        onCubeLoaded={handleCubeLoaded}
       />
       
       {/* Algorithm Type Selection */}

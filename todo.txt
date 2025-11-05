@@ -3,9 +3,9 @@ Informal Bugs/Todo List. Not guaranteed to be complete or accurate.
 
 Hidden cube load safety and exception handling
 
-Hide tools bar by default
+Fix desync when rapidly accepting suggestions
 
-Try a funky faint checkerboard pattern for footer, cubing-esque
+Undo/redo doesn't restore caret position? Trouble reproducing.
 
 Autocomplete for cross. Would need to brute force solutions to partial cross solution input. 
 Or compute a bunch of crosses and just give whatever suggestion still works.

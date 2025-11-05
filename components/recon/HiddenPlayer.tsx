@@ -1,50 +1,43 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { TwistyPlayer } from 'cubing/twisty';
 import type { Object3D } from 'three';
-import type { MutableRefObject } from 'react';
-import type { Object3DEventMap } from 'three/src/core/Object3D.js';
-import type { PlayerParams as RenderRefProps } from './_PageContent';
 
 interface PlayerProps {
-  scramble: string;
-  solution: string;
-  animationTimes: number[]; // all times of animations up to but not including the current move
-  cubeRef: MutableRefObject<Object3D<Object3DEventMap> | null>;
-  onCubeStateUpdate: () => void;
-  handleCubeLoaded: () => void;
+  onCubeLoaded: () => void;
+}
+
+export interface HiddenPlayerHandle {
+  updateCube: (scramble: string, solution: string, animationTimes: number[]) => Promise<Object3D | null>;
 }
 
 /**
  * More cubingjs abuse.
  * This component creates a hidden TwistyPlayer instance to manipulate a cube in the background.
  */
-const HiddenPlayer = React.memo(({ 
-  scramble, 
-  solution, 
-  animationTimes, 
-  cubeRef, 
-  onCubeStateUpdate,
-  handleCubeLoaded
-}: PlayerProps) => {
+const HiddenPlayer = forwardRef<HiddenPlayerHandle, PlayerProps>(({ 
+  onCubeLoaded
+}, ref) => {
   const playerRef = useRef<TwistyPlayer | null>(null);
+  const cubeRef = useRef<Object3D | null>(null);
 
-  // console.log('HiddenPlayer props changed:');
-  // console.log('scramble:', scramble);
-  // console.log('solution:', solution);
-  // console.log('animationTimes:', animationTimes);
-    
-  if (playerRef.current) {
-    const timestamp = animationTimes.reduce((acc, val) => acc + val, 0);
-    playerRef.current.experimentalSetupAlg = scramble;
-    playerRef.current.alg = solution;
-    playerRef.current.timestamp = timestamp;
-  }
+  useImperativeHandle(ref, () => ({
+    updateCube: async (scramble: string, solution: string, animationTimes: number[]) => {
+      if (!playerRef.current) {
+        console.warn('Player not initialized yet');
+        return null;
+      }
 
+      const timestamp = animationTimes.reduce((acc, val) => acc + val, 0);
+      playerRef.current.experimentalSetupAlg = scramble;
+      playerRef.current.alg = solution;
+      playerRef.current.timestamp = timestamp;
 
-  setTimeout(() => {
-    // slight delay to ensure cube has finished turning
-    onCubeStateUpdate();
-  }, 100); // try 10 later
+      // Wait for cube to finish turning
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      return cubeRef.current;
+    }
+  }), []);
 
   let cube: Object3D;
     
@@ -80,8 +73,8 @@ const HiddenPlayer = React.memo(({
       controlPanel: 'none',
       
       
-      experimentalSetupAlg: scramble || '',
-      alg: solution || '',
+      experimentalSetupAlg: '',
+      alg: '',
       
       
       tempoScale: 10000,
@@ -108,7 +101,7 @@ const HiddenPlayer = React.memo(({
     const initializeCube = async () => {
       const cube = await loadCubeObject();
       cubeRef.current = cube || null;
-      handleCubeLoaded();
+      onCubeLoaded();
     };
     
     initializeCube();

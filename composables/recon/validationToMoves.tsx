@@ -1,6 +1,6 @@
 'use strict';
 
-import type { MovesValidation } from "./validateTextInput";
+import type { MovesParsing } from "./validateTextInput";
 
 export type MovesDisplayValidation = [
   string, // char
@@ -16,7 +16,7 @@ export type Token = {
 
 const validTokenTypes = ["move"]; // add "hashtag" if feature ever implemented
 
-export default function validationToArray(validation: MovesValidation[]): Token[] {
+export default function validationToArray(validation: MovesParsing[]): Token[] {
   const newValidation = JSON.parse(JSON.stringify(validation));
 
   degroup(newValidation);
@@ -29,7 +29,7 @@ export default function validationToArray(validation: MovesValidation[]): Token[
   return tokens;
 }
 
-const addDisplayOrder = (validation: MovesValidation[]): MovesDisplayValidation[] => {
+const addDisplayOrder = (validation: MovesParsing[]): MovesDisplayValidation[] => {
   const displayValidation: MovesDisplayValidation[] = validation.map(([char, type, parenDepth]) => [
     char,
     type,
@@ -54,12 +54,12 @@ const addDisplayOrder = (validation: MovesValidation[]): MovesDisplayValidation[
   return displayValidation;
 };
 
-export const degroup = (validation: MovesValidation[] | MovesDisplayValidation[], storeDisplayOrder: boolean = false) => {
+export const degroup = (validation: MovesParsing[] | MovesDisplayValidation[], storeDisplayOrder: boolean = false) => {
   if (!validation || validation.length === 0) {
     return;
   }
   if (storeDisplayOrder) {
-    validation = addDisplayOrder(validation as MovesValidation[]) as MovesDisplayValidation[];
+    validation = addDisplayOrder(validation as MovesParsing[]) as MovesDisplayValidation[];
   }
 
   for(let i = 0; i < validation.length; i++) {
@@ -77,7 +77,7 @@ export const degroup = (validation: MovesValidation[] | MovesDisplayValidation[]
   return validation;
 }
 
-const findTokenLocation = (i: number, newValidation: MovesValidation[]) => {
+const findTokenLocation = (i: number, newValidation: MovesParsing[]) => {
   const type = newValidation[i][1];
   const start = i;
   let end = i;
@@ -91,7 +91,7 @@ const findTokenLocation = (i: number, newValidation: MovesValidation[]) => {
   return [start, end];
 }
 
-const findTokens = (newValidation: MovesValidation[]): Token[] => {
+const findTokens = (newValidation: MovesParsing[]): Token[] => {
   const tokens: Token[] = [];
 
   for (let i = 0; i < newValidation.length; i++) {
@@ -109,7 +109,7 @@ const findTokens = (newValidation: MovesValidation[]): Token[] => {
   return tokens;
 }
 
-function findClosingParen(i: number, depth: number, newValidation: MovesValidation[] | MovesDisplayValidation[]): number {
+function findClosingParen(i: number, depth: number, newValidation: MovesParsing[] | MovesDisplayValidation[]): number {
   for (let j = i; j < newValidation.length; j++) {
     if (newValidation[j][2] === depth) {
       return j;
@@ -119,7 +119,7 @@ function findClosingParen(i: number, depth: number, newValidation: MovesValidati
   return -1;
 }
 
-function findReps(i: number, newValidation: MovesValidation[] | MovesDisplayValidation[]): number {
+function findReps(i: number, newValidation: MovesParsing[] | MovesDisplayValidation[]): number {
   let reps = 0;
   if (i+1 >= newValidation.length) {
     // reached end, return 0
@@ -137,7 +137,7 @@ function findReps(i: number, newValidation: MovesValidation[] | MovesDisplayVali
   return reps
 }
 
-function expandGroup(start: number, end: number, reps: number, validation: MovesValidation[] | MovesDisplayValidation[]): MovesValidation[] | MovesDisplayValidation[] {
+function expandGroup(start: number, end: number, reps: number, validation: MovesParsing[] | MovesDisplayValidation[]): MovesParsing[] | MovesDisplayValidation[] {
 
   const disallowedTypes: string[] = ["hashtag"];
   

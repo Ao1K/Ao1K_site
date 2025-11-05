@@ -1,13 +1,13 @@
-export type MovesValidation = [string, string, number?];
+export type MovesParsing = [string, string, number?];
 //[char, validationKeyword, parenthesisDepth]
 
 
 const MAX_3X3_REPS = 1260;
 
 
-export default function validateText(text: string) { 
+export default function parseText(text: string) { 
   // accepts a single line of text.
-  // Performs several side-effects to MovesValidation and then returns it.
+  // Performs several side-effects to MovesParsing and then returns it.
   
   let validation = initializeValidation(text);
   assignCommentValidation(validation);
@@ -23,7 +23,7 @@ export default function validateText(text: string) {
   return validation;
 }
 
-const handleAmpersand = (i: number, text: string, validation: MovesValidation[]): number => {
+const handleAmpersand = (i: number, text: string, validation: MovesParsing[]): number => {
   let semicolonIndex = text.indexOf(';', i);
 
   if (semicolonIndex !== -1) {
@@ -46,7 +46,7 @@ const handleAmpersand = (i: number, text: string, validation: MovesValidation[])
   return i;
 }
 
-const handleAngleBrackets = (i: number, text: string, validation: MovesValidation[]): number => {
+const handleAngleBrackets = (i: number, text: string, validation: MovesParsing[]): number => {
   let htmlTagEnd = text.indexOf('>', i);
   let htmlTagType = findHTMLtagType(text.substring(i, htmlTagEnd)); // newlineHTML or stylingHTML
   validation.push([text.substring(i,htmlTagEnd+1), htmlTagType, undefined]);
@@ -55,7 +55,7 @@ const handleAngleBrackets = (i: number, text: string, validation: MovesValidatio
   return i;
 }
 
-const handleHashtag = (i: number, text: string, validation: MovesValidation[]): number => {
+const handleHashtag = (i: number, text: string, validation: MovesParsing[]): number => {
   
   // stop assigning hashtag at space, <, or &
   const endpoints = [text.indexOf(' ', i), text.indexOf('<', i), text.indexOf('&', i)].filter(idx => idx !== -1);
@@ -75,8 +75,8 @@ const handleHashtag = (i: number, text: string, validation: MovesValidation[]): 
   return i;
 }
 
-function initializeValidation(text: string): MovesValidation[] {
-  let validation: MovesValidation[] = [];
+function initializeValidation(text: string): MovesParsing[] {
+  let validation: MovesParsing[] = [];
   //console.log('text: ' + text);
   for (let i = 0; i < text.length; i++) {
     let char = text[i];
@@ -114,7 +114,7 @@ function findHTMLtagType(htmlTag: string) {
   return validationKeyword;
 }
 
-function assignCommentValidation(validation: MovesValidation[]) {
+function assignCommentValidation(validation: MovesParsing[]) {
   let commentStart = -1;
   let commentEnd = -1;
   for (let i = 0; i < validation.length; i++) {
@@ -134,7 +134,7 @@ function assignCommentValidation(validation: MovesValidation[]) {
   // console.table(validation)
 }
 
-function findIfCommentStart(i: number, validation: MovesValidation[]): number {
+function findIfCommentStart(i: number, validation: MovesParsing[]): number {
   if (validation[i][0] === '/' && validation[i + 1]?.[0] === '/') {
     return i;
   }
@@ -154,7 +154,7 @@ function findIfCommentStart(i: number, validation: MovesValidation[]): number {
   return -1;
 }
 
-function assignComments(commentStart: number, commentEnd: number, validation: MovesValidation[]) {
+function assignComments(commentStart: number, commentEnd: number, validation: MovesParsing[]) {
   for (let j = commentStart; j <= commentEnd; j++) {
     if (validation[j][1] === "stylingHTML" || validation[j][1] === "newlineHTML" || validation[j][1] === "hashtag") {
       continue;
@@ -163,7 +163,7 @@ function assignComments(commentStart: number, commentEnd: number, validation: Mo
   }
 }
 
-function textToIterate(validation: MovesValidation[]) {
+function textToIterate(validation: MovesParsing[]) {
   let iterationArray = [];
   for (let i=0; i < validation.length; i++) {
     if (validation[i][1] === "comment" || validation[i][1] === "newlineHTML" || validation[i][1] === "stylingHTML" || validation[i][1] === "hashtag") {
@@ -175,10 +175,10 @@ function textToIterate(validation: MovesValidation[]) {
 
 
 
-function assignParenthesis(validation: MovesValidation[], iterationArray: number[]) {
+function assignParenthesis(validation: MovesParsing[], iterationArray: number[]) {
 
   //modifies validation array in place. Returns index of last rep digit.
-  function assignRepsThenIncrement(i: number, iterationArray: number[], validation: MovesValidation[]) {
+  function assignRepsThenIncrement(i: number, iterationArray: number[], validation: MovesParsing[]) {
     let repTracker = 0;
     for (let j = i; j < iterationArray.length; j++) {
       
@@ -229,7 +229,7 @@ function assignParenthesis(validation: MovesValidation[], iterationArray: number
 
 
 
-function assignSpaceValidation(validation: MovesValidation[], iterationArray: number[]) {
+function assignSpaceValidation(validation: MovesParsing[], iterationArray: number[]) {
   iterationArray.forEach((i) => {
     if (/\s/.test(validation[i][0])) {
       validation[i][1] = "space";
@@ -237,7 +237,7 @@ function assignSpaceValidation(validation: MovesValidation[], iterationArray: nu
   });
 }
 
-function assignMoveValidation(validation: MovesValidation[], iterationArray: number[]) {
+function assignMoveValidation(validation: MovesParsing[], iterationArray: number[]) {
   let untestedMove = "";
   let start = -1;
   let end = -1;
@@ -256,7 +256,7 @@ function assignMoveValidation(validation: MovesValidation[], iterationArray: num
   }
 }
 
-function findMoveEnd(i: number, validation: MovesValidation[], iterationArray: number[]) {
+function findMoveEnd(i: number, validation: MovesParsing[], iterationArray: number[]) {
   let end = -1;
   for (let j = i; j < iterationArray.length; j++) {
 
@@ -276,7 +276,7 @@ function findMoveEnd(i: number, validation: MovesValidation[], iterationArray: n
   return end;
 }
 
-function findMove(start: number, end: number, validation: MovesValidation[], iterationArray: number[]) {
+function findMove(start: number, end: number, validation: MovesParsing[], iterationArray: number[]) {
   let move = "";
   for (let i = start; i <= end; i++) {
     move = move + validation[iterationArray[i]][0];
@@ -284,7 +284,7 @@ function findMove(start: number, end: number, validation: MovesValidation[], ite
   return move;
 }
 
-function validateMove(move: string, validation: MovesValidation[], iterationArray: number[], start: number, end: number): MovesValidation[] {
+function validateMove(move: string, validation: MovesParsing[], iterationArray: number[], start: number, end: number): MovesParsing[] {
   const validMoves = [
     "U", "U2", "U3", "U'", "U2'", "U3'",
     "u", "u2", "u3", "u'", "u2'", "u3'",

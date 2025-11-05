@@ -44,6 +44,32 @@ body {
     -moz-appearance: textfield;
     appearance: none;
   }
+
+  .grid-lines-50-r {
+    background-size: 50px 50px;
+    background-position: top left;
+    background-image: 
+      linear-gradient(to right, theme('colors.neutral.800') 0.05px, transparent 1px),
+      linear-gradient(to bottom, theme('colors.neutral.800') 0.05px, transparent 1px);
+  }
+
+  .grid-lines-50-l {
+    background-size: 50px 50px;
+    background-position: top right;
+    background-image: 
+      linear-gradient(to left, theme('colors.neutral.800') 0.05px, transparent 1px),
+      linear-gradient(to bottom, theme('colors.neutral.800') 0.05px, transparent 1px);
+  }
+
+  .grid-lines-50-c {
+    background-size: 50px 50px;
+    background-position: top center;
+    background-image:
+      linear-gradient(to right, theme('colors.neutral.800') 0.05px, transparent 1px),
+      linear-gradient(to left, theme('colors.neutral.800') 0.05px, transparent 1px),
+      linear-gradient(to bottom, theme('colors.neutral.800') 0.05px, transparent 1px);
+  }
+
 }
 
 input[type='range'] {

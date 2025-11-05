@@ -4,10 +4,10 @@ import { useState, useEffect } from 'react';
 
 interface SpeedSliderProps {
     speed: number;
-    handleSpeedChange: (speed: number) => void;
+    setSpeed: (speed: number) => void;
 }
 
-export default function ToolbarButton({speed, handleSpeedChange}: SpeedSliderProps) {
+export default function ToolbarButton({speed, setSpeed}: SpeedSliderProps) {
   const [isRotated, setIsRotated] = useState(false);
 
   const slow = 15;
@@ -19,9 +19,13 @@ export default function ToolbarButton({speed, handleSpeedChange}: SpeedSliderPro
     setIsRotated(!isRotated);
   }
 
-  const setSpeed = (speed: number) => {
-    handleSpeedChange(speed);
-    setIsRotated(false);
+  const handleSpeedChange = (speed: number) => {
+    setSpeed(speed);
+
+    // hysteresis so user can visually register the change
+    setTimeout(() => {
+      setIsRotated(false);
+    }, 150);
   }
 
   const handleClickOutside = (event: MouseEvent | TouchEvent) => {
@@ -62,10 +66,10 @@ export default function ToolbarButton({speed, handleSpeedChange}: SpeedSliderPro
 
       {isRotated ? 
         <div className="flex flex-col bg-primary-900 absolute -translate-x-[4px] place-items-start text-primary-100 px-1 pb-1 text-sm">
-          <button className={`hover:bg-neutral-600 py-1 border border-neutral-600 ${speed === slow ? 'bg-neutral-600 pointer-events-none' : null } w-16`} onClick={() => setSpeed(slow)}>Slow</button>
-          <button className={`hover:bg-neutral-600 py-1 border border-neutral-600 ${speed === medium ? 'bg-neutral-600 pointer-events-none' : null } w-16`} onClick={() => setSpeed(medium)}>Medium</button>
-          <button className={`hover:bg-neutral-600 py-1 border border-neutral-600 ${speed === fast ? 'bg-neutral-600 pointer-events-none' : null } w-16`} onClick={() => setSpeed(fast)}>Fast</button>
-          <button className={`hover:bg-neutral-600 py-1 border border-neutral-600 ${speed === instant ? 'bg-neutral-600 pointer-events-none' : null } w-16`} onClick={() => setSpeed(instant)}>Instant</button>
+          <button className={`hover:bg-neutral-600 py-1 border border-neutral-600 ${speed === slow ? 'bg-neutral-600 pointer-events-none' : null } w-16`} onClick={() => handleSpeedChange(slow)}>Slow</button>
+          <button className={`hover:bg-neutral-600 py-1 border border-neutral-600 ${speed === medium ? 'bg-neutral-600 pointer-events-none' : null } w-16`} onClick={() => handleSpeedChange(medium)}>Medium</button>
+          <button className={`hover:bg-neutral-600 py-1 border border-neutral-600 ${speed === fast ? 'bg-neutral-600 pointer-events-none' : null } w-16`} onClick={() => handleSpeedChange(fast)}>Fast</button>
+          <button className={`hover:bg-neutral-600 py-1 border border-neutral-600 ${speed === instant ? 'bg-neutral-600 pointer-events-none' : null } w-16`} onClick={() => handleSpeedChange(instant)}>Instant</button>
         </div>
       : null }
     </div>

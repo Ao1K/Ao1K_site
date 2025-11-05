@@ -1,15 +1,15 @@
 'use client';
 
-import React, { useImperativeHandle, forwardRef, useEffect, Suspense, memo, useState } from 'react';
+import React, { useImperativeHandle, useEffect, Suspense, memo, useState } from 'react';
 import { useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import sanitizeHtml from 'sanitize-html';
 import Cookies from 'js-cookie';
 
-import validateTextInput from "../../composables/recon/validateTextInput";
-import validationToTokens, { degroup } from "../../composables/recon/validationToMoves";
-import type { MovesDisplayValidation } from "../../composables/recon/validationToMoves";
-import type { MovesValidation } from "../../composables/recon/validateTextInput";
+import parseTextInput from "../../composables/recon/validateTextInput";
+import parsingToTokens, { degroup } from "../../composables/recon/validationToMoves";
+import type { MovesDisplayValidation as MovesDisplayParsing } from "../../composables/recon/validationToMoves";
+import type { MovesParsing } from "../../composables/recon/validateTextInput";
 import updateURL from '../../composables/recon/updateURL';
 
 import { customDecodeURL } from '../../composables/recon/urlEncoding';
@@ -21,7 +21,7 @@ interface HTMLUpdateItem {
   change: 'modified' | 'none' | 'suggestion';
 }
 
-const highlightClass = 'text-dark bg-primary-100 backdrop-blur-xs caret-dark';
+export const highlightClass = 'text-dark bg-primary-100 backdrop-blur-xs caret-dark';
 
 export const colorDict = {
   move: 'text-primary-100',
@@ -63,7 +63,7 @@ const EditorLoader = ({
 
     
     if (autofocus && urlText && !otherURLtext) { // TODO: `&& !otherURLtext` isn't desired, but an unknown bug causes animation desync otherwise.
-      //adds caretNode span, which then is processed by onInputChange
+      // adds caretNode span, which then is processed by onInputChange
       const selection = window.getSelection();
       const range = document.createRange();
       const caretNode = document.createElement('span');
@@ -74,7 +74,7 @@ const EditorLoader = ({
       selection?.removeAllRanges();
       selection?.addRange(range);
     } else if (autofocus) {
-      //select the other textbox
+      // select the other textbox
       const parentOtherElement = document.getElementById(otherID);
       const otherTextbox = parentOtherElement?.querySelector<HTMLDivElement>('div[contenteditable="true"]');
       otherTextbox?.focus();
@@ -224,18 +224,18 @@ function MovesTextEditor({
     return htmlUpdateMatrix;
   }
 
-  const findEndOfWordOnCaret = (validation: [string, string, number?][], caretOffset: number): number => {
+  const findEndOfWordOnCaret = (parsing: [string, string, number?][], caretOffset: number): number => {
     // counts characters
     // increment caretOffset until it finds the end of the word
     const validWordTypes = ['move', 'rep', 'hashtag'];
     let i = caretOffset;
     try {
-      for (i; i < validation.length; i++) {
-        const type = validation[i][1];
+      for (i; i < parsing.length; i++) {
+        const type = parsing[i][1];
         if (validWordTypes.includes(type)) {
           continue;
         } else {
-          // console.log('breaking at:', i, 'type:', type, 'validation:', validation[i][0]);
+          // console.log('breaking at:', i, 'type:', type, 'parsing:', parsing[i][0]);
           break;
         }
       }
@@ -257,31 +257,31 @@ function MovesTextEditor({
 
     // get html
     const text = line.replace(/<[^>]+>/g, '');
-    const validation = validateTextInput(text);
+    const parsed = parseTextInput(text);
     
-    const [newHTMLline, caretIndex] = updateLine(validation, line);
+    const [newHTMLline, caretIndex] = updateLine(parsed, line);
     
     // get move and line offsets
     let moves: string[];
     if (caretIndex !== null) {
-      let caretSplitIndex = findEndOfWordOnCaret(validation, caretIndex);
+      let caretSplitIndex = findEndOfWordOnCaret(parsed, caretIndex);
 
-      const tokensBeforeCaret = validationToTokens(validation.slice(0, caretSplitIndex)); // before and including move at caret
+      const tokensBeforeCaret = parsingToTokens(parsed.slice(0, caretSplitIndex)); // before and including move at caret
       const movesBeforeCaret: string[] = getMovesFromTokens(tokensBeforeCaret);
       moveOffsetRef.current = movesBeforeCaret.length; // not minus 1. 0 represents before any moves.
       
       // TODO: could be optimized.
       // Can't create tokensAfterCaret because the caret might be in the middle of a group 
       // [ex: (R U | R' U')2]
-      // would need to create a validation array that includes the caret,
+      // would need to create a parsed array that includes the caret,
       // then extract movesBeforeCaret.length from it
-      moves = getMovesFromTokens(validationToTokens(validation));
+      moves = getMovesFromTokens(parsingToTokens(parsed));
 
       lineOffsetRef.current = i; // could be wrong in certain situations? (copy-paste)
 
     } else {
       // in the future, may need to expand to handle other types of tokens, such as hashtags
-      moves = getMovesFromTokens(validationToTokens(validation));
+      moves = getMovesFromTokens(parsingToTokens(parsed));
     }
 
     lineMoveCounts[i] = moves.length;
@@ -436,16 +436,16 @@ function MovesTextEditor({
       moveHistory.current.history[i] = ['<unchanged>', html];    
   }
 
-  const updateLine = (validation: [string, string, number?][], line: string): [string, number | null] => {
+  const updateLine = (parsing: [string, string, number?][], line: string): [string, number | null] => {
     line = removeSpansExceptCaret(line);
     line = line.replace(/&nbsp;/g, ' ');
   
-    let { updatedLine, caretIndex } = processValidation(validation, line);
+    let { updatedLine, caretIndex } = processParsing(parsing, line);
   
     return [updatedLine, caretIndex];
   }
   
-  const processValidation = (validation: [string, string, number?][], line: string): { updatedLine: string, caretIndex: number | null } => {
+  const processParsing = (parsing: [string, string, number?][], line: string): { updatedLine: string, caretIndex: number | null } => {
     let valIndex = 0;
     let valOffset = 0;
     let matchOffset = 0;
@@ -466,12 +466,12 @@ function MovesTextEditor({
       let prevNonspaceType = '';
     
       while (remainingMatchLength > 0) {
-        if (!(validation[valIndex] && validation[valIndex][0])) {
-          console.error(`ERROR: Validation at ${valIndex} is undefined`);
+        if (!(parsing[valIndex] && parsing[valIndex][0])) {
+          console.error(`ERROR: Parsing at ${valIndex} is undefined`);
           break;
         }
-        const valLength = validation[valIndex][0].substring(valOffset).length;
-        const type = validation[valIndex][1];
+        const valLength = parsing[valIndex][0].substring(valOffset).length;
+        const type = parsing[valIndex][1];
         let color = localColorDict.current[type as keyof typeof localColorDict.current];
         if (!color) {
           console.error(`Color not found for type: ${type}`);
@@ -699,6 +699,7 @@ function MovesTextEditor({
         console.error('Error in insertCaretNode:', e);
       }
     }
+
   };
 
   const setCaretToCaretNode = () => {
@@ -788,7 +789,51 @@ function MovesTextEditor({
   };
   
   const passURLupdate = () => {
-    const text = contentEditableRef.current?.innerText || '';
+
+    // don't allow dummy text editors to update the URL
+    if (name !== 'scramble' && name !== 'solution') return;
+
+    const root = contentEditableRef.current;
+    if (!root) {
+      updateURL(name, '');
+      return;
+    }
+
+    const suggestionClass = colorDict['suggestion'];
+    const removedNodes: Array<{ parent: Node; node: Node; nextSibling: Node | null }> = [];
+
+    const removeSuggestions = (element: HTMLElement) => {
+      const suggestionSpans = element.querySelectorAll(`span.${suggestionClass}`);
+      suggestionSpans.forEach((span) => {
+        const parent = span.parentNode;
+        if (parent) {
+          removedNodes.push({ parent, node: span, nextSibling: span.nextSibling });
+          parent.removeChild(span);
+        }
+      });
+
+      const tabImages = element.querySelectorAll('img[src="/tab.svg"]');
+      tabImages.forEach((img) => {
+        const parent = img.parentNode;
+        if (parent) {
+          removedNodes.push({ parent, node: img, nextSibling: img.nextSibling });
+          parent.removeChild(img);
+        }
+      });
+    };
+
+    // Temporarily remove inline suggestion UI, capture text (with newlines), restore nodes.
+    removeSuggestions(root);
+    const text = root.innerText || '';
+
+    removedNodes.reverse().forEach(({ parent, node, nextSibling }) => {
+      if (nextSibling && nextSibling.parentNode === parent) {
+        parent.insertBefore(node, nextSibling);
+      } else {
+        parent.appendChild(node);
+      }
+    });
+
     updateURL(name, text);
   };
 
@@ -801,48 +846,75 @@ function MovesTextEditor({
   };  
 
   /**
-   * Handles when user changes caret position.
-   * Gets moveOffset and lineOffset, validates text, and updates move history.
-   * @returns 
+   * Parses the current caret state and returns structured data.
+   * Returns null if the state is invalid or incomplete.
    */
-  const handleCaretChange = () => {
-    // TODO: if the textbox is scramble, a lot of this processing isn't needed.
+  const parseCaretState = () => {
+    // console.log(idIndex, 'parseCaretState called');
+    
+    const element = contentEditableRef.current;
+    if (!element) return null;
+    if (isFocusingRef.current) return null;
+    if (isMultiSelect()) return null;
 
-    // line below causes race condition with player controls Play function
-    // if (document.activeElement !== contentEditableRef.current) return;
-    if (!contentEditableRef.current) return;
-
-    const multiSelect = isMultiSelect();
-    if (multiSelect) return;      
-
-    const prevHTML = contentEditableRef.current!.innerHTML;
-    insertCaretNode();
-    if (prevHTML === contentEditableRef.current!.innerHTML) {
-      return;
+    const caretNode = element.querySelector('#caretNode');
+    if (!caretNode) {
+      // console.log(idIndex, 'no caret node found');
+      return null;
     }
+
+    const prevHTML = element.innerHTML;
+    insertCaretNode();
+    
+    // check if insertion was a no-op
+    if (prevHTML === element.innerHTML) {
+      // console.log(idIndex, 'caret node already in correct position');
+      return null;
+    }
+
+    // parse HTML into structured lines
+    const lines = htmlToLineArray(element.innerHTML);
+    // console.log(idIndex, 'parsed by caret state check:', lines);
+    return {
+      element,
+      lines,
+      html: element.innerHTML
+    };
+  };
+
+  /**
+   * Updates refs and state based on parsed caret state.
+   * Calculates move and line offsets, updates HTML and tracking.
+   */
+  const setCaretState = (state: NonNullable<ReturnType<typeof parseCaretState>>) => {
+    const { element, lines } = state;
 
     let caretLine = '';
     let caretOffset = 0;
 
-    let lines = htmlToLineArray(contentEditableRef.current!.innerHTML);
-
     const newLineOffset = lines.findIndex((line) => line.includes('<span id="caretNode">'));
     
+    if (newLineOffset === -1) return;
+    
     // Reset suggestion state when moving to a different line
-    if (newLineOffset !== lineOffsetRef.current && newLineOffset !== -1) {
+    if (newLineOffset !== lineOffsetRef.current) {
+      // TOOD: don't think this does anything currently
       suggestionStateRef.current = 'dismissed';
-      // suggestionStateRef.current = 'none';
     }
     
     lineOffsetRef.current = newLineOffset;
 
     caretLine = lines[lineOffsetRef.current];
-    let lineTextArray = caretLine?.match(/>[^<>]+<|caretNode">/g);
+    const lineTextArray = caretLine?.match(/>[^<>]+<|caretNode">/g);
+    
+    // Early return if no text array could be parsed
+    if (!lineTextArray) return;
+    
     let fullRawText = '';
     let caretReached = false;
 
-    // find number of characters before caret and get full text for validation
-    if (lineTextArray) {
+    // find number of characters before caret and get full text for parsing
+    {
       for (let text of lineTextArray){
         
         if (text === 'caretNode">') {
@@ -855,29 +927,37 @@ function MovesTextEditor({
   
         // accumulate characters before caret
         if (!caretReached) {
-          // text = text.replaceAll(/&[a-zA-Z0-9]+;/g, ' '); // unclear why this was added
           caretOffset += text.length;
         }
       }
-      let validation = validateTextInput(fullRawText);
+      let parsing = parseTextInput(fullRawText);
 
-      let i = findEndOfWordOnCaret(validation, caretOffset);
+      let i = findEndOfWordOnCaret(parsing, caretOffset);
 
       // calculate number of moves before caret
-      let tokens = validationToTokens(validation.slice(0, i));
+      let tokens = parsingToTokens(parsing.slice(0, i));
       let moveTokens = tokens.filter((token) => token.type === 'move').map((token) => token.value);
       moveOffsetRef.current = moveTokens.length;
     }
 
+    // Clean html for case where user changed caret during move replay
+    const noHighlightHTML = element.innerHTML.replace(new RegExp(`<span class="${highlightClass}">`, 'g'), '<span class="text-primary-100">');
+    
+    setHTML(noHighlightHTML);
+    trackMoves(idIndex, lineOffsetRef.current, moveOffsetRef.current, textboxMovesRef.current);
+  };
 
-    if (lineOffsetRef.current !== -1) {
-      
-      // clean html for case where user changed caret during move replay
-      let noHighlightHTML = contentEditableRef.current!.innerHTML.replace(new RegExp(`<span class="${highlightClass}">`, 'g'), '<span class="text-primary-100">');
-      
-      caretLine ? setHTML(noHighlightHTML) : null; // ensures html will not be set during mounting
-      trackMoves(idIndex, lineOffsetRef.current, moveOffsetRef.current, textboxMovesRef.current);
-    }
+  /**
+   * Handles when user changes caret position.
+   * Gets moveOffset and lineOffset, validates text, and updates move history.
+   */
+  const handleCaretChange = () => {
+
+    // Parse the current state - returns null if invalid
+    const state = parseCaretState();
+    if (!state) return;
+
+    setCaretState(state);
   };
 
   const handleCommand = (e: KeyboardEvent) => {
@@ -1092,9 +1172,9 @@ function MovesTextEditor({
     handleInput();
   }
 
-  const findEndOfMove = (degroupedValidation: MovesDisplayValidation[], startIndex: number): number => {
+  const findEndOfMove = (degroupedParsing: MovesDisplayParsing[], startIndex: number): number => {
     let i = startIndex;
-    while (i < degroupedValidation.length && degroupedValidation[i][1] === 'move') {
+    while (i < degroupedParsing.length && degroupedParsing[i][1] === 'move') {
       i++;
     }
     return i;
@@ -1109,58 +1189,56 @@ function MovesTextEditor({
   }
 
   /**
-   * Runs through validation array until it finds moveIndex and returns moveDisplayIndex of that move.
-   * @param degroupedValidation 
+   * Runs through parsing array until it finds moveIndex and returns moveDisplayIndex of that move.
+   * @param degroupedParsing 
    * @returns moveDisplayIndex
    */
-  const findMoveDisplayIndex = (degroupedValidation: MovesDisplayValidation[], moveIndex: number): number => {
+  const findMoveDisplayIndex = (degroupedParsing: MovesDisplayParsing[], moveIndex: number): number => {
     let moveCounter = 0;
-    // console.log('degroupedValidation:', degroupedValidation);
-    for (let i = 0; i < degroupedValidation.length; i++) {
+    for (let i = 0; i < degroupedParsing.length; i++) {
 
-      const type = degroupedValidation[i][1];
+      const type = degroupedParsing[i][1];
       if (type !== 'move') {
         continue;
       } else {
         if (moveCounter === moveIndex - 1) { // moveIndex of 0 is before first move
-          // console.log('found moveDisplayIndex:', degroupedValidation[i][3], 'for moveIndex:', moveIndex);
-          return (degroupedValidation[i][3] + 1);
+          return (degroupedParsing[i][3] + 1);
         }
         moveCounter++;
-        i = findEndOfMove(degroupedValidation, i);
+        i = findEndOfMove(degroupedParsing, i);
       }
     }
     return -1; // not found
   }
 
-  const addHighlightValidation = (validation: MovesValidation[], moveDisplayIndex: number): MovesValidation[] => {
-    if (validation.length === 0) {
+  const addHighlightParsing = (parsing: MovesParsing[], moveDisplayIndex: number): MovesParsing[] => {
+    if (parsing.length === 0) {
       console.warn('No moves to highlight');
-      console.info('validation:', validation);
-      return validation;
+      console.info('parsing:', parsing);
+      return parsing;
     }
 
     if (moveDisplayIndex < 0) {
       // acceptably occurs when moveIndex is placed before the first move
-      return validation;
+      return parsing;
     }
 
-    const highlightedValidation: MovesValidation[] = [];
+    const highlightedParsing: MovesParsing[] = [];
     let moveCounter = 0;
     let lastType = ''
-    for (let i = 0; i < validation.length; i++) {
-      const type = validation[i][1];
+    for (let i = 0; i < parsing.length; i++) {
+      const type = parsing[i][1];
       if (type === 'move' && lastType !== 'move') {
         moveCounter++;
       }
       lastType = type;
       if (type === 'move' && moveCounter === moveDisplayIndex) {
-        highlightedValidation.push([validation[i][0], 'highlight', validation[i][2]]);
+        highlightedParsing.push([parsing[i][0], 'highlight', parsing[i][2]]);
       } else {
-        highlightedValidation.push([validation[i][0], type, validation[i][2]]);
+        highlightedParsing.push([parsing[i][0], type, parsing[i][2]]);
       }
     }
-    return highlightedValidation
+    return highlightedParsing
   }
 
   /**
@@ -1182,14 +1260,14 @@ function MovesTextEditor({
     
     // iterate through valid spans, counting moves, and highlighting the move at moveIndex
     const text = line.replace(/<[^>]+>/g, '');    
-    const validation = validateTextInput(text);
-    const newVal = degroup(validation, true) as MovesDisplayValidation[];
+    const parsing = parseTextInput(text);
+    const newVal = degroup(parsing, true) as MovesDisplayParsing[];
     const moveDisplayIndex = findMoveDisplayIndex(newVal, moveIndex);
 
-    const highlightedValidation: MovesValidation[] = addHighlightValidation(validation, moveDisplayIndex);
+    const highlightedParsing: MovesParsing[] = addHighlightParsing(parsing, moveDisplayIndex);
 
     // apply highlighted class. Do some cleanup.
-    let [ updatedLine, _ ] = updateLine(highlightedValidation, line);
+    let [ updatedLine, _ ] = updateLine(highlightedParsing, line);
     
     lines[lineIndex] = updatedLine;
 
@@ -1315,16 +1393,61 @@ function MovesTextEditor({
   }), []);
 
   const handleFocus = (e: React.FocusEvent<HTMLDivElement>) => {
-    // isFocusingRef.current = true;
-    // setTimeout(() => {
-    //   isFocusingRef.current = false;
-    // }, 100);
-  }; 
-  
+    if (!contentEditableRef.current) return;
+    
+    isFocusingRef.current = true;
+
+    // Use requestAnimationFrame to ensure browser has updated selection
+    requestAnimationFrame(() => {
+      if (!contentEditableRef.current) return;
+      
+      // Remove any existing caret nodes first
+      let existingCaretNode = contentEditableRef.current.querySelector('#caretNode');
+      while (existingCaretNode) {
+        existingCaretNode.parentNode!.removeChild(existingCaretNode);
+        existingCaretNode = contentEditableRef.current.querySelector('#caretNode');
+      }
+      
+      const selection = window.getSelection();
+      const caretNode = document.createElement('span');
+      caretNode.id = 'caretNode';
+      
+      // If we have a valid selection, insert caret node at that position
+      if (selection && selection.rangeCount > 0 && selection.focusNode) {
+        try {
+          const range = selection.getRangeAt(0);
+          range.insertNode(caretNode);
+          // console.log(idIndex, 'handleFocus: inserted caret node at selection');
+        } catch (e) {
+          console.error('Error inserting caret node at selection:', e);
+        }
+      } else {
+        // No valid selection - insert at end of content
+        const lastDiv = contentEditableRef.current.querySelector('div:last-child');
+        if (lastDiv) {
+          lastDiv.appendChild(caretNode);
+          // console.log(idIndex, 'handleFocus: inserted caret node at end of last div');
+        } else {
+          contentEditableRef.current.appendChild(caretNode);
+          // console.log(idIndex, 'handleFocus: inserted caret node at end of content');
+        }
+      }
+      
+      const element = contentEditableRef.current;
+      const lines = htmlToLineArray(element.innerHTML);
+      // console.log(idIndex, 'handleFocus: lines:', lines);
+      const html = element.innerHTML;
+      const caretState = { element, lines, html };
+      setCaretState(caretState);
+      
+      isFocusingRef.current = false;
+    });
+  };
+
   useEffect(() => {
     if (!contentEditableRef.current) return;
     if (isFocusingRef.current) return;
-    
+
     setCaretToCaretNode();
     
   }, [html]);
@@ -1368,7 +1491,7 @@ function MovesTextEditor({
         onInput={() => handleInput()}
         onCopy={handleCopy}
         onPaste={handlePaste}
-        onBlur={passURLupdate}
+        onBlur={() => passURLupdate()}
         onFocus={handleFocus}
         dangerouslySetInnerHTML={{ __html: html }}
         spellCheck={false}
