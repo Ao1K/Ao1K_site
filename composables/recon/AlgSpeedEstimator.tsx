@@ -9,13 +9,13 @@ export default class AlgSpeedEstimator {
   private readonly speedMap: Record<string, number> = {
     // numbers are arbitrary
     "U": 1,
-    "D": 1,
-    "L": 1,
+    "D": 1.05,
+    "L": 1.05, // assume slight righty bias
     "R": 1,
     "F": 1.1,
     "B": 1.3,
-    "M": 1.2,
-    "E": 1.4,
+    "M": 1.3,
+    "E": 1.5,
     "S": 1.4,
     "u": 1.3,
     "d": 1.3,
@@ -53,7 +53,7 @@ export default class AlgSpeedEstimator {
       score += moveSpeed * typeWeight;
     }
     
-    const genWeight = 1.1 ** moveGenerators.size
+    const genWeight = 1.2 ** moveGenerators.size
     // divide by ten to approximate time in seconds. Completely arbitrary.
     // round to 3 decimal places
     return Math.round((score * genWeight * 1000) / 10) / 1000;

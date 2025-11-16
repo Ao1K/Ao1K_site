@@ -609,12 +609,8 @@ const Player = React.memo(({
         if (hasChanged) {
           // console.log('Cube is still moving...');
           lastMatrixStrings = currentMatrices;
-          setTimeout(checkCubeMovement, 100); // Check again in 50ms
+          setTimeout(checkCubeMovement, 20); // check again soon
         } else {
-          // console.log('Cube movement stopped');
-          
-          // pass on new cubeRef state
-          // onCubeStateUpdate();
 
           // handle param updates
           animatingRef.current = false;

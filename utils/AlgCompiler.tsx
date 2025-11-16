@@ -23,6 +23,7 @@ type AlgorithmType = 'exact' | 'oll' | 'pll';
 
 export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
   const hiddenPlayerRef = useRef<HiddenPlayerHandle>(null);
+  const isCompilingRef = useRef(false);
 
   const [isCompiling, setIsCompiling] = useState(false);
   const [cubeLoaded, setCubeLoaded] = useState(false);
@@ -168,7 +169,7 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
     return true;
   };
 
-  const compileAllAlgs = async () => {
+  const compileSelectedAlgs = async () => {
     if (selectedAlgTypes.has('exact')) {
       await compileAlgorithms(rawGeneric, 'Exact');
     }
@@ -185,6 +186,17 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
       console.error('Cube not loaded yet. Please wait for the cube to load before compiling.');
       return;
     }
+    
+    // check for duplicates, purely for visibility of quality of raw algs. Has no effect.
+    const algSet = new Set<string>();
+    algs.forEach((alg, index) => {
+      if (algSet.has(alg.value)) {
+        console.warn(`Duplicate algorithm detected in rawAlgs.tsx at index ${index}`);
+        console.log({...alg});
+      }
+      algSet.add(alg.value);
+    });
+
     switch (algType) {
       case 'Exact':
         await compileExactAlgorithms(algs as ExactAlg[]);
@@ -237,6 +249,10 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
     const compiledData: CompiledLLAlg[] = [];
 
     for (const alg of algs) {
+      if (!isCompilingRef.current) {
+        break;
+      }
+
       const cleanedAlg = removeAngleFromAlg(alg.value);
       const algInverse = getAlgInverse(cleanedAlg);
 
@@ -293,6 +309,9 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
     const compiledData: CompiledExactAlg[] = [];
 
     for (const alg of algs) {
+      if (!isCompilingRef.current) {
+        break;
+      }
       const angles = getAllowedAngles(alg);
       for (const angle of angles) {
         try {
@@ -370,6 +389,10 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
    * Downloads the compiled algorithms data as a JSON file
    */
   const downloadCompiledAlgs = (data: CompiledExactAlg[] | CompiledLLAlg[], step: string) => {
+    if (!isCompilingRef.current) {
+      return;
+    }
+
     const jsonData = {
       timestamp: new Date().toISOString(),
       step,
@@ -395,25 +418,40 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
     console.log(`Downloaded ${data.length} compiled algorithms as JSON file`);
   };
 
+  const handleToggleCompile = () => {
+    if (isCompilingRef.current) {
+      isCompilingRef.current = false;
+      setIsCompiling(false);
+      return;
+    }
 
+    // start compilation and let async loops read cancellation synchronously
+    isCompilingRef.current = true;
+    setIsCompiling(true);
+    handleCompileAlgorithms();
+  };
 
   const handleCompileAlgorithms = async () => {
     if (!cubeLoaded) {
       alert('Please wait for the cube to load before compiling algorithms.');
+      isCompilingRef.current = false;
+      setIsCompiling(false);
       return;
     }
 
     if (selectedAlgTypes.size === 0) {
       alert('Please select at least one algorithm type to compile.');
+      isCompilingRef.current = false;
+      setIsCompiling(false);
       return;
     }
 
-    setIsCompiling(true);
     try {
-      await compileAllAlgs();
+      await compileSelectedAlgs();
     } catch (error) {
       console.error('Error compiling algorithms:', error);
     } finally {
+      isCompilingRef.current = false;
       setIsCompiling(false);
     }
   };
@@ -461,15 +499,15 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
 
       <div className="flex gap-2 items-center">
         <button 
-          onClick={handleCompileAlgorithms}
-          disabled={isCompiling || !cubeLoaded || selectedAlgTypes.size === 0}
+          onClick={handleToggleCompile}
+          disabled={!cubeLoaded || selectedAlgTypes.size === 0}
           className={`p-3 rounded-sm border border-primary-100 hover:border-primary-500 ${
-            isCompiling || !cubeLoaded || selectedAlgTypes.size === 0
+            !cubeLoaded || selectedAlgTypes.size === 0
               ? 'bg-gray-500 cursor-not-allowed' 
               : 'bg-black hover:bg-gray-800'
           }`}
         >
-          {isCompiling ? 'Compiling...' : `Compile Selected Algs (${selectedAlgTypes.size} types)`}
+          {isCompiling ? 'Compiling. Click to Cancel.' : `Compile Selected Algs (${selectedAlgTypes.size} type${selectedAlgTypes.size > 1 ? 's' : ''})`}
         </button>
         {!cubeLoaded && (
           <span className="">Loading cube...</span>

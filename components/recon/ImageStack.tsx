@@ -8,12 +8,11 @@ import type { Grid } from '../../composables/recon/LLinterpreter';
 interface ImageStackProps {
   position: [number, number, number] | null;
   moves: string[][][] | null;
-  isTextboxFocused: boolean;
   lineSteps: StepInfo[][] | null;
   editableElement?: HTMLElement | null;
 }
 
-const ImageStack = ({position, moves, isTextboxFocused, lineSteps, editableElement}: ImageStackProps) => {
+const ImageStack = ({position, moves, lineSteps, editableElement}: ImageStackProps) => {
   // const scramble = moves?.[0]?.map((move) => move.join(' ')).join(' ') || '';
   const solutionLines = moves?.[1]?.map((move) => move.join(' ')) || [''];
 
@@ -110,6 +109,25 @@ const ImageStack = ({position, moves, isTextboxFocused, lineSteps, editableEleme
     const f2lSteps = currentSteps.filter(step => step.type === 'f2l');
     const crossSteps = currentSteps.filter(step => step.type === 'cross');
     
+    // for now, treat f2l + ll as just f2l
+    
+    // xcross, xxcross, etc
+    if (crossSteps.length === 1 && f2lSteps.length > 0) {
+      const colors = [...crossSteps[0].colors]; // first color is always cross
+      colors.push(...f2lSteps.flatMap(step => step.colors));
+      return { step: "x".repeat(f2lSteps.length) + 'cross', type: 'cross', colors: colors, caseIndex: null };
+    }
+
+    // F2L pairs
+    if (f2lSteps.length > 1) {
+      const uniqueColors = [...new Set(f2lSteps.flatMap(step => step.colors))];
+      return { step: 'multislot', type: 'f2l', colors: uniqueColors, caseIndex: null };
+    } else if (f2lSteps.length === 1) {
+      // fails to distinguish f2l from zbls.
+      // OLS is caught by the llSteps check above.
+      return { step: 'pair', type: 'f2l', colors: [...new Set([...f2lSteps[0].colors])], caseIndex: null };
+    }
+
     if (llStepNames.includes('ep') && llStepNames.includes('cp') && llStepNames.includes('co') && llStepNames.includes('eo')) {
       return { step: '1lll', type: 'last layer', colors: llSteps[0]?.colors || [], caseIndex: null, pattern: prevPattern  };
     }
@@ -145,24 +163,7 @@ const ImageStack = ({position, moves, isTextboxFocused, lineSteps, editableEleme
       if (step.step === 'cp') return { step: '1st look pll', type: 'last layer', colors: step.colors, caseIndex: null, pattern: prevPattern  };
       if (step.step === 'ep') return { step: '2nd look pll', type: 'last layer', colors: step.colors, caseIndex: null, pattern: prevPattern  };
     }
-    
-    // xcross, xxcross, etc
-    if (crossSteps.length === 1 && f2lSteps.length > 0) {
-      const colors = [...crossSteps[0].colors]; // first color is always cross
-      colors.push(...f2lSteps.flatMap(step => step.colors));
-      return { step: "x".repeat(f2lSteps.length) + 'cross', type: 'cross', colors: colors, caseIndex: null };
-    }
 
-    // F2L pairs
-    if (f2lSteps.length > 1) {
-      const uniqueColors = [...new Set(f2lSteps.flatMap(step => step.colors))];
-      return { step: 'multislot', type: 'f2l', colors: uniqueColors, caseIndex: null };
-    } else if (f2lSteps.length === 1) {
-      // fails to distinguish f2l from zbls.
-      // OLS is caught by the llSteps check above.
-      return { step: 'pair', type: 'f2l', colors: [...new Set([...f2lSteps[0].colors])], caseIndex: null };
-    }
-    
     // Cross
     if (crossSteps.length > 0) return crossSteps[crossSteps.length - 1]; // Return the last cross step
     

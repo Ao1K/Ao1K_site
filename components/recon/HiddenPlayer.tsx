@@ -19,23 +19,39 @@ const HiddenPlayer = forwardRef<HiddenPlayerHandle, PlayerProps>(({
 }, ref) => {
   const playerRef = useRef<TwistyPlayer | null>(null);
   const cubeRef = useRef<Object3D | null>(null);
+  const updateQueueRef = useRef<Promise<void>>(Promise.resolve());
 
   useImperativeHandle(ref, () => ({
-    updateCube: async (scramble: string, solution: string, animationTimes: number[]) => {
-      if (!playerRef.current) {
-        console.warn('Player not initialized yet');
-        return null;
-      }
+    updateCube: (scramble: string, solution: string, animationTimes: number[]) => {
+      const runTask = async (): Promise<Object3D | null> => {
+        if (!playerRef.current) {
+          console.warn('Player not initialized yet');
+          return null;
+        }
 
-      const timestamp = animationTimes.reduce((acc, val) => acc + val, 0);
-      playerRef.current.experimentalSetupAlg = scramble;
-      playerRef.current.alg = solution;
-      playerRef.current.timestamp = timestamp;
+        // serialize cube updates so each request sees its own state
+        const timestamp = animationTimes.reduce((acc, val) => acc + val, 0);
 
-      // Wait for cube to finish turning
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
-      return cubeRef.current;
+        playerRef.current.experimentalSetupAlg = scramble;
+        playerRef.current.alg = solution;
+        playerRef.current.timestamp = timestamp;
+
+        await new Promise(resolve => setTimeout(resolve, 250));
+
+        return cubeRef.current;
+      };
+
+      // add request to queue
+      const queuedPromise = updateQueueRef.current
+        .catch(() => undefined)
+        .then(runTask);
+
+      // update queue ref
+      updateQueueRef.current = queuedPromise
+        .then(() => undefined)
+        .catch(() => undefined);
+
+      return queuedPromise;
     }
   }), []);
 
@@ -86,7 +102,7 @@ const HiddenPlayer = forwardRef<HiddenPlayerHandle, PlayerProps>(({
 
     console.log('Hidden TwistyPlayer initialized:', playerRef.current);
 
-    // Create a detached DOM element for the headless player
+    // create a detached DOM element for the headless player
     const detachedContainer = document.createElement('div');
     detachedContainer.style.position = 'fixed'; // make div always "visible" but...
     detachedContainer.style.width = '1px'; // ...so small it won't be seen
@@ -94,7 +110,6 @@ const HiddenPlayer = forwardRef<HiddenPlayerHandle, PlayerProps>(({
     // detachedContainer.style.overflow = 'hidden';
     detachedContainer.style.pointerEvents = 'none';
     
-    // Append to body (but positioned off-screen)
     document.body.appendChild(detachedContainer);
     detachedContainer.appendChild(playerRef.current!);
     

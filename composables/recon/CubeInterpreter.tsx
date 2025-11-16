@@ -7,6 +7,13 @@ import type { Grid } from './LLinterpreter';
 import LLinterpreter from './LLinterpreter';
 import LLsuggester from './LLsuggester';
 
+export interface Suggestion {
+  alg: string;
+  time: number;
+  step: string;
+  name?: string;
+}
+
 // rough type definition for the kpuzzleFaceletInfo structure added by cubing.js
 interface KpuzzleFaceletInfo {
   CENTERS: any[];
@@ -1509,9 +1516,6 @@ export class CubeInterpreter {
     return this.calcLLPermutationStatus(topInfo);
   }
   
-  /**
-   * Get current solve step.
-  */
   public getStepsCompleted(): StepInfo[] {
     // TODO: in parallel, return results for different methods, mainly Roux and ZZ.
 
@@ -1894,7 +1898,6 @@ export class CubeInterpreter {
   private getF2LPairStatus(color: string): { pairColors: [string, string], pairIndices: [number, number], isSolved: boolean}[] | [] {
     
     const effectiveColor = this.mapActualColorToEffective(color);
-    console.log('color:', effectiveColor);
   
     const slots = this.f2lSlots[effectiveColor];
     if (!slots) {
@@ -1909,19 +1912,17 @@ export class CubeInterpreter {
     slots.forEach(slot => {
       const cornerIndex = slot.corner;
       const edgeIndex = slot.edge;
+      const pairColors: [string, string] = [
+        this.mapEffectiveColorToActual(slot.slotColors[0]), 
+        this.mapEffectiveColorToActual(slot.slotColors[1])
+      ];
       
       const isCornerSolved: boolean = !!solvedIndices.find((index) => index === cornerIndex) // undefined is false
       const isEdgeSolved: boolean = !!solvedIndices.find((index) => index === edgeIndex)
       if (isCornerSolved && isEdgeSolved) {
-        status.push({pairColors: slot.slotColors, pairIndices: [cornerIndex, edgeIndex], isSolved: true})
+        status.push({pairColors, pairIndices: [cornerIndex, edgeIndex], isSolved: true})
       } else {
-        // console.log('F2L pair not solved for cross color:', color);
-        // console.log('Corner:');
-        // this.logPieceColors(cornerIndex);
-        // console.log('Edge:');
-        // this.logPieceColors(edgeIndex);
-        // console.log('is not solved');
-        status.push({pairColors: slot.slotColors, pairIndices: [cornerIndex, edgeIndex], isSolved: false })        
+        status.push({pairColors, pairIndices: [cornerIndex, edgeIndex], isSolved: false })        
       }
     });
 
@@ -1948,9 +1949,9 @@ export class CubeInterpreter {
   /**
    * Generates separate queries for each unsolved F2L slot.
    * Each query requires only that specific slot to be solved.
-   * @returns Array of queries, one for each unsolved slot (max 4)
+   * @returns Array of query objects with the related pair colors (max 4)
    */
-  private getQueriesForF2L(): Query[] {
+  private getQueriesForF2L(): { query: Query; pairColors: [string, string] }[] {
     if (!this.currentState) {
       console.warn('Current state not available for query generation');
       return [];
@@ -1960,7 +1961,7 @@ export class CubeInterpreter {
       return [];
     }
 
-    const queries: Query[] = [];
+    const queries: { query: Query; pairColors: [string, string] }[] = [];
 
     // assume cross must be on bottom
     const effectiveDownColor = 'yellow';
@@ -1991,8 +1992,6 @@ export class CubeInterpreter {
     const crossIndices: string = Object
       .keys(this.crossPieceIndices)
       .find(key => this.crossPieceIndices[key] === effectiveDownColor)!;
-
-    console.log('cross indices for color', color, ':', crossIndices);
     
     const pairStatus = this.getF2LPairStatus(color);
     const crossArray = crossIndices.split(',').map(Number);
@@ -2055,7 +2054,7 @@ export class CubeInterpreter {
         must: [cornerPosition]
       };
       
-      queries.push(query);
+      queries.push({ query, pairColors: [pair.pairColors[0], pair.pairColors[1]] });
     });
 
     return queries;
@@ -2309,7 +2308,7 @@ export class CubeInterpreter {
       // ellIndex = this.getELLindex();
       // cllIndex = this.getCLLindex();
     } else {
-      if ((!steps.find(s => s.step === 'eo') || !steps.find(s => s.step === 'co')) && !steps.find(s => s.step === 'ep') && !steps.find(s => s.step === 'cp')) {
+      if ((!steps.find(s => s.step === 'eo') || !steps.find(s => s.step === 'co')) && (!steps.find(s => s.step === 'ep') || !steps.find(s => s.step === 'cp'))) {
         indices.push(this.LLinterpreter.getStepInfo(LLpattern, 'oll'));
       }      
       if (steps.find(s => s.step === 'eo') && !steps.find(s => s.step === 'co') && !steps.find(s => s.step === 'ep') && !steps.find(s => s.step === 'cp')) {
@@ -2436,30 +2435,16 @@ export class CubeInterpreter {
     }
 
     const speedEstimator = new AlgSpeedEstimator();
-    let suggestions: {alg: string, time: number, step: string}[] = [];
+    let suggestions: Suggestion[] = [];
     
-    // Determine which pairs are not yet solved
-    const solvedPairs = steps.filter(s => s.type === 'f2l').map(s => s.colors);
-    const allPairs = [
-      ['white', 'red'], ['white', 'blue'], ['white', 'orange'], ['white', 'green'],
-      ['yellow', 'red'], ['yellow', 'blue'], ['yellow', 'orange'], ['yellow', 'green']
-    ];
-    
-    // Find unsolved pairs by comparing colors
-    const unsolvedPairs = allPairs.filter(pair => 
-      !solvedPairs.some(solved => 
-        (solved.includes(pair[0]) && solved.includes(pair[1]))
-      )
-    );
-
     // Iterate over each query and collect suggestions
-    queries.forEach((query, index) => {
+    queries.forEach(({ query, pairColors }) => {
       query.limit = 20;
       query.scoreBy = 'exact'; // Use 'exact' context for F2L searches
-      console.log('Query:', query);
+      // console.log('Query:', query);
       
       const algs = this.algSuggester!.searchByPosition(query);
-      console.log('Suggestions:', algs);
+      // console.log('Suggestions:', algs);
       
       const algSet = new Set<string>(); // To avoid duplicates within this query
       
@@ -2468,20 +2453,15 @@ export class CubeInterpreter {
         if (!algSet.has(alg.id)) {
           algSet.add(alg.id);
           
-          // Determine which pair this suggestion is for
-          let stepLabel = 'pair';
-          if (index < unsolvedPairs.length) {
-            const pair = unsolvedPairs[index];
-            // Format like "GO" (green-orange) pair
-            const color1 = pair[0].charAt(0).toUpperCase();
-            const color2 = pair[1].charAt(0).toUpperCase();
-            stepLabel = `${color1}${color2} pair`;
-          }
+          const [firstColor, secondColor] = pairColors;
+          const firstLetter = firstColor ? firstColor.charAt(0).toUpperCase() : '';
+          const secondLetter = secondColor ? secondColor.charAt(0).toUpperCase() : '';
+          const pairLabel = firstLetter && secondLetter ? `${firstLetter}${secondLetter} pair` : 'pair';
           
           suggestions.push({
             alg: alg.id,
             time: speedEstimator.calcScore(alg.id),
-            step: stepLabel
+            step: pairLabel
           });
         }
       });
@@ -2519,7 +2499,7 @@ export class CubeInterpreter {
     });
 
     const speedEstimator = new AlgSpeedEstimator();
-    const suggestions = algs.map(alg => ({
+    const suggestions: Suggestion[] = algs.map(alg => ({
       alg: alg.alg,
       time: speedEstimator.calcScore(alg.alg),
       step: alg.step,
