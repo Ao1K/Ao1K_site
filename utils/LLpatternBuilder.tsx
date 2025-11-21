@@ -151,7 +151,7 @@ export default function LLpatternBuilder() {
         }
 
         // Update the cube interpreter with current cube state
-        cubeInterpreter.setCurrentState(cube);
+        cubeInterpreter.getStepsCompleted(cube);
         const llPattern = cubeInterpreter.getLLcoloring('pattern');
 
         if (algCase.step !== 'oll' && algCase.step !== 'pll') {

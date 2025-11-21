@@ -1,16 +1,6 @@
 Informal Bugs/Todo List. Not guaranteed to be complete or accurate.
 ===================================================================
 
-After acception suggestion and deleting it, pressing tab doesn't do what you'd expect
-  related? OnInputChange suggestion state = 'accepted' doesn't stick. Goes back to dismissed.
-
-URL updating still removing scram
-
-When pressing tab on non-empty line, send cube interpreter request as though current line is ''.
-Then let MovesTextEditor handle showing any valid options.
-
-Clean up colorDict and highlightClass being defined in multiple spots
-
 Autocomplete for cross. Would need to brute force solutions to partial cross solution input. 
 Or compute a bunch of crosses and just give whatever suggestion still works.
 But we don't wanna just show autocomplete right away. Noisey.

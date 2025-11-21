@@ -36,19 +36,7 @@ import { CubeInterpreter } from '../../composables/recon/CubeInterpreter';
 import type { StepInfo, Suggestion } from '../../composables/recon/CubeInterpreter';
 import { AlgCompiler } from '../../utils/AlgCompiler';
 import LLpatternBuilder from '../../utils/LLpatternBuilder';
-export const highlightClass = 'text-dark bg-primary-100 backdrop-blur-xs caret-dark';
-
-export const colorDict = {
-  move: 'text-primary-100',
-  comment: 'text-gray-500',
-  space: 'text-primary-100',
-  invalid: 'text-red-500',
-  paren: 'text-paren',
-  rep: 'text-paren',
-  hashtag: 'text-orange-300',
-  suggestion: 'text-dark_accent',
-  highlight: highlightClass,
-};
+import { highlightClass } from '../../utils/sharedConstants';
 
 export interface MoveHistory {
   history: string[][];
@@ -564,30 +552,40 @@ export default function Recon() {
       animationTimes
     );
 
-    const steps = cubeInterpreter.current!.setCurrentState(cube);
-    const newSuggestions: Suggestion[] = cubeInterpreter.current.getAlgSuggestions();
+    const steps = cubeInterpreter.current!.getStepsCompleted(cube);
+    const newSuggestions: Suggestion[] = cubeInterpreter.current.getAlgSuggestions(steps);
     console.log('Suggestions:', newSuggestions);
     const isAdjustmentMatch =
       staleMoveLocation[0] === moveLocation.current[0] &&
       staleMoveLocation[1] === moveLocation.current[1] &&
       staleMoveLocation[2] === moveLocation.current[2];  
+
     const prevSuggestions = suggestionsRef.current;
+
     const isSuggestionChange = prevSuggestions.length !== newSuggestions.length ||
       newSuggestions.some((newSug, index) => newSug.alg !== (prevSuggestions[index]?.alg ?? ''));
+
+    console.log('setting suggestionsRef to:', newSuggestions);
+    suggestionsRef.current = newSuggestions;
+
     if (!isSuggestionChange) {
       console.log('Suggestions unchanged, skipping update.');
       return;
     }
-    if (isAdjustmentMatch) {
+    // if (isAdjustmentMatch) {
+    if (true) {
       // suggestion line position must effectively have not changed
 
-      updateSuggestions(newSuggestions);
       if (newSuggestions.length > 0) {
         console.log('Showing suggestion:', newSuggestions[0].alg);
         solutionMethodsRef.current?.showSuggestion(newSuggestions[0].alg);
       }
+      updateSuggestions(newSuggestions);
+
 
     } else {
+      console.log('Updating suggestions to []')
+      console.log('Stale location:', staleMoveLocation, 'Current location:', moveLocation.current);
       updateSuggestions([]);
     }
   }
@@ -600,7 +598,7 @@ export default function Recon() {
       moves: string[][], // the moves in the textbox of id
       moveControllerStatus?: string // the current status of loopStepRight
     ) => {
-      console.log('Old suggestions:', suggestionsRef.current);
+      console.log('New location:', idIndex, lineIndex, moveIndex);
     
       if (moveControllerStatus !== 'play') {
         isLoopingRef.current = false; // break out of loopStepRight when status changes
@@ -692,11 +690,11 @@ export default function Recon() {
     }, [controllerButtonsStatus, suggestions]);
 
   const memoizedSetScrambleHTML = useCallback((html: string) => {
-    console.log('Setting scramble HTML:', html);
+    // console.log('Setting scramble HTML:', html);
     setScrambleHTML(html);
   }, []);
   const memoizedSetSolutionHTML = useCallback((html: string) => {
-    console.log('Setting solution HTML:', html);
+    // console.log('Setting solution HTML:', html);
     setSolutionHTML(html);
   }, []);
 
@@ -1166,7 +1164,6 @@ export default function Recon() {
     
     storeLastSelection();
 
-    console.log('Stored selection:', oldSelectionRef.current);
     if (lastSelection === 'solution' && oldSelectionRef.current.textbox !== 'solution') {
       const isCubeSolved = lineStepsRef.current.some(stepEntry => 
         stepEntry.stepInfo.some(step => step.type?.toLowerCase() === 'solved')
@@ -1337,7 +1334,7 @@ export default function Recon() {
         }
 
         // wait until hidden player commits the latest cube before reading steps
-        const steps = cubeInterpreter.current.setCurrentState(cube);
+        const steps = cubeInterpreter.current.getStepsCompleted(cube);
         return steps;
     };
 
@@ -1490,7 +1487,7 @@ export default function Recon() {
     { id: 'rotateY', text: 'Rotate Y', shortcutHint: 'Ctrl+Shift+Y', onClick: handleRotateY, iconText: "Y" },
     { id: 'rotateZ', text: 'Rotate Z', shortcutHint: 'Ctrl+Shift+Z', onClick: handleRotateZ, iconText: "Z" },
     { id: 'invert', text: 'Invert', shortcutHint: 'Ctrl+I', onClick: handleInvert, icon: <InvertIcon /> },
-    { id: 'cat', text: 'Angus', shortcutHint: 'Cat', onClick: handleAddCat, icon: <CatIcon /> },
+    { id: 'cat', text: 'Cat', shortcutHint: 'Cat', onClick: handleAddCat, icon: <CatIcon /> },
     { id: 'removeComments', text: 'Remove Comments', shortcutHint: 'Ctrl+/ ', onClick: handleRemoveComments, iconText: '// ' },
   ];
 
@@ -1585,7 +1582,7 @@ export default function Recon() {
                 updateHistoryBtns={memoizedUpdateHistoryBtns}
                 html={solutionHTML}
                 setHTML={memoizedSetSolutionHTML}
-                suggestions={suggestions}
+                suggestionsRef={suggestionsRef}
               />
             </div>
           </div>

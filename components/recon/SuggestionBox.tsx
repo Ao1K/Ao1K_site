@@ -84,11 +84,6 @@ export const SuggestionBox = ({suggestions, xLocation, yLocation, handleSuggesti
         handleSuggestionRequest(sortedSuggestions[prevIndex].originalIndex);
       }
     }
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      selectedCardRef.current = null;
-      handleSuggestionReject();
-    }
   };
 
   const focusHoveredElement = (index: number) => {
@@ -103,6 +98,9 @@ export const SuggestionBox = ({suggestions, xLocation, yLocation, handleSuggesti
     if (sortedSuggestions.length > 0) {
       handleSuggestionRequest(sortedSuggestions[0].originalIndex);
     }
+    if (selectedCardRef.current === null && sortedSuggestions.length > 0) {
+      selectCard(0);
+    }
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
@@ -110,6 +108,7 @@ export const SuggestionBox = ({suggestions, xLocation, yLocation, handleSuggesti
   }, []);
 
   if (!portalTarget) return null;
+  if (selectedCardRef.current === null) selectedCardRef.current = 0;
 
   // render inside body so parent overflow settings never clip the menu
   return createPortal(

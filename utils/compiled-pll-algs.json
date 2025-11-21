@@ -1,7 +1,7 @@
 {
-  "timestamp": "2025-10-15T01:11:50.950Z",
+  "timestamp": "2025-11-21T06:42:14.825Z",
   "step": "pll",
-  "totalAlgorithms": 84,
+  "totalAlgorithms": 264,
   "algorithms": [
     {
       "alg": "x R' U R' D2 R U' R' D2 R2 x'",
@@ -216,14 +216,6 @@
       ]
     },
     {
-      "alg": "R2 F2 R U2 R U2 R' F R U R' U' R' F R2",
-      "caseIndex": 7,
-      "refPieceMovement": 0,
-      "minMovements": [
-        1
-      ]
-    },
-    {
       "alg": "R2 U' R U' R U R' U R2 D' U R U' R' D",
       "caseIndex": 7,
       "refPieceMovement": 1,
@@ -240,15 +232,7 @@
       ]
     },
     {
-      "alg": "R2 F2 R U2 R U2 R' F R U R2 R U' R' F R2",
-      "caseIndex": 7,
-      "refPieceMovement": 0,
-      "minMovements": [
-        1
-      ]
-    },
-    {
-      "alg": "R2 F2 R U2 R U2 U U' R' F R U R' U' R' F R2",
+      "alg": "R2 F2 R U2 R U2 R' F R U R' U' R' F R2",
       "caseIndex": 7,
       "refPieceMovement": 0,
       "minMovements": [
@@ -579,22 +563,6 @@
       ]
     },
     {
-      "alg": "R2 U R U R' U' R' U' R' U R'",
-      "caseIndex": 18,
-      "refPieceMovement": 3,
-      "minMovements": [
-        0
-      ]
-    },
-    {
-      "alg": "R' U R' U' R' U' R' U R U R2",
-      "caseIndex": 18,
-      "refPieceMovement": 0,
-      "minMovements": [
-        2
-      ]
-    },
-    {
       "alg": "R' U R' d' R' F' R2 U' R' U R' F R F",
       "caseIndex": 19,
       "refPieceMovement": 0,
@@ -708,6 +676,1545 @@
       "refPieceMovement": 3,
       "minMovements": [
         1,
+        3
+      ]
+    },
+    {
+      "alg": "D R' U' R U D' R2 U R' U R U' R U' R2'",
+      "caseIndex": 6,
+      "refPieceMovement": 3,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "D' U' R U R' U' D R2 U' R U' R' U R' U R2",
+      "caseIndex": 8,
+      "refPieceMovement": 3,
+      "minMovements": [
+        0
+      ]
+    },
+    {
+      "alg": "D' R U R' U' D R2 U' R U' R' U R' U R2",
+      "caseIndex": 8,
+      "refPieceMovement": 2,
+      "minMovements": [
+        3
+      ]
+    },
+    {
+      "alg": "D' R2 U R' U R' U' R U' R2 U' D R' U R",
+      "caseIndex": 5,
+      "refPieceMovement": 2,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "D' U D R U' R U R' D R D' R U' D R2' U R2 D' R2'",
+      "caseIndex": 19,
+      "refPieceMovement": 2,
+      "minMovements": [
+        0
+      ]
+    },
+    {
+      "alg": "R' U L' U2 R U' R' U2 R r",
+      "caseIndex": 10,
+      "refPieceMovement": 3,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "D' U' R2 U R' U R' U' R U' R2 D U' R' U R",
+      "caseIndex": 5,
+      "refPieceMovement": 3,
+      "minMovements": [
+        3
+      ]
+    },
+    {
+      "alg": "D' U2 R U R' U' D R2 U' R U' R' U R' U R2",
+      "caseIndex": 8,
+      "refPieceMovement": 0,
+      "minMovements": [
+        1
+      ]
+    },
+    {
+      "alg": "x R2' D2 R U R' D2 R U' R",
+      "caseIndex": 2,
+      "refPieceMovement": 0,
+      "minMovements": [
+        3
+      ]
+    },
+    {
+      "alg": "x R' U R' D2 R U' R' D2 R2",
+      "caseIndex": 1,
+      "refPieceMovement": 0,
+      "minMovements": [
+        0
+      ]
+    },
+    {
+      "alg": "R2' F2 R U2' R U2 R' F R U R' U' R' F R2",
+      "caseIndex": 7,
+      "refPieceMovement": 0,
+      "minMovements": [
+        1
+      ]
+    },
+    {
+      "alg": "F R U' R' U R U R2' F' R U R U' R'",
+      "caseIndex": 16,
+      "refPieceMovement": 0,
+      "minMovements": [
+        0
+      ]
+    },
+    {
+      "alg": "F' R' F R U' R' F' R2 U R' U' R' F R",
+      "caseIndex": 1,
+      "refPieceMovement": 1,
+      "minMovements": [
+        1
+      ]
+    },
+    {
+      "alg": "R' U' R U D' R2 U R' U R U' R U' R2' D",
+      "caseIndex": 6,
+      "refPieceMovement": 3,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "F' U' F R2 u R' U R U' E u U' R u' R2'",
+      "caseIndex": 6,
+      "refPieceMovement": 0,
+      "minMovements": [
+        3
+      ]
+    },
+    {
+      "alg": "F' U' F R2 u R' U R U' R u' R2'",
+      "caseIndex": 6,
+      "refPieceMovement": 0,
+      "minMovements": [
+        3
+      ]
+    },
+    {
+      "alg": "F' U' F R2 u R' U R U' R u' z y D2'",
+      "caseIndex": 6,
+      "refPieceMovement": 0,
+      "minMovements": [
+        3
+      ]
+    },
+    {
+      "alg": "L U F L' U' L U L F' L2' U L U L' U' L U' L'",
+      "caseIndex": 4,
+      "refPieceMovement": 2,
+      "minMovements": [
+        3
+      ]
+    },
+    {
+      "alg": "l' U R' D2 R U' R' D2 R2",
+      "caseIndex": 1,
+      "refPieceMovement": 0,
+      "minMovements": [
+        0
+      ]
+    },
+    {
+      "alg": "l' R' D2 R U R' D2 R U' l",
+      "caseIndex": 2,
+      "refPieceMovement": 0,
+      "minMovements": [
+        3
+      ]
+    },
+    {
+      "alg": "L' R' L U L' U2 R U' R' U2 R L",
+      "caseIndex": 10,
+      "refPieceMovement": 3,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "l' U R' D2 R U' R' D2 R2 x'",
+      "caseIndex": 1,
+      "refPieceMovement": 0,
+      "minMovements": [
+        0
+      ]
+    },
+    {
+      "alg": "L' U R' u U E L U' L' U2 L R",
+      "caseIndex": 10,
+      "refPieceMovement": 0,
+      "minMovements": [
+        0
+      ]
+    },
+    {
+      "alg": "L' U R' U2 z U R' U' R2 D U l'",
+      "caseIndex": 10,
+      "refPieceMovement": 3,
+      "minMovements": [
+        0
+      ]
+    },
+    {
+      "alg": "L' U R' U2 z U R' U' R2 D U R'",
+      "caseIndex": 10,
+      "refPieceMovement": 3,
+      "minMovements": [
+        0
+      ]
+    },
+    {
+      "alg": "L' U R' U2 L U' L' U2 R L",
+      "caseIndex": 10,
+      "refPieceMovement": 0,
+      "minMovements": [
+        0
+      ]
+    },
+    {
+      "alg": "L' U R' z R2 U R' U' R2 D U R",
+      "caseIndex": 10,
+      "refPieceMovement": 2,
+      "minMovements": [
+        0
+      ]
+    },
+    {
+      "alg": "R' U2 R U2' R' F R U R' U' R' F' R2",
+      "caseIndex": 15,
+      "refPieceMovement": 0,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "L' U' L F L' U' L U L F' L' r' F r",
+      "caseIndex": 10,
+      "refPieceMovement": 0,
+      "minMovements": [
+        1
+      ]
+    },
+    {
+      "alg": "L' U' L F L' U' L U L F' L2' U L",
+      "caseIndex": 10,
+      "refPieceMovement": 0,
+      "minMovements": [
+        1
+      ]
+    },
+    {
+      "alg": "L' U' L F L' U' L U L F' L2' U y' F",
+      "caseIndex": 10,
+      "refPieceMovement": 0,
+      "minMovements": [
+        1
+      ]
+    },
+    {
+      "alg": "L' U' L U L F' L2' U L U L' U' L F",
+      "caseIndex": 16,
+      "refPieceMovement": 0,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "L2 F2' L' U2' L' U2 L F' L' U' L U L F' L2'",
+      "caseIndex": 5,
+      "refPieceMovement": 0,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "L2' U L U L' U' L' U' L' U L'",
+      "caseIndex": 18,
+      "refPieceMovement": 0,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "L2' U' L U' L U L' U L2' D' U L U' L' D",
+      "caseIndex": 7,
+      "refPieceMovement": 2,
+      "minMovements": [
+        1
+      ]
+    },
+    {
+      "alg": "L2' U' L U' L U L' U L2' U D' L U' L' D",
+      "caseIndex": 7,
+      "refPieceMovement": 2,
+      "minMovements": [
+        1
+      ]
+    },
+    {
+      "alg": "M2 U' M' U2' M U' M2'",
+      "caseIndex": 18,
+      "refPieceMovement": 0,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "M2 U2 M2' U M2' U2 M2'",
+      "caseIndex": 9,
+      "refPieceMovement": 1,
+      "minMovements": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "alg": "M2 U2' M2' U M2' U2 M2'",
+      "caseIndex": 9,
+      "refPieceMovement": 1,
+      "minMovements": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "alg": "M' U M2' U M2' U M' U2 M2'",
+      "caseIndex": 21,
+      "refPieceMovement": 2,
+      "minMovements": [
+        1,
+        3
+      ]
+    },
+    {
+      "alg": "M' U M2' U M2' U M' U2' M2'",
+      "caseIndex": 21,
+      "refPieceMovement": 2,
+      "minMovements": [
+        1,
+        3
+      ]
+    },
+    {
+      "alg": "M' U' M2 U' M2' U' M' U2' M2'",
+      "caseIndex": 21,
+      "refPieceMovement": 2,
+      "minMovements": [
+        0,
+        2
+      ]
+    },
+    {
+      "alg": "M' U' M2' U' M2' U' M' U2' M2'",
+      "caseIndex": 21,
+      "refPieceMovement": 2,
+      "minMovements": [
+        0,
+        2
+      ]
+    },
+    {
+      "alg": "M2 U' M' U2 M U' M2'",
+      "caseIndex": 18,
+      "refPieceMovement": 0,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "M2' U L' l U2' M' U M2'",
+      "caseIndex": 17,
+      "refPieceMovement": 1,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "M2' U M U2 M' U M2'",
+      "caseIndex": 17,
+      "refPieceMovement": 1,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "M2' U M U2' M' U M2'",
+      "caseIndex": 17,
+      "refPieceMovement": 1,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "M2' U M2 U2 M2' U M2'",
+      "caseIndex": 9,
+      "refPieceMovement": 2,
+      "minMovements": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "alg": "M2' U M' U2 M U M2'",
+      "caseIndex": 17,
+      "refPieceMovement": 0,
+      "minMovements": [
+        0
+      ]
+    },
+    {
+      "alg": "M2' U M' U2' M U M2'",
+      "caseIndex": 17,
+      "refPieceMovement": 0,
+      "minMovements": [
+        0
+      ]
+    },
+    {
+      "alg": "M2' U M2' U M' U2 M2' U2 M'",
+      "caseIndex": 21,
+      "refPieceMovement": 1,
+      "minMovements": [
+        0,
+        2
+      ]
+    },
+    {
+      "alg": "M2' U M2' U M' U2' M2' U2' M'",
+      "caseIndex": 21,
+      "refPieceMovement": 1,
+      "minMovements": [
+        0,
+        2
+      ]
+    },
+    {
+      "alg": "M2' U M2' U2 M2' U M2'",
+      "caseIndex": 9,
+      "refPieceMovement": 2,
+      "minMovements": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "alg": "M2' U' M U2 M' U' M2'",
+      "caseIndex": 18,
+      "refPieceMovement": 3,
+      "minMovements": [
+        0
+      ]
+    },
+    {
+      "alg": "M2' U' M U2' M' U' M2'",
+      "caseIndex": 18,
+      "refPieceMovement": 3,
+      "minMovements": [
+        0
+      ]
+    },
+    {
+      "alg": "M2' U' M' U2 M U' M2'",
+      "caseIndex": 18,
+      "refPieceMovement": 0,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "M2' U' M' U2' M U' M2'",
+      "caseIndex": 18,
+      "refPieceMovement": 0,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "M2' U' M2' U' M' U2 M2' U2 M'",
+      "caseIndex": 21,
+      "refPieceMovement": 3,
+      "minMovements": [
+        1,
+        3
+      ]
+    },
+    {
+      "alg": "M2' U' M2' U' M' U2' M2' U2 M'",
+      "caseIndex": 21,
+      "refPieceMovement": 3,
+      "minMovements": [
+        1,
+        3
+      ]
+    },
+    {
+      "alg": "M2' U' M2' U' M' U2' M2' U2' M'",
+      "caseIndex": 21,
+      "refPieceMovement": 3,
+      "minMovements": [
+        1,
+        3
+      ]
+    },
+    {
+      "alg": "M2' U' M2' U' M' U2' M2' U2' x' r R'",
+      "caseIndex": 21,
+      "refPieceMovement": 3,
+      "minMovements": [
+        1,
+        3
+      ]
+    },
+    {
+      "alg": "M2' U' M2' U2 M2 U' M2'",
+      "caseIndex": 9,
+      "refPieceMovement": 2,
+      "minMovements": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "alg": "M2' U' M2' U2 M2' U' M2'",
+      "caseIndex": 9,
+      "refPieceMovement": 2,
+      "minMovements": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "alg": "M2' U' M2' U2' M2' U' M2",
+      "caseIndex": 9,
+      "refPieceMovement": 2,
+      "minMovements": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "alg": "M2' U' M2' U2' M2' U' M2'",
+      "caseIndex": 9,
+      "refPieceMovement": 2,
+      "minMovements": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "alg": "M2' U' r' R U2' M' U' M2'",
+      "caseIndex": 18,
+      "refPieceMovement": 3,
+      "minMovements": [
+        0
+      ]
+    },
+    {
+      "alg": "M2' U2 M U M2' U M2' U M",
+      "caseIndex": 21,
+      "refPieceMovement": 2,
+      "minMovements": [
+        1,
+        3
+      ]
+    },
+    {
+      "alg": "M2' U2 M' U M' r' R U' M' U M2' U2 M2'",
+      "caseIndex": 9,
+      "refPieceMovement": 1,
+      "minMovements": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "alg": "M2' U2 M2' U M2' U2 M2'",
+      "caseIndex": 9,
+      "refPieceMovement": 1,
+      "minMovements": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "alg": "M2' U2 M2' U' M2' U2 M2'",
+      "caseIndex": 9,
+      "refPieceMovement": 3,
+      "minMovements": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "alg": "M2' U2' M2' U' M2' U2' M2'",
+      "caseIndex": 9,
+      "refPieceMovement": 3,
+      "minMovements": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "alg": "r M' R' U r M' R' U2 r M' R' U r M' R'",
+      "caseIndex": 9,
+      "refPieceMovement": 2,
+      "minMovements": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "alg": "R U R' U' D R2 U' R U' R' U R' U R2 D'",
+      "caseIndex": 8,
+      "refPieceMovement": 2,
+      "minMovements": [
+        3
+      ]
+    },
+    {
+      "alg": "R U R' U' D R2 U' R U' R' U R' U R2 U' D'",
+      "caseIndex": 8,
+      "refPieceMovement": 0,
+      "minMovements": [
+        3
+      ]
+    },
+    {
+      "alg": "R' U2' R U2' R' F R U R' U' R' F' R2",
+      "caseIndex": 15,
+      "refPieceMovement": 0,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "R2' U R U R' U' R3 U' R' U R'",
+      "caseIndex": 18,
+      "refPieceMovement": 3,
+      "minMovements": [
+        0
+      ]
+    },
+    {
+      "alg": "R' d' F R2 u R' U R U' R u' R2'",
+      "caseIndex": 6,
+      "refPieceMovement": 2,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "R U R' F' R U R' U' R' F R2 U' R' y2 x' y2 x' U",
+      "caseIndex": 11,
+      "refPieceMovement": 2,
+      "minMovements": [
+        3
+      ]
+    },
+    {
+      "alg": "R U R' F' R U2 R' U2' R' F R U R U2' R'",
+      "caseIndex": 14,
+      "refPieceMovement": 3,
+      "minMovements": [
+        1
+      ]
+    },
+    {
+      "alg": "R U R' F' R U2 R' U2 R' F R U R U2' R'",
+      "caseIndex": 14,
+      "refPieceMovement": 3,
+      "minMovements": [
+        1
+      ]
+    },
+    {
+      "alg": "R U R' F' R U2' R' U2 R' F R U R U2' R'",
+      "caseIndex": 14,
+      "refPieceMovement": 3,
+      "minMovements": [
+        1
+      ]
+    },
+    {
+      "alg": "R' U L' U2 R U' R' U2 r R",
+      "caseIndex": 10,
+      "refPieceMovement": 3,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "R U R' U R' U' R2' U' R' U R' U R",
+      "caseIndex": 17,
+      "refPieceMovement": 3,
+      "minMovements": [
+        0
+      ]
+    },
+    {
+      "alg": "R U R' U' D R2 U' R U' R' U R' U R2 U D'",
+      "caseIndex": 8,
+      "refPieceMovement": 1,
+      "minMovements": [
+        3
+      ]
+    },
+    {
+      "alg": "R U R' U' D R2 U' R U' R' U R' U R2 U2' D'",
+      "caseIndex": 8,
+      "refPieceMovement": 3,
+      "minMovements": [
+        3
+      ]
+    },
+    {
+      "alg": "R U R' U' D R2' U' R U' R' U R' U R2 D'",
+      "caseIndex": 8,
+      "refPieceMovement": 2,
+      "minMovements": [
+        3
+      ]
+    },
+    {
+      "alg": "R U R' U' R' F R2 U' R' U x U' r' U r",
+      "caseIndex": 16,
+      "refPieceMovement": 2,
+      "minMovements": [
+        0
+      ]
+    },
+    {
+      "alg": "R U R' U' R' F R2 U' R' U' R U R' z2 y' R'",
+      "caseIndex": 16,
+      "refPieceMovement": 0,
+      "minMovements": [
+        0
+      ]
+    },
+    {
+      "alg": "R U R2' F' R U R U' R' F R U' R'",
+      "caseIndex": 11,
+      "refPieceMovement": 0,
+      "minMovements": [
+        0
+      ]
+    },
+    {
+      "alg": "R U R2' F' r U R U' r' F R U' R'",
+      "caseIndex": 2,
+      "refPieceMovement": 0,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "r U' L D2' L' U L D2 L2' B2'",
+      "caseIndex": 2,
+      "refPieceMovement": 2,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "r U' L D2' L' U L D2' L2'",
+      "caseIndex": 2,
+      "refPieceMovement": 0,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "R U' R U R' D R D' R U' D R2' U R2 D' R2'",
+      "caseIndex": 19,
+      "refPieceMovement": 3,
+      "minMovements": [
+        1
+      ]
+    },
+    {
+      "alg": "R U' R U R' D R D' R U' D R2' U R2 D' R2",
+      "caseIndex": 19,
+      "refPieceMovement": 3,
+      "minMovements": [
+        1
+      ]
+    },
+    {
+      "alg": "R2' U' R U' R U R' U R2 D' U R U' R' D",
+      "caseIndex": 7,
+      "refPieceMovement": 1,
+      "minMovements": [
+        3
+      ]
+    },
+    {
+      "alg": "R U' R2' D' R U R' D R U' R U' R' U R U R'",
+      "caseIndex": 14,
+      "refPieceMovement": 1,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "R' D R U' R' D' R U' R' D R U2 R' D' R",
+      "caseIndex": 1,
+      "refPieceMovement": 0,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "R' D R U2 R' D' R U R' D R U R' D' R",
+      "caseIndex": 2,
+      "refPieceMovement": 0,
+      "minMovements": [
+        1
+      ]
+    },
+    {
+      "alg": "R' D R U2 R' D' R U' R' D R U' R' D' R",
+      "caseIndex": 1,
+      "refPieceMovement": 0,
+      "minMovements": [
+        0
+      ]
+    },
+    {
+      "alg": "R' D' R U R' D R U R' D' R U2 R' D R",
+      "caseIndex": 2,
+      "refPieceMovement": 0,
+      "minMovements": [
+        3
+      ]
+    },
+    {
+      "alg": "R' D' U' D R U D' R2 U R' U R U' R U' R2 D",
+      "caseIndex": 6,
+      "refPieceMovement": 3,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "r' F R' F2 r U' r' F2 r R",
+      "caseIndex": 10,
+      "refPieceMovement": 0,
+      "minMovements": [
+        0
+      ]
+    },
+    {
+      "alg": "R' l' U2 l U2 R U2' R' F R U R' U' R' F R2",
+      "caseIndex": 7,
+      "refPieceMovement": 0,
+      "minMovements": [
+        1
+      ]
+    },
+    {
+      "alg": "R' U R' U' R D' R' D R' U D' R2 U' R2' D R2",
+      "caseIndex": 19,
+      "refPieceMovement": 0,
+      "minMovements": [
+        0
+      ]
+    },
+    {
+      "alg": "R' U L' U2 R U' R' U2 L R",
+      "caseIndex": 10,
+      "refPieceMovement": 3,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "R2 U R' U R' U' R U' R2 D U' R' U R U' D'",
+      "caseIndex": 5,
+      "refPieceMovement": 3,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "R2 F2 R U2 R U2' R' F R U R' U' R' F R2",
+      "caseIndex": 7,
+      "refPieceMovement": 0,
+      "minMovements": [
+        1
+      ]
+    },
+    {
+      "alg": "R2 U' R U' R U R' U R2' D' U R U' R' D",
+      "caseIndex": 7,
+      "refPieceMovement": 1,
+      "minMovements": [
+        3
+      ]
+    },
+    {
+      "alg": "R' U L' U2 R U' R' L U L' U2 R U' r",
+      "caseIndex": 13,
+      "refPieceMovement": 3,
+      "minMovements": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "alg": "R' U L' U2 R U' R' U2' R r",
+      "caseIndex": 10,
+      "refPieceMovement": 3,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "R' U L' U2 R U' R' U2' R L",
+      "caseIndex": 10,
+      "refPieceMovement": 3,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "R' U L' U2 x' R F' R' F2 r R",
+      "caseIndex": 10,
+      "refPieceMovement": 3,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "R' U R U' R' F' U' F R U R' U' R y U' R U R'",
+      "caseIndex": 13,
+      "refPieceMovement": 0,
+      "minMovements": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "alg": "R' U R' d' x R' F R' F' R2 U' R' U R U x'",
+      "caseIndex": 19,
+      "refPieceMovement": 0,
+      "minMovements": [
+        0
+      ]
+    },
+    {
+      "alg": "R' U R' U' R D' R' D R' D' U R2 U' R2' D R2",
+      "caseIndex": 19,
+      "refPieceMovement": 0,
+      "minMovements": [
+        0
+      ]
+    },
+    {
+      "alg": "R' U R' U' R' U' R' U R U R2'",
+      "caseIndex": 18,
+      "refPieceMovement": 0,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "R' U R' U' R3 U' R' U R U R2'",
+      "caseIndex": 18,
+      "refPieceMovement": 0,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "R' U R' U' y R' F' R2 U' R' U R' F R F",
+      "caseIndex": 19,
+      "refPieceMovement": 0,
+      "minMovements": [
+        0
+      ]
+    },
+    {
+      "alg": "R' U' R D' U R2 U R' U R U' R U' R2' D",
+      "caseIndex": 6,
+      "refPieceMovement": 3,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "R' U' R D' U R2 U R' U R U' R U' R2' U D",
+      "caseIndex": 6,
+      "refPieceMovement": 1,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "R' U' R U D' R2 U R' U R U' R U' R2 D",
+      "caseIndex": 6,
+      "refPieceMovement": 3,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "R' U' R U D' R2 U R' U R U' R U' R' D U2 D' U2 R' D",
+      "caseIndex": 6,
+      "refPieceMovement": 3,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "R' U' R U D' R2 U R' U R U' R U' R2' U D",
+      "caseIndex": 6,
+      "refPieceMovement": 1,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "R' U' R U D' R2 U R' U R U' R U' R2' U' D",
+      "caseIndex": 6,
+      "refPieceMovement": 2,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "R' U' R U D' R2 U R' U R U' R U' R2' U' D y'",
+      "caseIndex": 6,
+      "refPieceMovement": 2,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "R' U' R U' R U R U' R' U R U R2' U' R'",
+      "caseIndex": 21,
+      "refPieceMovement": 3,
+      "minMovements": [
+        1,
+        3
+      ]
+    },
+    {
+      "alg": "R' U2 R' D' R D U' D' R' D R U R U' R' U' R",
+      "caseIndex": 15,
+      "refPieceMovement": 0,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "R' U2' R U2 R' F R U R' U' R' F' R2",
+      "caseIndex": 15,
+      "refPieceMovement": 0,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "R' x R' D2 R U R' D2 R U' R x'",
+      "caseIndex": 2,
+      "refPieceMovement": 0,
+      "minMovements": [
+        3
+      ]
+    },
+    {
+      "alg": "R' x R' F R F' R U2' r' U r U2' x'",
+      "caseIndex": 10,
+      "refPieceMovement": 0,
+      "minMovements": [
+        3
+      ]
+    },
+    {
+      "alg": "R2 U' R2' D R2 U' R2' U R2 U D' R2'",
+      "caseIndex": 10,
+      "refPieceMovement": 1,
+      "minMovements": [
+        3
+      ]
+    },
+    {
+      "alg": "R2 U R U R' U' R' U' R' U R'",
+      "caseIndex": 18,
+      "refPieceMovement": 3,
+      "minMovements": [
+        0
+      ]
+    },
+    {
+      "alg": "R2 U R' U R' U' R U' R2 U' D R' U R U' D'",
+      "caseIndex": 5,
+      "refPieceMovement": 3,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "R2 U R' U R' U' R U' R2 U' D R' U R D'",
+      "caseIndex": 5,
+      "refPieceMovement": 2,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "R' U2' R U2' R' F R U R' U' R' F' R2 U",
+      "caseIndex": 15,
+      "refPieceMovement": 2,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "R2 U' R2' D R2 U' R2' U R2 D' U R2'",
+      "caseIndex": 10,
+      "refPieceMovement": 1,
+      "minMovements": [
+        3
+      ]
+    },
+    {
+      "alg": "R2 U' S' U2' S U' R2",
+      "caseIndex": 17,
+      "refPieceMovement": 2,
+      "minMovements": [
+        1
+      ]
+    },
+    {
+      "alg": "R2' F2 R U2' R U2' R' F R U R' U' R' F R2",
+      "caseIndex": 7,
+      "refPieceMovement": 0,
+      "minMovements": [
+        1
+      ]
+    },
+    {
+      "alg": "R2' F R U R U' R' F' R U2' R' U2 R",
+      "caseIndex": 15,
+      "refPieceMovement": 0,
+      "minMovements": [
+        3
+      ]
+    },
+    {
+      "alg": "R2' F2 R U2 R U2' R' F R U R' U' R' F R2",
+      "caseIndex": 7,
+      "refPieceMovement": 0,
+      "minMovements": [
+        1
+      ]
+    },
+    {
+      "alg": "R2' F2 R U2 R U2 R' F R U R' U' R' F R2",
+      "caseIndex": 7,
+      "refPieceMovement": 0,
+      "minMovements": [
+        1
+      ]
+    },
+    {
+      "alg": "R2' U R U R' U' R' U' R' U R'",
+      "caseIndex": 18,
+      "refPieceMovement": 3,
+      "minMovements": [
+        0
+      ]
+    },
+    {
+      "alg": "R2' u' R U' R U R' D x' U2 L F' L' F",
+      "caseIndex": 7,
+      "refPieceMovement": 1,
+      "minMovements": [
+        3
+      ]
+    },
+    {
+      "alg": "R2' u' R U' R U R' D x' U2 r U' r'",
+      "caseIndex": 7,
+      "refPieceMovement": 3,
+      "minMovements": [
+        3
+      ]
+    },
+    {
+      "alg": "R2' u' R U' R U R' u R2 f R' f'",
+      "caseIndex": 7,
+      "refPieceMovement": 3,
+      "minMovements": [
+        3
+      ]
+    },
+    {
+      "alg": "R2' U' R' U' R U R U R U' R",
+      "caseIndex": 17,
+      "refPieceMovement": 0,
+      "minMovements": [
+        0
+      ]
+    },
+    {
+      "alg": "R2' U' S R2' S' R2 U R2'",
+      "caseIndex": 18,
+      "refPieceMovement": 3,
+      "minMovements": [
+        3
+      ]
+    },
+    {
+      "alg": "x L U' L D2' L' U L D2' L2'",
+      "caseIndex": 2,
+      "refPieceMovement": 0,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "x L U' L D2' L' U L D2' L2' B",
+      "caseIndex": 2,
+      "refPieceMovement": 3,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "x L U' L D2' L' U L D2' L2' x'",
+      "caseIndex": 2,
+      "refPieceMovement": 0,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "x L2 D2' L' U' L D2 L' U L'",
+      "caseIndex": 1,
+      "refPieceMovement": 0,
+      "minMovements": [
+        3
+      ]
+    },
+    {
+      "alg": "x L2 D2' L' U' L D2' L' U L'",
+      "caseIndex": 1,
+      "refPieceMovement": 0,
+      "minMovements": [
+        3
+      ]
+    },
+    {
+      "alg": "x L2 D2' L' U' L D2' L' U L' x'",
+      "caseIndex": 1,
+      "refPieceMovement": 0,
+      "minMovements": [
+        3
+      ]
+    },
+    {
+      "alg": "x R2 D2 R U R' D2 R U' R",
+      "caseIndex": 2,
+      "refPieceMovement": 0,
+      "minMovements": [
+        3
+      ]
+    },
+    {
+      "alg": "x R' U R' D2 R U' R' D2 R2 B2",
+      "caseIndex": 1,
+      "refPieceMovement": 2,
+      "minMovements": [
+        0
+      ]
+    },
+    {
+      "alg": "x R' U R' D2 R U' R' D2 R2 B'",
+      "caseIndex": 1,
+      "refPieceMovement": 1,
+      "minMovements": [
+        0
+      ]
+    },
+    {
+      "alg": "x R' x' F' R U R U' R2' F R U R' F' R F",
+      "caseIndex": 2,
+      "refPieceMovement": 3,
+      "minMovements": [
+        3
+      ]
+    },
+    {
+      "alg": "x R2' D2 R U R' D2 R U' R x'",
+      "caseIndex": 2,
+      "refPieceMovement": 0,
+      "minMovements": [
+        3
+      ]
+    },
+    {
+      "alg": "x R2' D2 R U R' D2 R U' l",
+      "caseIndex": 2,
+      "refPieceMovement": 0,
+      "minMovements": [
+        3
+      ]
+    },
+    {
+      "alg": "x R2' D2 R U R' D2 R U' R B",
+      "caseIndex": 2,
+      "refPieceMovement": 3,
+      "minMovements": [
+        3
+      ]
+    },
+    {
+      "alg": "x R2' F R F' R U2' r' U r U2 x'",
+      "caseIndex": 10,
+      "refPieceMovement": 0,
+      "minMovements": [
+        3
+      ]
+    },
+    {
+      "alg": "x R2' F R F' R U2' r' U r U2' x'",
+      "caseIndex": 10,
+      "refPieceMovement": 0,
+      "minMovements": [
+        3
+      ]
+    },
+    {
+      "alg": "x z R2' D2 R U R' D2 R U' R",
+      "caseIndex": 2,
+      "refPieceMovement": 0,
+      "minMovements": [
+        0
+      ]
+    },
+    {
+      "alg": "x z' R' U R' D2 R U' R' D2 R2",
+      "caseIndex": 1,
+      "refPieceMovement": 0,
+      "minMovements": [
+        3
+      ]
+    },
+    {
+      "alg": "x' F R U' R' D R U R' D' R U R' D R U' R' D'",
+      "caseIndex": 3,
+      "refPieceMovement": 3,
+      "minMovements": [
+        0,
+        2
+      ]
+    },
+    {
+      "alg": "x' L' U L D' L' U' L D L' U' L D' L' U L D",
+      "caseIndex": 3,
+      "refPieceMovement": 0,
+      "minMovements": [
+        1,
+        3
+      ]
+    },
+    {
+      "alg": "x' L' U L' D2' L U' L' D2' L2",
+      "caseIndex": 1,
+      "refPieceMovement": 0,
+      "minMovements": [
+        2
+      ]
+    },
+    {
+      "alg": "x' F R U' R' D R U R' D' R U R' D R U' R' D' F",
+      "caseIndex": 3,
+      "refPieceMovement": 2,
+      "minMovements": [
+        0,
+        2
+      ]
+    },
+    {
+      "alg": "x' R U' R' D R U R' D' R U R' D R U' R' D'",
+      "caseIndex": 3,
+      "refPieceMovement": 0,
+      "minMovements": [
+        1,
+        3
+      ]
+    },
+    {
+      "alg": "x' R U' R D2 R' U R D2 R2' F'",
+      "caseIndex": 2,
+      "refPieceMovement": 1,
+      "minMovements": [
+        0
+      ]
+    },
+    {
+      "alg": "x' R U' R D2 R' U R D2 R2' x",
+      "caseIndex": 2,
+      "refPieceMovement": 0,
+      "minMovements": [
+        0
+      ]
+    },
+    {
+      "alg": "x' R U' R D2 R' U R D2 R2",
+      "caseIndex": 2,
+      "refPieceMovement": 0,
+      "minMovements": [
+        0
+      ]
+    },
+    {
+      "alg": "x' R U' R D2 R' U R D2 R2 F'",
+      "caseIndex": 2,
+      "refPieceMovement": 1,
+      "minMovements": [
+        0
+      ]
+    },
+    {
+      "alg": "x' R U' R D2 R' U R D2 R2'",
+      "caseIndex": 2,
+      "refPieceMovement": 0,
+      "minMovements": [
+        0
+      ]
+    },
+    {
+      "alg": "x' R U' R D2 R' U R D2 R2' F",
+      "caseIndex": 2,
+      "refPieceMovement": 3,
+      "minMovements": [
+        0
+      ]
+    },
+    {
+      "alg": "x' R U' R D2 R' U R D2 R2' F2",
+      "caseIndex": 2,
+      "refPieceMovement": 2,
+      "minMovements": [
+        0
+      ]
+    },
+    {
+      "alg": "x' R U' R' D R U R' D' R U R' D R U' R' D' F",
+      "caseIndex": 3,
+      "refPieceMovement": 3,
+      "minMovements": [
+        1,
+        3
+      ]
+    },
+    {
+      "alg": "x' R U' R' D R U R' D' R U R' D R U' R' D' F'",
+      "caseIndex": 3,
+      "refPieceMovement": 1,
+      "minMovements": [
+        1,
+        3
+      ]
+    },
+    {
+      "alg": "x' R2 D2 R' U' R D2 R' U R'",
+      "caseIndex": 1,
+      "refPieceMovement": 0,
+      "minMovements": [
+        1
+      ]
+    },
+    {
+      "alg": "x' R2 D2 R' U' R D2 R' U R' F",
+      "caseIndex": 1,
+      "refPieceMovement": 3,
+      "minMovements": [
+        1
+      ]
+    },
+    {
+      "alg": "x' R2' D2 R' U' R D2 R' U R' x",
+      "caseIndex": 1,
+      "refPieceMovement": 0,
+      "minMovements": [
+        1
+      ]
+    },
+    {
+      "alg": "x' z' R U' R' D R U R' D' R U R' D R U' R' D'",
+      "caseIndex": 3,
+      "refPieceMovement": 0,
+      "minMovements": [
+        0,
+        2
+      ]
+    },
+    {
+      "alg": "x' F R U' R D2 R' U R D2 R2'",
+      "caseIndex": 2,
+      "refPieceMovement": 3,
+      "minMovements": [
+        3
+      ]
+    },
+    {
+      "alg": "z D' R U' R2' D R' D' U R U' R2 D R' U R z' U",
+      "caseIndex": 13,
+      "refPieceMovement": 1,
+      "minMovements": [
+        0,
+        1,
+        2,
         3
       ]
     }

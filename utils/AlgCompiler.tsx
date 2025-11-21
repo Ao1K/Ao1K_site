@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { rawGeneric, rawOLLalgs, rawPLLalgs } from "./rawAlgs";
 import type { ExactAlg, LastLayerAlg } from "./rawAlgs";
 import { CubeInterpreter } from "../composables/recon/CubeInterpreter";
+import type { StepInfo } from "../composables/recon/CubeInterpreter";
 import { reverseMove } from '../composables/recon/transformHTML';
 import HiddenPlayer, { HiddenPlayerHandle } from '../components/recon/HiddenPlayer';
 import type { CompiledLLAlg } from '../composables/recon/LLsuggester';
@@ -121,12 +122,12 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
    * Example: "U2 y' R U R'" becomes "y' U2 R U R'"
    */
   const reorderAnglingInAlg = (angle: string, algValue: string): string => {
-    let combined = (angle ? `${angle} ` : '') + algValue;
+    const combined = (angle ? `${angle} ` : '') + algValue;
     
     // Use regex to find U move followed by y move and flip them
-    combined = combined.replace(/(U'?2?)\s+(y'?2?)/g, '$2 $1');
+    const reordered = combined.replace(/(U'?2?)\s+(y'?2?)/g, '$2 $1');
     
-    return combined.trim();
+    return reordered.trim();
   };
 
   /**
@@ -181,28 +182,281 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
     }
   };
 
+  /**
+   * For each alg, check for moves that cancel out or combine (ex1: U U' = '', ex2: U U = U2).
+   * If alg-type = LastLayer, also remove leading y, U, and d moves.
+   */
+  const simplifyAlgs = (algs: ExactAlg[] | LastLayerAlg[], algType: 'Exact' | 'LastLayer') => {
+    const validBases = new Set(['U', 'D', 'R', 'L', 'F', 'B', 'u', 'd', 'r', 'l', 'f', 'b', 'M', 'E', 'S', 'x', 'y', 'z']);
+
+    const formatMove = (base: string, amount: number) => {
+      const normalized = amount % 4;
+
+      if (normalized === 0) {
+        return '';
+      }
+
+      if (normalized === 1) {
+        return base;
+      }
+
+      if (normalized === 2) {
+        return `${base}2`;
+      }
+
+      return `${base}'`;
+    };
+
+    const parseMove = (move: string) => {
+      if (!move) {
+        return null;
+      }
+
+      const base = move.charAt(0);
+      if (!validBases.has(base)) {
+        return null;
+      }
+
+      let index = 1;
+      let amount = 1;
+
+      const digit = move.charAt(index);
+      if (digit === '2' || digit === '3') {
+        amount = Number(digit);
+        index += 1;
+      }
+
+      if (move.charAt(index) === "'") {
+        amount = (4 - amount) % 4;
+        index += 1;
+      }
+
+      if (index !== move.length) {
+        return null;
+      }
+
+      const normalized = amount % 4;
+      if (normalized === 0) {
+        return null;
+      }
+
+      return { base, amount: normalized } as const;
+    };
+
+    type ParsedMove = ReturnType<typeof parseMove>;
+
+    const combineMoves = (moves: string[]) => {
+      const stack: { move: string; parsed: ParsedMove }[] = [];
+
+      for (const move of moves) {
+        const parsed = parseMove(move);
+
+        if (!parsed) {
+          if (move) {
+            stack.push({ move, parsed: null });
+          }
+
+          continue;
+        }
+
+        const last = stack[stack.length - 1];
+        const lastParsed = last?.parsed;
+
+        if (lastParsed && lastParsed.base === parsed.base) {
+          const total = (lastParsed.amount + parsed.amount) % 4;
+
+          if (total === 0) {
+            stack.pop();
+          } else {
+            stack[stack.length - 1] = {
+              move: formatMove(lastParsed.base, total),
+              parsed: { base: lastParsed.base, amount: total },
+            };
+          }
+        } else {
+          // keep original notation when no merge occurs so single moves like R3 stay intact
+          stack.push({
+            move,
+            parsed: { base: parsed.base, amount: parsed.amount },
+          });
+        }
+      }
+
+      return stack.map(entry => entry.move);
+    };
+
+    const stripLeadingSetupMoves = (moves: string[]) => {
+      if (algType !== 'LastLayer') {
+        return moves;
+      }
+
+      const result = [...moves];
+
+      while (result.length > 0) {
+        const parsed = parseMove(result[0]);
+
+        if (!parsed) {
+          break;
+        }
+
+        if (parsed.base === 'y' || parsed.base === 'U' || parsed.base === 'd') {
+          result.shift();
+          continue;
+        }
+
+        break;
+      }
+
+      return result;
+    };
+
+    const simplifiedAlgs: (ExactAlg | LastLayerAlg)[] = algs.map((alg) => {
+      let current = (alg.value ?? '').trim().replace(/\s+/g, ' ').split(' ')
+      let previous: string[] = [];
+
+      while (current.length !== previous.length) {
+        previous = [...current];
+
+        const combined = combineMoves(current);
+        
+        current = combined.filter(move => move !== '');
+      }
+
+      // only for last layer algs, strip leading y, U, d moves
+      const withoutSetup = stripLeadingSetupMoves(current).join(' ');
+      
+      return {
+        ...alg,
+        value: withoutSetup,
+      };
+    });
+
+    return simplifiedAlgs;
+  };
+
+  const findUniqueNewAlgs = (algs: (ExactAlg | LastLayerAlg)[], simplifiedAlgs: (ExactAlg | LastLayerAlg)[]) => {
+    const newAlgs: (ExactAlg | LastLayerAlg)[] = [];
+    const existingAlgs = new Set<string>();
+    
+    for (let i = 0; i < simplifiedAlgs.length; i++) {
+      const originalAlg = algs[i];
+      const simplifiedAlg = simplifiedAlgs[i];
+      
+      // warn if non-new alg is not in its most simplified form
+      if (!originalAlg.new && originalAlg.value !== simplifiedAlg.value) {
+        console.warn(`Algorithm at index ${i} is not in simplified form. Original: "${originalAlg.value}", Simplified: "${simplifiedAlg.value}"`);
+      }
+      
+      if (simplifiedAlg.new) {
+        newAlgs.push(simplifiedAlg);
+      } else {
+        existingAlgs.add(simplifiedAlg.value);
+      }
+    }
+
+    const actuallyNewAlgs = newAlgs.filter(alg => !existingAlgs.has(alg.value));
+
+    const uniqueNewAlgSet = new Set<string>();
+    const uniqueNewAlgs: (ExactAlg | LastLayerAlg)[] = [];
+    actuallyNewAlgs.forEach(alg => {
+      if (!uniqueNewAlgSet.has(alg.value)) {
+        uniqueNewAlgSet.add(alg.value);
+        uniqueNewAlgs.push(alg);
+      }
+    });
+    
+    return uniqueNewAlgs;
+  };
+
+  /**
+   * Find algs that preserve F2L. For PLL, doesn't check if OLL is solved. Only checks F2L.
+   */
+  const findWorkingLLalgs = async (algs: LastLayerAlg[]) => {
+    if (!cubeLoaded || !hiddenPlayerRef.current) {
+      console.error('Cube not loaded yet. Please wait for the cube to load before compiling.');
+      return;
+    }
+
+    // Get initial cube state
+    const initialCube = await hiddenPlayerRef.current.updateCube('', '', []);
+    if (!initialCube) {
+      console.error('Failed to get initial cube state');
+      return;
+    }
+
+    const cubeInterpreter = new CubeInterpreter(initialCube);
+
+    // Add a small delay to ensure cube is fully initialized
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    const matrixMaps = cubeInterpreter.solvedMatrixMaps;
+    if (!matrixMaps || matrixMaps.size === 0) {
+      console.error('CubeInterpreter solvedMatrixMaps is not available. Cannot proceed with compilation.');
+      return;
+    }
+
+    const usableAlgs: LastLayerAlg[] = [];
+    console.log(`Filtering ${algs.length} LL algs for F2L-preserving ones...`);
+    for (const alg of algs) {
+      
+      if (!isCompilingRef.current) {
+        break;
+      }
+
+      const inverseAlg = getAlgInverse(alg.value);
+      const cube = await hiddenPlayerRef.current!.updateCube('', inverseAlg, findAnimationLengths(inverseAlg.split(' ')));
+      const steps: StepInfo[] = cubeInterpreter.getStepsCompleted(cube);
+      const f2lPairsSolved: number = steps.filter(step => step.type === 'f2l').length;
+      if (f2lPairsSolved === 4) {
+        usableAlgs.push(alg);
+      } else {
+        console.warn(`LL alg "${alg.value}" does not preserve F2L. Final new usable alg list will not include this alg.`);
+      }
+    };
+
+    console.log(`Filtered usable LL algs: ${usableAlgs.length} out of ${algs.length}`);
+    return usableAlgs;
+  }
+
   const compileAlgorithms = async (algs: ExactAlg[] | LastLayerAlg[], algType: 'Exact' | 'LastLayer') => {
     if (!cubeLoaded || !hiddenPlayerRef.current) {
       console.error('Cube not loaded yet. Please wait for the cube to load before compiling.');
       return;
     }
     
-    // check for duplicates, purely for visibility of quality of raw algs. Has no effect.
+
+    const simplifiedAlgs: (ExactAlg | LastLayerAlg)[] = simplifyAlgs(algs, algType);
+
     const algSet = new Set<string>();
-    algs.forEach((alg, index) => {
-      if (algSet.has(alg.value)) {
+    simplifiedAlgs.forEach((alg, index) => {
+      if (algSet.has(alg.value) && alg.new !== true) {
         console.warn(`Duplicate algorithm detected in rawAlgs.tsx at index ${index}`);
         console.log({...alg});
       }
       algSet.add(alg.value);
     });
 
+    const uniqueNewAlgs = findUniqueNewAlgs(algs, simplifiedAlgs);
+    console.log('Unique new algs:');
+    console.log(uniqueNewAlgs);
+
+    // for LL algs, make sure applying alg in reverse keeps F2L solved.
+    let usableNewAlgs: LastLayerAlg[] | ExactAlg[] = uniqueNewAlgs;
+    if (algType === 'LastLayer' && uniqueNewAlgs.length !== 0) {
+      usableNewAlgs = await findWorkingLLalgs(uniqueNewAlgs as LastLayerAlg[]) ?? uniqueNewAlgs;
+      console.log('Usable new algs. Update rawAlgs.tsx accordingly:');
+      console.log(usableNewAlgs);
+    }
+
+    // add new algs to simplifedAlgs for final processing
+    simplifiedAlgs.push(...usableNewAlgs);
+
     switch (algType) {
       case 'Exact':
-        await compileExactAlgorithms(algs as ExactAlg[]);
+        await compileExactAlgorithms(simplifiedAlgs as ExactAlg[]);
         break;
       case 'LastLayer':
-        await compileLLalgorithms(algs as LastLayerAlg[]);
+        await compileLLalgorithms(simplifiedAlgs as LastLayerAlg[]);
         break;
       default:
         console.error(`Unknown algorithm type: ${algType}`);
@@ -253,8 +507,8 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
         break;
       }
 
-      const cleanedAlg = removeAngleFromAlg(alg.value);
-      const algInverse = getAlgInverse(cleanedAlg);
+      const deangledAlg = removeAngleFromAlg(alg.value);
+      const algInverse = getAlgInverse(deangledAlg);
 
       // Use imperative API to update cube state
       const animationTimes = findAnimationLengths(algInverse.split(' '));
@@ -266,7 +520,7 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
       }
 
       // Update the cube interpreter with current cube state
-      cubeInterpreter.setCurrentState(cube);
+      cubeInterpreter.getStepsCompleted(cube);
       console.log('Identifying alg:', alg.value);
       const { index: caseIndex, refPieceMovement, minMovements } = cubeInterpreter.identifyLLcase(alg.step, alg.value);
       compiledData.push({
@@ -317,7 +571,7 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
         try {
           
           // add AUF/rotation and reorder if needed (y moves should go before U moves)
-          let completeAlg = reorderAnglingInAlg(angle, alg.value);
+          const completeAlg = reorderAnglingInAlg(angle, alg.value);
           
           // Validate the algorithm - skip processing if invalid
           if (!validateAlg(completeAlg)) {
@@ -359,7 +613,7 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
           }
 
           // Update the cube interpreter with current cube state
-          cubeInterpreter.setCurrentState(cube);
+          cubeInterpreter.getStepsCompleted(cube);
           const cubeState = cubeInterpreter.getCurrentState();
           const hash = cubeState?.hash || 'unknown';
           

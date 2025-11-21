@@ -454,7 +454,7 @@ export class CubeInterpreter {
     this.currentCubeRotation = this.getCubeRotation();
     this.solvedState = { hash: this.solved3x3Hash };
     this.facelets = this.getColors() || [];
-    this.setCurrentState();
+    this.getStepsCompleted();
     
     // if need to generate solvedMatrixMaps (such as if cube interpretation stops working):
     // this.solvedPieces = this.getPieces();
@@ -859,7 +859,7 @@ export class CubeInterpreter {
     }
   }
 
-  private getCrossColorsSolved(): string[] {
+  private calcCrossColorsSolved(): string[] {
     const solvedPieces = this.getSolvedPieces();
 
     const effectiveColorsSolved: string[] = [];
@@ -890,10 +890,10 @@ export class CubeInterpreter {
   /**
    * Method for passing in a cubingjs cube object to update the current state
    */
-  public setCurrentState(current?: Object3D<Object3DEventMap> | null): StepInfo[] {
-    if (current) {
+  public getStepsCompleted(currentCube?: Object3D<Object3DEventMap> | null): StepInfo[] {
+    if (currentCube) {
       try {
-        this.cube = parseCubeObject(current);
+        this.cube = parseCubeObject(currentCube);
       } catch (error) {
         console.warn('Invalid cube object provided to setCurrentState:', error);
         return [];
@@ -904,9 +904,9 @@ export class CubeInterpreter {
 
     this.currentState = this.calcCurrentState();
 
-    this.crossColorsSolved = this.getCrossColorsSolved();
+    this.crossColorsSolved = this.calcCrossColorsSolved();
 
-    return this.getStepsCompleted();
+    return this.calcStepsCompleted();
   }
 
   private mapEffectiveColorToActual(effectiveColor: string): string {
@@ -1231,7 +1231,8 @@ export class CubeInterpreter {
 
   private ensureState(): boolean {
     if (!this.currentState) {
-      this.setCurrentState();
+      // update state
+      this.getStepsCompleted();
     }
 
     return !!this.currentState && this.currentPieces.length > 0;
@@ -1516,7 +1517,7 @@ export class CubeInterpreter {
     return this.calcLLPermutationStatus(topInfo);
   }
   
-  public getStepsCompleted(): StepInfo[] {
+  public calcStepsCompleted(): StepInfo[] {
     // TODO: in parallel, return results for different methods, mainly Roux and ZZ.
 
     const steps: StepInfo[] = [];
@@ -1720,7 +1721,7 @@ export class CubeInterpreter {
   public getCurrentState(): CubeState | null {
 
     // ensure up-to-date
-    this.setCurrentState();
+    this.getStepsCompleted();
 
     return this.currentState;
   }
@@ -2315,7 +2316,7 @@ export class CubeInterpreter {
         // zbllIndex = this.LLinterpreter.getStepInfo(LLpattern, 'zbll');
         // onelllIndex = this.LLinterpreter.getStepInfo(LLpattern, 'onelll');
       }
-      if (steps.find(s => s.step === 'eo') && steps.find(s => s.step === 'co') && !steps.find(s => s.step === 'cp')) { // ep can be solved or not
+      if (steps.find(s => s.step === 'eo') && steps.find(s => s.step === 'co') && (!steps.find(s => s.step === 'cp') || !steps.find(s => s.step === 'ep'))) {
         indices.push(this.LLinterpreter.getStepInfo(LLpattern, 'pll'));
       }
       if (steps.find(s => s.step === 'eo') && steps.find(s => s.step === 'co') && steps.find(s => s.step === 'ep') && steps.find(s => s.step === 'cp')) {
@@ -2400,12 +2401,13 @@ export class CubeInterpreter {
     return { index: stepData.index, refPieceMovement, minMovements: stepData.minMovements };
   }
 
-  public getAlgSuggestions(): {alg: string, time: number, step: string, name?: string}[] {
+  public getAlgSuggestions(steps?: StepInfo[]): {alg: string, time: number, step: string, name?: string}[] {
     if (!this.algSuggester || !this.currentState) {
       return [];
     }
-
-    const steps = this.getStepsCompleted();
+    if (!steps) {
+      steps = this.calcStepsCompleted();
+    }
 
     if (steps.filter(s => s.type === 'solved').length === 1) {
       return [];
