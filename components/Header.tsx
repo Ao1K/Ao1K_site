@@ -6,9 +6,11 @@ import WriteIcon from './icons/write';
 // import DatabaseIcon from './icons/database';
 // import TimerIcon from './icons/timer';
 import ListIcon from './icons/list';
+import BulletListIcon from './icons/bulletList';
 
 const versionList = {
-  "recon": "v0.3",
+  "recon": "v0.4",
+  "changeblog": "new!",
 }
 
 export default function Header() {
@@ -32,12 +34,13 @@ export default function Header() {
           className="h-16 w-auto overflow-visible"
         />
 
-        <div className="hidden sm:flex p-4 mt-1 flex-row"> {/* space-x-10 */}
+        <div className="hidden sm:flex p-4 mt-1 flex-row space-x-10">
           <div onClick={closeSidebar}>
           {/* <HeaderNavLink href="/" title="Practice" icon={<TimerIcon />} /> */}
           </div>
-          <HeaderNavLink href="/recon" title="Reconstruct" icon={<WriteIcon />} version={versionList['recon']}/>
+          <HeaderNavLink href="/recon/" title="Reconstruct" icon={<WriteIcon />} version={versionList['recon']}/>
           {/* <HeaderNavLink href="/algs" title="Learn" icon={<DatabaseIcon />} /> */}
+          <HeaderNavLink href="/changeblog/" title="Changeblog" icon={<BulletListIcon />} version={versionList['changeblog']} />
         </div>
 
         <div className="p-4 mt-1 hidden sm:block">
