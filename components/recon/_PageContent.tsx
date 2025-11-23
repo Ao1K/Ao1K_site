@@ -77,8 +77,10 @@ export default function Recon() {
   const [solutionHTML, setSolutionHTML] = useState<string>('');
   
   const [playerParams,setPlayerParams] = useState<PlayerParams>({ animationTimes: [], solution: '', scramble: '' });
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const suggestionsRef = useRef<Suggestion[]>([]);
+
+  // TODO: check if these are needed any more
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const updateSuggestions = useCallback((next: Suggestion[]) => {
     suggestionsRef.current = next;
     setSuggestions(next);
@@ -94,7 +96,7 @@ export default function Recon() {
   const hiddenPlayerRef = useRef<HiddenPlayerHandle>(null);
   const isLoopingRef = useRef<boolean>(false);
   const loopTimeoutRef = useRef<number|null>(null);
-  const screenshotCacheRef = useRef<{ blob: Blob; scrambleHTML: string; solutionHTML: string } | null>(null);
+  const screenshotCacheRef = useRef<{ blob: Blob; scrambleHTML: string; solutionHTML: string; solveTime: number | string } | null>(null);
   const clearLoopTimeout = useCallback(() => {
     if (loopTimeoutRef.current !== null) {
       clearTimeout(loopTimeoutRef.current);
@@ -542,7 +544,7 @@ export default function Recon() {
     return { fullLeft, stepLeft, stepRight, fullRight, playPause }
   };
 
-  const handleNewlineSuggestions = async (solutionMoves: string[][], trueLineIndex: number, staleMoveLocation: [number, number, number]) => {
+  const handleEmptyLineSuggestions = async (solutionMoves: string[][], trueLineIndex: number) => {
     if (!solutionMethodsRef.current || !cubeInterpreter.current) return;
     const lastMoveIndex = findLastMoveInLine(solutionMoves, trueLineIndex);
     const animationTimes = findAnimationTimes(1, trueLineIndex, lastMoveIndex, solutionMoves);
@@ -554,41 +556,25 @@ export default function Recon() {
 
     const steps = cubeInterpreter.current!.getStepsCompleted(cube);
     const newSuggestions: Suggestion[] = cubeInterpreter.current.getAlgSuggestions(steps);
-    console.log('Suggestions:', newSuggestions);
-    const isAdjustmentMatch =
-      staleMoveLocation[0] === moveLocation.current[0] &&
-      staleMoveLocation[1] === moveLocation.current[1] &&
-      staleMoveLocation[2] === moveLocation.current[2];  
 
     const prevSuggestions = suggestionsRef.current;
 
     const isSuggestionChange = prevSuggestions.length !== newSuggestions.length ||
       newSuggestions.some((newSug, index) => newSug.alg !== (prevSuggestions[index]?.alg ?? ''));
 
-    console.log('setting suggestionsRef to:', newSuggestions);
     suggestionsRef.current = newSuggestions;
 
     if (!isSuggestionChange) {
-      console.log('Suggestions unchanged, skipping update.');
       return;
     }
-    // if (isAdjustmentMatch) {
-    if (true) {
-      // suggestion line position must effectively have not changed
 
-      if (newSuggestions.length > 0) {
-        console.log('Showing suggestion:', newSuggestions[0].alg);
-        solutionMethodsRef.current?.showSuggestion(newSuggestions[0].alg);
-      }
-      updateSuggestions(newSuggestions);
-
-
-    } else {
-      console.log('Updating suggestions to []')
-      console.log('Stale location:', staleMoveLocation, 'Current location:', moveLocation.current);
-      updateSuggestions([]);
+    if (newSuggestions.length > 0) {
+      solutionMethodsRef.current?.showSuggestion(newSuggestions[0].alg);
     }
-  }
+
+    updateSuggestions(newSuggestions);
+
+  };
 
   const trackMoves = useCallback(
     (
@@ -598,7 +584,6 @@ export default function Recon() {
       moves: string[][], // the moves in the textbox of id
       moveControllerStatus?: string // the current status of loopStepRight
     ) => {
-      console.log('New location:', idIndex, lineIndex, moveIndex);
     
       if (moveControllerStatus !== 'play') {
         isLoopingRef.current = false; // break out of loopStepRight when status changes
@@ -614,7 +599,8 @@ export default function Recon() {
       if (isLineEmpty) {
 
         // don't show any suggestions on 0th line (0th line is usually not algorithmic)
-        (lineIndex === 0 || idIndex === 0) ? null : handleNewlineSuggestions(moves, lineIndex, [...moveLocation.current]);
+        // only allowing suggestions on empty line simplifies logic and leads to more beautiful recons
+        (lineIndex === 0 || idIndex === 0) ? null : handleEmptyLineSuggestions(moves, lineIndex);
 
         // pretend caret is at end of the last line that has a move
         const adjustedLineIndex = findPrevNonEmptyLine(moves, lineIndex);
@@ -637,7 +623,6 @@ export default function Recon() {
         moveLocation.current[2] === moveIndex;
 
       if (isMovesSame && isMoveIndexSame) {
-        // console.log('Moves and index are the same, skipping update.');
         return;
       }
 
@@ -653,7 +638,6 @@ export default function Recon() {
       const currentLineSteps = lineStepsRef.current;
 
       if (!isMoveLineContentSame) {
-        console.log('updating line steps');
         updateLineSteps();
       } else {
         let hasSpaceChanges = false;
@@ -666,13 +650,11 @@ export default function Recon() {
           const flatLine = lineAndScram.join(' ');
           const existingLineMoves = lineStepEntry.moveLine
           if (existingLineMoves !== flatLine) {
-            console.log(`Line ${idx} moves changed from "${existingLineMoves}" to "${line.join(' ')}"`);
             hasSpaceChanges = true;
           }
 
         });
         if (hasSpaceChanges) {
-          console.log('respacing line steps');
           respaceLineSteps();
         }
       };
@@ -690,21 +672,15 @@ export default function Recon() {
     }, [controllerButtonsStatus, suggestions]);
 
   const memoizedSetScrambleHTML = useCallback((html: string) => {
-    // console.log('Setting scramble HTML:', html);
     setScrambleHTML(html);
   }, []);
   const memoizedSetSolutionHTML = useCallback((html: string) => {
-    // console.log('Setting solution HTML:', html);
     setSolutionHTML(html);
   }, []);
 
   const memoizedUpdateHistoryBtns = useCallback(() => {
     handleHistoryBtnUpdate();
   }, []);
-
-  useEffect(() => {
-    console.log(';;; Suggestions:', suggestions);
-  }, [suggestions]);
 
   const handleSolveTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -885,7 +861,7 @@ export default function Recon() {
   const cacheMatchesCurrentHtml = () => {
     const cached = screenshotCacheRef.current;
     if (!cached) return false;
-    return cached.scrambleHTML === scrambleHTML && cached.solutionHTML === solutionHTML;
+    return cached.scrambleHTML === scrambleHTML && cached.solutionHTML === solutionHTML && cached.solveTime === solveTime;
   };
 
   const copyScreenshotToClipboard = async (blob: Blob) => {
@@ -895,6 +871,7 @@ export default function Recon() {
       ]);
       setTopButtonAlert(["copy-solve", "Screenshot copied!"]);
     } catch (error) {
+      setTopButtonAlert(["copy-solve", "Screenshot Failed. Please report!"]);
       console.error('Failed to copy screenshot to clipboard:', error);
     }
   };
@@ -997,19 +974,12 @@ export default function Recon() {
       }
 
       const firstLineParts: string[] = [];
-      if (timeText) firstLineParts.push(`${timeText} sec`);
-      if (stmText) firstLineParts.push(stmText);
+      if (timeText) firstLineParts.push(`${timeText}\u00A0sec`);
+      if (stmText) firstLineParts.push(stmText.replace(' ', '\u00A0'));
       const firstLineText = firstLineParts.join(', ');
-      const tpsLine = tpsString ? tpsString : '';
+      const tpsLine = tpsString ? tpsString.replace(' ', '\u00A0') : '';
 
-      const buildStatsText = (useMultiline: boolean): string => {
-        if (useMultiline && tpsLine) {
-          const lines: string[] = [];
-          if (firstLineText.trim()) lines.push(firstLineText.trim());
-          lines.push(tpsLine);
-          return lines.join('\n');
-        }
-
+      const buildStatsText = (): string => {
         if (tpsLine) {
           if (firstLineText.trim()) {
             return `${firstLineText.trim()}, ${tpsLine}`;
@@ -1037,8 +1007,7 @@ export default function Recon() {
       const scrambleWidth = scrambleClone.offsetWidth;
       const solutionWidth = solutionClone.offsetWidth;
 
-      const shouldUseMultiline = (scrambleWidth < 300 || solutionWidth < 300);
-      statsSpan.textContent = buildStatsText(shouldUseMultiline);
+      statsSpan.textContent = buildStatsText();
 
       let minWidth = Math.min(scrambleWidth, solutionWidth);
       minWidth = Math.max(minWidth, 300);
@@ -1081,16 +1050,19 @@ export default function Recon() {
     screenshotCacheRef.current = {
       blob,
       scrambleHTML,
-      solutionHTML
+      solutionHTML,
+      solveTime
     };
-    console.log('Screenshot cache updated.');
-    console.log('Screenshot cache:', screenshotCacheRef.current);
+
     return blob;
   };
 
   const handleScreenshot = async () => {
     const blob = await ensureScreenshotCache();
-    if (!blob) return;
+    if (!blob) {
+      setTopButtonAlert(["copy-solve", "Screenshot Failed. Please report!"]);
+      return;
+    }
     await copyScreenshotToClipboard(blob);
   }
 
@@ -1169,7 +1141,6 @@ export default function Recon() {
         stepEntry.stepInfo.some(step => step.type?.toLowerCase() === 'solved')
       );
       if (isCubeSolved) {
-        console.log('Ensuring cache');
         void ensureScreenshotCache();
       } 
     }
@@ -1189,8 +1160,9 @@ export default function Recon() {
       const date = data.date;     
       
       const scrambleMessage = `// Scramble of the day<br>// ${date}<br>${dailyScramble}`;
-      scrambleMethodsRef.current?.transform(scrambleMessage); // force update inside MovesTextEditor
-
+      if (!scrambleHTML) {
+        scrambleMethodsRef.current?.transform(scrambleMessage); // force update inside MovesTextEditor
+      }
     } catch (error) {
       console.error('Failed to get daily scramble:', error);
     }
@@ -1301,14 +1273,12 @@ export default function Recon() {
         respacedSteps.push({moveLine: flatLine, stepInfo: []});
       }
     };
-    console.log('Respaced line steps:', respacedSteps);
     lineStepsRef.current = respacedSteps;
     setLineSteps(respacedSteps);
   };
 
   const updateLineSteps = async () => {
     if (!cubeInterpreter.current) {
-      console.log('no cube interpreter');
       return;
     }
     const updatedSteps: {moveLine: string, stepInfo: StepInfo[]}[] = [];
@@ -1399,7 +1369,6 @@ export default function Recon() {
     const { default: algDoc } = await import('../../utils/compiled-exact-algs.json');
 
     // Initialize with empty state to get the initial cube
-    console.log('Updating cube initially.');
     const cube = await hiddenPlayerRef.current.updateCube('', '', []);
     
     if (!cube) {
@@ -1497,6 +1466,8 @@ export default function Recon() {
       
       {/* utility for compiling list of alg hashes */}
       {/* <AlgCompiler /> */}
+
+      {/* utility for building case patterns */}
       {/* <LLpatternBuilder /> */}
 
       <HiddenPlayer 

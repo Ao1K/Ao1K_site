@@ -110,6 +110,8 @@ export const SuggestionBox = ({suggestions, xLocation, yLocation, handleSuggesti
   if (!portalTarget) return null;
   if (selectedCardRef.current === null) selectedCardRef.current = 0;
 
+  const isTouchScreen = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0;
+
   // render inside body so parent overflow settings never clip the menu
   return createPortal(
     <div className="flex flex-col absolute" style={{ left: xLocation, top: yLocation, zIndex: 1000 }}>
@@ -125,6 +127,20 @@ export const SuggestionBox = ({suggestions, xLocation, yLocation, handleSuggesti
           handleSuggestionAccept={handleSuggestionAccept}
         />
       )) 
+    }
+    { sortedSuggestions.length < 1 ? 
+      null : 
+      <div className={`
+        hover:bg-primary-200 hover:shadow-md
+        flex flex-row items-center gap-3 w-fit border-t-dark
+        border border-neutral-400 bg-primary-300 text-dark text-md p-1
+        ${isTouchScreen ? 'min-w-[100px] justify-center' : 'w-fit'}`}
+        onClick={handleSuggestionReject}>
+          Cancel
+        { !isTouchScreen ? (
+        <img src="/esc.svg" alt="Esc" className='border border-dark mb-[2px]'/>
+        ) : null}
+      </div>
     }
     </div>,
     portalTarget

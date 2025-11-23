@@ -29,12 +29,12 @@ const supportsHardwareKeyboard =
 
 const EditorLoader = ({ 
   editorRef: contentEditableRef, 
-  onInputChange, 
+  handleInput, 
   name, 
   autofocus 
 }: { 
   editorRef: React.RefObject<any>, 
-  onInputChange: () => void, 
+  handleInput: () => void, 
   name: string, 
   autofocus: boolean
 })  => {
@@ -50,6 +50,9 @@ const EditorLoader = ({
       let decodedText = decodeURIComponent(customDecodeURL(urlText));
       contentEditableRef.current.innerText = decodedText;
     }
+
+    // needs to be run regardless to get syntax highlighting on text editors not using URL params
+    handleInput();
 
     
     if (autofocus && urlText && !otherURLtext) { // TODO: `&& !otherURLtext` isn't desired, but an unknown bug causes animation desync otherwise.
@@ -69,9 +72,7 @@ const EditorLoader = ({
       const otherTextbox = parentOtherElement?.querySelector<HTMLDivElement>('div[contenteditable="true"]');
       otherTextbox?.focus();
     }
-    if (urlText) {
-      onInputChange();
-    }
+
   };
 
   useEffect(() => {
@@ -115,14 +116,6 @@ function MovesTextEditor({
   ref,
   suggestionsRef
 }: EditorProps) {
-
-  
-  // console.log('++++ Renrendering MovesTextEditor:', name);
-  // console.log('++++ Current HTML:', html);
-  // console.log('++++ Current suggestions:', suggestions);
-  // console.log('++++ Current moveHistory:', moveHistory.current);
-  // console.log('++++ Ref:', ref);
-  // console.log('++++ Autofocus:', autofocus);
   
   const suggestions = suggestionsRef?.current;
   const contentEditableRef = useRef<HTMLDivElement>(null);
@@ -197,11 +190,21 @@ function MovesTextEditor({
     newHTML.forEach((line, index) => {
       const oldLine = oldHTML[index];
       
-      // Check if line contains suggestions
-      if (line.includes(`class="${suggestionClass}"`)) {
+      // Check if line contains suggestions and is active line
+      if (line.includes(`class="${suggestionClass}"`) && selectedSuggestionRef.current?.lineIndex === index) {
         htmlUpdateMatrix.push({
           html: line,
           change: 'suggestion'
+        });
+      } else if (line.includes(`class="${suggestionClass}"`) && selectedSuggestionRef.current?.lineIndex !== index) {
+        suggestionStateRef.current = 'dismissed';
+        htmlUpdateMatrix.push({
+          html: line
+            .replace(/<img[^>]*>/g, '')
+            .replace(new RegExp(`<span class="${suggestionClass}">.*<\\/span>`, 'g'), 
+              (match) => match.includes('id="caretNode"') ? '<span id="caretNode"></span>' : ''
+            ),
+          change: 'modified'
         });
       } else if (line !== oldLine || !line.includes('span')) { //adds changed lines or lines that are not painted
         htmlUpdateMatrix.push({
@@ -291,7 +294,6 @@ function MovesTextEditor({
   };
 
   const handleLineSuggestion = (updateItem: HTMLUpdateItem, index: number, lineMoveCounts: number[]): string => {
-    // if there's a suggestion.current.remaining but not .full, it means the suggestion was rejected
     
     if (selectedSuggestionRef.current === null) {
       selectedSuggestionRef.current = { lineIndex: -1, full: '', remaining: '' };
@@ -307,12 +309,12 @@ function MovesTextEditor({
     const textNotSuggestion = text.replace(selectedSuggestionRef.current.remaining, '');
 
     let isSuggestionMatch = !!selectedSuggestionRef.current.full; // if no suggestion, no match possible
-    textNotSuggestion.split('').forEach((char, index) => {
+    (isSuggestionMatch && textNotSuggestion.split('').forEach((char, index) => {
       if (!selectedSuggestionRef.current || selectedSuggestionRef.current.full[index] !== char) {
         isSuggestionMatch = false;
         return;
       }
-    });
+    }));
     if (isSuggestionMatch) {
       acceptedSuggestion = textNotSuggestion;
       remainingSuggestion = selectedSuggestionRef.current.full.replace(acceptedSuggestion, '');
@@ -609,7 +611,6 @@ function MovesTextEditor({
     // 7. Cube visualization state passed to page through trackMoves().
 
     // 1
-    console.log('OnInputChange called. Inserting span');
     setCaretSpanToCaret();
 
     // 2
@@ -638,7 +639,6 @@ function MovesTextEditor({
 
     // 6
     updateHistoryBtns();
-    console.log('OnInputChange setHTML:', newHTMLlines);
     setHTML(newHTMLlines);
 
     // 7
@@ -655,59 +655,6 @@ function MovesTextEditor({
     return lines;
   };
 
-  const insertCaretSpan = () => {
-    
-    if (!contentEditableRef.current) return;
-    // if (document.activeElement !== contentEditableRef.current) return;
-    if (moveHistory.current.undo_redo_done === false) return;
-
-    console.log('Inserting caret node');
-
-    let existingCaretNode = contentEditableRef.current?.querySelector('#caretNode');
-    while (existingCaretNode) {
-      existingCaretNode.parentNode!.removeChild(existingCaretNode);
-      existingCaretNode = contentEditableRef.current.querySelector('#caretNode');
-    }
-
-    const caretNode = document.createElement('span');
-    caretNode.id = 'caretNode';
-
-    const selection = window.getSelection();
-
-    console.log('Current selection:', selection);
-    const range = document.createRange();
-    
-    let node = selection?.focusNode;
-
-    // if node equals contenteditable div, make node first div instead, if it exists
-    if (node === contentEditableRef.current 
-      && contentEditableRef.current.firstChild
-      && contentEditableRef.current.firstChild.nodeType === Node.ELEMENT_NODE
-      && (contentEditableRef.current.firstChild as Element).tagName === 'DIV'
-    ) {
-      node = contentEditableRef.current.firstChild
-    }
-
-    if (node && selection) {
-
-      // on certain browsers (firefox), <br> tags don't seem to be added automatically for newlines
-      if (node.nodeType === Node.ELEMENT_NODE && 
-      (node as Element).tagName === 'DIV' &&
-      !(node as Element).querySelector('br')) {
-        (node as Element).appendChild(document.createElement('br'));
-      }
-      
-      try {
-        range.setStart(node, selection.focusOffset);
-        range.setEnd(node, selection.focusOffset);
-        range.insertNode(caretNode);      
-      } catch (e) {
-        console.error('Error in insertCaretNode:', e);
-      }
-    }
-
-  };
-
   /**
    * Sets the caret span (span with id=caretNode) to the current caret position
    */
@@ -718,29 +665,24 @@ function MovesTextEditor({
     const selection = window.getSelection();
     if (!selection) return;
 
+    const isSelectionInEditor = contentEditableRef.current.contains(selection.focusNode);
+    if (!isSelectionInEditor) return;
+
     const focusNode = selection.focusNode;
 
     if (focusNode &&
       (focusNode as HTMLElement).id === 'caretNode' 
     ) {
-      console.log('setCaretSpanToCaret: focusNode is caretNode; returning');
       return;
     // } else if (focusNode && (focusNode.nextSibling as HTMLElement)?.id === 'caretNode') {
     //   return;
-    } else {
-      console.log('not caretNode:');
-      console.log(focusNode);
-    }
+    } 
 
 
     // if focus is the outer contentEditable, keep the existing caret span
-    console.log('Selection:', selection);
     if (focusNode === contentEditableRef.current) {
-      console.log('setCaretSpanToCaret: focusNode is contentEditable; keeping existing caret span');
       return;
     }
-
-    console.log('setCaretSpanToCaret: inserting caret node');
 
     let existingCaretNode = contentEditableRef.current.querySelector('#caretNode');
     while (existingCaretNode) {
@@ -773,8 +715,6 @@ function MovesTextEditor({
         range.setStart(node, selection.focusOffset);
         range.setEnd(node, selection.focusOffset);
         range.insertNode(caretNode);
-        console.log('Caret node inserted at selection');
-        console.log('html:', contentEditableRef.current.innerHTML);
       } catch (e) {
         console.error('Error in testInsertCaretSpan:', e);
       }
@@ -938,13 +878,6 @@ function MovesTextEditor({
 
     const prevHTML = contentEditableRef.current.innerHTML;
 
-    // const caretNode = contentEditableRef.current.querySelector('#caretNode');
-    // if (!caretNode) {
-    //   // remove check, there needs to be a caret?
-    //   console.warn('No caret node found in parseCaretState');
-    //   return null;
-    // }
-
     setCaretSpanToCaret();
     
     // check if insertion was a no-op
@@ -980,45 +913,45 @@ function MovesTextEditor({
     caretLine = lines[lineOffsetRef.current];
     const lineTextArray = caretLine?.match(/>[^<>]+<|caretNode">/g);
     
-    // Early return if no text array could be parsed
     if (!lineTextArray) return;
     
     let fullRawText = '';
     let caretReached = false;
 
-    // find number of characters before caret and get full text for parsing
-    {
-      for (let text of lineTextArray){
-        
-        if (text === 'caretNode">') {
-          caretReached = true;
-          continue;
-        }
-
-        text = text.substring(1, text.length - 1);
-        fullRawText += text;
-  
-        // accumulate characters before caret
-        if (!caretReached) {
-          caretOffset += text.length;
-        }
+    // find number of characters before caret and get full text for parsing    
+    for (let text of lineTextArray){
+      
+      if (text === 'caretNode">') {
+        caretReached = true;
+        continue;
       }
-      let parsing = parseTextInput(fullRawText);
 
-      let i = findEndOfWordOnCaret(parsing, caretOffset);
+      text = text.substring(1, text.length - 1);
+      fullRawText += text;
 
-      // calculate number of moves before caret
-      let tokens = parsingToTokens(parsing.slice(0, i));
-      let moveTokens = tokens.filter((token) => token.type === 'move').map((token) => token.value);
-      moveOffsetRef.current = moveTokens.length;
+      // accumulate characters before caret
+      if (!caretReached) {
+        caretOffset += text.length;
+      }
     }
+    let parsing = parseTextInput(fullRawText);
+
+    let i = findEndOfWordOnCaret(parsing, caretOffset);
+
+    // calculate number of moves before caret
+    let tokens = parsingToTokens(parsing.slice(0, i));
+    let moveTokens = tokens.filter((token) => token.type === 'move').map((token) => token.value);
+    moveOffsetRef.current = moveTokens.length;
 
     // Clean html for case where user changed caret during move replay
     const noHighlightHTML = element.innerHTML.replace(new RegExp(`<span class="${highlightClass}">`, 'g'), '<span class="text-primary-100">');
 
-    console.log('setCaretState set html:', noHighlightHTML);
-    setHTML(noHighlightHTML);
-    // contentEditableRef.current!.innerHTML = noHighlightHTML;
+    const hasStyling = /<span class="[^"]+">[^<]+<\/span>/.test(noHighlightHTML);
+    // if no styling, we assume that the html is still being loaded and parsed by onInputChange
+    // otherwise we'd get a race condition
+    if (hasStyling) {
+      setHTML(noHighlightHTML);
+    }
     trackMoves(idIndex, lineOffsetRef.current, moveOffsetRef.current, textboxMovesRef.current);
   };
 
@@ -1027,8 +960,6 @@ function MovesTextEditor({
    * Gets moveOffset and lineOffset, validates text, and updates move history.
    */
   const handleCaretChange = () => {
-    console.log('Handling caret change');
-    console.log('Current HTML:', contentEditableRef.current?.innerHTML);
     // Parse the current state - returns null if invalid
     const state = parseCaretState();
     if (!state) return;
@@ -1142,7 +1073,6 @@ function MovesTextEditor({
         return;
       }
 
-      console.log('focus achieved, running callback');
       callback();
     };
 
@@ -1157,7 +1087,6 @@ function MovesTextEditor({
    * Handle tab key confirmation of any suggested text.
    */
   const handleSuggestionAccept = () => {
-    console.log('handling accept');
     if (!contentEditableRef.current) return;
     if (name === 'scramble') return; // no suggestions in scramble
     
@@ -1165,7 +1094,6 @@ function MovesTextEditor({
     const moveClass = colorDict['move'];
     
     runAfterFocus(() => {
-      console.log('focus confirmed, accepting suggestion');
       if (!contentEditableRef.current) return;
 
       let lines = oldHTMLlinesRef.current;
@@ -1329,7 +1257,6 @@ function MovesTextEditor({
   const handleRemoveHighlight = () => {
     if (!contentEditableRef.current) return;
     if (name === 'scramble') return; // no highlights in scramble
-    console.log('removing highlight');
     const noHighlightHTML = contentEditableRef.current.innerHTML.replace(new RegExp(`<span class="${highlightClass}">`, 'g'), '<span class="text-primary-100">');
     contentEditableRef.current.innerHTML = noHighlightHTML;
   }
@@ -1435,7 +1362,6 @@ function MovesTextEditor({
     if (name === 'scramble') return; // no suggestions in scramble
     if (selectedSuggestionRef.current?.full === suggestion) return; // same suggestion already shown
 
-    console.log('removing suggestions')
     let lines = removeAllSuggestions();
     
     
@@ -1529,8 +1455,6 @@ function MovesTextEditor({
       remaining: remainingSuggestion 
     };
     suggestionStateRef.current = 'showing';
-    console.log('Setting html after showing suggestion');
-    // contentEditableRef.current!.innerHTML = newHTML; // no need to update state?
     setHTML(newHTML);
   }
 
@@ -1620,7 +1544,7 @@ function MovesTextEditor({
   }, []);
 
   const logCaretRestoreExit = (reason: string) => {
-    console.log('[MovesTextEditor]:', reason);
+    // console.log('[MovesTextEditor]:', reason);
   };
 
   const queueCaretRestore = (origin: string, retries = 0) => {
@@ -1631,11 +1555,6 @@ function MovesTextEditor({
         logCaretRestoreExit(`callback missing contentEditableRef (${origin})`);
         return;
       }
-
-      // if (document.activeElement !== contentEditableRef.current) {
-      //   logCaretRestoreExit(`callback editor lost focus (${origin})`);
-      //   return;
-      // }
 
       if (isMultiSelect()) {
         const selection = window.getSelection();
@@ -1661,14 +1580,10 @@ function MovesTextEditor({
     //   logCaretRestoreExit('frame already scheduled');
     } else if (!contentEditableRef.current) {
       logCaretRestoreExit('missing contentEditableRef');
-    // } else if (document.activeElement !== contentEditableRef.current) {
-    //   logCaretRestoreExit('editor not focused');
+    } else if (document.activeElement !== contentEditableRef.current) {
+      logCaretRestoreExit('editor not focused');
     } else {
-      // const hasCaretNode = Boolean(contentEditableRef.current.innerHTML.includes('id="caretNode"'));
-      const hasCaretNode = Boolean(1);
-      if (!hasCaretNode) {
-        logCaretRestoreExit('no caret node present');
-      } else if (isMultiSelect()) {
+      if (isMultiSelect()) {
         const selection = window.getSelection();
         if (selection && selection.rangeCount === 1) {
           logCaretRestoreExit('selection is multi-range; retrying next frame');
@@ -1694,7 +1609,6 @@ function MovesTextEditor({
   }
 
   // Dismiss suggestion if caret line has changed
-  // TODO: handle case where active suggestion needs to change based on filtering
   // TODO: move this to caret change handler
   if (selectedSuggestionRef.current 
     && selectedSuggestionRef.current.lineIndex !== lineOffsetRef.current
@@ -1719,30 +1633,15 @@ function MovesTextEditor({
     });
 
 
-    
-  // reset suggestion state if suggestions change
-  
-  // ensure suggestions are processed before attempting caret restore
-  // checkCaretRestore(); // updates to the selection queue during handleInput cause caret desync
   useEffect(() => {
-    // setCaretToCaretSpan();
     checkCaretRestore();
     checkNewSuggestions();
   }, [html, suggestions]);
-  // setCaretToCaretSpan();
-
-  if (name === 'solution') {
-    console.log('Suggestions:', suggestions)
-    console.log('filteredSuggestions:', filteredSuggestions);
-    console.log('suggestionRef.current:', selectedSuggestionRef.current);
-    console.log('suggestionStateRef.current:', suggestionStateRef.current);
-    console.log('=== End of render ===')
-  }
 
   return (
     <>
       <Suspense fallback={null}>
-        <EditorLoader editorRef={contentEditableRef} onInputChange={onInputChange} name={name} autofocus={autofocus} />   
+        <EditorLoader editorRef={contentEditableRef} handleInput={handleInput} name={name} autofocus={autofocus} />   
       </Suspense>
       <div
         contentEditable

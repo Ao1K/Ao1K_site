@@ -103,7 +103,7 @@ export const SuggestionCard = ({ alg, step, id, isFocused, handleSuggestionReque
     <div 
       className={
         `hover:bg-primary-100 hover:shadow-md
-        flex flex-row items-center gap-3 border border-neutral-300 bg-primary-200 text-md p-1`
+        flex flex-row items-center gap-3 border border-neutral-300 bg-primary-200 text-dark text-md p-1`
       }
       onMouseOver={handleSuggestionRequest}
       onClick={handleSuggestionAccept}

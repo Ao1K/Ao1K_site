@@ -125,7 +125,7 @@ export class CubeInterpreter {
    * Fixed string representing the state of a solved 3x3 cube.
    * The index of each character in the string corresponds to a piece of 
    * a specific set of colors. Colors are then mapped based on cube rotation.
-   * Finally, we get the location of each piece with those mapped (effective) colors.
+   * Finally, we get the location of each piece that has those mapped (effective) colors.
    * 
    * Example: 
    *  We have a solved cube where an x rotation was applied, and we want to find the 0th 
@@ -349,8 +349,8 @@ export class CubeInterpreter {
   };
 
   private readonly edgePieceDirections: { [key: string]: number} = {
-    'UF': 0, 'UR': 1, 'UB': 2, 'UL': 3,
-    'DF': 4, 'DR': 5, 'DB': 6, 'DL': 7,
+    'UF': 0, 'UR': 1, 'UB': 2, 'UL': 3, 
+    'DF': 4, 'DR': 5, 'DB': 6, 'DL': 7, 
     'FR': 8, 'FL': 9, 'BR': 10, 'BL': 11,
     'FU': 12, 'RU': 13, 'BU': 14, 'LU': 15,
     'FD': 16, 'RD': 17, 'BD': 18, 'LD': 19,
@@ -446,7 +446,6 @@ export class CubeInterpreter {
   };
 
   constructor(cube: Object3D, algs: Doc[] = []) {
-    console.log('CubeInterpreter initialized');
     
     // Parse and validate the cube object
     this.cube = parseCubeObject(cube);
@@ -496,7 +495,7 @@ export class CubeInterpreter {
     }
   }
 
-  private printSolvedMatrixMaps(): void {    
+  private logSolvedMatrixMaps(): void {    
     // const solvedPiecesCode = 'private readonly solvedPieces: PieceState[] = ' + JSON.stringify(this.solvedPieces, null, 2) + ';';
     // console.log('\n// solvedPieces:');
     // console.log(solvedPiecesCode);
@@ -643,13 +642,11 @@ export class CubeInterpreter {
       return null;
     }
 
-    let hash = this.hashRecoloredPieces(pieceColorMapping);
+    const hash = this.hashRecoloredPieces(pieceColorMapping);
     if (!hash) {
       console.warn('Failed to generate hash from recolored pieces');
       return null;
     }
-
-    // console.log('Cube state hash:', hash);
 
     return { hash };
   }
@@ -809,7 +806,6 @@ export class CubeInterpreter {
         const stickersToCheck = pieceToCheck.stickers.map(s => s.faceIdx).sort().join(',');
         if (stickersToCheck === sortedStickers) {
 
-          // original for current, or other way around?
           pieceMapping.set(currentIndex, { effectivePieceIndex: i, stickerOrder });
           break;
         }
@@ -1315,7 +1311,6 @@ export class CubeInterpreter {
 
       const direction = this.getFaceletDirection(i, stickerIndex);
       if (direction && direction.toUpperCase() === topInfo.direction) {
-        // console.log('Corner oriented:', piece, 'with top color on direction', direction);
         cornersOriented++;
       }
     }
@@ -1683,12 +1678,11 @@ export class CubeInterpreter {
       const piece21Matches = this.arraysEqualWithin(currentMatrix21, rotation.piece21Matrix);
       
       if (piece20Matches && piece21Matches) {
-        // console.log(`Current cube orientation matches rotation ${rotationName}`);
         return rotationName;
       }
     }
     
-    console.log('Current cube orientation does not match any known rotation');
+    console.warn('Current cube orientation does not match any known rotation');
     console.log('Current piece20 matrix:', currentMatrix20);
     console.log('Current piece21 matrix:', currentMatrix21);
     return -1;
@@ -1967,7 +1961,6 @@ export class CubeInterpreter {
     // assume cross must be on bottom
     const effectiveDownColor = 'yellow';
     const downColor = this.mapEffectiveColorToActual(effectiveDownColor);
-    // console.log('Real down color:', downColor);
 
     let isDownCrossSolved = false;
     let color = '';
@@ -2387,7 +2380,6 @@ export class CubeInterpreter {
     const refPieceMovement = this.getReferencePieceLocation('green', 'white', alg);
 
     const LLpattern: Grid = this.getLLcoloring('pattern');
-    // console.log('LL pattern:\n', LLpattern.map(row => row.join(' ')).join('\n'));
     let stepData: {step: string, index: number, minMovements: number[]} = {step: '', index: -1, minMovements: [-1]};
     switch (step) {
       case 'oll':
@@ -2439,18 +2431,14 @@ export class CubeInterpreter {
     const speedEstimator = new AlgSpeedEstimator();
     let suggestions: Suggestion[] = [];
     
-    // Iterate over each query and collect suggestions
+    // iterate and collect suggestions
     queries.forEach(({ query, pairColors }) => {
       query.limit = 20;
-      query.scoreBy = 'exact'; // Use 'exact' context for F2L searches
-      // console.log('Query:', query);
+      query.scoreBy = 'exact'; // use 'exact' context for F2L searches
       
       const algs = this.algSuggester!.searchByPosition(query);
-      // console.log('Suggestions:', algs);
+      const algSet = new Set<string>();
       
-      const algSet = new Set<string>(); // To avoid duplicates within this query
-      
-      // Add suggestions to our collection, avoiding duplicates
       algs.forEach(alg => {
         if (!algSet.has(alg.id)) {
           algSet.add(alg.id);

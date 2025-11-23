@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "sort-algs": "npx tsx scripts/sortAlgs.ts"
   },
   "dependencies": {
     "@babel/plugin-transform-class-properties": "^7.25.9",

@@ -1,6 +1,8 @@
 import CopyIcon from '../icons/copy';
 import CameraIcon from '../icons/camera';
 import DropdownIcon from '../icons/dropdown';
+import TextTIcon from "../icons/text-T";
+
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 
@@ -101,7 +103,7 @@ export default function CopySolveDropdown({ onCopyText, onScreenshot, alert, set
             className="hover:bg-neutral-600 py-1 px-2 border border-neutral-600 w-full text-left flex items-center space-x-2" 
             onClick={handleCopyText}
           >
-            <CopyIcon className="w-4 h-4" />
+            <TextTIcon className="w-4 h-4" />
             <span>Copy Text</span>
           </button>
         </div>
