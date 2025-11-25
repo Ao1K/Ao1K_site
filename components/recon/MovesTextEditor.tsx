@@ -27,6 +27,7 @@ const supportsHardwareKeyboard =
   typeof window !== 'undefined' && !window.matchMedia('(pointer: coarse)').matches;
 
 
+
 const EditorLoader = ({ 
   editorRef: contentEditableRef, 
   handleInput, 
@@ -140,13 +141,17 @@ function MovesTextEditor({
   };
 
   const localColorDict = useRef(JSON.parse(JSON.stringify(colorDict)));
-  
-  useEffect(() => {
-    if (name === 'scramble') {
-      // hashtags in scramble currently not allowed
-      localColorDict.current.hashtag = 'text-red-500';
-    }
-  }, []);
+
+  /**
+   * Helper function. Should show as unused when deploying.
+   */
+  const log = (...args: any[]) => {
+
+    const ONLY_LOG_SOLUTION = true;
+
+    if (ONLY_LOG_SOLUTION && idIndex === 0) return;
+    console.log(idIndex, "[MovesTextEditor]", ...args);
+  }
 
   const handleInput = () => {
     if (!contentEditableRef.current) return;
@@ -232,7 +237,6 @@ function MovesTextEditor({
         if (validWordTypes.includes(type)) {
           continue;
         } else {
-          // console.log('breaking at:', i, 'type:', type, 'parsing:', parsing[i][0]);
           break;
         }
       }
@@ -283,12 +287,6 @@ function MovesTextEditor({
 
     lineMoveCounts[i] = moves.length;
     textboxMovesRef.current[i] = moves;
-
-    // Reset suggestion state when user types content
-    if (moves.length > 0 || text.trim() !== '') {
-      // console.log('Resetting suggestion state, line modified');
-      // suggestionStateRef.current = 'none';
-    }
 
     return newHTMLline;
   };
@@ -659,36 +657,34 @@ function MovesTextEditor({
    * Sets the caret span (span with id=caretNode) to the current caret position
    */
   const setCaretSpanToCaret = () => {
-    if (!contentEditableRef.current) return;
-    if (moveHistory.current.undo_redo_done === false) return;
+    // if (document.activeElement !== contentEditableRef.current) return;
+    const isCaretSpan = !!contentEditableRef.current?.querySelector('#caretNode');
+    if (!contentEditableRef.current) {
+      return;
+    }
+    if (moveHistory.current.undo_redo_done === false) {
+      return;
+    }
 
     const selection = window.getSelection();
-    if (!selection) return;
+    if (!selection) {
+      return;
+    }
 
     const isSelectionInEditor = contentEditableRef.current.contains(selection.focusNode);
-    if (!isSelectionInEditor) return;
+    const selectionIsEditor = selection.focusNode === contentEditableRef.current;
+    if (!isSelectionInEditor && !selectionIsEditor) {
+      return;
+    }
 
     const focusNode = selection.focusNode;
-
-    if (focusNode &&
-      (focusNode as HTMLElement).id === 'caretNode' 
-    ) {
-      return;
-    // } else if (focusNode && (focusNode.nextSibling as HTMLElement)?.id === 'caretNode') {
-    //   return;
-    } 
-
 
     // if focus is the outer contentEditable, keep the existing caret span
     if (focusNode === contentEditableRef.current) {
       return;
     }
 
-    let existingCaretNode = contentEditableRef.current.querySelector('#caretNode');
-    while (existingCaretNode) {
-      existingCaretNode.parentNode!.removeChild(existingCaretNode);
-      existingCaretNode = contentEditableRef.current.querySelector('#caretNode');
-    }
+    const existingCaretNodes = contentEditableRef.current.querySelectorAll('#caretNode');
 
     const caretNode = document.createElement('span');
     caretNode.id = 'caretNode';
@@ -704,20 +700,33 @@ function MovesTextEditor({
       node = contentEditableRef.current.firstChild;
     }
 
+    // add new caretSpan, 
+    // then remove old ones after to avoid any weird cleanup effects by browser
     if (node) {
-      if (node.nodeType === Node.ELEMENT_NODE &&
-        (node as Element).tagName === 'DIV' &&
-        !(node as Element).querySelector('br')) {
-        (node as Element).appendChild(document.createElement('br'));
-      }
 
       try {
         range.setStart(node, selection.focusOffset);
         range.setEnd(node, selection.focusOffset);
         range.insertNode(caretNode);
+
+        // old caret node may contain new one, so preserve child nodes
+        existingCaretNodes.forEach((node) => {
+          if (node.childNodes.length > 0) {
+            node.replaceWith(...Array.from(node.childNodes));
+          } else {
+            node.remove();
+          }
+        });
       } catch (e) {
         console.error('Error in testInsertCaretSpan:', e);
       }
+
+      if (node.nodeType === Node.ELEMENT_NODE &&
+      (node as Element).tagName === 'DIV' &&
+      !(node as Element).querySelector('br')) {
+        (node as Element).appendChild(document.createElement('br'));
+      }
+
     }
   };
 
@@ -1544,7 +1553,7 @@ function MovesTextEditor({
   }, []);
 
   const logCaretRestoreExit = (reason: string) => {
-    // console.log('[MovesTextEditor]:', reason);
+    // log('caret restore exit:', reason);
   };
 
   const queueCaretRestore = (origin: string, retries = 0) => {
@@ -1552,19 +1561,19 @@ function MovesTextEditor({
       restoreFrameRef.current = null;
 
       if (!contentEditableRef.current) {
-        logCaretRestoreExit(`callback missing contentEditableRef (${origin})`);
+        // logCaretRestoreExit(`callback missing contentEditableRef (${origin})`);
         return;
       }
 
       if (isMultiSelect()) {
         const selection = window.getSelection();
         if (selection && selection.rangeCount === 1 && retries < 2) {
-          logCaretRestoreExit(`callback selection multi-range (${origin}); retrying`);
+          // logCaretRestoreExit(`callback selection multi-range (${origin}); retrying`);
           queueCaretRestore(origin, retries + 1);
           return;
         }
 
-        logCaretRestoreExit(`callback selection remained multi-range (${origin})`);
+        // logCaretRestoreExit(`callback selection remained multi-range (${origin})`);
         return;
       }
 
@@ -1575,21 +1584,21 @@ function MovesTextEditor({
 
   const checkCaretRestore = () => {
     if (typeof window === 'undefined') {
-      logCaretRestoreExit('window undefined');
+      // logCaretRestoreExit('window undefined');
     // } else  if (restoreFrameRef.current !== null) {
     //   logCaretRestoreExit('frame already scheduled');
     } else if (!contentEditableRef.current) {
-      logCaretRestoreExit('missing contentEditableRef');
-    } else if (document.activeElement !== contentEditableRef.current) {
-      logCaretRestoreExit('editor not focused');
+      // logCaretRestoreExit('missing contentEditableRef');
+    // } else if (document.activeElement !== contentEditableRef.current) {
+    //   logCaretRestoreExit('editor not focused');
     } else {
       if (isMultiSelect()) {
         const selection = window.getSelection();
         if (selection && selection.rangeCount === 1) {
-          logCaretRestoreExit('selection is multi-range; retrying next frame');
+          // logCaretRestoreExit('selection is multi-range; retrying next frame');
           queueCaretRestore('multi-range-deferral');
         } else {
-          logCaretRestoreExit('selection is multi-range');
+          // logCaretRestoreExit('selection is multi-range');
         }
       } else {
         // schedule caret restore after render so native selection follows caret span
@@ -1634,8 +1643,8 @@ function MovesTextEditor({
 
 
   useEffect(() => {
-    checkCaretRestore();
     checkNewSuggestions();
+    checkCaretRestore();
   }, [html, suggestions]);
 
   return (
