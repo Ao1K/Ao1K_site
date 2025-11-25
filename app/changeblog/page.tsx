@@ -51,7 +51,7 @@ export default function Changeblog() {
     <div className="flex flex-col pt-20 pb-10 px-6 max-w-3xl text-lg text-primary-100">
       <div className="flex flex-row gap-2 ">
         <h1 className="text-3xl text-primary-300">Reconstruct v0.4</h1>
-        <div className="h-fit self-end pb-[2px] text-neutral-400">Nov 23rd, 2025</div>
+        <div className="h-fit self-end pb-[2px] text-neutral-400">Nov 25th, 2025</div>
       </div>
       <div className="bg-primary-100 w-full h-1"></div>
       
@@ -73,7 +73,7 @@ export default function Changeblog() {
 
 
 
-      <h2 className="py-2 text-xl mt-10 mb-3 pl-2 w-full text-dark bg-primary-300">{`>`} No more ugly comments</h2>
+      <h2 className="py-2 text-xl mt-24 mb-3 pl-2 w-full text-dark bg-primary-300">{`>`} No more ugly comments</h2>
       <div className="flex flex-col gap-6">
         If you&apos;re not familiar with comments in this context, consider yourself blessed.
         <MovesTextEditor
@@ -116,7 +116,7 @@ export default function Changeblog() {
 
 
 
-      <h2 className="py-2 text-xl mt-16 pl-2 w-full text-dark bg-primary-300">{`>`} Screenshots, beautiful screenshots</h2>
+      <h2 className="py-2 text-xl mt-24 pl-2 w-full text-dark bg-primary-300">{`>`} Screenshots, beautiful screenshots</h2>
       <p className="pt-6">
         Solves are visual. To efficiently communicate the information, recons should be too. Most people just post the text when they share recons. 
         You could make a video or post to a recon website, but that makes everything take longer.
@@ -148,7 +148,7 @@ export default function Changeblog() {
 
 
 
-      <h2 className="py-2 text-xl mt-32 pl-2 w-full text-dark bg-primary-300">{`>`} Autocomplete</h2>
+      <h2 className="py-2 text-xl mt-24 pl-2 w-full text-dark bg-primary-300">{`>`} Autocomplete</h2>
       <h3 className="w-1/2 pl-4 text-lg bg-neutral-300 text-dark">{`>>`} The feature</h3>
       <p className="pt-6">
         The last major feature in this release is autocomplete. Using it is simple.
@@ -374,13 +374,11 @@ export default function Changeblog() {
       <p className="pt-6">
         Most times, the patterns won&apos;t match exactly.
         Only certain letters will. The trick is just checking that the right letters match.
-        If they don&apos;t match, 
-        or if pieces that are solved end up somewhere else, then we can&apos;t use the alg.
-        Essentially we&apos;ll need a list of letters that must be in certain positions
-        for the algorithm to be a valid choice. 
+        We need a list of letters that must be in certain positions
+        for an algorithm to be a valid choice. 
       </p>
       <p className="pt-6">
-        Let&apos;s look at a more complex cube state, 
+        To exemplify this better, let&apos;s look at a more complex cube state, 
         but one that would benefit from having the same algorithm applied:
       </p>
       <div className="w-64 h-64 mx-auto my-8">
@@ -414,11 +412,12 @@ export default function Changeblog() {
         </ul>
       </div>
       <p className="pt-6">
-        All this means is that certain letters in our algorithm pattern need to match certain letters in the current pattern.
-        We first get the index of each letter that needs to match.
-        We check which pieces that is, and then it&apos;s a simple lookup. For example,
+        this gives us the pieces that must be in a certain location for the algorithm to be valid for our case.
+        these indices are easy to get a hold of. for example,
         if cross is on the bottom face, the cross indices are always 4, 5, 6, and 7.
-        Then we get the current location of those "effective pieces" using the complexCubePattern from a minute ago.
+        let&apos;s also get the current location of the pieces using the complexCubePattern from a minute ago.
+        The indices tell us directly which letters to grab. 
+        If we look at the 4th indice, we grab the 4th letter, counting from zero.
       </p>
       <div className="my-6 overflow-x-auto border border-neutral-700 rounded-md">
         <table className="w-full text-sm text-center text-neutral-400">
@@ -530,13 +529,13 @@ export default function Changeblog() {
       </p>
       <p className="pt-6"> 
         While you&apos;re down there, go join the Discord. 
-        The site has 2751 algs for the autocomplete, but it needs more! Please submit some.
+        At time of writing, the site has 2751 algs for the autocomplete, but it needs more! Please submit some.
       </p>
 
 
 
 
-      <h2 className="py-2 text-xl mt-10 pl-2 w-full text-dark bg-primary-300">{`>`} Cat</h2>
+      <h2 className="py-2 text-xl mt-24 pl-2 w-full text-dark bg-primary-300">{`>`} Cat</h2>
       <p className="pt-6">
         Thanks for reading! Say hello to my friend&apos;s cat, Sharknado.
       </p>
