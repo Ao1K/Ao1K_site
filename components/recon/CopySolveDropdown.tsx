@@ -93,14 +93,14 @@ export default function CopySolveDropdown({ onCopyText, onScreenshot, alert, set
       {isRotated ? 
         <div className="flex flex-col bg-primary-900 absolute -translate-x-[4px] place-items-start text-dark_accent px-1 pb-1 text-sm">
           <button 
-            className="hover:bg-neutral-600 py-1 px-2 border border-neutral-600 w-full text-left flex items-center space-x-2" 
+            className="hover:bg-neutral-600 py-2 px-2 border border-neutral-600 w-full text-left flex items-center space-x-2" 
             onClick={handleScreenshot}
           >
             <CameraIcon className="w-4 h-4" />
             <span>Screenshot</span>
           </button>
           <button 
-            className="hover:bg-neutral-600 py-1 px-2 border border-neutral-600 w-full text-left flex items-center space-x-2" 
+            className="hover:bg-neutral-600 py-2 px-2 border border-neutral-600 w-full text-left flex items-center space-x-2" 
             onClick={handleCopyText}
           >
             <TextTIcon className="w-4 h-4" />

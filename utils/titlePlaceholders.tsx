@@ -27,7 +27,6 @@ export const titlePlaceholders = [
   "Cheap, generic silicone oil can work just as good as cube lube",
   "Plan as much as you can every time",
   "Use unlimited inspection!",
-  "Reduce risk by practicing the risky thing more often",
   "There's always more F2L to learn!",
   "Drill A perms with the AUF and regrip included",
   "Move notation is an abstraction. Fingertricks are ground truth.",
@@ -44,10 +43,12 @@ export const titlePlaceholders = [
   "Use spaced repetition to learn algs effectively",
   "Seeing how F2L pairs unsolve and resolve can help you learn algs",
   "Rarer types of moves add risk to your solve",
+  "Reduce risk by practicing the risky thing more often",
+  "More risky means more practice needed",
+  "RUS U perms are probably too risky to use",
   "yRUL moves are best for lookahead",
   "You're more likely to practice if it's fun",
   "Mirroring A perms keeps headlights on one side for all PLLs. But at what cost?",
-  "RUS U perms are probably too risky to use",
   "Use rotations to deal with bad edge orientation",
   "If you want a tutor, you need a friend or money",
   "Study example solves",
@@ -56,15 +57,17 @@ export const titlePlaceholders = [
   "Destroy bad F2L cases by solving other ones",
   
   // fun
-  "📈",
+  "🦜",
   "42",
   "No.",
   "UwU",
   'Cat.',
   'PB!!!!!',
-  "Sub-Yiheng?",
-  "I don't know",
   "Minceraft", // not a typo
+  "Sub-Yiheng?",
+  "Don't slide!",
+  "I don't know",
+  "Lisan al-Giab?",
   "That is so qwiii",
   "Worst solve ever",
   "Not a good solve",
@@ -89,6 +92,7 @@ export const titlePlaceholders = [
   "MIT License!",
   "Let the code be free!",
   "Try on mobile!",
+  "Try on firefox!",
   "Written in typescript",
   "The font is Rubik",
   "Thank god for cubing js",
@@ -98,7 +102,8 @@ export const titlePlaceholders = [
   "Also check out reco.nz",
   "SVGs are cool!",
   "Never code at 2 am",
-  "Now 13% messier code!"
+  "Now 13% messier code!",
+  "Remove the title. It's cleaner."
 
   
 ]

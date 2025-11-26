@@ -63,16 +63,23 @@ export default function Header() {
         onClick={closeSidebar} // Close sidebar when clicking outside
       >
         <div
-        className="bg-white w-1/2 h-full p-4 space-y-4 fixed right-0 top-0"
-        onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the sidebar
+          className="bg-white w-1/2 h-full p-4 space-y-4 fixed right-0 top-0"
+          onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the sidebar
         >
-        {/* <HeaderNavLink href="/" title="Practice" icon={<TimerIcon />} /> */}
-        <HeaderNavLink href="/recon" title="Reconstruct" icon={<WriteIcon />} version={versionList['recon']}/>
-        {/* <HeaderNavLink href="/algs" title="Learn" icon={<DatabaseIcon />} /> */}
-        {/* <Link href="/not a link" className="block mt-4">
-          Profile
-        </Link> */}
-        By Chet
+          {/* <HeaderNavLink href="/" title="Practice" icon={<TimerIcon />} /> */}
+          <button onClick={closeSidebar} className="">
+            <HeaderNavLink href="/recon" title="Reconstruct" icon={<WriteIcon />} version={versionList['recon']}/>
+          </button>
+          {/* <HeaderNavLink href="/algs" title="Learn" icon={<DatabaseIcon />} /> */}
+          <button onClick={closeSidebar} className="">
+            <HeaderNavLink href="/changeblog/" title="Changeblog" icon={<BulletListIcon />} version={versionList['changeblog']} />
+          </button>
+          {/* <Link href="/not a link" className="block mt-4">
+            Profile
+          </Link> */}
+          <div>
+            By Chet
+          </div>
         </div>
       </div>
       )}

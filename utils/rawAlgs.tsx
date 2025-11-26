@@ -30,6 +30,8 @@ export interface ZBLSalg extends LastLayerAlg {
  * For example, f2l cases require corner and edges to be in a precise spot and with a certain orientation.
  */
 export const rawGeneric: ExactAlg[] = [
+  
+  {value: "R U' R' U' R' U' R", name: "", add_y: true, add_U: true, step: "f2l"},
   {value: "D L U L' D'", name: "", add_y: false, add_U: true, step: "f2l"},
   {value: "D L U' L' D'", name: "", add_y: false, add_U: true, step: "f2l"},
   {value: "D L U2 L' D'", name: "", add_y: false, add_U: false, step: "f2l"},

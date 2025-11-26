@@ -87,8 +87,8 @@ export default function Changeblog() {
         />
       </div>
       <div className="flex flex-col gap-6 pt-6">
-        You use comments to describe a line of text. Comments are fine.
-        But they&apos;re not beautiful. They take extra time to type. And most of the time, they&apos;re unnecessary. CFOP solves all tend to follow the same pattern,
+        You use comments to describe a line of text. Comments are fine, but they&apos;re not beautiful. 
+        They take extra time to type. And usually, they&apos;re unnecessary. CFOP solves all tend to follow the same pattern,
         so the only time they&apos;re nice is when something unintuitive happened.
         <MovesTextEditor
           name="2"
@@ -287,7 +287,7 @@ export default function Changeblog() {
         </ol>
       </div>
       <p className="pt-6">
-        We look at each piece one by one, starting with a certain piece of certain actual colors.
+        We look at each piece one by one, starting with a predetermined piece of certain actual colors.
         Let&apos;s pretend the first piece we always look at is the yellow-green piece.
         Using our color mapping, we look for the yellow-red piece instead:
       </p>
@@ -300,7 +300,7 @@ export default function Changeblog() {
       <p className="pt-6">
         It also didn&apos;t change orientation. If it did,
         we&apos;d say it&apos;s between the Front and Up centers, in that order.
-        We pre-define one sticker to be "primary" to make that work.
+        We predetermine one sticker to be "primary" to make that work.
       </p>
 
 
@@ -326,7 +326,7 @@ export default function Changeblog() {
         </pre>
       </div>
       <p className="pt-6">
-        It&apos;s at index 0. The 0th letter of the programmer alphabet is "a", 
+        So the value associated with 'UF' is 0. The 0th letter of the programmer alphabet is "a", 
         so that&apos;s the first letter of our pattern.
       </p>
       <div className="mt-6 p-4 bg-neutral-900 rounded-md border border-neutral-700 overflow-x-auto font-mono text-sm text-neutral-300">
@@ -373,7 +373,7 @@ export default function Changeblog() {
       </p>
       <p className="pt-6">
         Most times, the patterns won&apos;t match exactly.
-        Only certain letters will. The trick is just checking that the right letters match.
+        Only letters at certain positions will. The trick is just checking that the correct letters match.
         We need a list of letters that must be in certain positions
         for an algorithm to be a valid choice. 
       </p>

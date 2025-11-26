@@ -52,7 +52,18 @@ export default async function RootLayout({
           <div id="left-margin" className="block bg-primary-900 h-full grid-lines-50-l -z-10"></div> 
           
           <main className="col-start-2 flex flex-col bg-primary-900">
-            {children}
+            <React.Suspense fallback={
+              // show a centered spinner image while children are loading
+              <div className="flex flex-1 items-center justify-center min-h-[200px]">
+              <img
+                src="/LoadingSpinner.webp"
+                alt="Loading..."
+                className="h-8 w-8"
+              />
+              </div>
+            }>
+              {children}
+            </React.Suspense>
             <Footer />
           </main>
           
