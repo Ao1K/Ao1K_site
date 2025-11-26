@@ -1010,20 +1010,30 @@ function MovesTextEditor({
   };
 
   const handleCommand = (e: KeyboardEvent) => {
-    if (e.key === 'Tab') {
+    if (e.key === 'Tab' && !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) {
+      const canShowSuggestion = !selectedSuggestionRef.current?.full && suggestionsRef && suggestionsRef.current && suggestionsRef.current.length > 0;
+      const canAcceptSuggestion = selectedSuggestionRef.current !== null && selectedSuggestionRef.current.remaining !== '';
+
+      if (!canShowSuggestion && !canAcceptSuggestion) {
+        return;
+      }
+
       e.preventDefault();
-      if (!selectedSuggestionRef.current?.full && suggestionsRef && suggestionsRef.current && suggestionsRef.current.length > 0) {
+      if (canShowSuggestion && suggestionsRef.current) {
         suggestionStateRef.current = 'showing';
+        // TODO: difficult to say when tab should jump them to the next element instead.
+        // Showing handleShowSuggestion may not generate a suggestion and 
+        // user may expect to be able to tab out, or may not.
         handleShowSuggestion(suggestionsRef.current[0].alg || '');
         return;
       }
-      if (selectedSuggestionRef.current === null || selectedSuggestionRef.current.remaining === '') {
+      if (canAcceptSuggestion) {
+        handleSuggestionAccept();
         return;
       }
-      handleSuggestionAccept();
     }
 
-    if (e.key === 'Escape') {
+    if (e.key === 'Escape' && !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) {
       handleSuggestionReject();
     }
 

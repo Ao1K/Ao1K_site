@@ -79,7 +79,6 @@ const HiddenPlayer = forwardRef<HiddenPlayerHandle, PlayerProps>(({
   };
 
   useEffect(() => {
-    console.log('Initializing hidden TwistyPlayer...');
     playerRef.current = new TwistyPlayer({
       viewerLink: 'none',
       puzzle: '3x3x3',
@@ -99,8 +98,6 @@ const HiddenPlayer = forwardRef<HiddenPlayerHandle, PlayerProps>(({
     playerRef.current!.style.width = '1px';
     playerRef.current!.style.height = '1px';
     playerRef.current!.experimentalFaceletScale = .95;
-
-    console.log('Hidden TwistyPlayer initialized:', playerRef.current);
 
     // create a detached DOM element for the headless player
     const detachedContainer = document.createElement('div');
