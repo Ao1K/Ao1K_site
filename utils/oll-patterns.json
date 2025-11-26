@@ -1,0 +1,292 @@
+{
+  "timestamp": "2025-10-15T02:12:25.991Z",
+  "totalPatterns": 57,
+  "patternType": "oll",
+  "patterns": [
+    {
+      "caseIndex": 1,
+      "name": "1",
+      "pattern": 132231612201978000
+    },
+    {
+      "caseIndex": 2,
+      "name": "2",
+      "pattern": 132231612191892720
+    },
+    {
+      "caseIndex": 3,
+      "name": "3",
+      "pattern": 131723812418628140
+    },
+    {
+      "caseIndex": 4,
+      "name": "4",
+      "pattern": 132233963116823380
+    },
+    {
+      "caseIndex": 5,
+      "name": "5",
+      "pattern": 118969932335658
+    },
+    {
+      "caseIndex": 6,
+      "name": "6",
+      "pattern": 629186236331868
+    },
+    {
+      "caseIndex": 7,
+      "name": "7",
+      "pattern": 119035538136618
+    },
+    {
+      "caseIndex": 8,
+      "name": "8",
+      "pattern": 629120630530908
+    },
+    {
+      "caseIndex": 9,
+      "name": "9",
+      "pattern": 22563250161040188
+    },
+    {
+      "caseIndex": 10,
+      "name": "10",
+      "pattern": 131723812721238910
+    },
+    {
+      "caseIndex": 11,
+      "name": "11",
+      "pattern": 131723747115437950
+    },
+    {
+      "caseIndex": 12,
+      "name": "12",
+      "pattern": 22055515983460188
+    },
+    {
+      "caseIndex": 13,
+      "name": "13",
+      "pattern": 119035236085638
+    },
+    {
+      "caseIndex": 14,
+      "name": "14",
+      "pattern": 629185934280888
+    },
+    {
+      "caseIndex": 15,
+      "name": "15",
+      "pattern": 131723747417488940
+    },
+    {
+      "caseIndex": 16,
+      "name": "16",
+      "pattern": 22055515681409210
+    },
+    {
+      "caseIndex": 17,
+      "name": "17",
+      "pattern": 131723812408597300
+    },
+    {
+      "caseIndex": 18,
+      "name": "18",
+      "pattern": 131723812410237840
+    },
+    {
+      "caseIndex": 19,
+      "name": "19",
+      "pattern": 131726163343558800
+    },
+    {
+      "caseIndex": 20,
+      "name": "20",
+      "pattern": 131726163335199600
+    },
+    {
+      "caseIndex": 21,
+      "name": "21",
+      "pattern": 626770018296288
+    },
+    {
+      "caseIndex": 22,
+      "name": "22",
+      "pattern": 626770008211038
+    },
+    {
+      "caseIndex": 23,
+      "name": "23",
+      "pattern": 118970226556128
+    },
+    {
+      "caseIndex": 24,
+      "name": "24",
+      "pattern": 121321159877088
+    },
+    {
+      "caseIndex": 25,
+      "name": "25",
+      "pattern": 118970224915608
+    },
+    {
+      "caseIndex": 26,
+      "name": "26",
+      "pattern": 629120933141688
+    },
+    {
+      "caseIndex": 27,
+      "name": "27",
+      "pattern": 118970234946438
+    },
+    {
+      "caseIndex": 28,
+      "name": "28",
+      "pattern": 121320848907108
+    },
+    {
+      "caseIndex": 29,
+      "name": "29",
+      "pattern": 626835313127268
+    },
+    {
+      "caseIndex": 30,
+      "name": "30",
+      "pattern": 626769707326308
+    },
+    {
+      "caseIndex": 31,
+      "name": "31",
+      "pattern": 121320857266308
+    },
+    {
+      "caseIndex": 32,
+      "name": "32",
+      "pattern": 121386463067268
+    },
+    {
+      "caseIndex": 33,
+      "name": "33",
+      "pattern": 121386161016288
+    },
+    {
+      "caseIndex": 34,
+      "name": "34",
+      "pattern": 22055515683080840
+    },
+    {
+      "caseIndex": 35,
+      "name": "35",
+      "pattern": 22055450387775588
+    },
+    {
+      "caseIndex": 36,
+      "name": "36",
+      "pattern": 629120632202538
+    },
+    {
+      "caseIndex": 37,
+      "name": "37",
+      "pattern": 118969922304828
+    },
+    {
+      "caseIndex": 38,
+      "name": "38",
+      "pattern": 119035528105788
+    },
+    {
+      "caseIndex": 39,
+      "name": "39",
+      "pattern": 119035226054808
+    },
+    {
+      "caseIndex": 40,
+      "name": "40",
+      "pattern": 629185935952518
+    },
+    {
+      "caseIndex": 41,
+      "name": "41",
+      "pattern": 119035529746308
+    },
+    {
+      "caseIndex": 42,
+      "name": "42",
+      "pattern": 629120640647268
+    },
+    {
+      "caseIndex": 43,
+      "name": "43",
+      "pattern": 121320847181058
+    },
+    {
+      "caseIndex": 44,
+      "name": "44",
+      "pattern": 118969923945348
+    },
+    {
+      "caseIndex": 45,
+      "name": "45",
+      "pattern": 121386150931038
+    },
+    {
+      "caseIndex": 46,
+      "name": "46",
+      "pattern": 119035227695328
+    },
+    {
+      "caseIndex": 47,
+      "name": "47",
+      "pattern": 132231612494503520
+    },
+    {
+      "caseIndex": 48,
+      "name": "48",
+      "pattern": 22563250171071016
+    },
+    {
+      "caseIndex": 49,
+      "name": "49",
+      "pattern": 626769705600258
+    },
+    {
+      "caseIndex": 50,
+      "name": "50",
+      "pattern": 626835311401218
+    },
+    {
+      "caseIndex": 51,
+      "name": "51",
+      "pattern": 626835009350238
+    },
+    {
+      "caseIndex": 52,
+      "name": "52",
+      "pattern": 22563315474821000
+    },
+    {
+      "caseIndex": 53,
+      "name": "53",
+      "pattern": 626769715685508
+    },
+    {
+      "caseIndex": 54,
+      "name": "54",
+      "pattern": 626835321486468
+    },
+    {
+      "caseIndex": 55,
+      "name": "55",
+      "pattern": 626835019435488
+    },
+    {
+      "caseIndex": 56,
+      "name": "56",
+      "pattern": 132231547200838800
+    },
+    {
+      "caseIndex": 57,
+      "name": "57",
+      "pattern": 121386152657088
+    }
+  ]
+}

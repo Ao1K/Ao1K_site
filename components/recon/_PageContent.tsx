@@ -1,42 +1,42 @@
 'use client';
-import debounce from 'lodash.debounce';
-import { PNG, Type } from "sr-puzzlegen";
-import { useState, useRef, useEffect, lazy, Suspense, useCallback, Profiler } from 'react';
+import HiddenPlayer, { HiddenPlayerHandle } from './HiddenPlayer';
+import { useState, useRef, useEffect, lazy, Suspense, useCallback, Profiler, useMemo } from 'react';
 import MovesTextEditor from "../../components/recon/MovesTextEditor";
 import SpeedDropdown from "../../components/recon/SpeedDropdown";
 
 import Toolbar from "../../components/Toolbar";
-import Footer from "../../components/Footer";
-
 import ReconTimeHelpInfo from "../../components/recon/ReconTimeHelpInfo";
 import TPSInfo from "../../components/recon/TPSInfo";
 import updateURL from "../../composables/recon/updateURL";
 
 import type { ImperativeRef } from "../../components/recon/MovesTextEditor";
-import type { Object3D } from 'three';
 
 import UndoIcon from "../../components/icons/undo";
 import RedoIcon from "../../components/icons/redo";
 import CatIcon from "../../components/icons/cat";
-import MirrorM from "../../components/icons/mirrorM";
-import MirrorS from "../../components/icons/mirrorS";
 import TrashIcon from "../../components/icons/trash";
-import CopyIcon from "../../components/icons/copy";
 import ShareIcon from "../../components/icons/share";
+import InvertIcon from "../../components/icons/invert";
+
+import Cookies from 'js-cookie';
 
 import addCat from "../../composables/recon/addCat";
-import { mirrorHTML_M, mirrorHTML_S, removeComments, rotateHTML_X, rotateHTML_Y, rotateHTML_Z } from "../../composables/recon/transformHTML";
+import { mirrorHTML_M, mirrorHTML_S, removeComments, rotateHTML_X, rotateHTML_Y, rotateHTML_Z, invertHTML } from "../../composables/recon/transformHTML";
 import isSelectionInTextbox from "../../composables/recon/isSelectionInTextbox";
 import { TransformHTMLprops } from "../../composables/recon/transformHTML";
 
 import TitleWithPlaceholder from "../../components/recon/TitleInput";
 import TopButton from "../../components/recon/TopButton";
+import CopySolveDropdown from "../../components/recon/CopySolveDropdown";
 import { customDecodeURL } from '../../composables/recon/urlEncoding';
 import getDailyScramble from '../../composables/recon/getDailyScramble';
 import VideoHelpPrompt from '../../components/recon/VideoHelpPrompt';
 import ImageStack from '../recon/ImageStack';
-import { EventBridgeSchedulerCreateScheduleTask } from 'aws-cdk-lib/aws-stepfunctions-tasks';
-
+import { CubeInterpreter } from '../../composables/recon/CubeInterpreter';
+import type { StepInfo, Suggestion } from '../../composables/recon/CubeInterpreter';
+import { AlgCompiler } from '../../utils/AlgCompiler';
+import LLpatternBuilder from '../../utils/LLpatternBuilder';
+import { highlightClass } from '../../utils/sharedConstants';
 
 export interface MoveHistory {
   history: string[][];
@@ -48,8 +48,11 @@ export interface MoveHistory {
 interface OldSelectionRef {
   status: string;
   range: Range | null;
-  textbox: string | null;
+  textbox: 'solution' | 'scramble' | null;
 }
+
+export type PlayerParams = { animationTimes: number[]; solution: string; scramble: string };
+
 
 export interface ControllerRequestOptions {
   type: 'fullLeft' | 'stepLeft' | 'pause' | 'play' | 'replay' | 'stepRight' | 'fullRight';
@@ -61,30 +64,39 @@ export default function Recon() {
   const allMovesRef = useRef<string[][][]>([[[]], [[]]]);
   const moveLocation = useRef<[number, number, number]>([0, 0, 0]);
 
-  const [speed, setSpeed] = useState<number>(30); // allows debounced speed updates to Player
-  const [localSpeed, setLocalSpeed] = useState<number>(30) // artifact from when speed was a slider. TODO: Can be removed.
+  const [speed, setSpeed] = useState<number>(30);
 
-  const scrambleRef = useRef<string>(''); // TODO: eliminate and use allMovesRef[0] instead
-  const [solution, setSolution] = useState<string>(''); // TODO: eliminate and use allMovesRef[1] instead
-  const [totalMoves, setTotalMoves] = useState<number>(0);
   const [solveTime, setSolveTime] = useState<number|string>('');
   const [solveTitle, setSolveTitle] = useState<string>('');
   const [topButtonAlert, setTopButtonAlert] = useState<[string, string]>(["", ""]); // [id, alert msg]
-  const [isTextboxFocused, setIsTextboxFocused] = useState<boolean>(false);
+  const [isShowingToolbar, setIsShowingToolbar] = useState<boolean>(true);
+  const [lineSteps, setLineSteps] = useState<{moveLine: string; stepInfo: StepInfo[]}[]>([]);
+  const lineStepsRef = useRef(lineSteps); // keep latest lineSteps accessible inside stable callbacks
 
   const [scrambleHTML, setScrambleHTML] = useState<string>('');
   const [solutionHTML, setSolutionHTML] = useState<string>('');
-    
-  const tpsRef = useRef<HTMLDivElement>(null);
-  const scrambleEditorRef = useRef<ImperativeRef>(null);
-  const solutionEditorRef = useRef<ImperativeRef>(null);
-  const undoRef = useRef<HTMLButtonElement>(null);
-  const redoRef = useRef<HTMLButtonElement>(null);
+  
+  const [playerParams,setPlayerParams] = useState<PlayerParams>({ animationTimes: [], solution: '', scramble: '' });
+  const suggestionsRef = useRef<Suggestion[]>([]);
+
+  // TODO: check if these are needed any more
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const updateSuggestions = useCallback((next: Suggestion[]) => {
+    suggestionsRef.current = next;
+    setSuggestions(next);
+  }, []);
+
+  const tpsRef = useRef<HTMLDivElement>(null!);
+  const scrambleMethodsRef = useRef<ImperativeRef>(null);
+  const solutionMethodsRef = useRef<ImperativeRef>(null);
+  const undoRef = useRef<HTMLButtonElement>(null!);
+  const redoRef = useRef<HTMLButtonElement>(null!);
   const oldSelectionRef = useRef<OldSelectionRef>({ range: null, textbox: null,  status: "init" });
-  const bottomBarRef = useRef<HTMLDivElement>(null);
-  const cubeRef = useRef<Object3D | null>(null);
-  const isPlayingRef = useRef<boolean>(false);
+  const bottomBarRef = useRef<HTMLDivElement>(null!);
+  const hiddenPlayerRef = useRef<HiddenPlayerHandle>(null);
+  const isLoopingRef = useRef<boolean>(false);
   const loopTimeoutRef = useRef<number|null>(null);
+  const screenshotCacheRef = useRef<{ blob: Blob; scrambleHTML: string; solutionHTML: string; solveTime: number | string } | null>(null);
   const clearLoopTimeout = useCallback(() => {
     if (loopTimeoutRef.current !== null) {
       clearTimeout(loopTimeoutRef.current);
@@ -92,10 +104,11 @@ export default function Recon() {
     }
   }, []);
 
+  const totalMoves = allMovesRef.current[1].flat(2).filter(move => move.match(/[^xyz2']/g)).length
+
   const MAX_EDITOR_HISTORY = 100;
   const moveHistory = useRef<MoveHistory>({ history: [['','']], index: 0, MAX_HISTORY: MAX_EDITOR_HISTORY, status: 'loading' });
 
-  const [playerParams, setPlayerParams] = useState<{ animationTimes: number[], solution: string, scramble: string }>({ animationTimes: [], solution: '', scramble: '' });
   const [controllerButtonsStatus, setControllerButtonsStatus] = useState<{ fullLeft: string, stepLeft: string, stepRight: string, fullRight: string, playPause: string }>({
     fullLeft: 'disabled',
     stepLeft: 'disabled',
@@ -103,6 +116,8 @@ export default function Recon() {
     fullRight: 'disabled',
     playPause: 'disabled'
   });
+
+  const cubeInterpreter = useRef<CubeInterpreter | null>(null);
 
 
   /**
@@ -116,12 +131,6 @@ export default function Recon() {
       }
     }
     return -1;
-  }
-
-  const updateTotalMoves = (moves: string[][]) => {
-    const regex =/[^xyz2']/g;
-    let moveCount = moves.flat(2).filter(move => move.match(regex)).length
-    setTotalMoves(moveCount);
   }
 
   const findLastMoveInLine = (moves: string[][], lineIndex: number): number => {
@@ -142,11 +151,37 @@ export default function Recon() {
     return -1; // no next move found
   }
 
-  const compareMoves = (currentMoves: string[][], moves: string[][]): boolean => {
+  /**
+   * Evaluates if the moves on each line are the same. Example: R U R' [newline] U' and R U R' U' are different.
+   * @param currentMoves
+   * @param lines 
+   * @returns 
+   */
+  const areMoveLinesEqual = (currentMoves: string[][], lines: string[][]): boolean => {
+    currentMoves = currentMoves.filter(line => line.length != 0);
+    lines = lines.filter(line => line.length != 0);
+    
+    if (currentMoves.length !== lines.length) {
+      return false;
+    } else {
+      for (let i = 0; i < currentMoves.length; i++) {
+        const line = currentMoves[i];
+        const newLine = lines[i] || [];
+        if (line.join(' ') !== newLine.join(' ')) {
+          return false;
+        }
+      }
+    }
+    return true;
+  };
+
+
+  const areMovesSame = (currentMoves: string[][], moves: string[][]): boolean => {
     if (currentMoves.length !== moves.length) {
       return false;
     }
     
+    // compare each line
     for (let i = 0; i < currentMoves.length; i++) {
       const currentLine = currentMoves[i];
       const newLine = moves[i];
@@ -156,6 +191,7 @@ export default function Recon() {
         return false;
       }
       
+      // compare each move
       for (let j = 0; j < currentLine.length; j++) {
         if (currentLine[j] !== newLine[j]) {
           return false;
@@ -166,45 +202,15 @@ export default function Recon() {
     return true;
   };
 
-  const movesAndIndexSame = (moves: string[][], idIndex: number, lineIndex: number, moveIndex: number): boolean => {
-
-    const currentMoves = allMovesRef.current[idIndex];
-
-    const movesSame = compareMoves(currentMoves, moves);
-
-    const newMoveLocation: [number, number, number] = [idIndex, lineIndex, moveIndex];
-    const moveIndexSame = 
-        moveLocation.current[0] === newMoveLocation[0] 
-     && moveLocation.current[1] === newMoveLocation[1] 
-     && moveLocation.current[2] === newMoveLocation[2];
-
-    return movesSame && moveIndexSame;
-  }
-
-  const initMoves = (moves: string[][], idIndex: number): [string, string] => {
-    let sol = "";
-    let scram = "";
-
-    // get current values, set reference variable (useRef, useState) to current 
-    if (idIndex === 0) {
-      scram = moves.flat().join(' ');
-      sol = solution;
-      scrambleRef.current = scram;  
-    }
-    else {
-      sol = moves.flat().join(' ');
-      scram = scrambleRef.current;
-      setSolution(sol);
-    }
-
-    return [sol, scram];
-  }
-
   const findAnimationLengths = (moves: string[]): number[] => {
-    let moveAnimationTimes: number[] = [];
+    const moveAnimationTimes: number[] = [];
     const singleTime = 1000;
     const doubleTime = 1500;
     const tripleTime = 2000;
+
+    if (!moves || moves.length === 0) {
+      return [0]; // no moves, return 0
+    }
 
     moves.forEach((move) => {
       if (move.includes('2')) {
@@ -221,8 +227,7 @@ export default function Recon() {
 
   /**
    * Calculates the cumulative animation times for moves up to a specific position in the move sequence.
-   * Returns [1] if scramble is selected. 
-   * Returns [0] if there are no moves in the solution.
+   * @returns [1] if scramble is selected. [0] if there are no moves in the solution.
    */
   const findAnimationTimes = (idIndex: number, lineIndex: number, moveIndex: number, moves: string[][]): number[] => {
     
@@ -232,7 +237,7 @@ export default function Recon() {
 
     // hereafter assume working on solution moves
 
-    if (moves.length === 0) {
+    if (!moves || moves.length === 0) {
       return [0];
     }
 
@@ -264,45 +269,13 @@ export default function Recon() {
     
   };
 
-  const memoizedHighlightMove = useCallback((moveIndex: number, lineIndex: number) => {
-    solutionEditorRef.current?.highlightMove(moveIndex, lineIndex);
+  const highlightMove = useCallback((moveIndex: number, lineIndex: number) => {
+    solutionMethodsRef.current?.highlightMove(moveIndex, lineIndex);
   }, []);
 
-  const interpretCurrentCubeState = () => {
-    // placeholder for interpreting the current cube state
-    // will be used for move completion and better solution icons
-
-    // console.log('Interpreting current cube state...');
-    // console.log('Solution: ', solution);
-    // if (cubeRef.current) {
-    //   // wait one second
-    //   // setTimeout(() => {
-    //     console.log('Cube state interpreted.');
-    //     const cube = cubeRef.current; 
-    //     console.log('Cube: ', cube);
-    //     // access children.matrix and print 4x4 matrix inside
-    //     const matrix = cube!.children[6].matrix.elements;
-    //     matrix.forEach((value, index) => {
-
-    //       // round each to 2 decimal places
-    //       matrix[index] = parseFloat(value.toFixed(2));
-
-    //       // if -0, set to 0
-    //       if (matrix[index] === -0) {
-    //         matrix[index] = 0;
-    //       }
-    //     });
-
-    //     const matrix4x4 = [
-    //       [matrix[0], matrix[1], matrix[2], matrix[3]],
-    //       [matrix[4], matrix[5], matrix[6], matrix[7]],
-    //       [matrix[8], matrix[9], matrix[10], matrix[11]],
-    //       [matrix[12], matrix[13], matrix[14], matrix[15]]
-    //     ];
-    //     console.table(matrix4x4);
-    //   // }, 100);
-    // }
-  };
+  const removeHighlight = useCallback(() => {
+    solutionMethodsRef.current?.removeHighlight();
+  }, []);
 
   const getMoveToLeft = (): [number, number] => {
     const [idIndex, lineIndex, moveIndex] = moveLocation.current;
@@ -340,7 +313,7 @@ export default function Recon() {
     }
 
 
-    if (moveIndex < solutionMoves[lineIndex].length) {
+    if (solutionMoves[lineIndex] && moveIndex < solutionMoves[lineIndex].length) {
       return [lineIndex, moveIndex + 1]; // just step forward one move
     } else {
 
@@ -374,27 +347,6 @@ export default function Recon() {
     return [lastLineWithMove, lastMoveInLastLine];
   }
 
-  const countMovesBeforeIndex = (idIndex: number): number => {
-    const [_, lineIndex, moveIndex] = moveLocation.current;
-
-    if (idIndex === 0) {
-      return -1; // add this functionality if needed
-    }
-    let count = 0;
-    const moves = allMovesRef.current[idIndex];
-    for (let i = 0; i < lineIndex; i++) {
-      if (moves[i] && moves[i].length > 0) {
-        count += moves[i].length;
-      }
-    }
-    // add moves in current line before moveIndex
-    if (moves[lineIndex] && moveIndex > 0) {
-      count += moves[lineIndex].slice(0, moveIndex).length;
-    }
-
-    return count;
-  } 
-
   const stopLoopStepRight = () => {
     let [lineIndex, moveIndex] = getMoveToRight();
     let playPauseStatus = 'disabled';
@@ -414,35 +366,41 @@ export default function Recon() {
   }
 
   const loopStepRight = (location: [number, number, number] | null) => {
-    if (!isPlayingRef.current) {
+    if (!isLoopingRef.current) {
       stopLoopStepRight();
       return; // player is not playing, do not step right
     }
 
     let [idIndex, lineIndex, moveIndex] = location || moveLocation.current;
       
-    const animationTimes = playerParams.animationTimes;
-    const solutionMovesBefore = countMovesBeforeIndex(1);
-
+    
     [lineIndex, moveIndex] = getMoveToRight();
     if (lineIndex === -1 || moveIndex === -1) {
       // no more moves to step right
-
+      
       // assure that controller buttons states are up to date
       const playPauseStatus = allMovesRef.current[1].length === 0 ? 'disabled' : 'replay';
       setControllerButtonsStatus((controllerButtonsStatus) => (
         { ...controllerButtonsStatus, stepRight: 'disabled', fullRight: 'disabled', playPause: playPauseStatus }
       ));
       
+      // there may be race conditions with this, but minor and rare
+      removeHighlight();
+
       return; 
     }
-    memoizedTrackMoves(1, lineIndex, moveIndex, allMovesRef.current[1], 'play');
-    // wait for the next move animation time
-    const timeToWait = animationTimes[solutionMovesBefore] || 1000; // default to 1000ms if undefined
+    
+    trackMoves(1, lineIndex, moveIndex, allMovesRef.current[1], 'play');
+    
+    // const animationTimes = playerParams.animationTimes;
+    // const solutionMovesBefore = countMovesBeforeIndex(1);
+    // const timeToWait = animationTimes[solutionMovesBefore] || 1000;
     
     loopTimeoutRef.current = window.setTimeout(() => {
       loopStepRight([1, lineIndex, moveIndex]);
-    // }, timeToWait); // moves with large animation times don't actually take longer. Re-implement timeToWait if this changes
+    // }, timeToWait); 
+    // moves with large animation times don't actually take longer. 
+    // Re-implement timeToWait if this changes
     }, 1000 - (5 * speed));
   }
 
@@ -451,19 +409,19 @@ export default function Recon() {
     clearLoopTimeout();
     let [_, lineIndex, moveIndex] = moveLocation.current;
     if (request.type !== 'play' && request.type !== 'replay') {
-      isPlayingRef.current = false;
+      isLoopingRef.current = false;
     } else {
-      isPlayingRef.current = true;
+      isLoopingRef.current = true;
     }
 
     switch (request.type) {
       case 'fullLeft':
-        memoizedTrackMoves(1, 0, 0, allMovesRef.current[1], 'fullLeft');
+        trackMoves(1, 0, 0, allMovesRef.current[1], 'fullLeft');
         break;
       case 'stepLeft':
         [lineIndex, moveIndex] = getMoveToLeft();
         if (lineIndex !== -1 || moveIndex !== -1) {
-          memoizedTrackMoves(1, lineIndex, moveIndex, allMovesRef.current[1], 'stepLeft');
+          trackMoves(1, lineIndex, moveIndex, allMovesRef.current[1], 'stepLeft');
         }
         break;
       case 'pause':
@@ -478,24 +436,25 @@ export default function Recon() {
         ));
         break;
       case 'replay':
-        memoizedTrackMoves(1, 0, 0, allMovesRef.current[1], 'play'); // reset to start of solution
+        trackMoves(1, 0, 0, allMovesRef.current[1], 'play'); // reset to start of solution
 
         setTimeout(() => {
           setControllerButtonsStatus((controllerButtonsStatus) => (
             { ...controllerButtonsStatus, playPause: 'play' }
           ));
+
           loopStepRight(null);
         }, 1000);
         break;
       case 'stepRight':
         [lineIndex, moveIndex] = getMoveToRight();
         if (lineIndex !== -1 || moveIndex !== -1) {
-          memoizedTrackMoves(1, lineIndex, moveIndex, allMovesRef.current[1], 'stepRight');
+          trackMoves(1, lineIndex, moveIndex, allMovesRef.current[1], 'stepRight');
         }
         break;
       case 'fullRight':
         [lineIndex, moveIndex] = getLastMoveInSolution();
-        memoizedTrackMoves(1, lineIndex, moveIndex, allMovesRef.current[1], 'fullRight');
+        trackMoves(1, lineIndex, moveIndex, allMovesRef.current[1], 'fullRight');
         break;
       default:
         console.warn('Unknown controller request type:', request.type);
@@ -585,8 +544,39 @@ export default function Recon() {
     return { fullLeft, stepLeft, stepRight, fullRight, playPause }
   };
 
+  const handleEmptyLineSuggestions = async (solutionMoves: string[][], trueLineIndex: number) => {
+    if (!solutionMethodsRef.current || !cubeInterpreter.current) return;
+    const lastMoveIndex = findLastMoveInLine(solutionMoves, trueLineIndex);
+    const animationTimes = findAnimationTimes(1, trueLineIndex, lastMoveIndex, solutionMoves);
+    const cube = await hiddenPlayerRef.current?.updateCube(
+      allMovesRef.current[0].flat().join(' '),
+      solutionMoves.flatMap(line => line).join(' '),
+      animationTimes
+    );
 
-  const memoizedTrackMoves = useCallback(
+    const steps = cubeInterpreter.current!.getStepsCompleted(cube);
+    const newSuggestions: Suggestion[] = cubeInterpreter.current.getAlgSuggestions(steps);
+
+    const prevSuggestions = suggestionsRef.current;
+
+    const isSuggestionChange = prevSuggestions.length !== newSuggestions.length ||
+      newSuggestions.some((newSug, index) => newSug.alg !== (prevSuggestions[index]?.alg ?? ''));
+
+    suggestionsRef.current = newSuggestions;
+
+    if (!isSuggestionChange) {
+      return;
+    }
+
+    if (newSuggestions.length > 0) {
+      solutionMethodsRef.current?.showSuggestion(newSuggestions[0].alg);
+    }
+
+    updateSuggestions(newSuggestions);
+
+  };
+
+  const trackMoves = useCallback(
     (
       idIndex: number, 
       lineIndex: number, // the line number of the caret, zero-indexed
@@ -594,12 +584,24 @@ export default function Recon() {
       moves: string[][], // the moves in the textbox of id
       moveControllerStatus?: string // the current status of loopStepRight
     ) => {
-
+    
       if (moveControllerStatus !== 'play') {
-        isPlayingRef.current = false; // break out of loopStepRight when status changes
+        isLoopingRef.current = false; // break out of loopStepRight when status changes
       }
 
-      if (moves[lineIndex]?.length === 0) {
+      if (lineIndex === -1 || moveIndex === -1) {
+        // handles invalid ControllerRequests
+        console.warn('Invalid lineIndex or moveIndex:', lineIndex, moveIndex);
+        return;
+      }
+
+      const isLineEmpty = moves[lineIndex]?.length === 0;
+      if (isLineEmpty) {
+
+        // don't show any suggestions on 0th line (0th line is usually not algorithmic)
+        // only allowing suggestions on empty line simplifies logic and leads to more beautiful recons
+        (lineIndex === 0 || idIndex === 0) ? null : handleEmptyLineSuggestions(moves, lineIndex);
+
         // pretend caret is at end of the last line that has a move
         const adjustedLineIndex = findPrevNonEmptyLine(moves, lineIndex);
         const adjustedMoveIndex = findLastMoveInLine(moves, adjustedLineIndex);
@@ -610,46 +612,68 @@ export default function Recon() {
         }
       }
 
-      if (movesAndIndexSame(moves, idIndex, lineIndex, moveIndex)) {
-        // console.log('Moves and index are the same, skipping update.');
+      const isMovesSame = areMovesSame(allMovesRef.current[idIndex], moves); 
+
+      // content same if all contentful lines are the same.
+      const isMoveLineContentSame = areMoveLinesEqual(allMovesRef.current[idIndex], moves);
+
+      const isMoveIndexSame = 
+        moveLocation.current[0] === idIndex && 
+        moveLocation.current[1] === lineIndex && 
+        moveLocation.current[2] === moveIndex;
+
+      if (isMovesSame && isMoveIndexSame) {
         return;
       }
 
-      if (lineIndex === -1 || moveIndex === -1) {
-        // handles invalid ControllerRequests
-        return;
-      }
+      allMovesRef.current[idIndex] = [...moves];
+      const sol = allMovesRef.current[1].flat().join(' ');
+      const scram = allMovesRef.current[0].flat().join(' ');
 
-      idIndex === 1 ? updateTotalMoves(moves) : null;
-      let [sol, scram] = initMoves(moves, idIndex);
-
-      if (idIndex === 1 && moveControllerStatus) memoizedHighlightMove(moveIndex, lineIndex);
+      if (idIndex === 1 && moveControllerStatus) highlightMove(moveIndex, lineIndex);
 
       let limitedTimes = findAnimationTimes(idIndex, lineIndex, moveIndex, moves);
       moveLocation.current = [idIndex, lineIndex, moveIndex];
       
+      const currentLineSteps = lineStepsRef.current;
 
-      let newMoves = [...allMovesRef.current];
-      newMoves[idIndex] = [...moves];
-      allMovesRef.current = newMoves;
+      if (!isMoveLineContentSame) {
+        updateLineSteps();
+      } else {
+        let hasSpaceChanges = false;
+        moves.forEach((line, idx) => {
+          const lineStepEntry = currentLineSteps[idx];
+          if (!lineStepEntry) {
+            return;
+          }
+          const lineAndScram = idx === 0 ? [...allMovesRef.current[0].flat(), ...line] : line;
+          const flatLine = lineAndScram.join(' ');
+          const existingLineMoves = lineStepEntry.moveLine
+          if (existingLineMoves !== flatLine) {
+            hasSpaceChanges = true;
+          }
 
-      setIsTextboxFocused(true);
+        });
+        if (hasSpaceChanges) {
+          respaceLineSteps();
+        }
+      };
+
       setPlayerParams({animationTimes: limitedTimes, solution: sol, scramble: scram});
 
       const validPlayPauseStatuses = ['play', 'pause', 'replay', 'disabled'];
       const playPauseStatus = 
-        (moveControllerStatus && validPlayPauseStatuses.includes(moveControllerStatus)) 
-        ? moveControllerStatus : controllerButtonsStatus.playPause;
+        (moveControllerStatus && validPlayPauseStatuses.includes(moveControllerStatus)) ? 
+        moveControllerStatus : controllerButtonsStatus.playPause;
 
-      const controllerButtonsEnabled = getControllerButtonsStatus(idIndex, lineIndex, moveIndex, newMoves[idIndex], playPauseStatus);
+      const controllerButtonsEnabled = getControllerButtonsStatus(idIndex, lineIndex, moveIndex, allMovesRef.current[idIndex], playPauseStatus);
       setControllerButtonsStatus(controllerButtonsEnabled)
 
-  }, [scrambleRef, memoizedHighlightMove, setPlayerParams, solution, setControllerButtonsStatus]);
+    }, [controllerButtonsStatus, suggestions]);
 
   const memoizedSetScrambleHTML = useCallback((html: string) => {
     setScrambleHTML(html);
   }, []);
-
   const memoizedSetSolutionHTML = useCallback((html: string) => {
     setSolutionHTML(html);
   }, []);
@@ -657,15 +681,6 @@ export default function Recon() {
   const memoizedUpdateHistoryBtns = useCallback(() => {
     handleHistoryBtnUpdate();
   }, []);
-
-  const debouncedSetSpeed = debounce((value: number) => {
-    setSpeed(value);
-  }, 300);
-
-  const handleSpeedChange = (speed: number) => {
-    setLocalSpeed(speed); // Update the local state immediately
-    debouncedSetSpeed(speed); // Debounce the state update
-  };
 
   const handleSolveTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -686,16 +701,16 @@ export default function Recon() {
   }
 
   const handleUndo = () => {
-    if (scrambleEditorRef.current  && solutionEditorRef.current) {
-      scrambleEditorRef.current.undo();
-      solutionEditorRef.current.undo();
+    if (scrambleMethodsRef.current  && solutionMethodsRef.current) {
+      scrambleMethodsRef.current.undo();
+      solutionMethodsRef.current.undo();
     }
   }
 
   const handleRedo = () => {
-    if (scrambleEditorRef.current  && solutionEditorRef.current) {
-      scrambleEditorRef.current.redo();
-      solutionEditorRef.current.redo();
+    if (scrambleMethodsRef.current  && solutionMethodsRef.current) {
+      scrambleMethodsRef.current.redo();
+      solutionMethodsRef.current.redo();
     }
   }
 
@@ -723,9 +738,9 @@ export default function Recon() {
     });
   };
 
-  const getWholeTextboxRange = (textboxID: string): Range => {
+  const getWholeTextboxRange = (textboxName: 'scramble' | 'solution'): Range => {
 
-      const parentElement = document.getElementById(textboxID); // either "scramble" or "solution"
+      const parentElement = document.getElementById(textboxName);
       const textbox = parentElement!.querySelector<HTMLDivElement>('div[contenteditable="true"]');
       let range = document.createRange();
       range.selectNodeContents(textbox!);
@@ -757,8 +772,8 @@ export default function Recon() {
 
     let newHTML = transformType(range, textbox!) ?? '';
     textbox === 'solution' ? 
-      solutionEditorRef.current!.transform(newHTML) : // can handle html or plaintext
-      scrambleEditorRef.current!.transform(newHTML)
+      solutionMethodsRef.current!.transform(newHTML) : // can handle html or plaintext
+      scrambleMethodsRef.current!.transform(newHTML)
   }
 
   const handleTransform = (transformType: TransformHTMLprops) => {
@@ -774,17 +789,20 @@ export default function Recon() {
   const handleRotateX = () => handleTransform(rotateHTML_X);
   const handleRotateY = () => handleTransform(rotateHTML_Y);
   const handleRotateZ = () => handleTransform(rotateHTML_Z);
+  const handleInvert = () => handleTransform(invertHTML);
 
   const handleRemoveComments = () => handleTransform(removeComments);
 
   const handleClearPage = () => {
-    scrambleRef.current = '';
-    scrambleEditorRef.current?.transform('');
-    setSolution('');
-    solutionEditorRef.current?.transform('');
+    allMovesRef.current = [[[]], [[]]];
+    moveLocation.current = [0, 0, 0];
+    setPlayerParams({ animationTimes: [], solution: '', scramble: '' });
+    scrambleMethodsRef.current?.transform('');
+    solutionMethodsRef.current?.transform('');
     setSolveTime('');
     setSolveTitle('');
-    setTotalMoves(0);
+    setLineSteps([]);
+
     // don't clear moveHistory
 
     updateURL('title', null);
@@ -837,7 +855,215 @@ export default function Recon() {
     url ? printout += `\n[View solve on Ao1K](${url})` : '';
 
     navigator.clipboard.writeText(printout);
-    setTopButtonAlert(["copy", "Solve text copied!"]);
+    setTopButtonAlert(["copy-solve", "Solve text copied!"]);
+  }
+
+  const cacheMatchesCurrentHtml = () => {
+    const cached = screenshotCacheRef.current;
+    if (!cached) return false;
+    return cached.scrambleHTML === scrambleHTML && cached.solutionHTML === solutionHTML && cached.solveTime === solveTime;
+  };
+
+  const copyScreenshotToClipboard = async (blob: Blob) => {
+    try {
+      await navigator.clipboard.write([
+        new ClipboardItem({ 'image/png': blob })
+      ]);
+      setTopButtonAlert(["copy-solve", "Screenshot copied!"]);
+    } catch (error) {
+      setTopButtonAlert(["copy-solve", "Screenshot Failed. Please report!"]);
+      console.error('Failed to copy screenshot to clipboard:', error);
+    }
+  };
+
+  const buildScreenshotBlob = async (): Promise<Blob | null> => {
+    try {
+      const html2canvas = (await import('html2canvas')).default;
+
+      const scrambleDiv = document.getElementById('scramble');
+      const richSolutionDiv = document.getElementById('rich-solution-display');
+      if (!scrambleDiv || !richSolutionDiv) {
+        console.error('Scramble or solution div not found');
+        return null;
+      }
+
+      const wrapper = document.createElement('div');
+      wrapper.style.position = 'absolute';
+      wrapper.style.left = '-9999px';
+      wrapper.style.width = 'fit-content';
+      wrapper.style.backgroundColor = '#161018';
+      wrapper.style.padding = '0';
+      wrapper.style.display = 'flex';
+      wrapper.style.flexDirection = 'column';
+      wrapper.style.gap = '0';
+      wrapper.style.padding = '1rem';
+      wrapper.style.border = '1px solid #525252'; // border-neutral-600
+      wrapper.style.borderRadius = '0.5rem'; // rounded-lg
+
+      const scrambleClone = scrambleDiv.cloneNode(true) as HTMLElement;
+      scrambleClone.style.width = 'fit-content';
+      scrambleClone.style.maxWidth = 'none';
+      scrambleClone.style.maxHeight = 'none';
+
+      const solutionClone = richSolutionDiv.cloneNode(true) as HTMLElement;
+      solutionClone.style.width = 'fit-content';
+      solutionClone.style.maxWidth = 'none';
+      solutionClone.style.maxHeight = 'none';
+      solutionClone.style.overflow = 'visible';
+
+      // remove highlight
+      solutionClone.innerHTML = solutionClone.innerHTML.replace(new RegExp(`<span class="${highlightClass}">`, 'g'), '<span class="text-primary-100">');
+      
+      // Find the solution textbox div in the clone and set its width
+      const clonedSolutionTextbox = solutionClone.querySelector('#solution') as HTMLElement;
+      if (clonedSolutionTextbox) {
+        clonedSolutionTextbox.style.width = 'fit-content';
+        clonedSolutionTextbox.style.minWidth = '0';
+      }
+
+      // Fix text positioning in both contenteditable divs and remove borders
+      const editableDivs = [scrambleClone, solutionClone].map(clone => 
+        clone.querySelector('div[contenteditable="true"]')
+      ).filter(Boolean) as HTMLElement[];
+      
+      editableDivs.forEach(editableDiv => {
+        editableDiv.style.paddingTop = '0';
+        editableDiv.style.paddingBottom = '1rem';
+        editableDiv.style.paddingLeft = '0.5rem';
+        editableDiv.style.paddingRight = '0.5rem';
+        editableDiv.style.marginTop = '-0.2rem';
+        editableDiv.style.border = '1px solid #525252'; // border-neutral-600
+        editableDiv.style.borderRadius = '0.125rem'; // rounded-sm
+        editableDiv.style.boxSizing = 'border-box';
+        editableDiv.style.lineHeight = '1.6';
+
+        const childDivs = editableDiv.querySelectorAll('div');
+        childDivs.forEach((div: HTMLElement) => {
+          div.style.marginTop = '0';
+          div.style.marginBottom = '0';
+          div.style.paddingTop = '0';
+        });
+      });
+
+      scrambleClone.style.marginBottom = '1rem';
+      scrambleClone.style.marginTop = '0';
+      scrambleClone.style.paddingTop = '0.25rem';
+
+      solutionClone.style.paddingTop = '0.5rem';
+      solutionClone.style.paddingBottom = '0rem';
+      solutionClone.style.marginBottom = '-1rem';
+
+      // Create info div with time, STM, TPS, and watermark
+      const infoDiv = document.createElement('div');
+      infoDiv.style.display = 'flex';
+      infoDiv.style.justifyContent = 'space-between';
+      infoDiv.style.alignItems = 'center';
+      infoDiv.style.paddingLeft = '0.5rem';
+      infoDiv.style.paddingRight = '0.5rem';
+      infoDiv.style.paddingBottom = '1rem';
+      infoDiv.style.marginTop = '0';
+      infoDiv.style.color = '#e5e5e5'; // text-neutral-200
+      infoDiv.style.fontSize = '1.125rem'; // text-lg
+      infoDiv.style.fontFamily = 'inherit';
+
+      const timeText = solveTime ? `${solveTime}` : '';
+      const stmText = totalMoves ? `${totalMoves} stm` : '';
+      let tpsString = '';
+      if (tpsRef.current && tpsRef.current.innerHTML !== '(-- tps)') {
+        tpsString = tpsRef.current.innerHTML;
+      }
+
+      const firstLineParts: string[] = [];
+      if (timeText) firstLineParts.push(`${timeText}\u00A0sec`);
+      if (stmText) firstLineParts.push(stmText.replace(' ', '\u00A0'));
+      const firstLineText = firstLineParts.join(', ');
+      const tpsLine = tpsString ? tpsString.replace(' ', '\u00A0') : '';
+
+      const buildStatsText = (): string => {
+        if (tpsLine) {
+          if (firstLineText.trim()) {
+            return `${firstLineText.trim()}, ${tpsLine}`;
+          }
+          return tpsLine;
+        }
+
+        return firstLineText.trim();
+      };
+
+      const statsSpan = document.createElement('span');
+      statsSpan.style.whiteSpace = 'pre-line';
+      infoDiv.appendChild(statsSpan);
+
+      const watermarkSpan = document.createElement('span');
+      watermarkSpan.textContent = 'Ao1K.com';
+      infoDiv.appendChild(watermarkSpan);
+
+      wrapper.appendChild(scrambleClone);
+      wrapper.appendChild(solutionClone);
+      wrapper.appendChild(infoDiv);
+
+      document.body.appendChild(wrapper);
+
+      const scrambleWidth = scrambleClone.offsetWidth;
+      const solutionWidth = solutionClone.offsetWidth;
+
+      statsSpan.textContent = buildStatsText();
+
+      let minWidth = Math.min(scrambleWidth, solutionWidth);
+      minWidth = Math.max(minWidth, 300);
+      scrambleClone.style.width = `${minWidth}px`;
+      solutionClone.style.width = `${minWidth}px`;
+      if (clonedSolutionTextbox) {
+        clonedSolutionTextbox.style.width = `${minWidth}px`;
+      }
+      infoDiv.style.width = `${minWidth}px`;
+
+      const canvas = await html2canvas(wrapper, {
+        backgroundColor: '#221825',
+        scale: 1,
+        logging: false,
+      });
+
+      document.body.removeChild(wrapper);
+
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve));
+      if (!blob) {
+        console.error('Failed to generate screenshot blob');
+        return null;
+      }
+
+      return blob;
+    } catch (error) {
+      console.error('Failed to build screenshot blob:', error);
+      return null;
+    }
+  };
+
+  const ensureScreenshotCache = async (): Promise<Blob | null> => {
+    if (cacheMatchesCurrentHtml()) {
+      return screenshotCacheRef.current?.blob ?? null;
+    }
+
+    const blob = await buildScreenshotBlob();
+    if (!blob) return null;
+
+    screenshotCacheRef.current = {
+      blob,
+      scrambleHTML,
+      solutionHTML,
+      solveTime
+    };
+
+    return blob;
+  };
+
+  const handleScreenshot = async () => {
+    const blob = await ensureScreenshotCache();
+    if (!blob) {
+      setTopButtonAlert(["copy-solve", "Screenshot Failed. Please report!"]);
+      return;
+    }
+    await copyScreenshotToClipboard(blob);
   }
 
   const handleShare = async () => { 
@@ -883,7 +1109,7 @@ export default function Recon() {
 
     const selection = window.getSelection();
     let range = null;
-    let textbox = null;
+    let textbox: 'solution' | 'scramble' | null = null;
 
     oldSelectionRef.current.range = null;
     oldSelectionRef.current.textbox = null;
@@ -891,10 +1117,6 @@ export default function Recon() {
     if (selection && isSelectionInTextbox(selection)) {
       range = selection.getRangeAt(0).cloneRange();
       textbox = getTextboxOfSelection(range);
-    }
-
-    if (textbox != 'solution') {
-      setIsTextboxFocused(false)
     }
 
     if (!range || !textbox) return;
@@ -907,6 +1129,21 @@ export default function Recon() {
     oldSelectionRef.current.range = range;
     oldSelectionRef.current.textbox = textbox;
     oldSelectionRef.current.status = 'updated';
+  }
+
+  const handleStoreSelection = () => {
+    const lastSelection = oldSelectionRef.current.textbox;
+    
+    storeLastSelection();
+
+    if (lastSelection === 'solution' && oldSelectionRef.current.textbox !== 'solution') {
+      const isCubeSolved = lineStepsRef.current.some(stepEntry => 
+        stepEntry.stepInfo.some(step => step.type?.toLowerCase() === 'solved')
+      );
+      if (isCubeSolved) {
+        void ensureScreenshotCache();
+      } 
+    }
   }
 
   const showDailyScramble = async () => {
@@ -923,8 +1160,9 @@ export default function Recon() {
       const date = data.date;     
       
       const scrambleMessage = `// Scramble of the day<br>// ${date}<br>${dailyScramble}`;
-      scrambleEditorRef.current?.transform(scrambleMessage); // force update inside MovesTextEditor
-
+      if (!scrambleHTML) {
+        scrambleMethodsRef.current?.transform(scrambleMessage); // force update inside MovesTextEditor
+      }
     } catch (error) {
       console.error('Failed to get daily scramble:', error);
     }
@@ -942,24 +1180,23 @@ export default function Recon() {
 
   const handleCommand = (e: KeyboardEvent) => {
 
-    if (e.ctrlKey && e.key === 'm') {
+    if (e.ctrlKey && e.shiftKey && e.key === 'M') {
     
       e.preventDefault();
 
       handleMirrorM();
     }
 
-    if (e.ctrlKey && e.key === 's') {
+    if (e.ctrlKey && e.shiftKey && e.key === 'S') {
 
       e.preventDefault();
 
       handleMirrorS();
     }
 
-    if (e.ctrlKey && e.shiftKey && e.key === 'S') {
+    if (e.ctrlKey && e.key === 's') {
 
       e.preventDefault();
-
       handleShare();
     }
 
@@ -984,6 +1221,13 @@ export default function Recon() {
       handleRotateZ();
     }
 
+    if (e.ctrlKey && e.key === 'i') {
+
+      e.preventDefault();
+
+      handleInvert();
+    }
+
     if (e.ctrlKey && e.key === '/') {
 
       e.preventDefault();
@@ -1006,6 +1250,146 @@ export default function Recon() {
     }
   };
 
+  const respaceLineSteps = () => {
+    const respacedSteps: {moveLine: string, stepInfo: StepInfo[]}[] = [];
+    const solutionMoves = allMovesRef.current[1];
+    const currentLineSteps = lineStepsRef.current;
+    const filteredLineSteps = currentLineSteps.filter(item => item.moveLine.trim() !== '');
+    let hasStepsCount = 0;
+    for (let lineIdx = 0; lineIdx < solutionMoves.length; lineIdx++) {
+      const line = solutionMoves[lineIdx];
+      if (!line || line.length === 0) {
+        respacedSteps.push({moveLine: '', stepInfo: []});
+        continue;
+      }
+      const lineAndScram = lineIdx === 0 ? [...allMovesRef.current[0].flat(), ...line] : line;
+      const flatLine = lineAndScram.join(' ');
+      const existingLine = filteredLineSteps[hasStepsCount];
+      if (existingLine && existingLine.moveLine === flatLine) {
+        respacedSteps.push({moveLine: existingLine.moveLine, stepInfo: existingLine.stepInfo});
+        hasStepsCount++;
+      } else {
+        console.warn('Move order appears to have changed.')
+        respacedSteps.push({moveLine: flatLine, stepInfo: []});
+      }
+    };
+    lineStepsRef.current = respacedSteps;
+    setLineSteps(respacedSteps);
+  };
+
+  const updateLineSteps = async () => {
+    if (!cubeInterpreter.current) {
+      return;
+    }
+    const updatedSteps: {moveLine: string, stepInfo: StepInfo[]}[] = [];
+    const previousLineSteps = lineStepsRef.current;
+
+    const getStepsForLine = async (lineIdx: number): Promise<StepInfo[]> => {
+        if (!hiddenPlayerRef.current || !cubeInterpreter.current) {
+          console.warn('Hidden player or cube interpreter missing when computing steps.');
+          return [];
+        }
+
+        const lastMoveIndex = findLastMoveInLine(solutionMoves, lineIdx);
+        const animationTimes = findAnimationTimes(1, lineIdx, lastMoveIndex, solutionMoves);
+        const cube = await hiddenPlayerRef.current.updateCube(
+          allMovesRef.current[0].flat().join(' '),
+          solutionMoves.flatMap(line => line).join(' '),
+          animationTimes
+        );
+
+        if (!cube) {
+          console.warn('Hidden player returned null cube. Skipping step computation to avoid stale state.');
+          return [];
+        }
+
+        // wait until hidden player commits the latest cube before reading steps
+        const steps = cubeInterpreter.current.getStepsCompleted(cube);
+        return steps;
+    };
+
+    const getNewSteps = (previousSteps: StepInfo[] | undefined, steps: StepInfo[]): StepInfo[] => {
+      if (!previousSteps) return steps;
+      const stepsOnLine = steps.filter(step => 
+      !previousSteps.some(prevStep => 
+        prevStep.step === step.step && 
+        prevStep.colors.length === step.colors.length &&
+        prevStep.colors.every((color, index) => color === step.colors[index])
+      )
+    );
+      return stepsOnLine;
+    };
+    
+    const solutionMoves = allMovesRef.current[1];
+    
+    let hasAddedScramble = false;
+    let isChangeFound = false;
+    for (let lineIdx = 0; lineIdx < solutionMoves.length; lineIdx++) {
+      const line = solutionMoves[lineIdx];
+      if (!line || line.length === 0) {
+        updatedSteps.push({moveLine: '', stepInfo: []});
+        continue;
+      }
+      if (isChangeFound) {
+        const stepInfo = await getStepsForLine(lineIdx);
+        const prevSteps = updatedSteps.map(item => item.stepInfo).flat();
+        const newSteps = getNewSteps(prevSteps, stepInfo);
+        updatedSteps.push({moveLine: line.join(' '), stepInfo: newSteps});
+      } else {
+        // the first moveline contain scramble + first soltution line
+        const lineAndScram = hasAddedScramble ? line : [...allMovesRef.current[0].flat(), ...line];
+        hasAddedScramble = true;
+        const flatLine = lineAndScram.join(' ');
+
+        const oldMoveLine = previousLineSteps[lineIdx]?.moveLine || '';
+        const movesSame = oldMoveLine === flatLine;
+      
+        if (movesSame) {
+          updatedSteps.push({moveLine: oldMoveLine, stepInfo: previousLineSteps[lineIdx]?.stepInfo || []});
+        } else {
+          isChangeFound = true;
+          const stepInfo = await getStepsForLine(lineIdx);
+          const prevSteps = updatedSteps.map(item => item.stepInfo).flat();
+          const newSteps = getNewSteps(prevSteps, stepInfo);
+          updatedSteps.push({moveLine: flatLine, stepInfo: newSteps});
+        }
+      }
+
+    };
+    lineStepsRef.current = updatedSteps;
+    setLineSteps(updatedSteps);
+  };
+
+  const handleHiddenCubeLoaded = useCallback(async () => {
+    if (!hiddenPlayerRef.current) {
+      console.warn('Hidden player reference is not set.');
+      return;
+    }
+
+    const { default: algDoc } = await import('../../utils/compiled-exact-algs.json');
+
+    // Initialize with empty state to get the initial cube
+    const cube = await hiddenPlayerRef.current.updateCube('', '', []);
+    
+    if (!cube) {
+      console.warn('Failed to initialize cube from hidden player.');
+      return;
+    }
+
+    cubeInterpreter.current = new CubeInterpreter(cube, algDoc.algorithms);
+
+    // need cubeInterpreter to be loaded or line step update will be too early in loading sequence.
+    updateLineSteps();
+
+    void ensureScreenshotCache();
+
+  }, []);
+
+  const toggleShowBottomBar = () => {
+    Cookies.set('isShowingBottomBar', (!isShowingToolbar).toString(), { expires: 365 });
+    setIsShowingToolbar(prev => !prev);
+  }
+
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
 
@@ -1022,83 +1406,108 @@ export default function Recon() {
       setSolveTitle(decodeURIComponent(customDecodeURL(title)));
     }
 
+    const solution = allMovesRef.current[1].flat().join(' ');
     if (solution) {
-      setPlayerParams(prev => ({ ...prev, solution: solution }));
+      setPlayerParams(prev => ({ ...prev, solution }));
     }
-    if (scrambleRef.current) {
-      setPlayerParams(prev => ({ ...prev, scramble: scrambleRef.current }));
+
+    const scramble = allMovesRef.current[0].flat().join(' ');
+    if (scramble) {
+      setPlayerParams(prev => ({ ...prev, scramble }));
     }
 
     if (!Array.from(urlParams.values()).filter(val => val !== '').length) { 
       // if no URL query values or empty string values, then show daily scramble
       showDailyScramble();
     }
+
+    Cookies.get('isShowingBottomBar') === 'false' ? setIsShowingToolbar(false) : setIsShowingToolbar(true);
   }, []);
 
   useEffect(() => {
     
-    document.addEventListener('selectionchange', storeLastSelection);
     document.addEventListener('keydown', handleCommand);
 
     return () => {
 
-      document.removeEventListener('selectionchange', storeLastSelection);
       document.removeEventListener('keydown', handleCommand);
 
     };
   }, []);
 
+  useEffect(() => {
+
+    document.addEventListener('selectionchange', handleStoreSelection);
+    return () => {
+
+      document.removeEventListener('selectionchange', handleStoreSelection);
+    };
+
+    // may create screenshot, so handleStoreSelection needs current values.
+  }, [scrambleHTML, solutionHTML]);
+
+
   const toolbarButtons = [
     { id: 'undo', text: 'Undo', shortcutHint: 'Ctrl+Z', onClick: handleUndo, icon: <UndoIcon />, buttonRef: undoRef },
     { id: 'redo', text: 'Redo', shortcutHint: 'Ctrl+Y', onClick: handleRedo, icon: <RedoIcon />, buttonRef: redoRef },
-    { id: 'mirrorM', text: 'Mirror M', shortcutHint: 'Ctrl+M', onClick: handleMirrorM, icon: <MirrorM /> },
-    { id: 'mirrorS', text: 'Mirror S', shortcutHint: 'Ctrl+S', onClick: handleMirrorS, icon: <MirrorS /> },
+    { id: 'mirrorM', text: 'Mirror M', shortcutHint: 'Ctrl+Shift+M', onClick: handleMirrorM, iconText: 'M' },
+    { id: 'mirrorS', text: 'Mirror S', shortcutHint: 'Ctrl+Shift+S', onClick: handleMirrorS, iconText: 'S' },
     { id: 'rotateX', text: 'Rotate X', shortcutHint: 'Ctrl+Shift+X', onClick: handleRotateX, iconText: "X" },
     { id: 'rotateY', text: 'Rotate Y', shortcutHint: 'Ctrl+Shift+Y', onClick: handleRotateY, iconText: "Y" },
     { id: 'rotateZ', text: 'Rotate Z', shortcutHint: 'Ctrl+Shift+Z', onClick: handleRotateZ, iconText: "Z" },
-    { id: 'cat', text: 'Angus', shortcutHint: 'Cat', onClick: handleAddCat, icon: <CatIcon /> },
+    { id: 'invert', text: 'Invert', shortcutHint: 'Ctrl+I', onClick: handleInvert, icon: <InvertIcon /> },
+    { id: 'cat', text: 'Cat', shortcutHint: 'Cat', onClick: handleAddCat, icon: <CatIcon /> },
     { id: 'removeComments', text: 'Remove Comments', shortcutHint: 'Ctrl+/ ', onClick: handleRemoveComments, iconText: '// ' },
   ];
 
   return (
-    <div id="main_page" className="col-start-2 col-span-1 flex flex-col bg-primary-900">
+    <div id="main_page" className="col-start-2 col-span-1 flex flex-col bg-primary-900 mt-[52px]">
       <VideoHelpPrompt videoId="iIipycBl0iY" />
+      
+      {/* utility for compiling list of alg hashes */}
+      {/* <AlgCompiler /> */}
+
+      {/* utility for building case patterns */}
+      {/* <LLpatternBuilder /> */}
+
+      <HiddenPlayer 
+        ref={hiddenPlayerRef}
+        onCubeLoaded={handleHiddenCubeLoaded}
+      />
+      
       <div id="top-bar" className="px-3 flex flex-row flex-wrap items-center place-content-end gap-2 mt-8 mb-3">
         <TitleWithPlaceholder solveTitle={solveTitle} handleTitleChange={handleTitleChange} />
         <div className="flex-none flex flex-row space-x-1 pr-2 text-dark_accent">
           <TopButton id="trash" text="Clear Page" shortcutHint="Ctrl+Del" onClick={handleClearPage} icon={<TrashIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
-          <TopButton id="copy" text="Copy Solve" shortcutHint="Ctrl+Q" onClick={handleCopySolve} icon={<CopyIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
-          <TopButton id="share" text="Copy URL" shortcutHint="Ctrl+Shift+S" onClick={handleShare} icon={<ShareIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
+          <CopySolveDropdown onCopyText={handleCopySolve} onScreenshot={handleScreenshot} alert={topButtonAlert} setAlert={setTopButtonAlert} />
+          <TopButton id="share" text="Copy URL" shortcutHint="Ctrl+S" onClick={handleShare} icon={<ShareIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
         </div>
       </div>
       <div id="scramble-area" className="px-3 mt-3 flex flex-col">
         <div className="text-xl text-dark_accent font-medium">Scramble</div>
         <div className="lg:max-h-[15.1rem] max-h-[10rem] overflow-y-auto" id="scramble">
-          {/* <Profiler id="scramble-editor" onRender={(id, phase, actualDuration) => console.log(`[Profiler] ${id} took ${actualDuration} ms. Phase: ${phase}`)}> */}
           <MovesTextEditor
             name={`scramble`}
-            ref={scrambleEditorRef}
-            trackMoves={memoizedTrackMoves}
+            ref={scrambleMethodsRef}
+            trackMoves={trackMoves}
             autofocus={false}
             moveHistory={moveHistory}
             updateHistoryBtns={memoizedUpdateHistoryBtns}
             html={scrambleHTML}
             setHTML={memoizedSetScrambleHTML}
           />
-          {/* </Profiler> */}
         </div>
       </div>
-      <div id="player-box" className="px-3 relative flex flex-col my-6 w-full justify-center items-center">
-        <div id="cube-highlight" className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-full blur-sm bg-primary-900 w-[calc(100%-1.5rem)]"></div>
-        <div id="cube_model" className="flex aspect-video h-full max-h-96 bg-primary-900 z-10 w-full">
+      <div id="player-box" className="px-3 relative flex flex-col mt-6 w-full justify-center items-center">
+        <div id="cube_model" className="flex h-full aspect-video max-h-96 min-h-[200px] bg-primary-900 select-none z-20 w-[100%]">
           <Suspense fallback={<div className="flex text-xl w-full h-full justify-center items-center text-primary-100">Loading cube...</div>}>
             <TwistyPlayer 
-              scramble={playerParams.scramble} 
-              solution={playerParams.solution} 
               speed={speed} 
-              animationTimes={playerParams.animationTimes} 
-              cubeRef={cubeRef}
-              onCubeStateUpdate={interpretCurrentCubeState}
+              scrambleRequest={playerParams.scramble}
+              solutionRequest={playerParams.solution}
+              animationTimesRequest={playerParams.animationTimes}
+              onCubeStateUpdate={()=>{}}
+              handleCubeLoaded={()=>{}}
               handleControllerRequest={handleControllerRequest}
               controllerButtonsStatus={controllerButtonsStatus}
               setControllerButtonsStatus={setControllerButtonsStatus}
@@ -1106,56 +1515,74 @@ export default function Recon() {
           </Suspense>
         </div>
       </div>
-      <div id="bottom-bar" className="px-3 space-x-1 static flex flex-row items-center place-content-end justify-start text-primary-100 w-full" ref={bottomBarRef}>
-        <SpeedDropdown speed={localSpeed} handleSpeedChange={handleSpeedChange}/>
-        <Toolbar buttons={toolbarButtons} containerRef={bottomBarRef}/>
+      <div id="bottom-box" className="mx-3 relative flex flex-col justify-center items-center">        
+        <div id="bottom-box-borders" className={`border-x w-[100%] border-neutral-600 h-14 absolute top-0 z-0 pointer-events-none ${isShowingToolbar ? 'block' : 'hidden'}`}></div>
+        <div
+          id="bottom-bar"
+          ref={bottomBarRef}
+          className={`w-full px-3 space-x-1 static flex flex-row items-center place-content-end justify-start transform z-10
+              ${isShowingToolbar ? 'translate-y-0 opacity-100 h-14' : '-translate-y-[100%] opacity-0 pointer-events-none h-0'}`}
+          style={{
+            visibility: isShowingToolbar ? 'visible' : 'hidden',
+            transition: isShowingToolbar
+              ? 'transform 300ms linear, opacity 300ms ease-in-out, visibility 0s linear 100ms' : ''
+          }}
+        >
+          <SpeedDropdown speed={speed} setSpeed={setSpeed} />
+          <Toolbar buttons={toolbarButtons} containerRef={bottomBarRef} />
+        </div>
+        <div className="border border-neutral-600 hover:border-primary-100 h-[6px] rounded-b-sm w-full z-0 bg-primary-700 mb-2" onClick={() => toggleShowBottomBar()}></div>
       </div>
       <div id="datafields" className="w-full items-start transition-width duration-500 ease-linear">
-        <div id="solution-area" className="px-3 mt-3 mb-6 flex flex-col w-full">
-          <div className="text-xl text-dark_accent font-medium w-full">Solution</div>
-          <div id="rich-solution-display" className="flex flex-row lg:max-h-[15.1rem] max-h-[10rem] border-none overflow-y-auto">
-            <ImageStack moves={allMovesRef.current} position={moveLocation.current} isTextboxFocused={isTextboxFocused} />
-            <div className="w-full min-w-0" id="solution">
+        <div id="solution-area" className="px-3 mt-1 mb-6 flex flex-col w-full backdrop-blur-sm">
+          <div className="text-xl text-dark_accent font-medium w-full z-10">Solution</div>
+          <div id="rich-solution-display" className="flex flex-row lg:max-h-[20rem] max-h-[10rem] border-none overflow-y-auto">
+            <ImageStack 
+              moves={allMovesRef.current}
+              position={moveLocation.current}
+              editableElement={solutionMethodsRef.current?.getElement() || null}
+              lineSteps={lineSteps.map(item => item.stepInfo)}
+            />
+            <div className="w-full min-w-0 pb-6" id="solution">
               <MovesTextEditor 
                 name={`solution`}
-                ref={solutionEditorRef} 
-                trackMoves={memoizedTrackMoves} 
+                ref={solutionMethodsRef} 
+                trackMoves={trackMoves} 
                 autofocus={true} 
                 moveHistory={moveHistory}
                 updateHistoryBtns={memoizedUpdateHistoryBtns}
                 html={solutionHTML}
                 setHTML={memoizedSetSolutionHTML}
+                suggestionsRef={suggestionsRef}
               />
             </div>
           </div>
         </div>
         <div id="time-area" className="px-3 flex flex-col w-full">
           <div className="text-xl text-dark_accent font-medium w-full">Time</div>
-          <div id="time-stats" className="flex flex-row flex-wrap text-nowrap items-center w-full gap-y-2">
-          <div id="time-field" className="border border-neutral-600 group flex flex-row items-center justify-start">
-            <input
-              id="time-input"
-              type="number" 
-              placeholder="00.000" 
-              className="pt-2 pb-2 px-2 text-xl text-primary-100 bg-primary-900 group-focus:border-primary-100 hover:bg-primary-800 rounded-sm box-content no-spinner w-[4.25rem]"
-              value={solveTime}
-              onChange={handleSolveTimeChange}
-              onWheel={(e) => e.currentTarget.blur()}
-              autoComplete="off"
-              tabIndex={4}
-              />
-            <div className="text-primary-100 pr-2 text-xl">sec</div> 
+          <div id="time-stats" className="flex flex-row flex-wrap text-nowrap items-center w-full gap-y-2 pb-16">
+            <div id="time-field" className="border border-neutral-600 group flex flex-row items-center justify-start">
+              <input
+                id="time-input"
+                type="number" 
+                placeholder="00.000" 
+                className="pt-2 pb-2 px-2 text-xl text-primary-100 bg-primary-900 group-focus:border-primary-100 hover:bg-primary-800 rounded-sm box-content no-spinner w-[4.25rem]"
+                value={solveTime}
+                onChange={handleSolveTimeChange}
+                onWheel={(e) => e.currentTarget.blur()}
+                autoComplete="off"
+                tabIndex={4}
+                />
+              <div className="text-primary-100 pr-2 text-xl">sec</div> 
+            </div>
+            <div className="text-primary-100 ml-2 text-xl">{totalMoves} stm </div> 
+            <div className="flex-nowrap text-nowrap items-center flex flex-row">
+              <TPSInfo moveCount={totalMoves} solveTime={solveTime} tpsRef={tpsRef} />
+              <ReconTimeHelpInfo />
+            </div>
           </div>
-          <div className="text-primary-100 ml-2 text-xl">{totalMoves} stm </div> 
-          <div className="flex-nowrap text-nowrap items-center flex flex-row">
-            <TPSInfo moveCount={totalMoves} solveTime={solveTime} tpsRef={tpsRef} />
-            <ReconTimeHelpInfo />
-          </div>
-        </div>
         </div>
       </div>
-      <div id="blur-border" className="h-[4px] blur-sm bg-neutral-600 my-32"/>
-      <Footer />
     </div>
   );
 }

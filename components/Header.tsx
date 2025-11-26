@@ -6,12 +6,14 @@ import WriteIcon from './icons/write';
 // import DatabaseIcon from './icons/database';
 // import TimerIcon from './icons/timer';
 import ListIcon from './icons/list';
+import BulletListIcon from './icons/bulletList';
 
 const versionList = {
-  "recon": "v0.3",
+  "recon": "v0.4",
+  "changeblog": "new!",
 }
 
-export default function Header(): JSX.Element {
+export default function Header() {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
 
   const toggleSidebar = () => {
@@ -32,12 +34,13 @@ export default function Header(): JSX.Element {
           className="h-16 w-auto overflow-visible"
         />
 
-        <div className="hidden sm:flex p-4 mt-1 flex-row"> {/* space-x-10 */}
+        <div className="hidden sm:flex p-4 mt-1 flex-row space-x-10">
           <div onClick={closeSidebar}>
           {/* <HeaderNavLink href="/" title="Practice" icon={<TimerIcon />} /> */}
           </div>
-          <HeaderNavLink href="/recon" title="Reconstruct" icon={<WriteIcon />} version={versionList['recon']}/>
+          <HeaderNavLink href="/recon/" title="Reconstruct" icon={<WriteIcon />} version={versionList['recon']}/>
           {/* <HeaderNavLink href="/algs" title="Learn" icon={<DatabaseIcon />} /> */}
+          <HeaderNavLink href="/changeblog/" title="Changeblog" icon={<BulletListIcon />} version={versionList['changeblog']} />
         </div>
 
         <div className="p-4 mt-1 hidden sm:block">
@@ -60,16 +63,23 @@ export default function Header(): JSX.Element {
         onClick={closeSidebar} // Close sidebar when clicking outside
       >
         <div
-        className="bg-white w-1/2 h-full p-4 space-y-4 fixed right-0 top-0"
-        onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the sidebar
+          className="bg-white w-1/2 h-full p-4 space-y-4 fixed right-0 top-0"
+          onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the sidebar
         >
-        {/* <HeaderNavLink href="/" title="Practice" icon={<TimerIcon />} /> */}
-        <HeaderNavLink href="/recon" title="Reconstruct" icon={<WriteIcon />} version={versionList['recon']}/>
-        {/* <HeaderNavLink href="/algs" title="Learn" icon={<DatabaseIcon />} /> */}
-        {/* <Link href="/not a link" className="block mt-4">
-          Profile
-        </Link> */}
-        By Chet
+          {/* <HeaderNavLink href="/" title="Practice" icon={<TimerIcon />} /> */}
+          <button onClick={closeSidebar} className="">
+            <HeaderNavLink href="/recon" title="Reconstruct" icon={<WriteIcon />} version={versionList['recon']}/>
+          </button>
+          {/* <HeaderNavLink href="/algs" title="Learn" icon={<DatabaseIcon />} /> */}
+          <button onClick={closeSidebar} className="">
+            <HeaderNavLink href="/changeblog/" title="Changeblog" icon={<BulletListIcon />} version={versionList['changeblog']} />
+          </button>
+          {/* <Link href="/not a link" className="block mt-4">
+            Profile
+          </Link> */}
+          <div>
+            By Chet
+          </div>
         </div>
       </div>
       )}

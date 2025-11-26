@@ -1,21 +1,24 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { TwistyPlayer } from 'cubing/twisty';
 import * as THREE from 'three';
 import type { Object3D } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { MutableRefObject } from 'react';
 import type { Object3DEventMap } from 'three/src/core/Object3D.js';
-import ContextMenu from './ContextMenu';
+import ContextMenuImperative, { ContextMenuHandle } from './ContextMenuImperative';
 import PlayerControls from './PlayerControls';
+import { reverseMove } from '../../composables/recon/transformHTML'
 import type { ControllerRequestOptions } from './_PageContent';
+import type { PlayerParams as RenderRefProps } from './_PageContent';
+import Cookies from 'js-cookie';
 
 interface PlayerProps {
-  scramble: string;
-  solution: string;
+  scrambleRequest: string;
+  solutionRequest: string;
   speed: number;
-  animationTimes: number[]; // all times of animations up to but not including the current move
-  cubeRef: MutableRefObject<Object3D<Object3DEventMap> | null>;
+  animationTimesRequest: number[]; // all times of animations up to but not including the current move
   onCubeStateUpdate: () => void;
+  handleCubeLoaded: () => void;
   handleControllerRequest: (request: ControllerRequestOptions) => void;
   controllerButtonsStatus: {
     fullLeft: string;
@@ -33,12 +36,6 @@ interface PlayerProps {
   }>>;
 }
 
-interface RenderRefProps {
-  scramble: string;
-  solution: string;
-  animationTimes: number[];
-}
-
 export const CUBE_COLORS = {
   red: '#FF0000',
   green: '#0CEC00',
@@ -50,36 +47,31 @@ export const CUBE_COLORS = {
 
 
 const Player = React.memo(({ 
-  scramble, 
-  solution, 
+  scrambleRequest, 
+  solutionRequest, 
   speed, 
-  animationTimes, 
-  cubeRef, 
+  animationTimesRequest,
   onCubeStateUpdate,
+  handleCubeLoaded,
   handleControllerRequest,
   controllerButtonsStatus,
-  setControllerButtonsStatus
+  setControllerButtonsStatus,
 }: PlayerProps) => {
   const playerRef = useRef<TwistyPlayer | null>(null);
-  
+  const cubeRef = useRef<THREE.Object3D<Object3DEventMap> | null>(null);
   const divRef = useRef<HTMLDivElement>(null);
+
   const lastSolution = useRef<string>('');
   const lastScramble = useRef<string>('');
   const lastAnimationTimes = useRef<number[]>([]);
   const lastSpeed = useRef<number>(0);
 
-  const lastRenderRef = useRef<RenderRefProps>({ scramble, solution, animationTimes });
+  const contextMenuRef = useRef<ContextMenuHandle>(null);
+  
+  const animatingRef = useRef<boolean>(false);
+  const pendingParamsRef = useRef<RenderRefProps>(null);
 
-  
-  // Context menu state
-  const [contextMenu, setContextMenu] = useState<{
-    isVisible: boolean;
-    position: { x: number; y: number };
-  }>({
-    isVisible: true,
-    position: { x: 0, y: 0 }
-  });
-  
+
   const [showControls, setShowControls] = useState<boolean>(true);
   const [flashingButtons, setFlashingButtons] = useState<Set<string>>(new Set());
 
@@ -94,7 +86,13 @@ const Player = React.memo(({
   const cubeSpeed = calcCubeSpeed(speed);
   const isInstant = cubeSpeed === 1000;
 
+  if (lastSpeed.current !== speed && playerRef.current) {
+    playerRef.current.tempoScale = cubeSpeed;
+    lastSpeed.current = speed;
+  }
+
   const handleFlash = (buttonId: string) => {
+    // console.log('Flashing button:', buttonId);
     setFlashingButtons(prev => {
       const newSet = new Set(prev);
       newSet.add(buttonId);
@@ -144,14 +142,12 @@ const Player = React.memo(({
     handleFlash('fullRight');
     handleControllerRequest({ type: 'fullRight' });
   }
-
-
   
-  const setInstantPlayerProps = () => {
+  const setInstantPlayerProps = (scramble: string, solution: string, animationTimes: number[]) => {
 
     if (!playerRef.current) return;
 
-    if (lastScramble.current !== scramble) { 
+    if (lastScramble.current !== scramble) {
       playerRef.current.experimentalSetupAlg = scramble;
     }
 
@@ -165,21 +161,11 @@ const Player = React.memo(({
       playerRef.current.timestamp = animationTimes.reduce((acc, val) => acc + val, 0);
     } 
 
-    onCubeStateUpdate();
-
   }
 
-  const updateLastPlayerProps = (sol: string | undefined, animTimes: number[] | undefined) => {
-
-    if (sol === undefined) {
-      lastSolution.current = solution;
-    } else {
-      lastSolution.current = sol;
-    }
-
-    animTimes ? lastAnimationTimes.current = animTimes : 
-                lastAnimationTimes.current = animationTimes;
-    
+  const updateLastPlayerProps = (scramble: string, solution: string, animationTimes: number[]) => {
+    lastSolution.current = solution;
+    lastAnimationTimes.current = animationTimes;
     lastScramble.current = scramble;
     lastSpeed.current = speed;
   }
@@ -196,38 +182,6 @@ const Player = React.memo(({
     }
 
     return time;
-  }
-
-  const reverseMove = (move: string) => {
-    if (!move) return '';
-    const rootMove = move[0];
-    const suffix = move.slice(1);
-    let reversedSuffix;
-    switch (suffix) {
-      case '':
-        reversedSuffix = "'";
-        break;
-      case "'":
-        reversedSuffix = "";
-        break;
-      case "2":
-        reversedSuffix = "2'";
-        break;
-        case "2'":
-        reversedSuffix = "2";
-        break;
-        case "3":
-          reversedSuffix = "3'";
-        break;
-      case "3'":
-        reversedSuffix = "3";
-        break;
-      default:
-        console.error('Invalid suffix:', suffix);
-        reversedSuffix = suffix; 
-    }
-
-    return rootMove + reversedSuffix;
   }
 
   const findSingleMovecountChange = (moves: string[], prevMoves: string[], times: number[]): {singleMove: string, movesBefore: string} => {
@@ -271,7 +225,7 @@ const Player = React.memo(({
     return {singleMove: singleMoveChange, movesBefore: movesBeforeChange};
   }
 
-  const findAlgBeforeSingle = (singleMoveChange: string, movesBeforeChange: string, moveChangeDelta: number) => {
+  const findAlgBeforeSingle = (solution: string, singleMoveChange: string, movesBeforeChange: string, moveChangeDelta: number) => {
     let alg = solution;
     if (singleMoveChange) {
       switch (moveChangeDelta) {
@@ -293,7 +247,7 @@ const Player = React.memo(({
     return alg;
   }
 
-  const findAlgAfterSingle = (singleMoveChange: string, movesBeforeChange: string, moveChangeDelta: number) => {
+  const findAlgAfterSingle = (solution: string, singleMoveChange: string, movesBeforeChange: string, moveChangeDelta: number) => {
     let currentAlg = solution;
     if (singleMoveChange) {
       switch (moveChangeDelta) {
@@ -314,7 +268,7 @@ const Player = React.memo(({
     return currentAlg;
   }
 
-  const findSingleMoveSwitch = (): {singleMove: string, movesBefore: string, isForward: boolean | undefined} => {
+  const findSingleMoveSwitch = (solution: string, animationTimes: number[]): {singleMove: string, movesBefore: string, isForward: boolean | undefined} => {
     const noSingle = { singleMove: '', movesBefore: '', isForward: undefined };
     if (!playerRef.current) return noSingle;
     if (solution !== lastSolution.current) {
@@ -419,7 +373,7 @@ const Player = React.memo(({
     }
   }
 
-  const findSingleMoveModify = (): {singleMove: string, movesBefore: string} => {
+  const findSingleMoveModify = (solution: string, animationTimes: number[]): {singleMove: string, movesBefore: string} => {
     // movecount matching and selection matching have already been already verified
 
     const noSingle = { singleMove: '', movesBefore: '' };
@@ -451,25 +405,19 @@ const Player = React.memo(({
     return {singleMove: singleMoveChange, movesBefore: leftBeforeChange + " " + singleBeforeChange};
   }
 
-  const passOnNewCubeState = (algBeforeSingle: string, algAfterSingle: string, timestampBeforeSingle: number, timeArrayAfterSingle: number[]) => {
-    if (!playerRef.current) return;
-    
-    // Set to final state instantly
-    // playerRef.current.alg = algAfterSingle;
-    // playerRef.current.timestamp = findTimestamp(timeArrayAfterSingle, algAfterSingle);
-
-    onCubeStateUpdate();
-    
-    // playerRef.current.alg = algBeforeSingle;
-    // playerRef.current.timestamp = timestampBeforeSingle;
-  }
-
-  const displaySingleChange = (singleMoveChange: string, movesBeforeChange: string, delta: number) => {
+  const displaySingleChange = (
+    scramble: string,
+    solution: string,
+    animationTimes: number[],
+    singleMoveChange: string,
+    movesBeforeChange: string,
+    delta: number
+  ) => {
     // delta represents the direction of the change, where positive means left to right
 
-    const algBeforeSingle = findAlgBeforeSingle(singleMoveChange, movesBeforeChange, delta); 
+    const algBeforeSingle = findAlgBeforeSingle(solution, singleMoveChange, movesBeforeChange, delta); 
     const timeBeforeSingle = findTimestamp(animationTimes, algBeforeSingle);
-    const algAfterSingle = findAlgAfterSingle(singleMoveChange, movesBeforeChange, delta);
+    const algAfterSingle = findAlgAfterSingle(solution, singleMoveChange, movesBeforeChange, delta);
     const timeArrayAfterSingle = animationTimes.slice(0, algAfterSingle.split(' ').length);
     
     if (!playerRef.current) return;
@@ -477,20 +425,25 @@ const Player = React.memo(({
     playerRef.current.alg = algBeforeSingle;
     playerRef.current.timestamp = timeBeforeSingle;
 
-    updateLastPlayerProps(solution, timeArrayAfterSingle);
-
-    passOnNewCubeState(algBeforeSingle, algAfterSingle, timeBeforeSingle, timeArrayAfterSingle);
+    updateLastPlayerProps(scramble, solution, timeArrayAfterSingle);
     
     // perform the animated move
     try {
       playerRef.current.experimentalAddMove(singleMoveChange);
     } catch (e) {
       console.error('Failed to add move:', singleMoveChange);
-      setInstantPlayerProps();
+      setInstantPlayerProps(scramble, solution, animationTimes);
     }
   }
 
-  const handleSingleMovecountChange = (moves: string[], lastMoves: string[], moveChangeDelta: number) => {
+  const handleSingleMovecountChange = (
+    moves: string[],
+    lastMoves: string[],
+    moveChangeDelta: number,
+    scramble: string,
+    solution: string,
+    animationTimes: number[]
+  ) => {
     // handles case were a single move was added or removed
     // animates the change if the selection count also changed by one
 
@@ -500,57 +453,63 @@ const Player = React.memo(({
     ({ singleMove: singleMoveChange, movesBefore: movesBeforeChange } = findSingleMovecountChange(moves, lastMoves, animationTimes));
 
     if (!singleMoveChange) {
-      setInstantPlayerProps();
-      updateLastPlayerProps(undefined, undefined);
+      setInstantPlayerProps(scramble, solution, animationTimes);
+      updateLastPlayerProps(scramble, solution, animationTimes);
       return;
     } 
       
-    displaySingleChange(singleMoveChange, movesBeforeChange, moveChangeDelta);
-
+    displaySingleChange(scramble, solution, animationTimes, singleMoveChange, movesBeforeChange, moveChangeDelta);
   }
 
-  const handleSingleMoveSwitch = () => {
+  const handleSingleMoveSwitch = (
+    scramble: string,
+    solution: string,
+    animationTimes: number[]
+  ) => {
     // handles case where move selection changed by one move, ex: from first move to second move
     let singleMoveChange = "";
     let movesBeforeChange = "";
     let isForward: boolean | undefined;
-    ({ singleMove: singleMoveChange, movesBefore: movesBeforeChange, isForward: isForward } = findSingleMoveSwitch());
+    ({ singleMove: singleMoveChange, movesBefore: movesBeforeChange, isForward: isForward } = findSingleMoveSwitch(solution, animationTimes));
 
     if (!singleMoveChange) {
-      setInstantPlayerProps();
-      updateLastPlayerProps(undefined, undefined);
+      setInstantPlayerProps(scramble, solution, animationTimes);
+      updateLastPlayerProps(scramble, solution, animationTimes);
       return;
     }
       
     let delta = isForward ? 1 : -1;
 
-    displaySingleChange(singleMoveChange, movesBeforeChange, delta);
+    displaySingleChange(scramble, solution, animationTimes, singleMoveChange, movesBeforeChange, delta);
     
   }
 
-  const handleSingleMoveModify = () => {
+  const handleSingleMoveModify = (
+    scramble: string,
+    solution: string,
+    animationTimes: number[]
+  ) => {
     // handles case where the move selected was modified, ex: from R to R2
     let singleMoveChange = "";
     let movesBeforeChange = "";
 
-    ({ singleMove: singleMoveChange, movesBefore: movesBeforeChange } = findSingleMoveModify());
+    ({ singleMove: singleMoveChange, movesBefore: movesBeforeChange } = findSingleMoveModify(solution, animationTimes));
     // movesBeforeChange is the last solution up to and including the move selected during the change
 
     if (!singleMoveChange) {
-      setInstantPlayerProps();
-      updateLastPlayerProps(undefined, undefined);
+      setInstantPlayerProps(scramble, solution, animationTimes);
+      updateLastPlayerProps(scramble, solution, animationTimes);
       return;
     } 
       
     let delta = 0;
 
-    displaySingleChange(singleMoveChange, movesBeforeChange, delta);
+    displaySingleChange(scramble, solution, animationTimes, singleMoveChange, movesBeforeChange, delta);
     
   }
 
-
-  // handles all visual cube updates
-  const displayMoves = () => {
+  const displayMoves = useCallback((p: RenderRefProps) => {
+    const { scramble, solution, animationTimes } = p;
   
     // three cases for single move change:
     // 1. number of moves changed by one (ex: R U| → R U F|)
@@ -560,8 +519,8 @@ const Player = React.memo(({
     const isScrambleSelected = animationTimes.length === 1 && animationTimes[0] === 1;
 
     if (isInstant || isScrambleSelected) {
-      setInstantPlayerProps();
-      updateLastPlayerProps(undefined, undefined);
+      setInstantPlayerProps(scramble, solution, animationTimes);
+      updateLastPlayerProps(scramble, solution, animationTimes);
       return;
     }
     
@@ -574,47 +533,125 @@ const Player = React.memo(({
 
     if (Math.abs(movecountDelta) === 1) {
       // case 1
-      handleSingleMovecountChange(moves, lastMoves, movecountDelta);
+      handleSingleMovecountChange(moves, lastMoves, movecountDelta, scramble, solution, animationTimes);
     } else if (movecountDelta === 0 && moves.length > 0) {
         const animationSelectionDelta = animationTimes.length - lastAnimationTimes.current.length;
       if (Math.abs(animationSelectionDelta) === 1) {
         // case 2
-        handleSingleMoveSwitch();
+        handleSingleMoveSwitch(scramble, solution, animationTimes);
       } else if (animationSelectionDelta === 0 && animationTimes.length > 0) {
         // case 3
-        handleSingleMoveModify();
+        handleSingleMoveModify(scramble, solution, animationTimes);
       } else {
-        setInstantPlayerProps();
-        updateLastPlayerProps(undefined, undefined);
+        setInstantPlayerProps(scramble, solution, animationTimes);
+        updateLastPlayerProps(scramble, solution, animationTimes);
       }
     } else {
-      setInstantPlayerProps();
-      updateLastPlayerProps(undefined, undefined);
+      setInstantPlayerProps(scramble, solution, animationTimes);
+      updateLastPlayerProps(scramble, solution, animationTimes);
     }
-  }
+  }, [
+    isInstant
+  ]);
 
-  const isMoveChange = () => {
-    if (lastRenderRef.current.scramble !== scramble) {
-      return true;
-    }
-    if (lastRenderRef.current.solution !== solution) {
-      return true;
-    }
-    if (lastRenderRef.current.animationTimes !== animationTimes) {
-      return true;
-    }
-    return false;
-  }
+  /**
+   * Keeps a single-move queue to prevent large UI desyncs during rapid input.
+   * Latest move replaces any pending queued move.
+   *  
+   * Function has the side effect of giving onCubeStateUpdate.
+   */
+  const queuePlayerParams = useCallback((p: RenderRefProps) => {
 
-  if (isMoveChange()) {
-    displayMoves();
-  } else if (lastSpeed.current !== speed && playerRef.current) { // only speed changed
-    playerRef.current.tempoScale = cubeSpeed;
-    lastSpeed.current = speed;
-  }
+    if (!animatingRef.current) {
+      animatingRef.current = true;
+      displayMoves(p);
+      
+      // Monitor cube movement by checking matrix changes
+      let lastMatrixStrings: string[] = [];
+      
+      const captureCurrentMatrices = () => {
+        if (!cubeRef.current) return [];
+        
+        // Direct access to the last 6 children (center faces) - indices 20-25
+        const children = cubeRef.current.children;
+        
+        // Extract only rotation-sensitive matrix elements (0,1,2,4,5,6,8,9,10)
+        // These are the elements that change during 3D rotations
+        return [
+          `${children[20].matrix.elements[0]},${children[20].matrix.elements[1]},${children[20].matrix.elements[2]},${children[20].matrix.elements[4]},${children[20].matrix.elements[5]},${children[20].matrix.elements[6]},${children[20].matrix.elements[8]},${children[20].matrix.elements[9]},${children[20].matrix.elements[10]}`,
+          `${children[21].matrix.elements[0]},${children[21].matrix.elements[1]},${children[21].matrix.elements[2]},${children[21].matrix.elements[4]},${children[21].matrix.elements[5]},${children[21].matrix.elements[6]},${children[21].matrix.elements[8]},${children[21].matrix.elements[9]},${children[21].matrix.elements[10]}`,
+          `${children[22].matrix.elements[0]},${children[22].matrix.elements[1]},${children[22].matrix.elements[2]},${children[22].matrix.elements[4]},${children[22].matrix.elements[5]},${children[22].matrix.elements[6]},${children[22].matrix.elements[8]},${children[22].matrix.elements[9]},${children[22].matrix.elements[10]}`,
+          `${children[23].matrix.elements[0]},${children[23].matrix.elements[1]},${children[23].matrix.elements[2]},${children[23].matrix.elements[4]},${children[23].matrix.elements[5]},${children[23].matrix.elements[6]},${children[23].matrix.elements[8]},${children[23].matrix.elements[9]},${children[23].matrix.elements[10]}`,
+          `${children[24].matrix.elements[0]},${children[24].matrix.elements[1]},${children[24].matrix.elements[2]},${children[24].matrix.elements[4]},${children[24].matrix.elements[5]},${children[24].matrix.elements[6]},${children[24].matrix.elements[8]},${children[24].matrix.elements[9]},${children[24].matrix.elements[10]}`,
+          `${children[25].matrix.elements[0]},${children[25].matrix.elements[1]},${children[25].matrix.elements[2]},${children[25].matrix.elements[4]},${children[25].matrix.elements[5]},${children[25].matrix.elements[6]},${children[25].matrix.elements[8]},${children[25].matrix.elements[9]},${children[25].matrix.elements[10]}`
+        ];
+      };
+      
+      const checkCubeMovement = () => {
 
-  lastRenderRef.current = { scramble, solution, animationTimes };
-  
+        if (!cubeRef.current) {
+          // Fallback if no cube reference
+          setTimeout(() => {
+            animatingRef.current = false;
+            if (pendingParamsRef.current) {
+              queuePlayerParams(pendingParamsRef.current);
+              pendingParamsRef.current = null;
+            }
+          }, 400);
+          return;
+        }
+        
+        const currentMatrices = captureCurrentMatrices();
+        
+        // look for any changed in the matrixes compared to the last known state
+        const hasChanged = currentMatrices.some((matrix, index) => matrix !== lastMatrixStrings[index]);
+        
+        if (hasChanged) {
+          // console.log('Cube is still moving...');
+          lastMatrixStrings = currentMatrices;
+          setTimeout(checkCubeMovement, 20); // check again soon
+        } else {
+
+          // handle param updates
+          animatingRef.current = false;
+          if (pendingParamsRef.current) {
+            queuePlayerParams(pendingParamsRef.current);
+            pendingParamsRef.current = null;
+          }
+        }
+      };
+      
+      // Capture initial state and start monitoring after a delay
+      setTimeout(() => {
+        lastMatrixStrings = captureCurrentMatrices();
+        // console.log('Starting cube movement monitoring...');
+        setTimeout(checkCubeMovement, 50); // Start checking after animation begins
+      }, 10);
+      
+    } else {
+      pendingParamsRef.current = p;
+    }
+  }, [displayMoves]);
+
+  // main entry point for changes to params
+  useEffect(() => {
+    // console.log('Queueing player params:', {
+    //   scramble: scrambleRequest,
+    //   solution: solutionRequest,
+    //   animationTimes: animationTimesRequest
+    // });
+    queuePlayerParams({
+      scramble: scrambleRequest,
+      solution: solutionRequest,
+      animationTimes: animationTimesRequest
+    });
+  }, [
+    scrambleRequest,
+    solutionRequest,
+    animationTimesRequest,
+    queuePlayerParams
+  ]);
+
   let scene: THREE.Scene;
   let camera: THREE.PerspectiveCamera;
   let renderer: THREE.WebGLRenderer;
@@ -636,7 +673,7 @@ const Player = React.memo(({
     while (!cube && attempts < maxAttempts) {
       await new Promise(resolve => setTimeout(resolve, waitTime));
       cube = await playerRef.current!.experimentalCurrentThreeJSPuzzleObject() as unknown as Object3D;
-      playerRef.current? playerRef.current.timestamp = findTimestamp(animationTimes, solution) : null;
+      playerRef.current? playerRef.current.timestamp = findTimestamp(animationTimesRequest, solutionRequest) : null;
       attempts++;
     }
 
@@ -739,11 +776,13 @@ const Player = React.memo(({
       setStickerColors(cube);
       
       scene.add(cube);
+
       cubeRef.current = cube;
+      // handleCubeLoaded();
 
       // console.log('Cube loaded:', cube);
       
-      const aspectRatio = divRef.current.clientWidth / divRef.current.clientHeight;
+      const aspectRatio = (divRef.current.clientWidth - 1) / (divRef.current.clientHeight - 1);
       camera = new THREE.PerspectiveCamera(75, aspectRatio, 0.1, 5);
 
       const scaleFactor = (divRef.current.clientHeight * 0.0024) + 0.92; // found through experimentation w/linear system
@@ -753,7 +792,7 @@ const Player = React.memo(({
       camera.position.y = (1 / 2) * scaleFactor;
 
       renderer = new THREE.WebGLRenderer({ antialias: true });
-      renderer.setSize(divRef.current.clientWidth, divRef.current.clientHeight);
+      renderer.setSize(divRef.current.clientWidth - 1, divRef.current.clientHeight - 1);
       divRef.current.appendChild(renderer.domElement);
 
       const light = new THREE.AmbientLight(0xffffff, 0.5); // soft white light
@@ -774,9 +813,9 @@ const Player = React.memo(({
     if (renderer && camera && divRef.current) {
       
       
-      camera.aspect = divRef.current.clientWidth / divRef.current.clientHeight;
+      camera.aspect = (divRef.current.clientWidth -1) / (divRef.current.clientHeight - 1);
       camera.updateProjectionMatrix();
-      renderer.setSize(divRef.current.clientWidth, divRef.current.clientHeight);
+      renderer.setSize(divRef.current.clientWidth - 1, divRef.current.clientHeight - 1);
     }
 
     // console.log('cube: ', playerRef.current?.experimentalCurrentThreeJSPuzzleObject());
@@ -790,7 +829,6 @@ const Player = React.memo(({
     const b = bigint & 255;
     return [r, g, b];
   };
-
 
   const setStickerColors = (cube: any) => {
     if (!playerRef.current) return;
@@ -813,7 +851,6 @@ const Player = React.memo(({
     cube.kpuzzleFaceletInfo.CENTERS[5][0].facelet.material.color.setRGB(...yellow.map(val => val / 255));
   }
 
-
   useEffect(() => {
 
     playerRef.current = new TwistyPlayer({
@@ -826,38 +863,41 @@ const Player = React.memo(({
       controlPanel: 'none',
       
       
-      experimentalSetupAlg: scramble,
-      alg: solution,
+      experimentalSetupAlg: scrambleRequest || '',
+      alg: solutionRequest || '',
       
       
       tempoScale: cubeSpeed,
     });
 
     playerRef.current!.style.width = '100%';
+    playerRef.current!.style.marginRight = '1px';
     playerRef.current!.style.height = '100%';
     playerRef.current!.experimentalFaceletScale = .95;
 
-    setInstantPlayerProps();
-    
+    // console.log('creating scene');
     createCustomScene();
+
+    // console.log('Scene done');
+    // set props after cubeInterpreter is initialized during createCustomScene
+    setInstantPlayerProps(scrambleRequest, solutionRequest, animationTimesRequest);
 
   }, []);
 
+  // open the menu imperatively
   const handleContextMenu = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
-    
-    // Always show context menu at new position, even if one is already visible
-    setContextMenu({
-      isVisible: true,
-      position: { x: e.clientX, y: e.clientY }
-    });
+    contextMenuRef.current?.show(e.clientX, e.clientY);
   };
 
   const handleToggleControls = () => {
+    Cookies.set('showPlayerControls', (!showControls).toString(), { expires: 365 });
     setShowControls(prev => !prev);
   };
 
   useEffect(() => {
+
+    Cookies.get('showPlayerControls') === 'false' ? setShowControls(false) : setShowControls(true);
     window.addEventListener('resize', handleResize);
 
     return () => {
@@ -904,8 +944,8 @@ const Player = React.memo(({
     <>
       <div
         ref={divRef}
-        className="w-full h-full border border-neutral-600 hover:border-primary-100 rounded-sm relative"
-        onClick={() => setContextMenu(prev => ({ ...prev, isVisible: false }))}
+        className="h-full border border-neutral-600 hover:border-primary-100 rounded-t-sm relative bg-black"
+        onClick={() => contextMenuRef.current?.close()}
         onContextMenu={handleContextMenu}
         onKeyDown={handleKeyDown}
         tabIndex={2}
@@ -924,17 +964,15 @@ const Player = React.memo(({
           handleFlash={handleFlash}
         />
       </div>
-      
-      <ContextMenu
-        isVisible={contextMenu.isVisible}
-        position={contextMenu.position}
-        onClose={() => setContextMenu({ ...contextMenu, isVisible: false })}
+    
+      <ContextMenuImperative
+        ref={contextMenuRef}
         onToggleControls={handleToggleControls}
         showControls={showControls}
+        containerRef={divRef}
       />
     </>
   );
 });
-
 Player.displayName = 'Player';
 export default Player;

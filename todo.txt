@@ -1,12 +1,15 @@
 Informal Bugs/Todo List. Not guaranteed to be complete or accurate.
 ===================================================================
 
-Encode "(" and ")". These characters can break "copy solve".
- - unable to reproduce
- 
-Create step recognition for left side solution icons
+Autocomplete for cross. Would need to brute force solutions to partial cross solution input. 
+Or compute a bunch of crosses and just give whatever suggestion still works.
+But we don't wanna just show autocomplete right away. Noisey.
 
-Create dynamic icon for animation speed dropdown. Faster should be further to the right. Ideally animate the icon.
+Algs page. For your algs. A tab for your recons (click an icon and expand into a whole new page). A profile system. Oofda.
 
-
- 
+ZBLS autocomplete:
+Case = f2l && (EO + AUF)
+Noteably, adding U* to start of alg is still the same case.
+So we generate a json specifically for ZBLS with these objects:
+{hash: 'abcd', 'eoIndex': 9, alg: "R U R'"}
+Then we search for hash matches only on f2l pieces. The EO is matched separately.

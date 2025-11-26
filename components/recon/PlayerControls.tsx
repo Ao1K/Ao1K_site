@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import FullLeftIcon from '../icons/fullLeft';
 import StepLeftIcon from '../icons/stepLeft';
 import PauseIcon from '../icons/pause';
@@ -40,6 +40,37 @@ const ControlsPlaceholder: React.FC<ControlsPlaceholderProps> = ({
   flashingButtons,
   handleFlash,
 }) => {
+  const [windowWidth, setWindowWidth] = useState<number | null>(null);
+  const [hasMounted, setHasMounted] = useState(false);
+  const resizeTimeoutRef = useRef<NodeJS.Timeout>(null);
+
+  const debouncedResize = useCallback(() => {
+    if (resizeTimeoutRef.current) {
+      clearTimeout(resizeTimeoutRef.current);
+    }
+    resizeTimeoutRef.current = setTimeout(() => {
+      if (typeof window !== 'undefined') {
+        setWindowWidth(window.innerWidth);
+      }
+    }, 150);
+  }, []);
+
+  // Set initial window width and add resize listener on mount
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // Set initial window width and mark as mounted
+    setWindowWidth(window.innerWidth);
+    setHasMounted(true);
+
+    window.addEventListener('resize', debouncedResize);
+    return () => {
+      window.removeEventListener('resize', debouncedResize);
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current);
+      }
+    };
+  }, [debouncedResize]);
 
   if (!isVisible) return null;
 
@@ -67,7 +98,7 @@ const ControlsPlaceholder: React.FC<ControlsPlaceholderProps> = ({
   }
 
   const getButtonClasses = (status: string, buttonId: string) => {
-    const baseClasses = "p-1 border border-neutral-600 bg-dark rounded transition-colors relative group";
+    const baseClasses = "p-1 w-8 h-8 border border-neutral-600 bg-dark rounded transition-colors relative group";
     const isFlashing = flashingButtons.has(buttonId);
     
     if (status === 'disabled') {
@@ -122,8 +153,26 @@ const ControlsPlaceholder: React.FC<ControlsPlaceholderProps> = ({
     </div>
   );
 
+  const getResponsiveClasses = () => {
+    const base = "absolute z-30 rounded-sm p-2 flex-grow items-center justify-center bottom-0 left-0 flex";
+
+    // Use safe defaults until component has mounted and window width is available
+    if (!hasMounted || windowWidth === null) {
+      return `${base} space-x-1`; // Default to larger screen layout
+    }
+
+    const isSmallScreen = windowWidth < 768;
+    const isLarger = windowWidth >= 768;
+
+    const sm = isSmallScreen ? "space-y-1 flex-col" : "";
+    const others = isLarger ? "space-x-1" : "";
+    return `${base} ${sm} ${others}`;
+  };
+
+  const responsiveClasses = getResponsiveClasses();
+
   return (
-    <div className="absolute bottom-1 left-1 z-30 rounded-sm p-2 flex items-center justify-center space-x-1">
+    <div className={responsiveClasses}>
       <button 
         onClick={() => handleButtonClick('fullLeft', onFullLeft)} 
         className={getButtonClasses(controllerButtonsStatus.fullLeft, 'fullLeft')} 

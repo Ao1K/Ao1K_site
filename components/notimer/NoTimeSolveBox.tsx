@@ -41,8 +41,8 @@ export default function NoTimeSolveBox(props: NoTimeSolveBoxProps) {
 
   const MAX_CHECK_TEXT_LENGTH = 500;
   
-  const newCheckAdded = useRef<boolean>();
-  const isEditingCheck = useRef<boolean>();
+  const newCheckAdded = useRef<boolean>(null);
+  const isEditingCheck = useRef<boolean>(false);
 
   const sanitizeConf = {
     allowedTags: ["b", "i", "u", "br", "div"],

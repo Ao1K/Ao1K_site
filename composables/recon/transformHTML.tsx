@@ -1,6 +1,44 @@
-import { cloneElement } from 'react';
-import { colorDict } from '../../components/recon/MovesTextEditor';
+import { colorDict } from '../../utils/sharedConstants';
+
 import simplifyRotations from '../recon/simplifyRotations';
+
+/**
+ * Reverse a move string.
+ * @param move 
+ * @returns the move done in the opposite direction. Ex: R --> R'
+ */
+export const reverseMove = (move: string) => {
+  if (!move) return '';
+  const rootMove = move[0];
+  const suffix = move.slice(1);
+  let reversedSuffix;
+  switch (suffix) {
+    case '':
+      reversedSuffix = "'";
+      break;
+    case "'":
+      reversedSuffix = "";
+      break;
+    case "2":
+      reversedSuffix = "2'";
+      break;
+    case "2'":
+      reversedSuffix = "2";
+      break;
+    case "3":
+        reversedSuffix = "3'";
+      break;
+    case "3'":
+      reversedSuffix = "3";
+      break;
+    default:
+      console.error('Invalid suffix:', suffix);
+      reversedSuffix = suffix; 
+  }
+
+  return rootMove + reversedSuffix;
+}
+
 
 const VALID_SPAN_CLASS = colorDict.move
 const COMMENT_SPAN_CLASS = colorDict.comment;
@@ -149,6 +187,7 @@ function exploreAndProcess(
   const endIsAfterStart = range.compareBoundaryPoints(Range.END_TO_START, nodeRange) === -1;
   const isWithinRange = startIsBeforeEnd && endIsAfterStart;
 
+  // handle case where span is the target node
   if (isWithinRange && element.tagName === "SPAN") {
     const oldHTML = element.outerHTML;
     const newHTML = processFunction(oldHTML, isFirstTransform.current);
@@ -164,9 +203,12 @@ function exploreAndProcess(
     } else {
       clonedElement = element.cloneNode(true);
     }
+
+  // handle case where a parent element is the target node
   } else if (isWithinRange) {
     clonedElement = element.cloneNode(false) as HTMLElement;
     for (const child of Array.from(element.childNodes)) {
+      // add processed child nodes to clonedElement
       (clonedElement as HTMLElement).appendChild(
         exploreAndProcess(child, range, processFunction, isFirstTransform)
       );
@@ -176,6 +218,139 @@ function exploreAndProcess(
   }
 
   return clonedElement;
+}
+
+function exploreAndInvert(
+  node: Node,
+  range: Range,
+  accumulatedSpans?: string,
+  isFirstTransform?: { current: boolean }
+): { returnNode: Node, returnSpans: string } {
+
+
+  let clonedElement: Node = node.cloneNode();
+  
+  if (node.nodeType !== Node.ELEMENT_NODE) {
+    return { returnNode: node.cloneNode(), returnSpans: accumulatedSpans || '' };
+  }
+
+  const element = node as HTMLElement;
+  const nodeRange = document.createRange();
+  nodeRange.selectNodeContents(element);
+  const startIsBeforeEnd = range.compareBoundaryPoints(Range.START_TO_END, nodeRange) === 1;
+  const endIsAfterStart = range.compareBoundaryPoints(Range.END_TO_START, nodeRange) === -1;
+  const isWithinRange = startIsBeforeEnd && endIsAfterStart;
+
+  if (isWithinRange && element.tagName === "SPAN") {
+    accumulatedSpans += element.outerHTML;
+    // For spans within range, we don't want to include them in the cloned element
+    // since they'll be replaced with the processed version
+    clonedElement = document.createTextNode("");
+  } else if (isWithinRange) {
+    clonedElement = element.cloneNode(false) as HTMLElement; // create a shallow copy. We want to delete the children.
+    for (const child of Array.from(element.childNodes)) {
+      // add processed child nodes to clonedElement
+      const { returnNode, returnSpans } = exploreAndInvert(child, range, accumulatedSpans, { current: false });
+      accumulatedSpans = returnSpans;
+      (clonedElement as HTMLElement).appendChild(returnNode);
+    }
+  } else {
+    clonedElement = element.cloneNode(true);
+  }
+
+  // if first transform, then process spans and replace them in the structure
+  if (isFirstTransform && isFirstTransform.current && accumulatedSpans) {
+    isFirstTransform.current = false;
+    // Process the accumulated spans
+    const transformedSpans = processInverts(accumulatedSpans);
+    
+    // Find where to insert the transformed content in the cloned structure
+    // We need to insert it at the selection point
+    insertTransformedContent(clonedElement as HTMLElement, range, transformedSpans);
+  }
+
+  return { returnNode: clonedElement, returnSpans: accumulatedSpans || '' };
+}
+
+function insertTransformedContent(container: HTMLElement, range: Range, transformedContent: string): void {
+  // Create a temporary container to parse the transformed content
+  const tempContainer = document.createElement('div');
+  tempContainer.innerHTML = transformedContent;
+  
+  // Find the first position where we removed content (where we have empty text nodes or removed spans)
+  const walker = document.createTreeWalker(
+    container,
+    NodeFilter.SHOW_ALL,
+    {
+      acceptNode: (node) => {
+        if (node.nodeType === Node.TEXT_NODE && node.textContent === "") {
+          return NodeFilter.FILTER_ACCEPT;
+        }
+        return NodeFilter.FILTER_SKIP;
+      }
+    }
+  );
+  
+  const emptyNode = walker.nextNode();
+  if (emptyNode && emptyNode.parentNode) {
+    // Replace the empty text node with the transformed content
+    while (tempContainer.firstChild) {
+      emptyNode.parentNode.insertBefore(tempContainer.firstChild, emptyNode);
+    }
+    emptyNode.parentNode.removeChild(emptyNode);
+  } else {
+    // If no empty node found, append to container
+    while (tempContainer.firstChild) {
+      container.appendChild(tempContainer.firstChild);
+    }
+  }
+}
+
+const processInverts = (spans: string): string => {
+  
+  const hasCaretNode = spans.includes('<span id="caretNode"></span>');
+  if (hasCaretNode) {
+    // if caretNode is present, we need to adjust the caret position in the splits
+    spans = spans.replace('<span id="caretNode"></span>', '');
+  }
+
+
+  const splits = getSplits(spans)
+  let moves: string[] = [];
+  splits.forEach(({ split, isMatch }, i) => {
+    if (!isMatch) return;
+
+    if (split.includes('<span class=')) {
+      // don't use non-move spans
+      return;
+    
+    } else {      
+      split.split(' ').forEach((move) => {
+        if (move.trim() === '') return; // skip empty moves
+        moves.push(move);
+      });
+    }
+  });
+
+  let invertedText = '';
+  // iterate through text in reverse order. Reverse move directions.
+  for (let i = moves.length - 1; i >= 0; i--) {
+    const move = moves[i];
+
+    let invertedMove = reverseMove(move);
+    
+    invertedText += invertedMove + ' ';
+  }
+
+  invertedText = invertedText.trim();
+  invertedText = invertedText.replace(/ +/g, ' '); // remove extra spaces
+  
+  invertedText = `<span class="${VALID_SPAN_CLASS}">${invertedText}</span>`;
+  if (hasCaretNode) {
+    invertedText += '<span id="caretNode"></span>';
+  }
+  return invertedText;
+
 }
 
 const reportMove = (move: string): string => {
@@ -410,4 +585,27 @@ export const rotateHTML_Z: TransformHTMLprops = (range, textbox) => {
   }
   
   return parseSelection(range, textbox, processRotateZ);
+}
+
+/**
+ * Accumulates valid spans and invert the moves.
+ * Removes any spans in target range that are invalid.
+ * If no selection is made, it will invert and clean the entire textbox.
+ * 
+ * @param range 
+ * @param textbox 
+ * @returns Inverted HTML string
+ */
+export const invertHTML: TransformHTMLprops = (range, textbox) => {
+  
+  const parentElement = document.getElementById(textbox);
+  const container = parentElement!.querySelector<HTMLDivElement>('div[contenteditable="true"]');
+
+  if (!container) {
+    console.error('textbox not found');
+    return null;
+  }
+  const isFirstTransform = { current: true };
+  const { returnNode } = exploreAndInvert(container, range, '', isFirstTransform);
+  return (returnNode as HTMLDivElement).innerHTML;
 }

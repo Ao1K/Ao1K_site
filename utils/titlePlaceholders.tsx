@@ -1,25 +1,32 @@
 export const titlePlaceholders = [
   // shorter is better
   // this list should not contain tips about using the site
+  // avoid periods when clear without them
 
 
   // wit
-  '"You are free and that is why you are lost." - Kafka',
+  '"You are free and that is why you are lost" - Kafka',
   "Commit yourself completely",
   "The better the algorithm for truth, the more dangerous",
   "Words are box-assigners. Not everything belongs in a box.",
   "1. Be respectful. 2. Disagree.",
   "Be the change you want to see in the world",
   "You're doing okay",
-  `Skill is when luck becomes habit`, // unknown/multiple
-  `"You've got to get better, you're all that I got" - AJR`,
+  `Skill is when luck becomes habit`,
   "Good ideas can come from anyone",
+  "You don't have to be good",
+  "Always be learning",
+  "Liberty is the ability to enact your will",
+  "You're under no requirements", // however...
+  '"You gotta do what the fuck you say" -RA',
+  "Buying a more expensive cube doesn't solve anything",
+  "Only in the mind // Anthropomorphization // The tree never fell",
+  "We are causal creatures",
   
   // tips
   "Cheap, generic silicone oil can work just as good as cube lube",
   "Plan as much as you can every time",
   "Use unlimited inspection!",
-  "Reduce risk by practicing the risky thing more often",
   "There's always more F2L to learn!",
   "Drill A perms with the AUF and regrip included",
   "Move notation is an abstraction. Fingertricks are ground truth.",
@@ -36,22 +43,31 @@ export const titlePlaceholders = [
   "Use spaced repetition to learn algs effectively",
   "Seeing how F2L pairs unsolve and resolve can help you learn algs",
   "Rarer types of moves add risk to your solve",
+  "Reduce risk by practicing the risky thing more often",
+  "More risky means more practice needed",
+  "RUS U perms are probably too risky to use",
   "yRUL moves are best for lookahead",
   "You're more likely to practice if it's fun",
   "Mirroring A perms keeps headlights on one side for all PLLs. But at what cost?",
-  "RUS U perms are probably too risky to use",
   "Use rotations to deal with bad edge orientation",
   "If you want a tutor, you need a friend or money",
+  "Study example solves",
+  "'Rough' is not a turning style",
+  "Use the tips of your fingers to turn the cube",
+  "Destroy bad F2L cases by solving other ones",
   
   // fun
+  "🦜",
   "42",
   "No.",
   "UwU",
   'Cat.',
   'PB!!!!!',
-  "Sub-Yiheng?",
-  "I don't know",
   "Minceraft", // not a typo
+  "Sub-Yiheng?",
+  "Don't slide!",
+  "I don't know",
+  "Lisan al-Giab?",
   "That is so qwiii",
   "Worst solve ever",
   "Not a good solve",
@@ -61,6 +77,7 @@ export const titlePlaceholders = [
   'Get your ass to Mars',
   "Roux = Flour + Butter",
   "Hey you forgot a title",
+  "Gan 356 Not Recommended",
   "Okayest solve ever okayed",
   "Solve'); DROP TABLE Titles;",
   "I don't know how I got here",
@@ -72,7 +89,10 @@ export const titlePlaceholders = [
   
   // meta
   "Open source!",
+  "MIT License!",
+  "Let the code be free!",
   "Try on mobile!",
+  "Try on firefox!",
   "Written in typescript",
   "The font is Rubik",
   "Thank god for cubing js",
@@ -80,7 +100,10 @@ export const titlePlaceholders = [
   "Also try alpha.twizzle.net", // may need update eventually
   "Also try cubedb.net",
   "Also check out reco.nz",
+  "SVGs are cool!",
   "Never code at 2 am",
+  "Now 13% messier code!",
+  "Remove the title. It's cleaner."
 
   
 ]

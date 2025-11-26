@@ -6,6 +6,7 @@ import Header from "../components/Header";
 
 import type { Metadata } from "next";
 import { Rubik } from "next/font/google";
+import Footer from "../components/Footer";
 
 import { Amplify } from 'aws-amplify';
 import outputs from "../amplify_outputs.json"
@@ -40,23 +41,35 @@ export default async function RootLayout({
         
         
         <body
-          className={`min-h-screen pt-16 grid overflow-auto bg-primary-900
-            grid-cols-[1fr,minmax(0,8fr),1fr] 
+          className={`min-h-screen pt-16 grid overflow-auto bg-primary-900 
+            grid-cols-[0,minmax(0,8fr),0] 
             md:grid-cols-[1fr,minmax(0,5fr),1fr] 
             lg:grid-cols-[1fr,minmax(0,3fr),1fr] 
             xl:grid-cols-[3fr,minmax(0,4fr),3fr] `}
           >
           <Header />
           
-          <div id="left-margin" className="block bg-primary-900 h-full -z-10"></div> 
+          <div id="left-margin" className="block bg-primary-900 h-full grid-lines-50-l -z-10"></div> 
           
           <main className="col-start-2 flex flex-col bg-primary-900">
-            {children}
+            <React.Suspense fallback={
+              // show a centered spinner image while children are loading
+              <div className="flex flex-1 items-center justify-center min-h-[200px]">
+              <img
+                src="/LoadingSpinner.webp"
+                alt="Loading..."
+                className="h-8 w-8"
+              />
+              </div>
+            }>
+              {children}
+            </React.Suspense>
+            <Footer />
           </main>
           
-          <div id="right-margin" className="block bg-primary-900 h-full -z-10"></div> 
+          <div id="right-margin" className="block bg-primary-900 h-full grid-lines-50-r -z-10"></div> 
 
-          {/* <Footer /> is stored in individual pages due to NoTimer not having a footer */}
+          
         </body>
       </html>
     </>

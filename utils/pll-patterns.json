@@ -1,0 +1,112 @@
+{
+  "timestamp": "2025-10-15T01:09:18.454Z",
+  "totalPatterns": 21,
+  "patternType": "pll",
+  "patterns": [
+    {
+      "caseIndex": 1,
+      "name": "Aa",
+      "pattern": 836671553945855
+    },
+    {
+      "caseIndex": 2,
+      "name": "Ab",
+      "pattern": 855616135965695
+    },
+    {
+      "caseIndex": 3,
+      "name": "E",
+      "pattern": 838556948100095
+    },
+    {
+      "caseIndex": 4,
+      "name": "F",
+      "pattern": 838611476833535
+    },
+    {
+      "caseIndex": 5,
+      "name": "Ga",
+      "pattern": 856811073574655
+    },
+    {
+      "caseIndex": 6,
+      "name": "Gb",
+      "pattern": 839963139411455
+    },
+    {
+      "caseIndex": 7,
+      "name": "Gc",
+      "pattern": 836827917797375
+    },
+    {
+      "caseIndex": 8,
+      "name": "Gd",
+      "pattern": 870904042788095
+    },
+    {
+      "caseIndex": 9,
+      "name": "H",
+      "pattern": 870920654190335
+    },
+    {
+      "caseIndex": 10,
+      "name": "Ja",
+      "pattern": 853754936679935
+    },
+    {
+      "caseIndex": 11,
+      "name": "Jb",
+      "pattern": 853675851960575
+    },
+    {
+      "caseIndex": 12,
+      "name": "Na",
+      "pattern": 855404882263295
+    },
+    {
+      "caseIndex": 13,
+      "name": "Nb",
+      "pattern": 872566266364415
+    },
+    {
+      "caseIndex": 14,
+      "name": "Ra",
+      "pattern": 838532753231615
+    },
+    {
+      "caseIndex": 15,
+      "name": "Rb",
+      "pattern": 836750277547775
+    },
+    {
+      "caseIndex": 16,
+      "name": "T",
+      "pattern": 856789767645695
+    },
+    {
+      "caseIndex": 17,
+      "name": "Ua",
+      "pattern": 836665414949375
+    },
+    {
+      "caseIndex": 18,
+      "name": "Ub",
+      "pattern": 853747714331135
+    },
+    {
+      "caseIndex": 19,
+      "name": "V",
+      "pattern": 838634588349695
+    },
+    {
+      "caseIndex": 20,
+      "name": "Y",
+      "pattern": 855639247481855
+    },
+    {
+      "caseIndex": 21,
+      "name": "Z",
+      "pattern": 836821778800895
+    }
+  ]
+}

@@ -35,11 +35,12 @@ export default function ReconTimeHelpInfo() {
   const handleClose = () => {
     // Prevent handleClose if handleOpen has just triggered
     if (openTriggeredRef.current) return;
+
     if (popupRef_wide.current) popupRef_wide.current.style.display = 'none';
     if (popupRef_narrow.current) popupRef_narrow.current.style.display = 'none';
   };
 
-  //todo: ideally, width and height of popup should be determined right away, and then top and left set accordingly.
+  //TODO: ideally, width and height of popup should be determined right away, and then top and left set accordingly.
   const handlePopupPosition = (event: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
     const iconRect = event.currentTarget.getBoundingClientRect();
 
@@ -134,7 +135,7 @@ export default function ReconTimeHelpInfo() {
       {/* Always render wide popup */}
       <div
         ref={popupRef_wide}
-        className={`fixed hidden bg-white border rounded-lg ml-10 p-4 max-h-full overflow-auto text-wrap z-40`}
+        className={`fixed hidden bg-white border rounded-sm ml-10 p-4 max-h-full overflow-auto text-wrap z-40`}
         style={{ width: `${WIDTH}px`, display: 'none' }} // default hidden
       >
         <p className="text-sm text-gray-700">
@@ -147,13 +148,13 @@ export default function ReconTimeHelpInfo() {
 
       {/* Always render narrow popup */}
       <div
-        className="fixed hidden z-40 inset-0 h-screen items-center justify-center bg-neutral-400 bg-opacity-30"
+        className="fixed hidden text-dark z-40 inset-0 h-screen items-center justify-center bg-neutral-400 bg-opacity-30"
         ref={popupRef_narrow}
         onClick={handleClose}
         style={{ display: 'none' }} // default hidden
       >
         <div 
-          className="bg-white p-4 pt-10 rounded-lg shadow-lg max-w-[400px] absolute w-[90%] text-wrap"
+          className="bg-white p-4 pt-10 rounded-sm shadow-lg max-w-[400px] absolute w-[90%] text-wrap"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="absolute top-1 right-2 py-1 px-3 text-2xl cursor-pointer" onClick={handleClose}>&times;</div>
