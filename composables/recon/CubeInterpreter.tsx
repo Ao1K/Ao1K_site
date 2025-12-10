@@ -2430,6 +2430,7 @@ export class CubeInterpreter {
 
     const speedEstimator = new AlgSpeedEstimator();
     let suggestions: Suggestion[] = [];
+    const algSet = new Set<string>();
     
     // iterate and collect suggestions
     queries.forEach(({ query, pairColors }) => {
@@ -2437,7 +2438,6 @@ export class CubeInterpreter {
       query.scoreBy = 'exact'; // use 'exact' context for F2L searches
       
       const algs = this.algSuggester!.searchByPosition(query);
-      const algSet = new Set<string>();
       
       algs.forEach(alg => {
         if (!algSet.has(alg.id)) {

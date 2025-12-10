@@ -10,7 +10,7 @@ interface SpeedSliderProps {
 export default function ToolbarButton({speed, setSpeed}: SpeedSliderProps) {
   const [isRotated, setIsRotated] = useState(false);
 
-  const slow = 15;
+  const slow = 10;
   const medium = 30;
   const fast = 60;
   const instant = 100;
