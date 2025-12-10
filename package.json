@@ -30,7 +30,7 @@
     "npm": "^11.6.0",
     "npm-bundled": "^4.0.0",
     "npm-normalize-package-bin": "^4.0.0",
-    "react": "^19.1.0",
+    "react": "^19.2.1",
     "react-dom": "^19.1.0",
     "rimraf": "^6.1.2",
     "sanitize-html": "2.13.0",

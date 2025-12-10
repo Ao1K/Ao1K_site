@@ -13,6 +13,10 @@ interface CompiledExactAlg {
   step?: string;
 }
 
+interface ExpandedExactAlg extends ExactAlg {
+  originalIndex: number;
+}
+
 interface AlgCompilerProps {
   algs?: ExactAlg[];
 }
@@ -334,17 +338,19 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
     return simplifiedAlgs;
   };
 
-  const findUniqueNewAlgs = (algs: (ExactAlg | LastLayerAlg)[], simplifiedAlgs: (ExactAlg | LastLayerAlg)[]) => {
+  const findUniqueNewAlgs = (algType: 'Exact' | 'LastLayer', algs: (ExactAlg | LastLayerAlg)[], expandedAlgs: (ExpandedExactAlg | LastLayerAlg)[]) => {
+
     const newAlgs: (ExactAlg | LastLayerAlg)[] = [];
-    const existingAlgs = new Set<string>();
-    
-    for (let i = 0; i < simplifiedAlgs.length; i++) {
-      const originalAlg = algs[i];
-      const simplifiedAlg = simplifiedAlgs[i];
+    const existingAlgs = new Set<string>();    
+    for (let i = 0; i < expandedAlgs.length; i++) {
+
+      const index = algType === 'Exact' ? (expandedAlgs[i] as ExpandedExactAlg).originalIndex : i;
+      const originalAlg = algs[index];
+      const simplifiedAlg = expandedAlgs[i];
       
-      // warn if non-new alg is not in its most simplified form
+      // warn if old alg is not in its most simplified form
       if (!originalAlg.new && originalAlg.value !== simplifiedAlg.value) {
-        console.warn(`Algorithm at index ${i} is not in simplified form. Original: "${originalAlg.value}", Simplified: "${simplifiedAlg.value}"`);
+        console.warn(`Algorithm at index ${index} is not in simplified form. Original: "${originalAlg.value}", Simplified: "${simplifiedAlg.value}"`);
       }
       
       if (simplifiedAlg.new) {
@@ -354,8 +360,10 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
       }
     }
 
+    console.log('new alg size:', newAlgs.length);
     const actuallyNewAlgs = newAlgs.filter(alg => !existingAlgs.has(alg.value));
-
+    console.log('actually new alg size:', actuallyNewAlgs.length);
+    // filter out duplicate alg.values within new algs
     const uniqueNewAlgSet = new Set<string>();
     const uniqueNewAlgs: (ExactAlg | LastLayerAlg)[] = [];
     actuallyNewAlgs.forEach(alg => {
@@ -418,27 +426,105 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
     return usableAlgs;
   }
 
+  /**
+   * If the algs are Exact, create the full list of algs based on all allowed angles.
+   * If the algs are LastLayer, just return the original list.
+   */
+  const expandAlgs = (algs: (ExactAlg | LastLayerAlg)[], algType: 'Exact' | 'LastLayer') => {
+    const expandedAlgs: (ExpandedExactAlg | LastLayerAlg)[] = [];
+    if (algType === 'LastLayer') {
+      return algs as LastLayerAlg[];
+    }
+
+    algs.forEach((alg, index) => {
+      const angles = getAllowedAngles(alg as ExactAlg);
+      angles.forEach((angle) => {
+
+        // add AUF/rotation and reorder if needed (y moves should go before U moves)
+        const completeAlg = reorderAnglingInAlg(angle, alg.value);
+
+        expandedAlgs.push({
+          ...alg,
+          value: completeAlg,
+          originalIndex: index,
+        } as ExpandedExactAlg);
+      });
+    });
+
+    return expandedAlgs;
+  }
+
+  const findUniqueOldAlgSet = (algType: 'Exact' | 'LastLayer', expandedAlgs: (ExpandedExactAlg | LastLayerAlg)[]) => {
+    const algSet = new Set<ExactAlg | LastLayerAlg>();
+    expandedAlgs.forEach((alg, index) => {
+      if (algSet.has(alg) && alg.new !== true) {
+        const i = algType === 'Exact' ? (alg as ExpandedExactAlg).originalIndex : index;
+        console.warn(`Duplicate algorithm detected in rawAlgs.tsx at index ${i}`);
+        console.log({...alg});
+      }
+      algSet.add(alg);
+    });
+    return algSet;
+  }
+
+  const downloadUniqueNewAlgs = (algType: 'Exact' | 'LastLayer', algs: (ExactAlg | LastLayerAlg)[]) => {
+    if (algs.length === 0) return;
+
+    algs = algs.map(alg => {
+      if (algType === 'Exact') {
+        alg = {
+          new: false,
+          value: alg.value,
+          step: alg.step,
+          name: (alg as ExactAlg).name ?? "",
+          add_y: false, // algs were already expanded with all allowed angles
+          add_U: false, // algs were already expanded with all allowed angles
+        }
+      } else {
+        alg = {
+          new: false,
+          value: alg.value,
+          step: alg.step,
+        }
+      };
+      return alg;
+    });
+
+
+    const prettyJson = '[\n  ' + algs.map(alg => JSON.stringify(alg).replaceAll(',',', ').replace(/"(\w+)":/g, '$1: ')).join(',\n  ') + '\n]';
+    const blob = new Blob([prettyJson], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `new_${algType.toString().toLowerCase()}_algs.tsx`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const compileAlgorithms = async (algs: ExactAlg[] | LastLayerAlg[], algType: 'Exact' | 'LastLayer') => {
     if (!cubeLoaded || !hiddenPlayerRef.current) {
       console.error('Cube not loaded yet. Please wait for the cube to load before compiling.');
       return;
     }
+    console.log(`Compiling ${algType} algorithms... Total algs: ${algs.length}`);
     
 
     const simplifiedAlgs: (ExactAlg | LastLayerAlg)[] = simplifyAlgs(algs, algType);
 
-    const algSet = new Set<string>();
-    simplifiedAlgs.forEach((alg, index) => {
-      if (algSet.has(alg.value) && alg.new !== true) {
-        console.warn(`Duplicate algorithm detected in rawAlgs.tsx at index ${index}`);
-        console.log({...alg});
-      }
-      algSet.add(alg.value);
-    });
+    const expandedAlgs: (ExpandedExactAlg | LastLayerAlg)[] = expandAlgs(simplifiedAlgs, algType);
 
-    const uniqueNewAlgs = findUniqueNewAlgs(algs, simplifiedAlgs);
-    console.log('Unique new algs:');
-    console.log(uniqueNewAlgs);
+    // parse out duplicates in algs without `new: true`
+    const algSet = findUniqueOldAlgSet(algType, expandedAlgs);
+
+    const uniqueNewAlgs = findUniqueNewAlgs(algType, algs, expandedAlgs);
+
+    if (uniqueNewAlgs.length > 0) {
+      console.log('Replace new algs with this list');
+
+      downloadUniqueNewAlgs(algType, uniqueNewAlgs);
+    }
 
     // for LL algs, make sure applying alg in reverse keeps F2L solved.
     let usableNewAlgs: LastLayerAlg[] | ExactAlg[] = uniqueNewAlgs;
@@ -448,15 +534,20 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
       console.log(usableNewAlgs);
     }
 
-    // add new algs to simplifedAlgs for final processing
-    simplifiedAlgs.push(...usableNewAlgs);
+    // add new algs to expandedAlgs for final processing
+    const allAlgs: ExactAlg[] | LastLayerAlg[] = Array.from(algSet)
+    if (typeof usableNewAlgs !== typeof allAlgs) {
+      console.error('Type mismatch between usableNewAlgs and allAlgs');;
+      return;
+    }
+    allAlgs.push(...usableNewAlgs);
 
     switch (algType) {
       case 'Exact':
-        await compileExactAlgorithms(simplifiedAlgs as ExactAlg[]);
+        await compileExactAlgorithms(allAlgs as ExactAlg[]);
         break;
       case 'LastLayer':
-        await compileLLalgorithms(simplifiedAlgs as LastLayerAlg[]);
+        await compileLLalgorithms(allAlgs as LastLayerAlg[]);
         break;
       default:
         console.error(`Unknown algorithm type: ${algType}`);
@@ -534,6 +625,62 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
     downloadCompiledAlgs(compiledData, step);
 
   }
+
+  const processAlgWithRetry = async (
+    alg: ExactAlg,
+    completeAlg: string,
+    algInverse: string,
+    animationTimes: number[],
+    lastHash: string,
+    cubeInterpreter: CubeInterpreter,
+    compiledData: CompiledExactAlg[]
+  ): Promise<{ success: boolean; newHash?: string; fatalError?: boolean }> => {
+    let success = false;
+
+    while (!success && isCompilingRef.current) {
+      try {
+        const cube = await hiddenPlayerRef.current!.updateCube('', algInverse, animationTimes);
+
+        if (!cube) {
+          console.error('Failed to get cube state for algorithm:', algInverse);
+          return { success: false };
+        }
+
+        // Update the cube interpreter with current cube state
+        const steps = cubeInterpreter.getStepsCompleted(cube);
+        const cubeState = cubeInterpreter.getCurrentState();
+        const hash = cubeState?.hash || 'unknown';
+
+        if (lastHash === hash) {
+          console.error(`Last hash matches current hash. This is a strong indicator of an issue. Solution: keep screen open while compiling. Alg: ${completeAlg}, Hash: ${hash}`);
+          console.log('Retrying in 10 seconds...');
+          await new Promise(resolve => setTimeout(resolve, 10000));
+          continue;
+        }
+
+        console.log(`Algorithm: ${alg.value}, Hash: ${hash}`);
+
+        // Add to compiled data
+        compiledData.push({
+          alg: completeAlg,
+          hash: hash,
+          step: alg.step || '',
+        });
+        
+        return { success: true, newHash: hash };
+      } catch (error) {
+        console.error(`Error processing algorithm ${alg.value}:`, error);
+        compiledData.push({
+          alg: alg.value + ' (Does not include AUF/rotation)',
+          hash: 'error',
+          step: alg.step || '',
+        });
+        return { success: false, fatalError: true };
+      }
+    }
+    return { success: false };
+  };
+
   /**
    * Takes an array of cubing algs, determines the cube hash, then creates a json file and downloads it.
    */
@@ -561,78 +708,58 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
 
     // Array to store compiled algorithm data
     const compiledData: CompiledExactAlg[] = [];
-
+    let lastHash = '';
     for (const alg of algs) {
+      if (Math.random() < 0.0) {
+        break;
+      }
       if (!isCompilingRef.current) {
         break;
       }
-      const angles = getAllowedAngles(alg);
-      for (const angle of angles) {
-        try {
-          
-          // add AUF/rotation and reorder if needed (y moves should go before U moves)
-          const completeAlg = reorderAnglingInAlg(angle, alg.value);
-          
-          // Validate the algorithm - skip processing if invalid
-          if (!validateAlg(completeAlg)) {
-            continue;
-          }
-          
-          // Start alg green front, white top.
-          // Extract leading y moves from complete algorithm for normalization
-          const moves = completeAlg.trim().split(/\s+/);
-          const leadingYMoves = [];
-          
-          // Get leading y moves only
-          for (const move of moves) {
-            if (move.match(/^y['2]?$/)) {
-              leadingYMoves.push(move);
-            } else if (!move.match(/^U['2]?$/)) {
-              // Stop if we hit a non-U, non-y move
-              break;
-            }
-          }
 
-          if (leadingYMoves.length > 1) {
-            console.error(`Invalid algorithm pattern detected after cleanup: ${completeAlg}. Too many leading y moves (${leadingYMoves.length}). Halting processing.`);
-            continue;
-          }
-          
-          const angleNormalization = leadingYMoves.length > 0 ? leadingYMoves[0] + ' ' : '';
-          
-          const algInverse = angleNormalization + getAlgInverse(completeAlg);
-          console.log(`Processing Alg: ${completeAlg}, Inverse: ${algInverse}`);
-          
-          // Use imperative API to update cube state
-          const animationTimes = findAnimationLengths(algInverse.split(' '));
-          const cube = await hiddenPlayerRef.current.updateCube('', algInverse, animationTimes);
-          
-          if (!cube) {
-            console.error('Failed to get cube state for algorithm:', algInverse);
-            continue;
-          }
-
-          // Update the cube interpreter with current cube state
-          cubeInterpreter.getStepsCompleted(cube);
-          const cubeState = cubeInterpreter.getCurrentState();
-          const hash = cubeState?.hash || 'unknown';
-          
-          console.log(`Algorithm: ${alg.value}, Hash: ${hash}`);
-          
-          // Add to compiled data
-          compiledData.push({
-            alg: completeAlg,
-            hash: hash,
-            step: alg.step || '',
-          });
-        } catch (error) {
-          console.error(`Error processing algorithm ${alg.value}:`, error);
-          compiledData.push({
-            alg: alg.value + ' (Does not include AUF/rotation)',
-            hash: 'error',
-            step: alg.step || '',
-          });
+      const completeAlg = alg.value;
+      
+      // Validate the algorithm - skip processing if invalid
+      if (!validateAlg(completeAlg)) {
+        continue;
+      }
+      
+      // Start alg green front, white top.
+      // Extract leading y moves from complete algorithm for normalization
+      const moves = completeAlg.trim().split(/\s+/);
+      const leadingYMoves = [];
+      
+      // Get leading y moves only
+      for (const move of moves) {
+        if (move.match(/^y['2]?$/)) {
+          leadingYMoves.push(move);
+        } else if (!move.match(/^U['2]?$/)) {
+          // Stop if we hit a non-U, non-y move
+          break;
         }
+      }
+
+      if (leadingYMoves.length > 1) {
+        console.error(`Invalid algorithm pattern detected after cleanup: ${completeAlg}. Too many leading y moves (${leadingYMoves.length}). Halting processing.`);
+        continue;
+      }
+      
+      const angleNormalization = leadingYMoves.length > 0 ? leadingYMoves[0] + ' ' : '';
+      
+      const algInverse = angleNormalization + getAlgInverse(completeAlg);
+      console.log(`Processing Alg: ${completeAlg}`);
+      
+      const animationTimes = findAnimationLengths(algInverse.split(' '));
+
+      const result = await processAlgWithRetry(alg, completeAlg, algInverse, animationTimes, lastHash, cubeInterpreter, compiledData);
+
+      if (result.fatalError) {
+        break;
+      }
+      
+      if (result.success && result.newHash) {
+        // keep track of duplicates for error checking within processAlgWithRetry
+        lastHash = result.newHash;
       }
     }
     // Create and download JSON file

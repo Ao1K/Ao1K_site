@@ -60,11 +60,14 @@ export interface ControllerRequestOptions {
 
 const TwistyPlayer = lazy(() => import("../../components/recon/TwistyPlayer"));
 
+let currentSpeed = 30;
+
 export default function Recon() {
   const allMovesRef = useRef<string[][][]>([[[]], [[]]]);
   const moveLocation = useRef<[number, number, number]>([0, 0, 0]);
 
   const [speed, setSpeed] = useState<number>(30);
+  currentSpeed = speed;
 
   const [solveTime, setSolveTime] = useState<number|string>('');
   const [solveTitle, setSolveTitle] = useState<string>('');
@@ -401,7 +404,7 @@ export default function Recon() {
     // }, timeToWait); 
     // moves with large animation times don't actually take longer. 
     // Re-implement timeToWait if this changes
-    }, 1000 - (5 * speed));
+    }, 1000 - (10 * currentSpeed));
   }
 
 
@@ -598,9 +601,8 @@ export default function Recon() {
       const isLineEmpty = moves[lineIndex]?.length === 0;
       if (isLineEmpty) {
 
-        // don't show any suggestions on 0th line (0th line is usually not algorithmic)
         // only allowing suggestions on empty line simplifies logic and leads to more beautiful recons
-        (lineIndex === 0 || idIndex === 0) ? null : handleEmptyLineSuggestions(moves, lineIndex);
+        idIndex === 0 ? null : handleEmptyLineSuggestions(moves, lineIndex);
 
         // pretend caret is at end of the last line that has a move
         const adjustedLineIndex = findPrevNonEmptyLine(moves, lineIndex);
