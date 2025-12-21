@@ -1027,16 +1027,16 @@ function MovesTextEditor({
       handleSuggestionReject();
     }
 
-    if (!e.ctrlKey) return;
+    const isCtrl = e.ctrlKey || e.metaKey;
 
-    if (e.ctrlKey && e.key === 'z') {
+    if (isCtrl && e.key === 'z') {
       
       e.preventDefault();
 
       handleUndo();
     }
 
-    if (e.ctrlKey && e.key === 'y') {
+    if (isCtrl && e.key === 'y') {
 
       e.preventDefault();
 
