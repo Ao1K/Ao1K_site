@@ -1181,70 +1181,71 @@ export default function Recon() {
   }
 
   const handleCommand = (e: KeyboardEvent) => {
+    const isCtrl = e.ctrlKey || e.metaKey;
 
-    if (e.ctrlKey && e.shiftKey && e.key === 'M') {
+    if (isCtrl && e.shiftKey && e.key === 'M') {
     
       e.preventDefault();
 
       handleMirrorM();
     }
 
-    if (e.ctrlKey && e.shiftKey && e.key === 'S') {
+    if (isCtrl && e.shiftKey && e.key === 'S') {
 
       e.preventDefault();
 
       handleMirrorS();
     }
 
-    if (e.ctrlKey && e.key === 's') {
+    if (isCtrl && e.key === 's') {
 
       e.preventDefault();
       handleShare();
     }
 
-    if (e.ctrlKey && e.shiftKey && e.key === 'X') {
+    if (isCtrl && e.shiftKey && e.key === 'X') {
 
       e.preventDefault();
 
       handleRotateX();
     }
 
-    if (e.ctrlKey && e.shiftKey && e.key === 'Y') {
+    if (isCtrl && e.shiftKey && e.key === 'Y') {
 
       e.preventDefault();
 
       handleRotateY();
     }
 
-    if (e.ctrlKey && e.shiftKey && e.key === 'Z') {
+    if (isCtrl && e.shiftKey && e.key === 'Z') {
 
       e.preventDefault();
 
       handleRotateZ();
     }
 
-    if (e.ctrlKey && e.key === 'i') {
+    if (isCtrl && e.key === 'i') {
 
       e.preventDefault();
 
       handleInvert();
     }
 
-    if (e.ctrlKey && e.key === '/') {
+    if (isCtrl && e.key === '/') {
 
       e.preventDefault();
 
       handleRemoveComments();
     }
 
-    if (e.ctrlKey && e.key === 'q') {
+    if (isCtrl && e.key === 'q') {
 
       e.preventDefault();
 
       handleCopySolve();
     }
 
-    if (e.ctrlKey && e.key === 'Delete') {
+    if (isCtrl && e.key === 'Delete') {
 
       e.preventDefault();
 
@@ -1448,18 +1449,24 @@ export default function Recon() {
     // may create screenshot, so handleStoreSelection needs current values.
   }, [scrambleHTML, solutionHTML]);
 
+  const ctrlKey =
+    typeof navigator !== "undefined" &&
+    navigator.userAgent &&
+    /Mac|iPod|iPhone|iPad/.test(navigator.userAgent)
+      ? "⌘"
+      : "Ctrl";
 
   const toolbarButtons = [
-    { id: 'undo', text: 'Undo', shortcutHint: 'Ctrl+Z', onClick: handleUndo, icon: <UndoIcon />, buttonRef: undoRef },
-    { id: 'redo', text: 'Redo', shortcutHint: 'Ctrl+Y', onClick: handleRedo, icon: <RedoIcon />, buttonRef: redoRef },
-    { id: 'mirrorM', text: 'Mirror M', shortcutHint: 'Ctrl+Shift+M', onClick: handleMirrorM, iconText: 'M' },
-    { id: 'mirrorS', text: 'Mirror S', shortcutHint: 'Ctrl+Shift+S', onClick: handleMirrorS, iconText: 'S' },
-    { id: 'rotateX', text: 'Rotate X', shortcutHint: 'Ctrl+Shift+X', onClick: handleRotateX, iconText: "X" },
-    { id: 'rotateY', text: 'Rotate Y', shortcutHint: 'Ctrl+Shift+Y', onClick: handleRotateY, iconText: "Y" },
-    { id: 'rotateZ', text: 'Rotate Z', shortcutHint: 'Ctrl+Shift+Z', onClick: handleRotateZ, iconText: "Z" },
-    { id: 'invert', text: 'Invert', shortcutHint: 'Ctrl+I', onClick: handleInvert, icon: <InvertIcon /> },
+    { id: 'undo', text: 'Undo', shortcutHint: `${ctrlKey}+Z`, onClick: handleUndo, icon: <UndoIcon />, buttonRef: undoRef },
+    { id: 'redo', text: 'Redo', shortcutHint: `${ctrlKey}+Y`, onClick: handleRedo, icon: <RedoIcon />, buttonRef: redoRef },
+    { id: 'mirrorM', text: 'Mirror M', shortcutHint: `${ctrlKey}+Shift+M`, onClick: handleMirrorM, iconText: 'M' },
+    { id: 'mirrorS', text: 'Mirror S', shortcutHint: `${ctrlKey}+Shift+S`, onClick: handleMirrorS, iconText: 'S' },
+    { id: 'rotateX', text: 'Rotate X', shortcutHint: `${ctrlKey}+Shift+X`, onClick: handleRotateX, iconText: "X" },
+    { id: 'rotateY', text: 'Rotate Y', shortcutHint: `${ctrlKey}+Shift+Y`, onClick: handleRotateY, iconText: "Y" },
+    { id: 'rotateZ', text: 'Rotate Z', shortcutHint: `${ctrlKey}+Shift+Z`, onClick: handleRotateZ, iconText: "Z" },
+    { id: 'invert', text: 'Invert', shortcutHint: `${ctrlKey}+I`, onClick: handleInvert, icon: <InvertIcon /> },
     { id: 'cat', text: 'Cat', shortcutHint: 'Cat', onClick: handleAddCat, icon: <CatIcon /> },
-    { id: 'removeComments', text: 'Remove Comments', shortcutHint: 'Ctrl+/ ', onClick: handleRemoveComments, iconText: '// ' },
+    { id: 'removeComments', text: 'Remove Comments', shortcutHint: `${ctrlKey}+/ `, onClick: handleRemoveComments, iconText: '// ' },
   ];
 
   return (
@@ -1480,9 +1487,9 @@ export default function Recon() {
       <div id="top-bar" className="px-3 flex flex-row flex-wrap items-center place-content-end gap-2 mt-8 mb-3">
         <TitleWithPlaceholder solveTitle={solveTitle} handleTitleChange={handleTitleChange} />
         <div className="flex-none flex flex-row space-x-1 pr-2 text-dark_accent">
-          <TopButton id="trash" text="Clear Page" shortcutHint="Ctrl+Del" onClick={handleClearPage} icon={<TrashIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
+          <TopButton id="trash" text="Clear Page" shortcutHint={`${ctrlKey}+Del`} onClick={handleClearPage} icon={<TrashIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
           <CopySolveDropdown onCopyText={handleCopySolve} onScreenshot={handleScreenshot} alert={topButtonAlert} setAlert={setTopButtonAlert} />
-          <TopButton id="share" text="Copy URL" shortcutHint="Ctrl+S" onClick={handleShare} icon={<ShareIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
+          <TopButton id="share" text="Copy URL" shortcutHint={`${ctrlKey}+S`} onClick={handleShare} icon={<ShareIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
         </div>
       </div>
       <div id="scramble-area" className="px-3 mt-3 flex flex-col">

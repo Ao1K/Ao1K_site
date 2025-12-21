@@ -24,3 +24,4 @@ Noteably, adding U* to start of alg is still the same case.
 So we generate a json specifically for ZBLS with these objects:
 {hash: 'abcd', 'eoIndex': 9, alg: "R U R'"}
 Then we search for hash matches only on f2l pieces. The EO is matched separately.
+

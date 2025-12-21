@@ -1,8 +1,63 @@
 {
   "timestamp": "2025-12-09T04:19:04.227Z",
   "step": "exact",
-  "totalAlgorithms": 3919,
+  "totalAlgorithms": 3930,
   "algorithms": [
+        {
+      "alg": "R U2' R'",
+      "hash": "cbaiefghdjklchoflqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y R U2' R'",
+      "hash": "wdcbefghijmlgdkvnqtaabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' R U2' R'",
+      "hash": "advbefghioklepajngtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "R' U2' R",
+      "hash": "cbakefghijdlelixnqtcabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y R' U2' R",
+      "hash": "xdcbefghijkmshajnqdwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' R' U2' R",
+      "hash": "adubefghojklgdmbjqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L U2 L'",
+      "hash": "cladefghijkbulibnqfwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' L U2 L'",
+      "hash": "wdcbefghijmlgdkvnqtaabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L' U2 L",
+      "hash": "cjadefghibklcrkfnitwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y L' U2 L",
+      "hash": "adubefghojklgdmbjqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' L' U2 L",
+      "hash": "xdcbefghijkmshajnqdwabcdef",
+      "step": "f2l"
+    },
     {
       "alg": "R U' R' U' R' U' R",
       "hash": "idkbefghajclkdxhaqtoabcdef",
