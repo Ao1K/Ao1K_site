@@ -773,7 +773,12 @@ function MovesTextEditor({
     e.preventDefault();
     
     let text = e.clipboardData.getData("text");
-    let sanitizedText = sanitizeHtml(text, sanitizeConf).replace(/’/g, "'");
+    let sanitizedText = sanitizeHtml(text, sanitizeConf)
+      .replace(/’/g, "'")
+      
+      // this probably has some unfortunate edge cases with comments, 
+      // but people shouldn't be making comments anyway
+      .replace(/([UDFBLR])w/g, (match, p1) => p1.toLowerCase());
   
     const selection = window.getSelection();
     if (selection && contentEditableRef.current) {
