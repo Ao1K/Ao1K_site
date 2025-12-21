@@ -412,10 +412,10 @@ export default function Changeblog() {
         </ul>
       </div>
       <p className="pt-6">
-        this gives us the pieces that must be in a certain location for the algorithm to be valid for our case.
-        these indices are easy to get a hold of. for example,
+        This gives us the pieces that must be in a certain location for the algorithm to be valid for our case.
+        These indices are easy to get a hold of. For example,
         if cross is on the bottom face, the cross indices are always 4, 5, 6, and 7.
-        let&apos;s also get the current location of the pieces using the complexCubePattern from a minute ago.
+        Let&apos;s also get the current location of the pieces using the complexCubePattern from a minute ago.
         The indices tell us directly which letters to grab. 
         If we look at the 4th indice, we grab the 4th letter, counting from zero.
       </p>
