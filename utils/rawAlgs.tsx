@@ -3941,6 +3941,17 @@ export const rawGeneric: ExactAlg[] = [
   {new: false, value: "U R' U R U2 R' U R", step: "f2l", name: "", add_y: false, add_U: false},
   {new: false, value: "U' R' U R U2 R' U R", step: "f2l", name: "", add_y: false, add_U: false},
   {new: false, value: "U2 R' U R U2 R' U R", step: "f2l", name: "", add_y: false, add_U: false},
+  {new: false, value: "R U2' R'", step: "f2l", name: "", add_y: false, add_U: false},
+  {new: false, value: "y R U2' R'", step: "f2l", name: "", add_y: false, add_U: false},
+  {new: false, value: "y' R U2' R'", step: "f2l", name: "", add_y: false, add_U: false},
+  {new: false, value: "R' U2' R", step: "f2l", name: "", add_y: false, add_U: false},
+  {new: false, value: "y R' U2' R", step: "f2l", name: "", add_y: false, add_U: false},
+  {new: false, value: "y' R' U2' R", step: "f2l", name: "", add_y: false, add_U: false},
+  {new: false, value: "L U2 L'", step: "f2l", name: "", add_y: false, add_U: false},
+  {new: false, value: "y' L U2 L'", step: "f2l", name: "", add_y: false, add_U: false},
+  {new: false, value: "L' U2 L", step: "f2l", name: "", add_y: false, add_U: false},
+  {new: false, value: "y L' U2 L", step: "f2l", name: "", add_y: false, add_U: false},
+  {new: false, value: "y' L' U2 L", step: "f2l", name: "", add_y: false, add_U: false}
 ];
 
 export const rawOLLalgs: LastLayerAlg[] = [
