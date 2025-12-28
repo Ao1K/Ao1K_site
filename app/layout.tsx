@@ -25,6 +25,17 @@ export const metadata: Metadata = {
   icons: {
     icon: "/Ao1K Logo - Icon.png",
   },
+  openGraph: {
+    title: "Ao1K – Reconstruction",
+    description: "Statisically significant speedcube analysis",
+    images: ['/api/og'],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: "Ao1K – Reconstruction",
+    description: "Statisically significant speedcube analysis",
+    images: ['/api/og'],
+  },
 }
 
 

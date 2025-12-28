@@ -27,7 +27,7 @@ import { TransformHTMLprops } from "../../composables/recon/transformHTML";
 import TitleWithPlaceholder from "../../components/recon/TitleInput";
 import TopButton from "../../components/recon/TopButton";
 import CopySolveDropdown from "../../components/recon/CopySolveDropdown";
-import { customDecodeURL } from '../../composables/recon/urlEncoding';
+import { customDecodeURL, customEncodeURL } from '../../composables/recon/urlEncoding';
 import getDailyScramble from '../../composables/recon/getDailyScramble';
 import VideoHelpPrompt from '../../components/recon/VideoHelpPrompt';
 import ImageStack from '../recon/ImageStack';
@@ -1014,11 +1014,15 @@ export default function Recon() {
     await new Promise(resolve => setTimeout(resolve, 500));
 
     try {
-      const scrambleEl = scrambleMethodsRef.current?.getElement();
-      const scrambleText = scrambleEl?.innerText || '';
-      // use allMovesRef for solution to match lineStepsRef line count
-      const solutionLines = allMovesRef.current[1].map(line => line.join(' '));
-      const solutionText = solutionLines.join('\n');
+      let scrambleText = getTextboxInnerText('scramble');
+      let solutionText = getTextboxInnerText('solution');
+      
+      // trim trailing newlines and apply custom encoding (spaces -> underscores)
+      while (scrambleText.endsWith('\n')) scrambleText = scrambleText.slice(0, -1);
+      while (solutionText.endsWith('\n')) solutionText = solutionText.slice(0, -1);
+      scrambleText = customEncodeURL(scrambleText);
+      solutionText = customEncodeURL(solutionText);
+      
       const tpsString = (tpsRef.current && tpsRef.current.innerHTML !== '(-- tps)') ? tpsRef.current.innerHTML : '';
       const icons = getLineIconsForOG();
 
@@ -1026,7 +1030,7 @@ export default function Recon() {
       params.set('scramble', scrambleText);
       params.set('solution', solutionText);
       if (solveTime) params.set('time', solveTime.toString());
-      if (solveTitle) params.set('title', solveTitle);
+      if (solveTitle) params.set('title', customEncodeURL(solveTitle));
       if (totalMoves) params.set('stm', totalMoves.toString());
       if (tpsString) params.set('tps', tpsString);
       if (icons.length > 0) params.set('icons', encodeURIComponent(serializeLineIcons(icons)));

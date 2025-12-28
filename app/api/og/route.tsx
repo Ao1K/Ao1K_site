@@ -6,8 +6,8 @@ import React from 'react';
 
 export const runtime = 'nodejs';
 
-// filters text to only valid cube moves
-function filterToValidMoves(text: string): string {
+// filters text to only valid cube moves, preserving line structure if preserveNewlines is true
+function filterToValidMoves(text: string, preserveNewlines: boolean = false): string {
   const validMoves = [
     "U", "U2", "U3", "U'", "U2'", "U3'",
     "u", "u2", "u3", "u'", "u2'", "u3'",
@@ -26,8 +26,22 @@ function filterToValidMoves(text: string): string {
   ];
   
   const validSet = new Set(validMoves);
-  const tokens = text.split(/\s+/);
-  return tokens.filter(token => validSet.has(token)).join(' ');
+  
+  if (preserveNewlines) {
+    // split by newlines, filter each line, then rejoin with newlines
+    const lines = text.split('\n');
+    return lines
+      .map(line => {
+        const tokens = line.split(/\s+/).filter(t => t.length > 0);
+        return tokens.filter(token => validSet.has(token)).join(' ');
+      })
+      .join('\n');
+  } else {
+    // replace newlines with spaces, then filter
+    const normalizedText = text.replace(/\n/g, ' ');
+    const tokens = normalizedText.split(/\s+/).filter(t => t.length > 0);
+    return tokens.filter(token => validSet.has(token)).join(' ');
+  }
 }
 
 export async function GET(request: Request) {
@@ -75,14 +89,15 @@ export async function GET(request: Request) {
     };
 
     // filter to only valid moves and parse solution lines with icons
-    const filteredScramble = filterToValidMoves(scramble);
-    const solutionTextLines = solution.split('\n');
+    const filteredScramble = filterToValidMoves(scramble, false);
+    const filteredSolution = filterToValidMoves(solution, true);
+    const solutionTextLines = filteredSolution.split('\n');
     const icons = iconsParam ? deserializeLineIcons(decodeURIComponent(iconsParam)) : [];
     
     // pair text with icon first, then filter out lines with no text AND no icon
     const solutionLines: SolutionLine[] = solutionTextLines
       .map((text, i) => ({
-        text: filterToValidMoves(text),
+        text: text,
         icon: icons[i] || null,
       }))
       .filter(line => line.text.trim() !== '');
