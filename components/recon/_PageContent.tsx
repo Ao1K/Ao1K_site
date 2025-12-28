@@ -1,6 +1,5 @@
 'use client';
-import HiddenPlayer, { HiddenPlayerHandle } from './HiddenPlayer';
-import { useState, useRef, useEffect, lazy, Suspense, useCallback, Profiler, useMemo } from 'react';
+import { useState, useRef, useEffect, lazy, Suspense, useCallback } from 'react';
 import MovesTextEditor from "../../components/recon/MovesTextEditor";
 import SpeedDropdown from "../../components/recon/SpeedDropdown";
 
@@ -32,11 +31,13 @@ import { customDecodeURL } from '../../composables/recon/urlEncoding';
 import getDailyScramble from '../../composables/recon/getDailyScramble';
 import VideoHelpPrompt from '../../components/recon/VideoHelpPrompt';
 import ImageStack from '../recon/ImageStack';
-import { CubeInterpreter } from '../../composables/recon/CubeInterpreter';
-import type { StepInfo, Suggestion } from '../../composables/recon/CubeInterpreter';
+import { SimpleCube } from '../../composables/recon/SimpleCube';
+import { SimpleCubeInterpreter } from '../../composables/recon/SimpleCubeInterpreter';
+import type { StepInfo, Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
 import { AlgCompiler } from '../../utils/AlgCompiler';
 import LLpatternBuilder from '../../utils/LLpatternBuilder';
 import { highlightClass } from '../../utils/sharedConstants';
+import { ScreenshotManager, serializeLineIcons, type StepIconData } from '../../composables/recon/ScreenshotManager';
 
 export interface MoveHistory {
   history: string[][];
@@ -96,10 +97,9 @@ export default function Recon() {
   const redoRef = useRef<HTMLButtonElement>(null!);
   const oldSelectionRef = useRef<OldSelectionRef>({ range: null, textbox: null,  status: "init" });
   const bottomBarRef = useRef<HTMLDivElement>(null!);
-  const hiddenPlayerRef = useRef<HiddenPlayerHandle>(null);
   const isLoopingRef = useRef<boolean>(false);
   const loopTimeoutRef = useRef<number|null>(null);
-  const screenshotCacheRef = useRef<{ blob: Blob; scrambleHTML: string; solutionHTML: string; solveTime: number | string } | null>(null);
+  const screenshotManagerRef = useRef(new ScreenshotManager());
   const clearLoopTimeout = useCallback(() => {
     if (loopTimeoutRef.current !== null) {
       clearTimeout(loopTimeoutRef.current);
@@ -120,8 +120,14 @@ export default function Recon() {
     playPause: 'disabled'
   });
 
-  const cubeInterpreter = useRef<CubeInterpreter | null>(null);
+  const cubeInterpreter = useRef<SimpleCubeInterpreter | null>(null);
+  const simpleCubeRef = useRef<SimpleCube>(new SimpleCube());
 
+  const isMac =
+    typeof navigator !== "undefined" &&
+    navigator.userAgent &&
+    /Mac|iPod|iPhone|iPad/.test(navigator.userAgent)
+  const ctrlKey = isMac ? '⌘' : 'Ctrl';
 
   /**
    * Finds the first non-empty line at or before the given line index.
@@ -547,17 +553,23 @@ export default function Recon() {
     return { fullLeft, stepLeft, stepRight, fullRight, playPause }
   };
 
-  const handleEmptyLineSuggestions = async (solutionMoves: string[][], trueLineIndex: number) => {
-    if (!solutionMethodsRef.current || !cubeInterpreter.current) return;
+  const handleEmptyLineSuggestions = (solutionMoves: string[][], trueLineIndex: number) => {
+    if (!solutionMethodsRef.current || !cubeInterpreter.current) {
+      return;
+    }
     const lastMoveIndex = findLastMoveInLine(solutionMoves, trueLineIndex);
-    const animationTimes = findAnimationTimes(1, trueLineIndex, lastMoveIndex, solutionMoves);
-    const cube = await hiddenPlayerRef.current?.updateCube(
-      allMovesRef.current[0].flat().join(' '),
-      solutionMoves.flatMap(line => line).join(' '),
-      animationTimes
-    );
 
-    const steps = cubeInterpreter.current!.getStepsCompleted(cube);
+    // build moves up to current position
+    const scrambleMoves = allMovesRef.current[0].flat();
+    const solutionMovesUpToPoint = solutionMoves.flatMap((line, lineIdx) => {
+      if (lineIdx < trueLineIndex) return line;
+      if (lineIdx === trueLineIndex) return line.slice(0, lastMoveIndex);
+      return [];
+    });
+    const allMoves = [...scrambleMoves, ...solutionMovesUpToPoint];
+    const cubeState = simpleCubeRef.current.getCubeState(allMoves as any);
+
+    const steps = cubeInterpreter.current!.getStepsCompleted(cubeState);
     const newSuggestions: Suggestion[] = cubeInterpreter.current.getAlgSuggestions(steps);
 
     const prevSuggestions = suggestionsRef.current;
@@ -860,212 +872,24 @@ export default function Recon() {
     setTopButtonAlert(["copy-solve", "Solve text copied!"]);
   }
 
-  const cacheMatchesCurrentHtml = () => {
-    const cached = screenshotCacheRef.current;
-    if (!cached) return false;
-    return cached.scrambleHTML === scrambleHTML && cached.solutionHTML === solutionHTML && cached.solveTime === solveTime;
-  };
-
-  const copyScreenshotToClipboard = async (blob: Blob) => {
-    try {
-      await navigator.clipboard.write([
-        new ClipboardItem({ 'image/png': blob })
-      ]);
-      setTopButtonAlert(["copy-solve", "Screenshot copied!"]);
-    } catch (error) {
-      setTopButtonAlert(["copy-solve", "Screenshot Failed. Please report!"]);
-      console.error('Failed to copy screenshot to clipboard:', error);
-    }
-  };
-
-  const buildScreenshotBlob = async (): Promise<Blob | null> => {
-    try {
-      const html2canvas = (await import('html2canvas')).default;
-
-      const scrambleDiv = document.getElementById('scramble');
-      const richSolutionDiv = document.getElementById('rich-solution-display');
-      if (!scrambleDiv || !richSolutionDiv) {
-        console.error('Scramble or solution div not found');
-        return null;
-      }
-
-      const wrapper = document.createElement('div');
-      wrapper.style.position = 'absolute';
-      wrapper.style.left = '-9999px';
-      wrapper.style.width = 'fit-content';
-      wrapper.style.backgroundColor = '#161018';
-      wrapper.style.padding = '0';
-      wrapper.style.display = 'flex';
-      wrapper.style.flexDirection = 'column';
-      wrapper.style.gap = '0';
-      wrapper.style.padding = '1rem';
-      wrapper.style.border = '1px solid #525252'; // border-neutral-600
-      wrapper.style.borderRadius = '0.5rem'; // rounded-lg
-
-      const scrambleClone = scrambleDiv.cloneNode(true) as HTMLElement;
-      scrambleClone.style.width = 'fit-content';
-      scrambleClone.style.maxWidth = 'none';
-      scrambleClone.style.maxHeight = 'none';
-
-      const solutionClone = richSolutionDiv.cloneNode(true) as HTMLElement;
-      solutionClone.style.width = 'fit-content';
-      solutionClone.style.maxWidth = 'none';
-      solutionClone.style.maxHeight = 'none';
-      solutionClone.style.overflow = 'visible';
-
-      // remove highlight
-      solutionClone.innerHTML = solutionClone.innerHTML.replace(new RegExp(`<span class="${highlightClass}">`, 'g'), '<span class="text-primary-100">');
-      
-      // Find the solution textbox div in the clone and set its width
-      const clonedSolutionTextbox = solutionClone.querySelector('#solution') as HTMLElement;
-      if (clonedSolutionTextbox) {
-        clonedSolutionTextbox.style.width = 'fit-content';
-        clonedSolutionTextbox.style.minWidth = '0';
-      }
-
-      // Fix text positioning in both contenteditable divs and remove borders
-      const editableDivs = [scrambleClone, solutionClone].map(clone => 
-        clone.querySelector('div[contenteditable="true"]')
-      ).filter(Boolean) as HTMLElement[];
-      
-      editableDivs.forEach(editableDiv => {
-        editableDiv.style.paddingTop = '0';
-        editableDiv.style.paddingBottom = '1rem';
-        editableDiv.style.paddingLeft = '0.5rem';
-        editableDiv.style.paddingRight = '0.5rem';
-        editableDiv.style.marginTop = '-0.2rem';
-        editableDiv.style.border = '1px solid #525252'; // border-neutral-600
-        editableDiv.style.borderRadius = '0.125rem'; // rounded-sm
-        editableDiv.style.boxSizing = 'border-box';
-        editableDiv.style.lineHeight = '1.6';
-
-        const childDivs = editableDiv.querySelectorAll('div');
-        childDivs.forEach((div: HTMLElement) => {
-          div.style.marginTop = '0';
-          div.style.marginBottom = '0';
-          div.style.paddingTop = '0';
-        });
-      });
-
-      scrambleClone.style.marginBottom = '1rem';
-      scrambleClone.style.marginTop = '0';
-      scrambleClone.style.paddingTop = '0.25rem';
-
-      solutionClone.style.paddingTop = '0.5rem';
-      solutionClone.style.paddingBottom = '0rem';
-      solutionClone.style.marginBottom = '-1rem';
-
-      // Create info div with time, STM, TPS, and watermark
-      const infoDiv = document.createElement('div');
-      infoDiv.style.display = 'flex';
-      infoDiv.style.justifyContent = 'space-between';
-      infoDiv.style.alignItems = 'center';
-      infoDiv.style.paddingLeft = '0.5rem';
-      infoDiv.style.paddingRight = '0.5rem';
-      infoDiv.style.paddingBottom = '1rem';
-      infoDiv.style.marginTop = '0';
-      infoDiv.style.color = '#e5e5e5'; // text-neutral-200
-      infoDiv.style.fontSize = '1.125rem'; // text-lg
-      infoDiv.style.fontFamily = 'inherit';
-
-      const timeText = solveTime ? `${solveTime}` : '';
-      const stmText = totalMoves ? `${totalMoves} stm` : '';
-      let tpsString = '';
-      if (tpsRef.current && tpsRef.current.innerHTML !== '(-- tps)') {
-        tpsString = tpsRef.current.innerHTML;
-      }
-
-      const firstLineParts: string[] = [];
-      if (timeText) firstLineParts.push(`${timeText}\u00A0sec`);
-      if (stmText) firstLineParts.push(stmText.replace(' ', '\u00A0'));
-      const firstLineText = firstLineParts.join(', ');
-      const tpsLine = tpsString ? tpsString.replace(' ', '\u00A0') : '';
-
-      const buildStatsText = (): string => {
-        if (tpsLine) {
-          if (firstLineText.trim()) {
-            return `${firstLineText.trim()}, ${tpsLine}`;
-          }
-          return tpsLine;
-        }
-
-        return firstLineText.trim();
-      };
-
-      const statsSpan = document.createElement('span');
-      statsSpan.style.whiteSpace = 'pre-line';
-      infoDiv.appendChild(statsSpan);
-
-      const watermarkSpan = document.createElement('span');
-      watermarkSpan.textContent = 'Ao1K.com';
-      infoDiv.appendChild(watermarkSpan);
-
-      wrapper.appendChild(scrambleClone);
-      wrapper.appendChild(solutionClone);
-      wrapper.appendChild(infoDiv);
-
-      document.body.appendChild(wrapper);
-
-      const scrambleWidth = scrambleClone.offsetWidth;
-      const solutionWidth = solutionClone.offsetWidth;
-
-      statsSpan.textContent = buildStatsText();
-
-      let minWidth = Math.min(scrambleWidth, solutionWidth);
-      minWidth = Math.max(minWidth, 300);
-      scrambleClone.style.width = `${minWidth}px`;
-      solutionClone.style.width = `${minWidth}px`;
-      if (clonedSolutionTextbox) {
-        clonedSolutionTextbox.style.width = `${minWidth}px`;
-      }
-      infoDiv.style.width = `${minWidth}px`;
-
-      const canvas = await html2canvas(wrapper, {
-        backgroundColor: '#221825',
-        scale: 1,
-        logging: false,
-      });
-
-      document.body.removeChild(wrapper);
-
-      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve));
-      if (!blob) {
-        console.error('Failed to generate screenshot blob');
-        return null;
-      }
-
-      return blob;
-    } catch (error) {
-      console.error('Failed to build screenshot blob:', error);
-      return null;
-    }
-  };
-
-  const ensureScreenshotCache = async (): Promise<Blob | null> => {
-    if (cacheMatchesCurrentHtml()) {
-      return screenshotCacheRef.current?.blob ?? null;
-    }
-
-    const blob = await buildScreenshotBlob();
-    if (!blob) return null;
-
-    screenshotCacheRef.current = {
-      blob,
-      scrambleHTML,
-      solutionHTML,
-      solveTime
-    };
-
-    return blob;
-  };
-
   const handleScreenshot = async () => {
-    const blob = await ensureScreenshotCache();
+    const tpsString = (tpsRef.current && tpsRef.current.innerHTML !== '(-- tps)') ? tpsRef.current.innerHTML : '';
+    const blob = await screenshotManagerRef.current.getBlob(
+      { scrambleHTML, solutionHTML, solveTime },
+      { totalMoves, tpsString }
+    );
+    
     if (!blob) {
       setTopButtonAlert(["copy-solve", "Screenshot Failed. Please report!"]);
       return;
     }
-    await copyScreenshotToClipboard(blob);
+    
+    const success = await screenshotManagerRef.current.copyToClipboard(blob);
+    if (success) {
+      setTopButtonAlert(["copy-solve", "Screenshot copied!"]);
+    } else {
+      setTopButtonAlert(["copy-solve", "Screenshot Failed. Please report!"]);
+    }
   }
 
   const handleShare = async () => { 
@@ -1081,6 +905,138 @@ export default function Recon() {
       console.error('Failed to copy to clipboard:', error);
     }
   }
+
+  // generates consolidated step icon data per line for OG image
+  const getLineIconsForOG = (): (StepIconData | null)[] => {
+    const currentLineSteps = lineStepsRef.current;
+    const icons: (StepIconData | null)[] = [];
+
+    for (let index = 0; index < currentLineSteps.length; index++) {
+      const currentSteps = currentLineSteps[index]?.stepInfo || [];
+      
+      if (currentSteps.length === 0) {
+        icons.push(null);
+        continue;
+      }
+
+      // get previous pattern for LL context
+      const prevSteps = currentLineSteps.slice(0, index).flatMap(e => e.stepInfo);
+      const prevPattern = [...prevSteps].reverse().find(s => s.pattern?.length)?.pattern;
+
+      const solvedStep = currentSteps.find(step => step.type === 'solved');
+      if (solvedStep) {
+        icons.push({ step: 'solved', type: 'solved', colors: solvedStep.colors, pattern: prevPattern });
+        continue;
+      }
+
+      const llSteps = currentSteps.filter(step => step.type === 'last layer');
+      const llStepNames = llSteps.map(s => s.step);
+      const prevLLSteps = prevSteps.filter(step => step.type === 'last layer').map(s => s.step);
+      const f2lSteps = currentSteps.filter(step => step.type === 'f2l');
+      const crossSteps = currentSteps.filter(step => step.type === 'cross');
+
+      // xcross
+      if (crossSteps.length === 1 && f2lSteps.length > 0) {
+        const colors = [...crossSteps[0].colors, ...f2lSteps.flatMap(step => step.colors)];
+        icons.push({ step: "x".repeat(f2lSteps.length) + 'cross', type: 'cross', colors });
+        continue;
+      }
+
+      // multislot / pair
+      if (f2lSteps.length > 1) {
+        icons.push({ step: 'multislot', type: 'f2l', colors: [...new Set(f2lSteps.flatMap(step => step.colors))] });
+        continue;
+      }
+      if (f2lSteps.length === 1) {
+        icons.push({ step: 'pair', type: 'f2l', colors: [...new Set(f2lSteps[0].colors)] });
+        continue;
+      }
+
+      // LL combos (order matters - check more specific combos first)
+      if (llStepNames.includes('ep') && llStepNames.includes('cp') && llStepNames.includes('co') && llStepNames.includes('eo')) {
+        icons.push({ step: '1lll', type: 'last layer', colors: llSteps[0]?.colors || [], pattern: prevPattern });
+        continue;
+      }
+      if (llStepNames.includes('ep') && llStepNames.includes('cp') && llStepNames.includes('co')) {
+        icons.push({ step: 'zbll', type: 'last layer', colors: llSteps[0]?.colors || [], pattern: prevPattern });
+        continue;
+      }
+      if (llStepNames.includes('eo') && llStepNames.includes('cp') && llStepNames.includes('co')) {
+        icons.push({ step: 'oll(cp)', type: 'last layer', colors: llSteps[0]?.colors || [], pattern: prevPattern });
+        continue;
+      }
+      if (llStepNames.includes('eo') && llStepNames.includes('co')) {
+        icons.push({ step: 'oll', type: 'last layer', colors: llSteps[0]?.colors || [], pattern: prevPattern });
+        continue;
+      }
+      if (llStepNames.includes('ep') && llStepNames.includes('cp')) {
+        icons.push({ step: 'pll', type: 'last layer', colors: llSteps[0]?.colors || [], pattern: prevPattern });
+        continue;
+      }
+      if (llStepNames.includes('co') && llStepNames.includes('cp') && prevLLSteps.includes('eo')) {
+        icons.push({ step: 'coll', type: 'last layer', colors: llSteps[0]?.colors || [], pattern: prevPattern });
+        continue;
+      }
+      if (llStepNames.includes('eo') && llStepNames.includes('ep')) {
+        icons.push({ step: 'ell', type: 'last layer', colors: llSteps[0]?.colors || [], pattern: prevPattern });
+        continue;
+      }
+      if (llStepNames.includes('co') && llStepNames.includes('cp')) {
+        icons.push({ step: 'cll', type: 'last layer', colors: llSteps[0]?.colors || [], pattern: prevPattern });
+        continue;
+      }
+
+      // individual LL steps
+      if (llSteps.length === 1) {
+        const stepMap: Record<string, string> = { 'eo': '1st look oll', 'co': '2nd look oll', 'cp': '1st look pll', 'ep': '2nd look pll' };
+        const stepName = stepMap[llSteps[0].step];
+        if (stepName) {
+          icons.push({ step: stepName, type: 'last layer', colors: llSteps[0].colors, pattern: prevPattern });
+          continue;
+        }
+      }
+
+      // cross
+      if (crossSteps.length > 0) {
+        icons.push(crossSteps[crossSteps.length - 1]);
+        continue;
+      }
+
+      // fallback
+      icons.push(currentSteps[currentSteps.length - 1]);
+    }
+
+    return icons;
+  };
+
+  // generates OG image URL and opens in new tab
+  const handleTestOGImage = async () => {
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    try {
+      const scrambleEl = scrambleMethodsRef.current?.getElement();
+      const scrambleText = scrambleEl?.innerText || '';
+      // use allMovesRef for solution to match lineStepsRef line count
+      const solutionLines = allMovesRef.current[1].map(line => line.join(' '));
+      const solutionText = solutionLines.join('\n');
+      const tpsString = (tpsRef.current && tpsRef.current.innerHTML !== '(-- tps)') ? tpsRef.current.innerHTML : '';
+      const icons = getLineIconsForOG();
+
+      const params = new URLSearchParams();
+      params.set('scramble', scrambleText);
+      params.set('solution', solutionText);
+      if (solveTime) params.set('time', solveTime.toString());
+      if (solveTitle) params.set('title', solveTitle);
+      if (totalMoves) params.set('stm', totalMoves.toString());
+      if (tpsString) params.set('tps', tpsString);
+      if (icons.length > 0) params.set('icons', encodeURIComponent(serializeLineIcons(icons)));
+
+      const ogUrl = `${window.location.origin}/api/og?${params.toString()}`;
+      window.open(ogUrl, '_blank');
+    } catch (error) {
+      console.error('Failed to generate OG URL:', error);
+    }
+  };
   
   const getTextboxOfSelection = (range: Range) => {
     let node = range?.commonAncestorContainer
@@ -1143,7 +1099,11 @@ export default function Recon() {
         stepEntry.stepInfo.some(step => step.type?.toLowerCase() === 'solved')
       );
       if (isCubeSolved) {
-        void ensureScreenshotCache();
+        const tpsString = (tpsRef.current && tpsRef.current.innerHTML !== '(-- tps)') ? tpsRef.current.innerHTML : '';
+        void screenshotManagerRef.current.getBlob(
+          { scrambleHTML, solutionHTML, solveTime },
+          { totalMoves, tpsString }
+        );
       } 
     }
   }
@@ -1182,15 +1142,16 @@ export default function Recon() {
 
   const handleCommand = (e: KeyboardEvent) => {
     const isCtrl = e.ctrlKey || e.metaKey;
+    const isModifier = (isMac && e.altKey) || (!isMac && e.shiftKey);
 
-    if (isCtrl && e.shiftKey && e.key === 'M') {
+    if (isCtrl && isModifier && e.key === 'M') {
     
       e.preventDefault();
 
       handleMirrorM();
     }
 
-    if (isCtrl && e.shiftKey && e.key === 'S') {
+    if (isCtrl && isModifier && e.key === 'S') {
 
       e.preventDefault();
 
@@ -1203,21 +1164,21 @@ export default function Recon() {
       handleShare();
     }
 
-    if (isCtrl && e.shiftKey && e.key === 'X') {
+    if (isCtrl && isModifier && e.key === 'X') {
 
       e.preventDefault();
 
       handleRotateX();
     }
 
-    if (isCtrl && e.shiftKey && e.key === 'Y') {
+    if (isCtrl && isModifier && e.key === 'Y') {
 
       e.preventDefault();
 
       handleRotateY();
     }
 
-    if (isCtrl && e.shiftKey && e.key === 'Z') {
+    if (isCtrl && isModifier && e.key === 'Z') {
 
       e.preventDefault();
 
@@ -1280,34 +1241,31 @@ export default function Recon() {
     setLineSteps(respacedSteps);
   };
 
-  const updateLineSteps = async () => {
+  const updateLineSteps = () => {
     if (!cubeInterpreter.current) {
       return;
     }
     const updatedSteps: {moveLine: string, stepInfo: StepInfo[]}[] = [];
     const previousLineSteps = lineStepsRef.current;
 
-    const getStepsForLine = async (lineIdx: number): Promise<StepInfo[]> => {
-        if (!hiddenPlayerRef.current || !cubeInterpreter.current) {
-          console.warn('Hidden player or cube interpreter missing when computing steps.');
+    const getStepsForLine = (lineIdx: number): StepInfo[] => {
+        if (!cubeInterpreter.current) {
+          console.warn('Cube interpreter missing when computing steps.');
           return [];
         }
 
         const lastMoveIndex = findLastMoveInLine(solutionMoves, lineIdx);
-        const animationTimes = findAnimationTimes(1, lineIdx, lastMoveIndex, solutionMoves);
-        const cube = await hiddenPlayerRef.current.updateCube(
-          allMovesRef.current[0].flat().join(' '),
-          solutionMoves.flatMap(line => line).join(' '),
-          animationTimes
-        );
 
-        if (!cube) {
-          console.warn('Hidden player returned null cube. Skipping step computation to avoid stale state.');
+        // build moves up to end of this line
+        const scrambleMoves = allMovesRef.current[0].flat();
+        const solutionMovesUpToLine = solutionMoves.flatMap((line, idx) => {
+          if (idx <= lineIdx) return line;
           return [];
-        }
+        });
+        const allMoves = [...scrambleMoves, ...solutionMovesUpToLine];
+        const cubeState = simpleCubeRef.current.getCubeState(allMoves as any);
 
-        // wait until hidden player commits the latest cube before reading steps
-        const steps = cubeInterpreter.current.getStepsCompleted(cube);
+        const steps = cubeInterpreter.current.getStepsCompleted(cubeState);
         return steps;
     };
 
@@ -1334,7 +1292,7 @@ export default function Recon() {
         continue;
       }
       if (isChangeFound) {
-        const stepInfo = await getStepsForLine(lineIdx);
+        const stepInfo = getStepsForLine(lineIdx);
         const prevSteps = updatedSteps.map(item => item.stepInfo).flat();
         const newSteps = getNewSteps(prevSteps, stepInfo);
         updatedSteps.push({moveLine: line.join(' '), stepInfo: newSteps});
@@ -1351,7 +1309,7 @@ export default function Recon() {
           updatedSteps.push({moveLine: oldMoveLine, stepInfo: previousLineSteps[lineIdx]?.stepInfo || []});
         } else {
           isChangeFound = true;
-          const stepInfo = await getStepsForLine(lineIdx);
+          const stepInfo = getStepsForLine(lineIdx);
           const prevSteps = updatedSteps.map(item => item.stepInfo).flat();
           const newSteps = getNewSteps(prevSteps, stepInfo);
           updatedSteps.push({moveLine: flatLine, stepInfo: newSteps});
@@ -1363,35 +1321,26 @@ export default function Recon() {
     setLineSteps(updatedSteps);
   };
 
-  const handleHiddenCubeLoaded = useCallback(async () => {
-    if (!hiddenPlayerRef.current) {
-      console.warn('Hidden player reference is not set.');
-      return;
-    }
-
+  const initializeCubeInterpreter = async () => {
     const { default: algDoc } = await import('../../utils/compiled-exact-algs.json');
-
-    // Initialize with empty state to get the initial cube
-    const cube = await hiddenPlayerRef.current.updateCube('', '', []);
-    
-    if (!cube) {
-      console.warn('Failed to initialize cube from hidden player.');
-      return;
-    }
-
-    cubeInterpreter.current = new CubeInterpreter(cube, algDoc.algorithms);
-
-    // need cubeInterpreter to be loaded or line step update will be too early in loading sequence.
+    cubeInterpreter.current = new SimpleCubeInterpreter(algDoc.algorithms);
     updateLineSteps();
 
-    void ensureScreenshotCache();
-
-  }, []);
+    // warm up screenshot renderer
+    void screenshotManagerRef.current.getBlob(
+      { scrambleHTML: '', solutionHTML: '', solveTime: '' },
+      { totalMoves: 0, tpsString: '' }
+    );
+  };
 
   const toggleShowBottomBar = () => {
     Cookies.set('isShowingBottomBar', (!isShowingToolbar).toString(), { expires: 365 });
     setIsShowingToolbar(prev => !prev);
   }
+
+  useEffect(() => {
+    initializeCubeInterpreter();
+  }, []);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -1449,25 +1398,33 @@ export default function Recon() {
     // may create screenshot, so handleStoreSelection needs current values.
   }, [scrambleHTML, solutionHTML]);
 
-  const ctrlKey =
-    typeof navigator !== "undefined" &&
-    navigator.userAgent &&
-    /Mac|iPod|iPhone|iPad/.test(navigator.userAgent)
-      ? "⌘"
-      : "Ctrl";
-
-  const toolbarButtons = [
-    { id: 'undo', text: 'Undo', shortcutHint: `${ctrlKey}+Z`, onClick: handleUndo, icon: <UndoIcon />, buttonRef: undoRef },
-    { id: 'redo', text: 'Redo', shortcutHint: `${ctrlKey}+Y`, onClick: handleRedo, icon: <RedoIcon />, buttonRef: redoRef },
-    { id: 'mirrorM', text: 'Mirror M', shortcutHint: `${ctrlKey}+Shift+M`, onClick: handleMirrorM, iconText: 'M' },
-    { id: 'mirrorS', text: 'Mirror S', shortcutHint: `${ctrlKey}+Shift+S`, onClick: handleMirrorS, iconText: 'S' },
-    { id: 'rotateX', text: 'Rotate X', shortcutHint: `${ctrlKey}+Shift+X`, onClick: handleRotateX, iconText: "X" },
-    { id: 'rotateY', text: 'Rotate Y', shortcutHint: `${ctrlKey}+Shift+Y`, onClick: handleRotateY, iconText: "Y" },
-    { id: 'rotateZ', text: 'Rotate Z', shortcutHint: `${ctrlKey}+Shift+Z`, onClick: handleRotateZ, iconText: "Z" },
-    { id: 'invert', text: 'Invert', shortcutHint: `${ctrlKey}+I`, onClick: handleInvert, icon: <InvertIcon /> },
+  const windowsToolbarButtons = [
+    { id: 'undo', text: 'Undo', shortcutHint: `Ctrl+Z`, onClick: handleUndo, icon: <UndoIcon />, buttonRef: undoRef },
+    { id: 'redo', text: 'Redo', shortcutHint: `Ctrl+Y`, onClick: handleRedo, icon: <RedoIcon />, buttonRef: redoRef },
+    { id: 'mirrorM', text: 'Mirror M', shortcutHint: `Ctrl+Shift+M`, onClick: handleMirrorM, iconText: 'M' },
+    { id: 'mirrorS', text: 'Mirror S', shortcutHint: `Ctrl+Shift+S`, onClick: handleMirrorS, iconText: 'S' },
+    { id: 'rotateX', text: 'Rotate X', shortcutHint: `Ctrl+Shift+X`, onClick: handleRotateX, iconText: "X" },
+    { id: 'rotateY', text: 'Rotate Y', shortcutHint: `Ctrl+Shift+Y`, onClick: handleRotateY, iconText: "Y" },
+    { id: 'rotateZ', text: 'Rotate Z', shortcutHint: `Ctrl+Shift+Z`, onClick: handleRotateZ, iconText: "Z" },
+    { id: 'invert', text: 'Invert', shortcutHint: `Ctrl+I`, onClick: handleInvert, icon: <InvertIcon /> },
     { id: 'cat', text: 'Cat', shortcutHint: 'Cat', onClick: handleAddCat, icon: <CatIcon /> },
-    { id: 'removeComments', text: 'Remove Comments', shortcutHint: `${ctrlKey}+/ `, onClick: handleRemoveComments, iconText: '// ' },
+    { id: 'removeComments', text: 'Remove Comments', shortcutHint: `Ctrl+/ `, onClick: handleRemoveComments, iconText: '// ' },
   ];
+
+  const macToolbarButtons = [
+    { id: 'undo', text: 'Undo', shortcutHint: `⌘+Z`, onClick: handleUndo, icon: <UndoIcon />, buttonRef: undoRef },
+    { id: 'redo', text: 'Redo', shortcutHint: `⌘+Y`, onClick: handleRedo, icon: <RedoIcon />, buttonRef: redoRef },
+    { id: 'mirrorM', text: 'Mirror M', shortcutHint: `⌘+Alt+M`, onClick: handleMirrorM, iconText: 'M' },
+    { id: 'mirrorS', text: 'Mirror S', shortcutHint: `⌘+Alt+S`, onClick: handleMirrorS, iconText: 'S' },
+    { id: 'rotateX', text: 'Rotate X', shortcutHint: `⌘+Alt+X`, onClick: handleRotateX, iconText: "X" },
+    { id: 'rotateY', text: 'Rotate Y', shortcutHint: `⌘+Alt+Y`, onClick: handleRotateY, iconText: "Y" },
+    { id: 'rotateZ', text: 'Rotate Z', shortcutHint: `⌘+Alt+Z`, onClick: handleRotateZ, iconText: "Z" },
+    { id: 'invert', text: 'Invert', shortcutHint: `⌘+I`, onClick: handleInvert, icon: <InvertIcon /> },
+    { id: 'cat', text: 'Cat', shortcutHint: 'Cat', onClick: handleAddCat, icon: <CatIcon /> },
+    { id: 'removeComments', text: 'Remove Comments', shortcutHint: `⌘+/ `, onClick: handleRemoveComments, iconText: '// ' },
+  ];
+
+  const toolbarButtons = isMac ? macToolbarButtons : windowsToolbarButtons;
 
   return (
     <div id="main_page" className="col-start-2 col-span-1 flex flex-col bg-primary-900 mt-[52px]">
@@ -1478,11 +1435,6 @@ export default function Recon() {
 
       {/* utility for building case patterns */}
       {/* <LLpatternBuilder /> */}
-
-      <HiddenPlayer 
-        ref={hiddenPlayerRef}
-        onCubeLoaded={handleHiddenCubeLoaded}
-      />
       
       <div id="top-bar" className="px-3 flex flex-row flex-wrap items-center place-content-end gap-2 mt-8 mb-3">
         <TitleWithPlaceholder solveTitle={solveTitle} handleTitleChange={handleTitleChange} />
@@ -1490,6 +1442,7 @@ export default function Recon() {
           <TopButton id="trash" text="Clear Page" shortcutHint={`${ctrlKey}+Del`} onClick={handleClearPage} icon={<TrashIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
           <CopySolveDropdown onCopyText={handleCopySolve} onScreenshot={handleScreenshot} alert={topButtonAlert} setAlert={setTopButtonAlert} />
           <TopButton id="share" text="Copy URL" shortcutHint={`${ctrlKey}+S`} onClick={handleShare} icon={<ShareIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
+          {/* <TopButton id="test-og" text="Test OG Image" onClick={handleTestOGImage} icon={<ShareIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/> */}
         </div>
       </div>
       <div id="scramble-area" className="px-3 mt-3 flex flex-col">

@@ -101,6 +101,7 @@ export const titlePlaceholders = [
   "Also try cubedb.net",
   "Also check out reco.nz",
   "SVGs are cool!",
+  "Thanks Ari", // for helping me test Mac shortcuts that one time
   "Never code at 2 am",
   "Now 13% messier code!",
   "Remove the title. It's cleaner."

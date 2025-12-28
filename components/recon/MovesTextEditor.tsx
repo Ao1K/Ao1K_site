@@ -1042,19 +1042,27 @@ function MovesTextEditor({
       handleSuggestionReject();
     }
 
+    const isMac =
+      typeof navigator !== "undefined" &&
+      navigator.userAgent &&
+      /Mac|iPod|iPhone|iPad/.test(navigator.userAgent);
+
     const isCtrl = e.ctrlKey || e.metaKey;
 
-    if (isCtrl && e.key === 'z') {
+    if (isCtrl && !e.shiftKey && !e.altKey && e.key === 'z') {
       
       e.preventDefault();
-
       handleUndo();
     }
 
-    if (isCtrl && e.key === 'y') {
+    if (isMac && e.shiftKey && isCtrl && e.key === 'z') {
 
       e.preventDefault();
+      handleRedo();
 
+    } else if (!isMac && isCtrl && e.key === 'y') {
+
+      e.preventDefault();
       handleRedo();
     }
 

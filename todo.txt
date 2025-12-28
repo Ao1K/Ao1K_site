@@ -3,13 +3,10 @@ Informal Bugs/Todo List. Not guaranteed to be complete or accurate.
 
 Screenshot scramble box shouldn't have 3-line minimum width, only 1 line.
 
-Typing UU --> should make U2
+Typing Uw should be replaced with u. UU --> should make U2
 
 Header can be regular element, not fixed. Not that deep.
 
-stylized ' symbols should get autoreplaced with unstyled ' on paste. Similar for Uw --> u. 
-  But this second one can be handled like UU --> U2
-  Let's be limiting. Uw3 and similar should not convert at all.
 
 Autocomplete for cross. Would need to brute force solutions to partial cross solution input. 
 Or compute a bunch of crosses and just give whatever suggestion still works.
