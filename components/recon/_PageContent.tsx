@@ -1017,9 +1017,6 @@ export default function Recon() {
       let scrambleText = getTextboxInnerText('scramble');
       let solutionText = getTextboxInnerText('solution');
       
-      // trim trailing newlines and apply custom encoding (spaces -> underscores)
-      while (scrambleText.endsWith('\n')) scrambleText = scrambleText.slice(0, -1);
-      while (solutionText.endsWith('\n')) solutionText = solutionText.slice(0, -1);
       scrambleText = customEncodeURL(scrambleText);
       solutionText = customEncodeURL(solutionText);
       

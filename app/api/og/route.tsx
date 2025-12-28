@@ -29,7 +29,7 @@ function filterToValidMoves(text: string, preserveNewlines: boolean = false): st
   
   if (preserveNewlines) {
     // split by newlines, filter each line, then rejoin with newlines
-    const lines = text.split('\n');
+    const lines = text.split('\n\n');
     return lines
       .map(line => {
         const tokens = line.split(/\s+/).filter(t => t.length > 0);
@@ -49,8 +49,9 @@ export async function GET(request: Request) {
     const { searchParams, origin } = new URL(request.url);
     
     // Decode params
-    const scramble = customDecodeURL(searchParams.get('scramble') || '');
-    const solution = customDecodeURL(searchParams.get('solution') || '');
+    const scramble = decodeURI(customDecodeURL(searchParams.get('scramble') || ''));
+    const solution = decodeURI(customDecodeURL(searchParams.get('solution') || ''));
+    console.log('[OG Route] Decoded solution:', solution);
     const time = searchParams.get('time');
     const title = customDecodeURL(searchParams.get('title') || '');
     const stm = searchParams.get('stm');
