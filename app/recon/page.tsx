@@ -36,7 +36,6 @@ export async function generateMetadata(
   }
   if (searchParams.stm) sp.set('stm', searchParams.stm as string);
   if (searchParams.tps) sp.set('tps', searchParams.tps as string);
-  if (searchParams.icons) sp.set('icons', searchParams.icons as string);
 
   const ogUrl = `/api/og?${sp.toString()}`;
 

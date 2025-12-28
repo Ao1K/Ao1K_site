@@ -37,7 +37,7 @@ import type { StepInfo, Suggestion } from '../../composables/recon/SimpleCubeInt
 import { AlgCompiler } from '../../utils/AlgCompiler';
 import LLpatternBuilder from '../../utils/LLpatternBuilder';
 import { highlightClass } from '../../utils/sharedConstants';
-import { ScreenshotManager, serializeLineIcons, type StepIconData } from '../../composables/recon/ScreenshotManager';
+import { ScreenshotManager } from '../../composables/recon/ScreenshotManager';
 
 export interface MoveHistory {
   history: string[][];
@@ -906,109 +906,6 @@ export default function Recon() {
     }
   }
 
-  // generates consolidated step icon data per line for OG image
-  const getLineIconsForOG = (): (StepIconData | null)[] => {
-    const currentLineSteps = lineStepsRef.current;
-    const icons: (StepIconData | null)[] = [];
-
-    for (let index = 0; index < currentLineSteps.length; index++) {
-      const currentSteps = currentLineSteps[index]?.stepInfo || [];
-      
-      if (currentSteps.length === 0) {
-        icons.push(null);
-        continue;
-      }
-
-      // get previous pattern for LL context
-      const prevSteps = currentLineSteps.slice(0, index).flatMap(e => e.stepInfo);
-      const prevPattern = [...prevSteps].reverse().find(s => s.pattern?.length)?.pattern;
-
-      const solvedStep = currentSteps.find(step => step.type === 'solved');
-      if (solvedStep) {
-        icons.push({ step: 'solved', type: 'solved', colors: solvedStep.colors, pattern: prevPattern });
-        continue;
-      }
-
-      const llSteps = currentSteps.filter(step => step.type === 'last layer');
-      const llStepNames = llSteps.map(s => s.step);
-      const prevLLSteps = prevSteps.filter(step => step.type === 'last layer').map(s => s.step);
-      const f2lSteps = currentSteps.filter(step => step.type === 'f2l');
-      const crossSteps = currentSteps.filter(step => step.type === 'cross');
-
-      // xcross
-      if (crossSteps.length === 1 && f2lSteps.length > 0) {
-        const colors = [...crossSteps[0].colors, ...f2lSteps.flatMap(step => step.colors)];
-        icons.push({ step: "x".repeat(f2lSteps.length) + 'cross', type: 'cross', colors });
-        continue;
-      }
-
-      // multislot / pair
-      if (f2lSteps.length > 1) {
-        icons.push({ step: 'multislot', type: 'f2l', colors: [...new Set(f2lSteps.flatMap(step => step.colors))] });
-        continue;
-      }
-      if (f2lSteps.length === 1) {
-        icons.push({ step: 'pair', type: 'f2l', colors: [...new Set(f2lSteps[0].colors)] });
-        continue;
-      }
-
-      // LL combos (order matters - check more specific combos first)
-      if (llStepNames.includes('ep') && llStepNames.includes('cp') && llStepNames.includes('co') && llStepNames.includes('eo')) {
-        icons.push({ step: '1lll', type: 'last layer', colors: llSteps[0]?.colors || [], pattern: prevPattern });
-        continue;
-      }
-      if (llStepNames.includes('ep') && llStepNames.includes('cp') && llStepNames.includes('co')) {
-        icons.push({ step: 'zbll', type: 'last layer', colors: llSteps[0]?.colors || [], pattern: prevPattern });
-        continue;
-      }
-      if (llStepNames.includes('eo') && llStepNames.includes('cp') && llStepNames.includes('co')) {
-        icons.push({ step: 'oll(cp)', type: 'last layer', colors: llSteps[0]?.colors || [], pattern: prevPattern });
-        continue;
-      }
-      if (llStepNames.includes('eo') && llStepNames.includes('co')) {
-        icons.push({ step: 'oll', type: 'last layer', colors: llSteps[0]?.colors || [], pattern: prevPattern });
-        continue;
-      }
-      if (llStepNames.includes('ep') && llStepNames.includes('cp')) {
-        icons.push({ step: 'pll', type: 'last layer', colors: llSteps[0]?.colors || [], pattern: prevPattern });
-        continue;
-      }
-      if (llStepNames.includes('co') && llStepNames.includes('cp') && prevLLSteps.includes('eo')) {
-        icons.push({ step: 'coll', type: 'last layer', colors: llSteps[0]?.colors || [], pattern: prevPattern });
-        continue;
-      }
-      if (llStepNames.includes('eo') && llStepNames.includes('ep')) {
-        icons.push({ step: 'ell', type: 'last layer', colors: llSteps[0]?.colors || [], pattern: prevPattern });
-        continue;
-      }
-      if (llStepNames.includes('co') && llStepNames.includes('cp')) {
-        icons.push({ step: 'cll', type: 'last layer', colors: llSteps[0]?.colors || [], pattern: prevPattern });
-        continue;
-      }
-
-      // individual LL steps
-      if (llSteps.length === 1) {
-        const stepMap: Record<string, string> = { 'eo': '1st look oll', 'co': '2nd look oll', 'cp': '1st look pll', 'ep': '2nd look pll' };
-        const stepName = stepMap[llSteps[0].step];
-        if (stepName) {
-          icons.push({ step: stepName, type: 'last layer', colors: llSteps[0].colors, pattern: prevPattern });
-          continue;
-        }
-      }
-
-      // cross
-      if (crossSteps.length > 0) {
-        icons.push(crossSteps[crossSteps.length - 1]);
-        continue;
-      }
-
-      // fallback
-      icons.push(currentSteps[currentSteps.length - 1]);
-    }
-
-    return icons;
-  };
-
   // generates OG image URL and opens in new tab
   const handleTestOGImage = async () => {
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -1021,7 +918,6 @@ export default function Recon() {
       solutionText = customEncodeURL(solutionText);
       
       const tpsString = (tpsRef.current && tpsRef.current.innerHTML !== '(-- tps)') ? tpsRef.current.innerHTML : '';
-      const icons = getLineIconsForOG();
 
       const params = new URLSearchParams();
       params.set('scramble', scrambleText);
@@ -1030,7 +926,6 @@ export default function Recon() {
       if (solveTitle) params.set('title', customEncodeURL(solveTitle));
       if (totalMoves) params.set('stm', totalMoves.toString());
       if (tpsString) params.set('tps', tpsString);
-      if (icons.length > 0) params.set('icons', encodeURIComponent(serializeLineIcons(icons)));
 
       const ogUrl = `${window.location.origin}/api/og?${params.toString()}`;
       window.open(ogUrl, '_blank');
