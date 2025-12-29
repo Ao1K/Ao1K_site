@@ -905,34 +905,6 @@ export default function Recon() {
       console.error('Failed to copy to clipboard:', error);
     }
   }
-
-  // generates OG image URL and opens in new tab
-  const handleTestOGImage = async () => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    try {
-      let scrambleText = getTextboxInnerText('scramble');
-      let solutionText = getTextboxInnerText('solution');
-      
-      scrambleText = customEncodeURL(scrambleText);
-      solutionText = customEncodeURL(solutionText);
-      
-      const tpsString = (tpsRef.current && tpsRef.current.innerHTML !== '(-- tps)') ? tpsRef.current.innerHTML : '';
-
-      const params = new URLSearchParams();
-      params.set('scramble', scrambleText);
-      params.set('solution', solutionText);
-      if (solveTime) params.set('time', solveTime.toString());
-      if (solveTitle) params.set('title', customEncodeURL(solveTitle));
-      if (totalMoves) params.set('stm', totalMoves.toString());
-      if (tpsString) params.set('tps', tpsString);
-
-      const ogUrl = `${window.location.origin}/api/og?${params.toString()}`;
-      window.open(ogUrl, '_blank');
-    } catch (error) {
-      console.error('Failed to generate OG URL:', error);
-    }
-  };
   
   const getTextboxOfSelection = (range: Range) => {
     let node = range?.commonAncestorContainer
@@ -1338,7 +1310,6 @@ export default function Recon() {
           <TopButton id="trash" text="Clear Page" shortcutHint={`${ctrlKey}+Del`} onClick={handleClearPage} icon={<TrashIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
           <CopySolveDropdown onCopyText={handleCopySolve} onScreenshot={handleScreenshot} alert={topButtonAlert} setAlert={setTopButtonAlert} />
           <TopButton id="share" text="Copy URL" shortcutHint={`${ctrlKey}+S`} onClick={handleShare} icon={<ShareIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
-          {/* <TopButton id="test-og" text="Test OG Image" onClick={handleTestOGImage} icon={<ShareIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/> */}
         </div>
       </div>
       <div id="scramble-area" className="px-3 mt-3 flex flex-col">

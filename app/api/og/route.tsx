@@ -1,3 +1,5 @@
+// to test og image generation, go to recon page, input params, then replace /recon with /api/og in the URL bar
+
 import { ImageResponse } from 'next/og';
 import { customDecodeURL } from '../../../composables/recon/urlEncoding';
 import { createScreenshotContent, type ScreenshotData, type SolutionLine } from '../../../composables/recon/ScreenshotManager';
@@ -189,8 +191,6 @@ export async function GET(request: Request) {
     console.log('[OG Route] Decoded solution:', solution);
     const time = searchParams.get('time');
     const title = customDecodeURL(searchParams.get('title') || '');
-    const stm = searchParams.get('stm');
-    const tps = searchParams.get('tps');
 
     if (!scramble || !solution) {
       return new ImageResponse(
@@ -236,6 +236,13 @@ export async function GET(request: Request) {
     
     // compute icons at runtime from scramble + solution
     const icons = computeLineIcons(scrambleMoves, solutionMoveLines);
+
+    // calculate stats
+    const calculatedStm = solutionMoveLines.flat().filter(move => move.match(/[^xyz2']/g)).length;
+    const timeNum = time ? parseFloat(time) : 0;
+    const calculatedTps = (timeNum > 0 && calculatedStm > 0) 
+      ? (calculatedStm / timeNum).toFixed(2) 
+      : '';
     
     // pair text with computed icon, then filter out empty lines
     const solutionLines: SolutionLine[] = solutionTextLines
@@ -249,8 +256,8 @@ export async function GET(request: Request) {
       scramble: filteredScramble,
       solutionLines,
       solveTime: time || '',
-      totalMoves: stm ? parseInt(stm, 10) : 0,
-      tpsString: tps || '',
+      totalMoves: calculatedStm,
+      tpsString: calculatedTps ? `${calculatedTps} tps` : '',
       title: title || undefined,
     };
 

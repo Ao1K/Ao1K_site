@@ -59,7 +59,7 @@ export function createStepIcon(
 
   // cross icon - 3x3 grid with cross pattern
   if (step === 'cross') {
-    return h('svg', { viewBox: '0 0 24 24', width: size, height: size },
+    return h('svg', { viewBox: '0 0 24 24', width: size, height: size, stroke: '#52525b', 'stroke-width': 1, fill: 'none' },
       h('rect', { x: 0, y: 0, width: 8, height: 8, fill: DARK_BG }),
       h('rect', { x: 8, y: 0, width: 8, height: 8, fill: primaryColors[0] }),
       h('rect', { x: 16, y: 0, width: 8, height: 8, fill: DARK_BG }),
@@ -68,7 +68,8 @@ export function createStepIcon(
       h('rect', { x: 16, y: 8, width: 8, height: 8, fill: primaryColors[0] }),
       h('rect', { x: 0, y: 16, width: 8, height: 8, fill: DARK_BG }),
       h('rect', { x: 8, y: 16, width: 8, height: 8, fill: primaryColors[0] }),
-      h('rect', { x: 16, y: 16, width: 8, height: 8, fill: DARK_BG })
+      h('rect', { x: 16, y: 16, width: 8, height: 8, fill: DARK_BG }),
+      h('rect', { x: 0, y: 0, width: 24, height: 24, fill: 'none', stroke: '#52525b', 'stroke-width': 1 }) // outer border
     );
   }
 
@@ -104,8 +105,9 @@ export function createStepIcon(
       return numberXs >= 4;
     })();
 
-    return h('svg', { viewBox: '-15 -19 30 30', width: size, height: size },
+    return h('svg', { viewBox: '-15 -19 30 30', width: size, height: size, stroke: '#52525b', 'stroke-width': 1, fill: 'none' },
       h('rect', { x: -15, y: -19, width: 30, height: 30, fill: DARK_BG }),
+      h('rect', { x: -15, y: -19, width: 30, height: 30, fill: 'none', stroke: '#52525b', 'stroke-width': 1 }), // outer border
       // top face cross
       h('polygon', { points: '0,0 5,-3 0,-6 -5,-3', fill: crossColor }),
       h('polygon', { points: '5,-3 0,-6 5,-9 10,-6', fill: crossColor }),
@@ -142,9 +144,10 @@ export function createStepIcon(
 
   // pair - diagonal split
   if (step === 'pair') {
-    return h('svg', { viewBox: '0 0 24 24', width: size, height: size },
+    return h('svg', { viewBox: '0 0 24 24', width: size, height: size, stroke: '#52525b', 'stroke-width': 1, fill: 'none' },
       h('polygon', { points: '0,0 24,0 0,24', fill: primaryColors[0] }),
-      h('polygon', { points: '24,0 24,24 0,24', fill: primaryColors[1] || primaryColors[0] })
+      h('polygon', { points: '24,0 24,24 0,24', fill: primaryColors[1] || primaryColors[0] }),
+      h('rect', { x: 0, y: 0, width: 24, height: 24, fill: 'none', stroke: '#52525b', 'stroke-width': 1 }) // outer border
     );
   }
 
@@ -153,10 +156,11 @@ export function createStepIcon(
     const numColors = primaryColors.length;
     if (numColors <= 3) {
       const w = 24 / 3;
-      return h('svg', { viewBox: '0 0 24 24', width: size, height: size },
+      return h('svg', { viewBox: '0 0 24 24', width: size, height: size, stroke: '#52525b', 'stroke-width': 1, fill: 'none' },
         h('rect', { x: 0, y: 0, width: w, height: 24, fill: primaryColors[0] }),
         h('rect', { x: w, y: 0, width: w, height: 24, fill: primaryColors[1] || primaryColors[0] }),
-        h('rect', { x: w * 2, y: 0, width: w, height: 24, fill: primaryColors[2] || primaryColors[0] })
+        h('rect', { x: w * 2, y: 0, width: w, height: 24, fill: primaryColors[2] || primaryColors[0] }),
+        h('rect', { x: 0, y: 0, width: 24, height: 24, fill: 'none', stroke: '#52525b', 'stroke-width': 1 }) // outer border
       );
     } else {
       const w = 6;
@@ -164,7 +168,8 @@ export function createStepIcon(
         h('rect', { x: 0, y: 0, width: w, height: 24, fill: primaryColors[0] }),
         h('rect', { x: w, y: 0, width: w, height: 24, fill: primaryColors[1] }),
         h('rect', { x: w * 2, y: 0, width: w, height: 24, fill: primaryColors[2] }),
-        h('rect', { x: w * 3, y: 0, width: w, height: 24, fill: primaryColors[3] })
+        h('rect', { x: w * 3, y: 0, width: w, height: 24, fill: primaryColors[3] }),
+        h('rect', { x: 0, y: 0, width: 24, height: 24, fill: 'none', stroke: '#52525b', 'stroke-width': 1 }) // outer border
       );
     }
   }
@@ -207,12 +212,16 @@ export function createStepIcon(
       }
     }
 
-    return h('svg', { viewBox: '0 0 24 24', width: size, height: size }, ...rects);
+    return h('svg', { viewBox: '0 0 24 24', width: size, height: size, stroke: '#52525b', 'stroke-width': 1, fill: 'none' },
+      ...rects,
+      h('rect', { x: 0, y: 0, width: 24, height: 24, fill: 'none', stroke: '#52525b', 'stroke-width': 1 }) // outer border
+    );
   }
 
   // fallback - circle
-  return h('svg', { viewBox: '0 0 24 24', width: size, height: size },
-    h('circle', { cx: 12, cy: 12, r: 6, fill: primaryColors[0] || GRAY })
+  return h('svg', { viewBox: '0 0 24 24', width: size, height: size, stroke: '#52525b', 'stroke-width': 1, fill: 'none' },
+    h('circle', { cx: 12, cy: 12, r: 6, fill: primaryColors[0] || GRAY }),
+    h('rect', { x: 0, y: 0, width: 24, height: 24, fill: 'none', stroke: '#52525b', 'stroke-width': 1 }) // outer border
   );
 }
 

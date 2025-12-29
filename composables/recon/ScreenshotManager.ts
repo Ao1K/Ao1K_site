@@ -40,9 +40,8 @@ export const SCREENSHOT_STYLES = {
   backgroundColor: '#161018',
   wrapperBg: '#221825',
   borderColor: '#525252',
-  textColor: '#e5e5e5',
-  mutedTextColor: '#a3a3a3',
-  primaryColor: '#F0E68C',
+  textColor: '#ECE6EF',
+  primaryColor: '#ECE6EF',
   fontSize: {
     base: 18,
     large: 24,
@@ -50,20 +49,7 @@ export const SCREENSHOT_STYLES = {
   },
   padding: 8,
   lineHeight: 1.6,
-  iconSize: 36,
 } as const;
-
-// builds stats text from solve data
-export function buildStatsText(data: Pick<ScreenshotData, 'solveTime' | 'totalMoves' | 'tpsString'>): string {
-  const { solveTime, totalMoves, tpsString } = data;
-  
-  const parts: string[] = [];
-  if (solveTime) parts.push(`${solveTime}\u00A0sec`);
-  if (totalMoves) parts.push(`${totalMoves}\u00A0stm`);
-  if (tpsString) parts.push(tpsString.replace(' ', '\u00A0'));
-  
-  return parts.join(', ');
-}
 
 // returns inline style objects for use with Satori/ImageResponse
 export function getScreenshotStyles() {
@@ -74,13 +60,34 @@ export function getScreenshotStyles() {
       height: '100%',
       width: '100%',
       display: 'flex',
-      flexDirection: 'column',
+      flexDirection: 'row',
       backgroundColor: s.backgroundColor,
       padding: s.padding * 2.5,
       fontFamily: 'system-ui, sans-serif',
       color: s.textColor,
     } as CSSProperties,
     
+    allMoves: {
+      display: 'flex',
+      flexDirection: 'column',
+      flex: 1,
+      height: '100%',
+      marginRight: 32,
+    } as CSSProperties,
+
+    statsBox: {
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'space-between',
+      alignItems: 'flex-end',
+      flexShrink: 0,
+      height: `110%`,
+      marginRight: -s.padding * 2.5,
+      marginTop: -s.padding * 2.5,
+      marginBottom: -s.padding * 2.5,
+      backgroundColor: s.wrapperBg,
+    } as CSSProperties,
+
     title: {
       fontSize: s.fontSize.xl,
       fontWeight: 'bold',
@@ -89,15 +96,15 @@ export function getScreenshotStyles() {
     } as CSSProperties,
     
     label: {
-      fontSize: s.fontSize.base + 8,
-      color: s.mutedTextColor,
-      marginBottom: 8,
+      fontSize: s.fontSize.xl,
+      color: '#ACC8D7',
+      marginBottom: 2,
     } as CSSProperties,
     
     textBlock: {
       fontSize: s.fontSize.large,
       lineHeight: s.lineHeight,
-      marginBottom: 8,
+      marginBottom: 2,
       fontFamily: 'monospace',
     } as CSSProperties,
     
@@ -105,7 +112,7 @@ export function getScreenshotStyles() {
       display: 'flex',
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
+      gap: 10,
     } as CSSProperties,
     
     solutionText: {
@@ -115,28 +122,78 @@ export function getScreenshotStyles() {
       color: '#d4d4d4',
     } as CSSProperties,
     
-    footer: {
-      display: 'flex',
-      width: '100%',
-      justifyContent: 'space-between',
-      alignItems: 'flex-end',
-      marginTop: 'auto',
-      borderTop: `1px solid ${s.borderColor}`,
-      paddingTop: 20,
-    } as CSSProperties,
-    
     stats: {
       fontSize: s.fontSize.xl + 8,
+      display: 'flex',
+      maxWidth: '140px',
       fontWeight: 'bold',
-      color: '#fff',
+      color: s.textColor,
+      margin: s.padding * 2.5,
+      textAlign: 'right',
     } as CSSProperties,
     
     watermark: {
-      fontSize: s.fontSize.large,
-      color: s.mutedTextColor,
+      fontSize: 36,
+      width: '100%',
+      color: s.backgroundColor,
+      backgroundColor: s.primaryColor,
+      padding: '4px 8px',
+      marginBottom: s.padding * 2.5,
+      fontWeight: 'bold',
+      textAlign: 'right',
     } as CSSProperties,
   };
 }
+
+const calcMoveTextSize = (lines: SolutionLine[], scramble: string ): number => {
+  lines = [...lines, { text: scramble }];
+  console.log('lines:', lines);
+  let maxFromLineCount: number;
+  switch (lines.length) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+      maxFromLineCount = 48;
+      break;
+    case 5:
+    case 6:
+      maxFromLineCount = 42;
+      break;
+    case 7:
+    case 8:
+      maxFromLineCount = 36;
+      break;
+    case 9:
+      maxFromLineCount = 30;
+      break;
+    case 10:
+      maxFromLineCount = 28;
+      break;
+    default:
+      maxFromLineCount = 24;
+      break;
+  }
+
+  let maxFromLineWidth = 24;
+  const longestLine = lines.reduce((max, line) => Math.max(max, line.text.length), 0);
+  // set maxFromLineWidth based on longestLine, only the largest conditional triggers
+  if (longestLine >= 80) {
+    maxFromLineWidth = 24;
+  } else if (longestLine >= 60) {
+    maxFromLineWidth = 30;
+  } else if (longestLine >= 40) {
+    maxFromLineWidth = 36;
+  } else if (longestLine >= 30) {
+    maxFromLineWidth = 42;
+  } else if (longestLine >= 20) {
+    maxFromLineWidth = 48;
+  }
+  console.log(`Longest line: ${longestLine}, maxFromLineWidth: ${maxFromLineWidth}`);
+  console.log(`Lines count: ${lines.length}, maxFromLineCount: ${maxFromLineCount}`);
+  return Math.min(maxFromLineCount, maxFromLineWidth)
+};
 
 type CreateElement = (type: string, props: Record<string, unknown> | null, ...children: ReactNode[]) => ReactNode;
 
@@ -153,13 +210,17 @@ export interface ScreenshotContentProps {
 export function createScreenshotContent({ data, createElement }: ScreenshotContentProps): ReactNode {
   const { scramble, solutionLines, solveTime, totalMoves, tpsString, title } = data;
   const styles = getScreenshotStyles();
-  const statsText = buildStatsText({ solveTime, totalMoves, tpsString });
-  const iconSize = SCREENSHOT_STYLES.iconSize;
   
   const h = createElement;
-
+  
   // render solution lines with icons, limit to maxLines lines with ellipsis if more
-  const maxLines = 9;
+  const moveTextSize = calcMoveTextSize(solutionLines, scramble);
+  styles.solutionText.fontSize = moveTextSize;
+  styles.textBlock.fontSize = moveTextSize;
+  
+  const iconSize = moveTextSize * 1.6; 
+
+  const maxLines = 10;
   const linesToRender = solutionLines.length > maxLines ? solutionLines.slice(0, maxLines) : solutionLines;
   const solutionContent = linesToRender.map((line, index) => {
     const icon = line.icon ? createStepIcon(line.icon, iconSize, h) : null;
@@ -185,20 +246,28 @@ export function createScreenshotContent({ data, createElement }: ScreenshotConte
   }
   
   return h('div', { style: styles.wrapper },
-    // title && h('div', { style: styles.title }, title),
-    
-    h('div', { style: { display: 'flex', flexDirection: 'column', marginBottom: 8 } },
-      h('div', { style: styles.label }, 'Scramble'),
-      h('div', { style: styles.textBlock }, scramble)
+    // Left Column: All Moves
+    h('div', { style: styles.allMoves },
+      // title && h('div', { style: styles.title }, title),
+      
+      h('div', { style: { display: 'flex', flexDirection: 'column' } },
+        h('div', { style: styles.label }, 'Scramble'),
+        h('div', { style: styles.textBlock }, scramble)
+      ),
+      
+      h('div', { style: { display: 'flex', flexDirection: 'column', flex: 1, marginBottom: 8, overflow: 'hidden' } },
+        h('div', { style: styles.label }, 'Solution'),
+        h('div', { style: { display: 'flex', flexDirection: 'column', gap: 1, marginTop: 8 } }, ...solutionContent)
+      )
     ),
     
-    h('div', { style: { display: 'flex', flexDirection: 'column', marginBottom: 8 } },
-      h('div', { style: styles.label }, 'Solution'),
-      h('div', { style: { display: 'flex', flexDirection: 'column', gap: 0 } }, ...solutionContent)
-    ),
-    
-    h('div', { style: styles.footer },
-      h('div', { style: styles.stats }, statsText || ''),
+    // Right Column: Stats
+    h('div', { style: styles.statsBox },
+      h('div', { style: { display: 'flex', flexDirection: 'column', alignItems: 'flex-end' } },
+        solveTime ? h('div', { style: styles.stats }, `${solveTime} sec`) : null,
+        totalMoves ? h('div', { style: styles.stats }, `${totalMoves} stm`) : null,
+        tpsString ? h('div', { style: styles.stats }, tpsString.replace(' ', '\u00A0')) : null
+      ),
       h('div', { style: styles.watermark }, 'Ao1K.com')
     )
   );
