@@ -9,8 +9,8 @@ import ListIcon from './icons/list';
 import BulletListIcon from './icons/bulletList';
 
 const versionList = {
-  "recon": "v0.4",
-  "changeblog": "new!",
+  "recon": "v0.5",
+  "changeblog": "",
 }
 
 export default function Header() {
