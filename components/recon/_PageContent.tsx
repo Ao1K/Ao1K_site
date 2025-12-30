@@ -1026,7 +1026,9 @@ export default function Recon() {
 
   const handleCommand = (e: KeyboardEvent) => {
     const isCtrl = e.ctrlKey || e.metaKey;
-    const isModifier = (isMac && e.altKey) || (!isMac && e.shiftKey);
+    
+    // Use alt for most mac shortcuts because cmd+shift+Z is standard on mac for redo.
+    const isModifier = (isMac && e.altKey) || (!isMac && e.shiftKey); 
 
     if (isCtrl && isModifier && e.key === 'M') {
     
