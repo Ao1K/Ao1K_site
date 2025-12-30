@@ -1,7 +1,6 @@
-import CubeImage from './CubeImage';
 import React, { useRef, useState, useEffect } from 'react';
 import debounce from 'lodash.debounce';
-import type { StepInfo } from '../../composables/recon/CubeInterpreter';
+import type { StepInfo } from '../../composables/recon/SimpleCubeInterpreter';
 import { CUBE_COLORS } from '../../components/recon/TwistyPlayer';
 import type { Grid } from '../../composables/recon/LLinterpreter';
 

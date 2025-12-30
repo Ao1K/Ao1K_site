@@ -19,10 +19,22 @@ const rubik = Rubik({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'),
   title: "Ao1K – Reconstruction",
   description: "Statisically significant speedcube analysis",
   icons: {
     icon: "/Ao1K Logo - Icon.png",
+  },
+  openGraph: {
+    title: "Ao1K – Reconstruction",
+    description: "Statisically significant speedcube analysis",
+    images: ['/api/og'],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: "Ao1K – Reconstruction",
+    description: "Statisically significant speedcube analysis",
+    images: ['/api/og'],
   },
 }
 

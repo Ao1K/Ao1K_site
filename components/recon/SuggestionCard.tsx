@@ -1,5 +1,5 @@
 // input suggestion text and optional color, get card back.
-import type { Suggestion } from '../../composables/recon/CubeInterpreter';
+import type { Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
 import { CUBE_COLORS } from './TwistyPlayer';
 import React, { JSX } from 'react';
 
