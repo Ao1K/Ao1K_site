@@ -79,14 +79,14 @@ export default function Changeblog() {
       <div className="flex flex-col gap-6 pt-6">
         Pressing Ctrl+S or the Share button is the best way to copy for a preview, but just copying the URL also works.
       </div>
-      <h2 className="py-2 text-xl mt-24 mb-3 pl-2 w-full text-dark bg-primary-300">{`>`} Gas, gas gas</h2>
+      <h2 className="py-2 text-xl mt-24 mb-3 pl-2 w-full text-dark bg-primary-300">{`>`} Gas, gas, gas</h2>
       <div className="flex flex-col gap-6">
         Autocomplete suggestions and icons now generate basically instantly.
         I did this by removing the bad code and adding the okay code.
         Before I was abusing a library called cubingjs to represent all the cube state.
         This is great for the 3D elements of the page, 
         but it&apos;s not well suited for the cube interpretation logic I&apos;m doing.
-        I now present a cube using just a few arrays.
+        I now can represent the cube using just a few arrays.
       </div>
       <div className="flex flex-col gap-6 pt-6 pb-32">
         Peace out girl scout.
