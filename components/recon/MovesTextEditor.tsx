@@ -15,7 +15,7 @@ import { customDecodeURL } from '../../composables/recon/urlEncoding';
 
 import type { Token } from "../../composables/recon/validationToMoves";
 import { SuggestionBox } from './SuggestionBox';
-import type { Suggestion } from '../../composables/recon/CubeInterpreter';
+import type { Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
 import { colorDict, highlightClass } from '../../utils/sharedConstants';
 
 interface HTMLUpdateItem {

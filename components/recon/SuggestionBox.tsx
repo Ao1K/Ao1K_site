@@ -1,7 +1,7 @@
 'use client';
 
 // order cards first by steps, then colors, then speed
-import type { Suggestion } from '../../composables/recon/CubeInterpreter';
+import type { Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
 import SuggestionCard from './SuggestionCard';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';

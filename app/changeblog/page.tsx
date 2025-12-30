@@ -81,7 +81,7 @@ export default function Changeblog() {
       </div>
       <h2 className="py-2 text-xl mt-24 mb-3 pl-2 w-full text-dark bg-primary-300">{`>`} Gas, gas gas</h2>
       <div className="flex flex-col gap-6">
-        Suggestions and icons now generate basically instantly.
+        Autocomplete suggestions and icons now generate basically instantly.
         I did this by removing the bad code and adding the okay code.
         Before I was abusing a library called cubingjs to represent all the cube state.
         This is great for the 3D elements of the page, 
