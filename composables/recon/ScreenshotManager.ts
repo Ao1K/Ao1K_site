@@ -79,12 +79,13 @@ export function getScreenshotStyles() {
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'space-between',
-      alignItems: 'flex-end',
+      alignItems: 'stretch',
       flexShrink: 0,
       height: `110%`,
       marginRight: -s.padding * 2.5,
       marginTop: -s.padding * 2.5,
       marginBottom: -s.padding * 2.5,
+      borderLeft: `1px solid ${s.borderColor}`,
       backgroundColor: s.wrapperBg,
     } as CSSProperties,
 
@@ -131,7 +132,14 @@ export function getScreenshotStyles() {
       margin: s.padding * 2.5,
       textAlign: 'right',
     } as CSSProperties,
-    
+
+    statBreak: {
+      height: 1,
+      backgroundColor: s.borderColor,
+      width: '100%',
+      margin: '4px 0',
+    } as CSSProperties,
+      
     watermark: {
       fontSize: 36,
       width: '100%',
@@ -265,8 +273,11 @@ export function createScreenshotContent({ data, createElement }: ScreenshotConte
     h('div', { style: styles.statsBox },
       h('div', { style: { display: 'flex', flexDirection: 'column', alignItems: 'flex-end' } },
         solveTime ? h('div', { style: styles.stats }, `${solveTime} sec`) : null,
+        solveTime ? h('div', { style: styles.statBreak }) : null,
         totalMoves ? h('div', { style: styles.stats }, `${totalMoves} stm`) : null,
-        tpsString ? h('div', { style: styles.stats }, tpsString.replace(' ', '\u00A0')) : null
+        totalMoves ? h('div', { style: styles.statBreak }) : null,
+        tpsString ? h('div', { style: styles.stats }, tpsString) : null,
+        tpsString ? h('div', { style: styles.statBreak }) : null,
       ),
       h('div', { style: styles.watermark }, 'Ao1K.com')
     )

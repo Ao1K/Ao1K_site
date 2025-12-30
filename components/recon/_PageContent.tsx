@@ -853,7 +853,7 @@ export default function Recon() {
     if (tpsRef.current && tpsRef.current.innerHTML !== '(-- tps)') {
       tpsString = tpsRef.current.innerHTML;
     }
-    const url = window.location.href;
+    const url = window.location.href + '&preview=0';
     let printout = "";
 
     title ? printout += `${title}\n\n` : '';
@@ -892,17 +892,33 @@ export default function Recon() {
     }
   }
 
-  const handleShare = async () => { 
-    await new Promise(resolve => setTimeout(resolve, 500)); // wait for scramble and solution to finish updating:
+  const handleShare = async () => {
+    await new Promise(resolve => setTimeout(resolve, 200)); // wait for scramble and solution to finish updating:
     // There's definitely a more clever way of updating it right away.
     // Tried using useImperativeHandle to force updateURL to run. Didn't appear to cause a timely update.
+ 
+    const canNativeShare =
+      typeof navigator.share === "function" &&
+      window.matchMedia("(pointer: coarse)").matches;
 
-    try {
-      const currentURL = window.location.href;
-      navigator.clipboard.writeText(currentURL);
-      setTopButtonAlert(["share", "URL copied!"]);
-    } catch (error) {
-      console.error('Failed to copy to clipboard:', error);
+    const title = solveTitle ? `${solveTitle.trim()}` : '';
+    const text = `[Solve](${window.location.href})`;
+    const url = window.location.href;
+    // Native share (mobile, some desktop browsers)
+    if (canNativeShare) {
+      try {
+        await navigator.share({ title, text, url });
+        setTopButtonAlert(["share", "Preview copied!"]);
+      } catch (err) {
+        // User canceled or browser rejected
+      }
+    } else {
+      try {
+        navigator.clipboard.writeText(text);
+        setTopButtonAlert(["share", "Preview copied!"]);
+      } catch (error) {
+        console.error('Failed to copy to clipboard:', error);
+      }
     }
   }
   
@@ -1309,7 +1325,7 @@ export default function Recon() {
         <div className="flex-none flex flex-row space-x-1 pr-2 text-dark_accent">
           <TopButton id="trash" text="Clear Page" shortcutHint={`${ctrlKey}+Del`} onClick={handleClearPage} icon={<TrashIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
           <CopySolveDropdown onCopyText={handleCopySolve} onScreenshot={handleScreenshot} alert={topButtonAlert} setAlert={setTopButtonAlert} />
-          <TopButton id="share" text="Copy URL" shortcutHint={`${ctrlKey}+S`} onClick={handleShare} icon={<ShareIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
+          <TopButton id="share" text="Share Preview" shortcutHint={`${ctrlKey}+S`} onClick={handleShare} icon={<ShareIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert}/>
         </div>
       </div>
       <div id="scramble-area" className="px-3 mt-3 flex flex-col">

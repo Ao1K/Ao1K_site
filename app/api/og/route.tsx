@@ -191,6 +191,14 @@ export async function GET(request: Request) {
     console.log('[OG Route] Decoded solution:', solution);
     const time = searchParams.get('time');
     const title = customDecodeURL(searchParams.get('title') || '');
+    
+    const preview = searchParams.get('preview');
+    const showPreview = preview !== '0';
+    if (!showPreview) {
+      return new Response(`OG image generation preview disabled`, {
+        status: 400,
+      });
+    }
 
     if (!scramble || !solution) {
       return new ImageResponse(

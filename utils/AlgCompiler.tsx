@@ -1,10 +1,9 @@
 import React, { useRef, useState } from 'react';
 import { rawGeneric, rawOLLalgs, rawPLLalgs } from "./rawAlgs";
 import type { ExactAlg, LastLayerAlg } from "./rawAlgs";
-import { CubeInterpreter } from "../composables/recon/CubeInterpreter";
-import type { StepInfo } from "../composables/recon/CubeInterpreter";
+import { SimpleCubeInterpreter, type StepInfo } from "../composables/recon/SimpleCubeInterpreter";
+import { SimpleCube } from '../composables/recon/SimpleCube';
 import { reverseMove } from '../composables/recon/transformHTML';
-import HiddenPlayer, { HiddenPlayerHandle } from '../components/recon/HiddenPlayer';
 import type { CompiledLLAlg } from '../composables/recon/LLsuggester';
 
 interface CompiledExactAlg {
@@ -27,18 +26,12 @@ interface AlgCompilerProps {
 type AlgorithmType = 'exact' | 'oll' | 'pll';
 
 export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
-  const hiddenPlayerRef = useRef<HiddenPlayerHandle>(null);
+  const simpleCubeRef = useRef<SimpleCube>(new SimpleCube());
   const isCompilingRef = useRef(false);
 
   const [isCompiling, setIsCompiling] = useState(false);
-  const [cubeLoaded, setCubeLoaded] = useState(false);
   const [selectedAlgTypes, setSelectedAlgTypes] = useState<Set<AlgorithmType>>(new Set(['exact', 'oll', 'pll']));
 
-  // HiddenPlayer callbacks
-  const handleCubeLoaded = () => {
-    setCubeLoaded(true);
-    console.log('Cube loaded for compiler');
-  };
 
   const handleAlgTypeToggle = (algType: AlgorithmType) => {
     setSelectedAlgTypes(prev => {
@@ -50,29 +43,6 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
       }
       return newSet;
     });
-  };
-
-  const findAnimationLengths = (moves: string[]): number[] => {
-    let moveAnimationTimes: number[] = [];
-    const singleTime = 1000;
-    const doubleTime = 1500;
-    const tripleTime = 2000;
-
-    if (!moves || moves.length === 0) {
-      return [0]; // no moves, return 0
-    }
-
-    moves.forEach((move) => {
-      if (move.includes('2')) {
-        moveAnimationTimes.push(doubleTime);
-      } else if (move.includes('3')) {
-        moveAnimationTimes.push(tripleTime);
-      } else {
-        moveAnimationTimes.push(singleTime);
-      }
-    });
-
-    return moveAnimationTimes;
   };
 
   const getAlgInverse = (alg: string): string => {
@@ -174,15 +144,15 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
     return true;
   };
 
-  const compileSelectedAlgs = async () => {
+  const compileSelectedAlgs = () => {
     if (selectedAlgTypes.has('exact')) {
-      await compileAlgorithms(rawGeneric, 'Exact');
+      compileAlgorithms(rawGeneric, 'Exact');
     }
     if (selectedAlgTypes.has('oll')) {
-      await compileAlgorithms(rawOLLalgs, 'LastLayer');
+      compileAlgorithms(rawOLLalgs, 'LastLayer');
     }
     if (selectedAlgTypes.has('pll')) {
-      await compileAlgorithms(rawPLLalgs, 'LastLayer');
+      compileAlgorithms(rawPLLalgs, 'LastLayer');
     }
   };
 
@@ -379,29 +349,9 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
   /**
    * Find algs that preserve F2L. For PLL, doesn't check if OLL is solved. Only checks F2L.
    */
-  const findWorkingLLalgs = async (algs: LastLayerAlg[]) => {
-    if (!cubeLoaded || !hiddenPlayerRef.current) {
-      console.error('Cube not loaded yet. Please wait for the cube to load before compiling.');
-      return;
-    }
+  const findWorkingLLalgs = (algs: LastLayerAlg[]) => {
 
-    // Get initial cube state
-    const initialCube = await hiddenPlayerRef.current.updateCube('', '', []);
-    if (!initialCube) {
-      console.error('Failed to get initial cube state');
-      return;
-    }
-
-    const cubeInterpreter = new CubeInterpreter(initialCube);
-
-    // Add a small delay to ensure cube is fully initialized
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    const matrixMaps = cubeInterpreter.solvedMatrixMaps;
-    if (!matrixMaps || matrixMaps.size === 0) {
-      console.error('CubeInterpreter solvedMatrixMaps is not available. Cannot proceed with compilation.');
-      return;
-    }
+    const cubeInterpreter = new SimpleCubeInterpreter();
 
     const usableAlgs: LastLayerAlg[] = [];
     console.log(`Filtering ${algs.length} LL algs for F2L-preserving ones...`);
@@ -412,7 +362,7 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
       }
 
       const inverseAlg = getAlgInverse(alg.value);
-      const cube = await hiddenPlayerRef.current!.updateCube('', inverseAlg, findAnimationLengths(inverseAlg.split(' ')));
+      const cube = simpleCubeRef.current!.getCubeState(inverseAlg.split(' '));
       const steps: StepInfo[] = cubeInterpreter.getStepsCompleted(cube);
       const f2lPairsSolved: number = steps.filter(step => step.type === 'f2l').length;
       if (f2lPairsSolved === 4) {
@@ -503,11 +453,8 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
     URL.revokeObjectURL(url);
   };
 
-  const compileAlgorithms = async (algs: ExactAlg[] | LastLayerAlg[], algType: 'Exact' | 'LastLayer') => {
-    if (!cubeLoaded || !hiddenPlayerRef.current) {
-      console.error('Cube not loaded yet. Please wait for the cube to load before compiling.');
-      return;
-    }
+  const compileAlgorithms = (algs: ExactAlg[] | LastLayerAlg[], algType: 'Exact' | 'LastLayer') => {
+
     console.log(`Compiling ${algType} algorithms... Total algs: ${algs.length}`);
     
 
@@ -529,7 +476,7 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
     // for LL algs, make sure applying alg in reverse keeps F2L solved.
     let usableNewAlgs: LastLayerAlg[] | ExactAlg[] = uniqueNewAlgs;
     if (algType === 'LastLayer' && uniqueNewAlgs.length !== 0) {
-      usableNewAlgs = await findWorkingLLalgs(uniqueNewAlgs as LastLayerAlg[]) ?? uniqueNewAlgs;
+      usableNewAlgs = findWorkingLLalgs(uniqueNewAlgs as LastLayerAlg[]) ?? uniqueNewAlgs;
       console.log('Usable new algs. Update rawAlgs.tsx accordingly:');
       console.log(usableNewAlgs);
     }
@@ -544,10 +491,10 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
 
     switch (algType) {
       case 'Exact':
-        await compileExactAlgorithms(allAlgs as ExactAlg[]);
+        compileExactAlgorithms(allAlgs as ExactAlg[]);
         break;
       case 'LastLayer':
-        await compileLLalgorithms(allAlgs as LastLayerAlg[]);
+        compileLLalgorithms(allAlgs as LastLayerAlg[]);
         break;
       default:
         console.error(`Unknown algorithm type: ${algType}`);
@@ -566,29 +513,9 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
     return moves.join(' ').trim();
   };
 
-  const compileLLalgorithms = async (algs: LastLayerAlg[]) => {
-    if (!cubeLoaded || !hiddenPlayerRef.current) {
-      console.error('Cube not loaded yet. Please wait for the cube to load before compiling.');
-      return;
-    }
+  const compileLLalgorithms = (algs: LastLayerAlg[]) => {
 
-    // Get initial cube state
-    const initialCube = await hiddenPlayerRef.current.updateCube('', '', []);
-    if (!initialCube) {
-      console.error('Failed to get initial cube state');
-      return;
-    }
-
-    const cubeInterpreter = new CubeInterpreter(initialCube);
-
-    // Add a small delay to ensure cube is fully initialized
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    const matrixMaps = cubeInterpreter.solvedMatrixMaps;
-    if (!matrixMaps || matrixMaps.size === 0) {
-      console.error('CubeInterpreter solvedMatrixMaps is not available. Cannot proceed with compilation.');
-      return;
-    }
+    const cubeInterpreter = new SimpleCubeInterpreter();
 
     // Array to store compiled algorithm data
     const compiledData: CompiledLLAlg[] = [];
@@ -601,9 +528,7 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
       const deangledAlg = removeAngleFromAlg(alg.value);
       const algInverse = getAlgInverse(deangledAlg);
 
-      // Use imperative API to update cube state
-      const animationTimes = findAnimationLengths(algInverse.split(' '));
-      const cube = await hiddenPlayerRef.current.updateCube('', algInverse, animationTimes);
+      const cube = simpleCubeRef.current.getCubeState(algInverse.split(' '));
       
       if (!cube) {
         console.error('Failed to get cube state for algorithm:', algInverse);
@@ -626,89 +551,15 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
 
   }
 
-  const processAlgWithRetry = async (
-    alg: ExactAlg,
-    completeAlg: string,
-    algInverse: string,
-    animationTimes: number[],
-    lastHash: string,
-    cubeInterpreter: CubeInterpreter,
-    compiledData: CompiledExactAlg[]
-  ): Promise<{ success: boolean; newHash?: string; fatalError?: boolean }> => {
-    let success = false;
-
-    while (!success && isCompilingRef.current) {
-      try {
-        const cube = await hiddenPlayerRef.current!.updateCube('', algInverse, animationTimes);
-
-        if (!cube) {
-          console.error('Failed to get cube state for algorithm:', algInverse);
-          return { success: false };
-        }
-
-        // Update the cube interpreter with current cube state
-        const steps = cubeInterpreter.getStepsCompleted(cube);
-        const cubeState = cubeInterpreter.getCurrentState();
-        const hash = cubeState?.hash || 'unknown';
-
-        if (lastHash === hash) {
-          console.error(`Last hash matches current hash. This is a strong indicator of an issue. Solution: keep screen open while compiling. Alg: ${completeAlg}, Hash: ${hash}`);
-          console.log('Retrying in 10 seconds...');
-          await new Promise(resolve => setTimeout(resolve, 10000));
-          continue;
-        }
-
-        console.log(`Algorithm: ${alg.value}, Hash: ${hash}`);
-
-        // Add to compiled data
-        compiledData.push({
-          alg: completeAlg,
-          hash: hash,
-          step: alg.step || '',
-        });
-        
-        return { success: true, newHash: hash };
-      } catch (error) {
-        console.error(`Error processing algorithm ${alg.value}:`, error);
-        compiledData.push({
-          alg: alg.value + ' (Does not include AUF/rotation)',
-          hash: 'error',
-          step: alg.step || '',
-        });
-        return { success: false, fatalError: true };
-      }
-    }
-    return { success: false };
-  };
-
   /**
    * Takes an array of cubing algs, determines the cube hash, then creates a json file and downloads it.
    */
-  const compileExactAlgorithms = async (algs: ExactAlg[]) => {
-    if (!hiddenPlayerRef.current) {
-      console.error('Hidden player reference not available. Cannot proceed with compilation.');
-      return;
-    }
+  const compileExactAlgorithms = (algs: ExactAlg[]) => {
 
-    // Get initial cube state
-    const initialCube = await hiddenPlayerRef.current.updateCube('', '', []);
-    if (!initialCube) {
-      console.error('Failed to get initial cube state');
-      return;
-    }
-
-    const cubeInterpreter = new CubeInterpreter(initialCube);
-    // Add a small delay to ensure cube is fully initialized
-    await new Promise(resolve => setTimeout(resolve, 100));
-    const matrixMaps = cubeInterpreter.solvedMatrixMaps;
-    if (!matrixMaps || matrixMaps.size === 0) {
-      console.error('CubeInterpreter solvedMatrixMaps is not available. Cannot proceed with compilation.');
-      return;
-    }
+    const cubeInterpreter = new SimpleCubeInterpreter();
 
     // Array to store compiled algorithm data
     const compiledData: CompiledExactAlg[] = [];
-    let lastHash = '';
     for (const alg of algs) {
       if (Math.random() < 0.0) {
         break;
@@ -747,20 +598,29 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
       const angleNormalization = leadingYMoves.length > 0 ? leadingYMoves[0] + ' ' : '';
       
       const algInverse = angleNormalization + getAlgInverse(completeAlg);
-      console.log(`Processing Alg: ${completeAlg}`);
+      // console.log(`Processing Alg: ${completeAlg}`);
       
-      const animationTimes = findAnimationLengths(algInverse.split(' '));
-
-      const result = await processAlgWithRetry(alg, completeAlg, algInverse, animationTimes, lastHash, cubeInterpreter, compiledData);
-
-      if (result.fatalError) {
-        break;
-      }
+      const cube = simpleCubeRef.current.getCubeState(algInverse.split(' '));
       
-      if (result.success && result.newHash) {
-        // keep track of duplicates for error checking within processAlgWithRetry
-        lastHash = result.newHash;
+      if (!cube) {
+        console.error('Failed to get cube state for algorithm:', algInverse);
+        continue;
       }
+
+      // Update the cube interpreter with current cube state
+      const steps = cubeInterpreter.getStepsCompleted(cube);
+      const cubeState = cubeInterpreter.getCurrentState();
+      const hash = cubeState?.hash || 'unknown';
+
+      // console.log(`Algorithm: ${completeAlg}, Hash: ${hash}`);
+
+      // Add to compiled data
+      compiledData.push({
+        alg: completeAlg,
+        hash: hash,
+        step: alg.step || '',
+      });
+
     }
     // Create and download JSON file
     downloadCompiledAlgs(compiledData, 'exact');
@@ -807,20 +667,12 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
       return;
     }
 
-    // start compilation and let async loops read cancellation synchronously
     isCompilingRef.current = true;
     setIsCompiling(true);
     handleCompileAlgorithms();
   };
 
-  const handleCompileAlgorithms = async () => {
-    if (!cubeLoaded) {
-      alert('Please wait for the cube to load before compiling algorithms.');
-      isCompilingRef.current = false;
-      setIsCompiling(false);
-      return;
-    }
-
+  const handleCompileAlgorithms = () => {
     if (selectedAlgTypes.size === 0) {
       alert('Please select at least one algorithm type to compile.');
       isCompilingRef.current = false;
@@ -829,7 +681,7 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
     }
 
     try {
-      await compileSelectedAlgs();
+      compileSelectedAlgs();
     } catch (error) {
       console.error('Error compiling algorithms:', error);
     } finally {
@@ -840,10 +692,6 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
 
   return (
     <div className="flex flex-col gap-4 text-primary-100">
-      <HiddenPlayer
-        ref={hiddenPlayerRef}
-        onCubeLoaded={handleCubeLoaded}
-      />
       
       {/* Algorithm Type Selection */}
       <div className="flex flex-col">
@@ -882,22 +730,16 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
       <div className="flex gap-2 items-center">
         <button 
           onClick={handleToggleCompile}
-          disabled={!cubeLoaded || selectedAlgTypes.size === 0}
+          disabled={selectedAlgTypes.size === 0}
           className={`p-3 rounded-sm border border-primary-100 hover:border-primary-500 ${
-            !cubeLoaded || selectedAlgTypes.size === 0
+            selectedAlgTypes.size === 0
               ? 'bg-gray-500 cursor-not-allowed' 
               : 'bg-black hover:bg-gray-800'
           }`}
         >
           {isCompiling ? 'Compiling. Click to Cancel.' : `Compile Selected Algs (${selectedAlgTypes.size} type${selectedAlgTypes.size > 1 ? 's' : ''})`}
         </button>
-        {!cubeLoaded && (
-          <span className="">Loading cube...</span>
-        )}
-        {cubeLoaded && (
-          <span className="">Cube ready</span>
-        )}
-        {selectedAlgTypes.size === 0 && cubeLoaded && (
+        {selectedAlgTypes.size === 0 && (
           <span className="">Select at least one algorithm type</span>
         )}
       </div>

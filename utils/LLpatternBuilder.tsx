@@ -1,9 +1,9 @@
 import React, { useRef, useState } from 'react';
 import { ollCases, pllCases } from './llCases';
 import type { ExactAlg } from "./rawAlgs";
-import { CubeInterpreter } from "../composables/recon/CubeInterpreter";
+import { SimpleCubeInterpreter } from "../composables/recon/SimpleCubeInterpreter";
+import { SimpleCube } from '../composables/recon/SimpleCube';
 import { reverseMove } from '../composables/recon/transformHTML';
-import HiddenPlayer, { HiddenPlayerHandle } from '../components/recon/HiddenPlayer';
 import LLinterpreter from '../composables/recon/LLinterpreter';
 
 interface AlgPattern {
@@ -20,19 +20,13 @@ export interface Case {
 }
 
 /**
- * React component for compiling algorithms using HiddenPlayer to generate algorithm patterns
+ * Compiles pattern files using SimpleCube to generate algorithm patterns.
+ * To change the sets of patterns created, modify the calls to generatePatterns within handleGeneratePatterns.
  */
 export default function LLpatternBuilder() {
-  const hiddenPlayerRef = useRef<HiddenPlayerHandle>(null);
+  const simpleCubeRef = useRef<SimpleCube>(new SimpleCube());
 
-  const [isGenerating, setIsCompiling] = useState(false);
-  const [cubeLoaded, setCubeLoaded] = useState(false);
-
-  // HiddenPlayer callbacks
-  const handleCubeLoaded = () => {
-    setCubeLoaded(true);
-    console.log('Cube loaded for pattern generation');
-  };
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const getAlgInverse = (alg: string): string => {
     let reversedAlg = '';
@@ -74,37 +68,10 @@ export default function LLpatternBuilder() {
     return alg.trim();
   };
 
-  const findAnimationLengths = (moves: string[]): number[] => {
-    let moveAnimationTimes: number[] = [];
-    const singleTime = 1000;
-    const doubleTime = 1500;
-    const tripleTime = 2000;
-
-    if (!moves || moves.length === 0) {
-      return [0]; // no moves, return 0
-    }
-
-    moves.forEach((move) => {
-      if (move.includes('2')) {
-        moveAnimationTimes.push(doubleTime);
-      } else if (move.includes('3')) {
-        moveAnimationTimes.push(tripleTime);
-      } else {
-        moveAnimationTimes.push(singleTime);
-      }
-    });
-
-    return moveAnimationTimes;
-  }
-
   /**
    * Takes an array of cubing algs, determines the cube hash, then creates a json file and downloads it.
    */
-  const generatePatterns = async (cases: Case[]) => {
-    if (!cubeLoaded || !hiddenPlayerRef.current) {
-      console.error('Cube not loaded yet. Please wait for the cube to load before generating patterns.');
-      return;
-    }
+  const generatePatterns = (cases: Case[]) => {
 
     console.log('Generating patterns...');
     // if no algs, use rawAlgs file
@@ -112,21 +79,7 @@ export default function LLpatternBuilder() {
       cases = ollCases;
     }
 
-    // Get initial cube state
-    const initialCube = await hiddenPlayerRef.current.updateCube('', '', []);
-    if (!initialCube) {
-      console.error('Failed to get initial cube state');
-      return;
-    }
-
-    const cubeInterpreter = new CubeInterpreter(initialCube);
-    // Add a small delay to ensure cube is fully initialized
-    await new Promise(resolve => setTimeout(resolve, 100));
-    const matrixMaps = cubeInterpreter.solvedMatrixMaps;
-    if (!matrixMaps || matrixMaps.size === 0) {
-      console.error('CubeInterpreter solvedMatrixMaps is not available. Cannot proceed with compilation.');
-      return;
-    }
+    const cubeInterpreter = new SimpleCubeInterpreter();
 
     // Array to store compiled algorithm data
     const patternData: AlgPattern[] = [];
@@ -140,10 +93,7 @@ export default function LLpatternBuilder() {
         const algInverse = getAlgInverse(completeAlg);
         console.log(`Processing Alg: ${completeAlg}, Inverse: ${algInverse}`);
         
-        // Use imperative API to update cube state
-        // Pass animation times to position cube at the end of the algorithm
-        const animationTimes = findAnimationLengths(algInverse.split(' '));
-        const cube = await hiddenPlayerRef.current.updateCube('', algInverse, animationTimes);
+        const cube = simpleCubeRef.current.getCubeState(algInverse.split(' '));
         
         if (!cube) {
           console.error('Failed to get cube state for algorithm:', algInverse);
@@ -216,51 +166,37 @@ export default function LLpatternBuilder() {
 
 
 
-  const handleGeneratePatterns = async () => {
-    if (!cubeLoaded) {
-      alert('Please wait for the cube to load before compiling algorithms.');
-      return;
-    }
+  const handleGeneratePatterns = () => {
 
-    setIsCompiling(true);
+    setIsGenerating(true);
     try {
-      await generatePatterns(ollCases);
-      // await generatePatterns(pllCases);
-      // await generatePatterns(zbllCases);
-      // await generatePatterns(eoCases);
-      // await generatePatterns(cpCases);
-      // await generatePatterns(onelllCases);
+      generatePatterns(ollCases);
+      // generatePatterns(pllCases);
+      // generatePatterns(zbllCases);
+      // generatePatterns(eoCases);
+      // generatePatterns(cpCases);
+      // generatePatterns(onelllCases);
     } catch (error) {
       console.error('Error generating patterns:', error);
     } finally {
-      setIsCompiling(false);
+      setIsGenerating(false);
     }
   };
 
   return (
     <div className="flex flex-col gap-4">
-      <HiddenPlayer
-        ref={hiddenPlayerRef}
-        onCubeLoaded={handleCubeLoaded}
-      />
       <div className="flex gap-2 items-center">
         <button 
           onClick={handleGeneratePatterns}
-          disabled={isGenerating || !cubeLoaded}
+          disabled={isGenerating}
           className={`text-primary-100 p-3 mt-2 rounded-sm border ${
-            isGenerating || !cubeLoaded 
+            isGenerating 
               ? 'bg-gray-500 cursor-not-allowed' 
               : 'bg-black hover:bg-gray-800'
           }`}
         >
           {isGenerating ? 'Making patterns...' : 'Make alg patterns'}
         </button>
-        {!cubeLoaded && (
-          <span className="text-primary-400">Loading cube...</span>
-        )}
-        {cubeLoaded && (
-          <span className="text-primary-100">Cube ready</span>
-        )}
       </div>
     </div>
   );

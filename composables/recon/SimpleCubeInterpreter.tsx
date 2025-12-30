@@ -4,12 +4,7 @@ import AlgSpeedEstimator from './AlgSpeedEstimator';
 import type { Grid } from './LLinterpreter';
 import LLinterpreter from './LLinterpreter';
 import LLsuggester from './LLsuggester';
-
-// SimpleCube types
-type Color = 'W' | 'Y' | 'R' | 'O' | 'G' | 'B';
-type Line = [Color, Color, Color];
-type Face = [Line, Line, Line];
-type SimpleCubeState = [Face, Face, Face, Face, Face, Face]; // [up, down, front, right, back, left]
+import type { CubeState as SimpleCubeState, Color } from './SimpleCube';
 
 export interface Suggestion {
   alg: string;
@@ -26,15 +21,6 @@ const colorCharToName: { [key in Color]: string } = {
   'O': 'orange',
   'G': 'green',
   'B': 'blue'
-};
-
-const colorNameToChar: { [key: string]: Color } = {
-  'white': 'W',
-  'yellow': 'Y',
-  'red': 'R',
-  'orange': 'O',
-  'green': 'G',
-  'blue': 'B'
 };
 
 interface StickerState {
@@ -85,7 +71,7 @@ export class SimpleCubeInterpreter {
   private currentState: CubeState | null = { hash: this.solved3x3Hash };
   public currentCubeRotation: string | number = -1;
   private algSuggester: AlgSuggester | null = null;
-  private LLsuggester: LLsuggester;
+  private LLsuggester: LLsuggester | null = null;
 
   // standard facelets mapping (face index to color name for solved cube)
   private readonly facelets: { faceIdx: number; colorName: string }[] = [
@@ -311,34 +297,6 @@ export class SimpleCubeInterpreter {
 
     if (algs.length > 0) {
       this.algSuggester = new AlgSuggester(algs);
-    }
-
-    this.LLsuggester = new LLsuggester();
-  }
-
-  /**
-   * Maps cube face colors to their corresponding starting directions
-   * Based on standard cube color scheme: white top, green front
-   */
-  private mapColorToDirection(colorName: string): string {
-    const normalizedColor = colorName.toLowerCase();
-
-    switch (normalizedColor) {
-      case 'white':
-        return 'U';
-      case 'yellow':
-        return 'D';
-      case 'orange':
-        return 'L';
-      case 'red':
-        return 'R';
-      case 'green':
-        return 'F';
-      case 'blue':
-        return 'B';
-      default:
-        console.warn(`Unknown color for direction mapping: ${colorName}`);
-        return 'unknown';
     }
   }
 
@@ -1767,22 +1725,6 @@ export class SimpleCubeInterpreter {
     return status
 
   }
-
-  /**
-   * Debug function for logging the colors of a piece by its index
-   */
-  private logPieceColors(pieceIndex: number): void {
-    if (pieceIndex < 0 || pieceIndex >= this.currentPieces.length) {
-      console.warn(`Invalid piece index: ${pieceIndex}. Valid range: 0-${this.currentPieces.length - 1}`);
-      return;
-    }
-
-    const piece = this.currentPieces[pieceIndex];
-    const colors = piece.stickers.map(sticker => `${sticker.colorName}`).join(', ');
-    
-    console.log(`Piece ${pieceIndex} (${piece.type} - ${piece.origin}): ${colors}`);
-  }
-
 
   /**
    * Generates separate queries for each unsolved F2L slot.

@@ -1,7 +1,7 @@
-type Color = 'W' | 'Y' | 'R' | 'O' | 'G' | 'B'
+export type Color = 'W' | 'Y' | 'R' | 'O' | 'G' | 'B'
 type Line = [Color, Color, Color];
 type Face = [Line, Line, Line];
-type CubeState = [Face, Face, Face, Face, Face, Face];
+export type CubeState = [Face, Face, Face, Face, Face, Face];
 type BaseMove = 'U' | 'D' | 'F' | 'B' | 'L' | 'R' | 'u' | 'd' | 'f' | 'b' | 'l' | 'r' | 'M' | 'E' | 'S' | 'x' | 'y' | 'z';
 type MoveModifier = "'" | '2' | '';
 type PermissiveMoveModifier = MoveModifier | '3' | "3'" | "2'";
@@ -27,12 +27,13 @@ export class SimpleCube {
   
   constructor() {}
 
-  public getCubeState(moves: PermissiveMove[]): CubeState {
+  public getCubeState(moves: string[]): CubeState {
     // console.log('[SimpleCube] getCubeState called with', moves.length, 'moves:', moves);
-    
+    const parsedMoves: PermissiveMove[] = this.parseMoves(moves);
+
     const oldMoves = this.currentMoves;
 
-    const simplifiedMoves: Move[] = this.simplifyMoves(moves);
+    const simplifiedMoves: Move[] = this.simplifyMoves(parsedMoves);
 
     const updateStrategy: Strategy = this.calcStrategy(oldMoves, simplifiedMoves);
     switch (updateStrategy.type) {
@@ -52,6 +53,32 @@ export class SimpleCube {
     // this.logCubeVisual();
     return this.cube;
   }
+
+  /**
+   * Filter out invalid moves from the input list. Does not parse "Rw"-style root moves, only "r"-style.
+   * @param moves 
+   * @returns valid moves only
+   */
+  private parseMoves(moves: string[]): PermissiveMove[] {
+    const parsedMoves: PermissiveMove[] = [];
+    const validBaseMoves: BaseMove[] = ['U', 'D', 'F', 'B', 'L', 'R', 'u', 'd', 'f', 'b', 'l', 'r', 'M', 'E', 'S', 'x', 'y', 'z'];
+    const validModifiers: PermissiveMoveModifier[] = ["", "'", '2', "3'", '3', "2'"];
+    for (const move of moves) {
+      const start = move[0];
+      if (!validBaseMoves.includes(start as BaseMove)) {
+        console.warn(`[SimpleCube] Ignoring invalid move: ${move}`);
+        continue;
+      }
+      const modifier = move.slice(1);
+      if (!validModifiers.includes(modifier as PermissiveMoveModifier)) {
+        console.warn(`[SimpleCube] Ignoring invalid move: ${move}`);
+        continue;
+      }
+      parsedMoves.push(move as PermissiveMove);
+    }
+    return parsedMoves;
+  }
+      
 
   private logCubeVisual(): void {
     const colorMap: Record<Color, string> = {
