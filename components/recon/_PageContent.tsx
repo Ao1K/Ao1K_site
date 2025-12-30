@@ -903,11 +903,11 @@ export default function Recon() {
 
     const title = solveTitle ? `${solveTitle.trim()}` : '';
     const text = `[Solve](${window.location.href})`;
-    const url = window.location.href;
+
     // Native share (mobile, some desktop browsers)
     if (canNativeShare) {
       try {
-        await navigator.share({ title, text, url });
+        await navigator.share({ title, text });
         setTopButtonAlert(["share", "Preview copied!"]);
       } catch (err) {
         // User canceled or browser rejected
