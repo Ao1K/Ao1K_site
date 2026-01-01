@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import PageContent from '../../components/recon/_PageContent';
 import { Metadata, ResolvingMetadata } from 'next';
 import { customEncodeURL } from '../../composables/recon/urlEncoding';
+import { fetchDailyScramble } from '../../utils/fetchDailyScramble';
 
 type Props = {
   params: Promise<{ id: string }>
@@ -50,7 +51,9 @@ export async function generateMetadata(
   }
 }
 
-export default function Page() {
+export default async function Page() {
+  const dailyScramble = await fetchDailyScramble();
+
   return (
     <Suspense fallback={    
       <div className="fixed inset-0 flex items-center justify-center bg-primary-900">
@@ -60,7 +63,7 @@ export default function Page() {
           className="w-16 h-16 mx-auto"
         />
       </div>}>
-      <PageContent />
+      <PageContent dailyScramble={dailyScramble} />
     </Suspense>
   );
 }

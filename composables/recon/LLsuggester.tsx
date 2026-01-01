@@ -1,5 +1,5 @@
-import compiledOll from '../../utils/compiled-oll-algs.json';
-import compiledPll from '../../utils/compiled-pll-algs.json';
+import compiledOll from '@/public/recon/compiled-oll-algs.json';
+import compiledPll from '@/public/recon/compiled-pll-algs.json';
 
 export interface CompiledLLAlg {
   caseIndex: number;

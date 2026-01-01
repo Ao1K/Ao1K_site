@@ -1,3 +1,4 @@
+// import bundleAnalyzer from '@next/bundle-analyzer';
 /** @type {import('next').NextConfig} */
 
 const nextConfig = {
@@ -11,5 +12,12 @@ const nextConfig = {
     unoptimized: true, // Amplify doesn't optimize images by default
   },
 };
+
+// const withBundleAnalyzer = bundleAnalyzer({
+//   enabled: process.env.ANALYZE === 'true',
+// });
+// export default withBundleAnalyzer({
+//   nextConfig
+// });
 
 export default nextConfig;

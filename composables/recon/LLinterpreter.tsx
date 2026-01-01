@@ -1,7 +1,7 @@
 export type Grid = number[][]; // each cell is 0..4
 export type Step = 'oll' | 'pll' | 'zbll' | 'eo' | 'cp' | 'onelll';
-import ollPatterns from '../../utils/oll-patterns.json';
-import pllPatterns from '../../utils/pll-patterns.json';
+import ollPatterns from '../../public/recon/oll-patterns.json';
+import pllPatterns from '../../public/recon/pll-patterns.json';
 
 export default class LLinterpreter {
 

@@ -32,12 +32,14 @@ const EditorLoader = ({
   editorRef: contentEditableRef, 
   handleInput, 
   name, 
-  autofocus 
+  autofocus,
+  initialContent
 }: { 
   editorRef: React.RefObject<any>, 
   handleInput: () => void, 
   name: string, 
-  autofocus: boolean
+  autofocus: boolean,
+  initialContent?: string
 })  => {
   // useSearchParams is a hook. Storing searchParams here prevents it from being called again and causing reloads.
   const searchParams = useSearchParams();
@@ -50,6 +52,8 @@ const EditorLoader = ({
     if (urlText) {
       let decodedText = decodeURIComponent(customDecodeURL(urlText));
       contentEditableRef.current.innerText = decodedText;
+    } else if (initialContent) {
+      contentEditableRef.current.innerText = initialContent;
     }
 
     // needs to be run regardless to get syntax highlighting on text editors not using URL params
@@ -93,6 +97,7 @@ interface EditorProps {
   setHTML: (html: string) => void;
   ref?: React.Ref<ImperativeRef>;
   suggestionsRef?: React.MutableRefObject<Suggestion[] | undefined>;
+  initialContent?: string;
 }
 
 export interface ImperativeRef {
@@ -115,7 +120,8 @@ function MovesTextEditor({
   html,
   setHTML,
   ref,
-  suggestionsRef
+  suggestionsRef,
+  initialContent
 }: EditorProps) {
   
   const suggestions = suggestionsRef?.current;
@@ -1673,7 +1679,13 @@ function MovesTextEditor({
   return (
     <>
       <Suspense fallback={null}>
-        <EditorLoader editorRef={contentEditableRef} handleInput={handleInput} name={name} autofocus={autofocus} />   
+        <EditorLoader 
+          editorRef={contentEditableRef} 
+          handleInput={handleInput} 
+          name={name} 
+          autofocus={autofocus} 
+          initialContent={initialContent}
+        />   
       </Suspense>
       <div
         contentEditable

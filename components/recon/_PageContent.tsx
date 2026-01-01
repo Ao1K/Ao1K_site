@@ -16,6 +16,7 @@ import CatIcon from "../../components/icons/cat";
 import TrashIcon from "../../components/icons/trash";
 import ShareIcon from "../../components/icons/share";
 import InvertIcon from "../../components/icons/invert";
+import algDoc from '../../public/recon/compiled-exact-algs.json';
 
 import Cookies from 'js-cookie';
 
@@ -28,7 +29,6 @@ import TitleWithPlaceholder from "../../components/recon/TitleInput";
 import TopButton from "../../components/recon/TopButton";
 import CopySolveDropdown from "../../components/recon/CopySolveDropdown";
 import { customDecodeURL, customEncodeURL } from '../../composables/recon/urlEncoding';
-import getDailyScramble from '../../composables/recon/getDailyScramble';
 import VideoHelpPrompt from '../../components/recon/VideoHelpPrompt';
 import ImageStack from '../recon/ImageStack';
 import { SimpleCube } from '../../composables/recon/SimpleCube';
@@ -63,7 +63,7 @@ const TwistyPlayer = lazy(() => import("../../components/recon/TwistyPlayer"));
 
 let currentSpeed = 30;
 
-export default function Recon() {
+export default function Recon({ dailyScramble = "" }: { dailyScramble?: string }) {
   const allMovesRef = useRef<string[][][]>([[[]], [[]]]);
   const moveLocation = useRef<[number, number, number]>([0, 0, 0]);
 
@@ -992,28 +992,6 @@ export default function Recon() {
     }
   }
 
-  const showDailyScramble = async () => {
-
-    try {
-      const data = await getDailyScramble(new Date());
-
-      if (data === undefined) {
-        console.error('No daily scramble found.');
-        return;
-      }
-
-      const dailyScramble = data.scramble3x3;
-      const date = data.date;     
-      
-      const scrambleMessage = `// Scramble of the day<br>// ${date}<br>${dailyScramble}`;
-      if (!scrambleHTML) {
-        scrambleMethodsRef.current?.transform(scrambleMessage); // force update inside MovesTextEditor
-      }
-    } catch (error) {
-      console.error('Failed to get daily scramble:', error);
-    }
-  }
-
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const title = e.target.value;
 
@@ -1208,7 +1186,6 @@ export default function Recon() {
   };
 
   const initializeCubeInterpreter = async () => {
-    const { default: algDoc } = await import('../../utils/compiled-exact-algs.json');
     cubeInterpreter.current = new SimpleCubeInterpreter(algDoc.algorithms);
     updateLineSteps();
 
@@ -1252,11 +1229,6 @@ export default function Recon() {
     const scramble = allMovesRef.current[0].flat().join(' ');
     if (scramble) {
       setPlayerParams(prev => ({ ...prev, scramble }));
-    }
-
-    if (!Array.from(urlParams.values()).filter(val => val !== '').length) { 
-      // if no URL query values or empty string values, then show daily scramble
-      showDailyScramble();
     }
 
     Cookies.get('isShowingBottomBar') === 'false' ? setIsShowingToolbar(false) : setIsShowingToolbar(true);
@@ -1342,6 +1314,7 @@ export default function Recon() {
             updateHistoryBtns={memoizedUpdateHistoryBtns}
             html={scrambleHTML}
             setHTML={memoizedSetScrambleHTML}
+            initialContent={dailyScramble}
           />
         </div>
       </div>
