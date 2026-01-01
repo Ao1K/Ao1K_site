@@ -1,18 +1,22 @@
+import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import outputs from "../amplify_outputs.json";
+
+const s3 = new S3Client({ region: "us-east-1" });
 
 export const fetchDailyScramble = async (): Promise<string> => {
   const bucketName = outputs.storage.buckets.find(b => b.name === 'daily-scram')?.bucket_name || outputs.storage.bucket_name;
-  const region = outputs.storage.aws_region;
   const key = "scramble3x3.txt";
-  const url = `https://${bucketName}.s3.${region}.amazonaws.com/${key}`;
+  console.log("Fetching daily scramble from S3 bucket:", bucketName);
 
   try {
-    const response = await fetch(url, { next: { revalidate: 3600 } });
-    if (!response.ok) {
-      console.error(`Failed to fetch daily scramble: ${response.statusText}`);
-      return "";
-    }
-    return await response.text();
+    const res = await s3.send(
+      new GetObjectCommand({
+        Bucket: bucketName,
+        Key: key,
+      })
+    );
+
+    return await res.Body!.transformToString();
   } catch (error) {
     console.error("Error fetching daily scramble:", error);
     return "";
