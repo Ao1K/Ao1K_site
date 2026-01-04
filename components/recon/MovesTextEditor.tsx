@@ -45,14 +45,14 @@ const EditorLoader = ({
   const searchParams = useSearchParams();
   
   const handleStartupProcess = () => {
-    const urlText = searchParams.get(name);
+    const editorText = searchParams.get(name);
     const otherID = name === 'scramble' ? 'solution' : 'scramble';
-    const otherURLtext = searchParams.get(otherID);
+    const otherEditorText = searchParams.get(otherID);
 
-    if (urlText) {
-      let decodedText = decodeURIComponent(customDecodeURL(urlText));
+    if (editorText) {
+      let decodedText = decodeURIComponent(customDecodeURL(editorText));
       contentEditableRef.current.innerText = decodedText;
-    } else if (initialContent) {
+    } else if (initialContent && !otherEditorText) {
       contentEditableRef.current.innerText = initialContent;
     }
 
@@ -60,7 +60,7 @@ const EditorLoader = ({
     handleInput();
 
     
-    if (autofocus && urlText && !otherURLtext) { // TODO: `&& !otherURLtext` isn't desired, but an unknown bug causes animation desync otherwise.
+    if (autofocus && editorText && !otherEditorText) { // TODO: `&& !otherURLtext` isn't desired, but an unknown bug causes animation desync otherwise.
       // adds caretNode span, which then is processed by onInputChange
       const selection = window.getSelection();
       const range = document.createRange();

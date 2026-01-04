@@ -16,8 +16,6 @@ import CatIcon from "../../components/icons/cat";
 import TrashIcon from "../../components/icons/trash";
 import ShareIcon from "../../components/icons/share";
 import InvertIcon from "../../components/icons/invert";
-import algDoc from '../../public/recon/compiled-exact-algs.json';
-
 import Cookies from 'js-cookie';
 
 import addCat from "../../composables/recon/addCat";
@@ -63,7 +61,7 @@ const TwistyPlayer = lazy(() => import("../../components/recon/TwistyPlayer"));
 
 let currentSpeed = 30;
 
-export default function Recon({ dailyScramble = "" }: { dailyScramble?: string }) {
+export default function Recon({ dailyScramble = "", videoHelpDismissed = false }: { dailyScramble?: string, videoHelpDismissed?: boolean }) {
   const allMovesRef = useRef<string[][][]>([[[]], [[]]]);
   const moveLocation = useRef<[number, number, number]>([0, 0, 0]);
 
@@ -99,7 +97,7 @@ export default function Recon({ dailyScramble = "" }: { dailyScramble?: string }
   const bottomBarRef = useRef<HTMLDivElement>(null!);
   const isLoopingRef = useRef<boolean>(false);
   const loopTimeoutRef = useRef<number|null>(null);
-  const screenshotManagerRef = useRef(new ScreenshotManager());
+  const screenshotManagerRef = useRef<ScreenshotManager | null>(null);
   const clearLoopTimeout = useCallback(() => {
     if (loopTimeoutRef.current !== null) {
       clearTimeout(loopTimeoutRef.current);
@@ -873,6 +871,8 @@ export default function Recon({ dailyScramble = "" }: { dailyScramble?: string }
   }
 
   const handleScreenshot = async () => {
+    if (!screenshotManagerRef.current) return;
+    
     const tpsString = (tpsRef.current && tpsRef.current.innerHTML !== '(-- tps)') ? tpsRef.current.innerHTML : '';
     const blob = await screenshotManagerRef.current.getBlob(
       { scrambleHTML, solutionHTML, solveTime },
@@ -884,7 +884,7 @@ export default function Recon({ dailyScramble = "" }: { dailyScramble?: string }
       return;
     }
     
-    const success = await screenshotManagerRef.current.copyToClipboard(blob);
+    const success = await screenshotManagerRef.current!.copyToClipboard(blob);
     if (success) {
       setTopButtonAlert(["copy-solve", "Screenshot copied!"]);
     } else {
@@ -984,7 +984,7 @@ export default function Recon({ dailyScramble = "" }: { dailyScramble?: string }
       );
       if (isCubeSolved) {
         const tpsString = (tpsRef.current && tpsRef.current.innerHTML !== '(-- tps)') ? tpsRef.current.innerHTML : '';
-        void screenshotManagerRef.current.getBlob(
+        void screenshotManagerRef.current?.getBlob(
           { scrambleHTML, solutionHTML, solveTime },
           { totalMoves, tpsString }
         );
@@ -1186,10 +1186,14 @@ export default function Recon({ dailyScramble = "" }: { dailyScramble?: string }
   };
 
   const initializeCubeInterpreter = async () => {
-    cubeInterpreter.current = new SimpleCubeInterpreter(algDoc.algorithms);
+    const algDoc = await import('../../public/recon/compiled-exact-algs.json');
+    cubeInterpreter.current = new SimpleCubeInterpreter(algDoc.default.algorithms);
     updateLineSteps();
 
-    // warm up screenshot renderer
+    // initialize screenshot manager and warm up renderer
+    if (!screenshotManagerRef.current) {
+      screenshotManagerRef.current = new ScreenshotManager();
+    }
     void screenshotManagerRef.current.getBlob(
       { scrambleHTML: '', solutionHTML: '', solveTime: '' },
       { totalMoves: 0, tpsString: '' }
@@ -1285,8 +1289,8 @@ export default function Recon({ dailyScramble = "" }: { dailyScramble?: string }
   const toolbarButtons = isMac ? macToolbarButtons : windowsToolbarButtons;
 
   return (
-    <div id="main_page" className="col-start-2 col-span-1 flex flex-col bg-primary-900 mt-[52px]">
-      <VideoHelpPrompt videoId="iIipycBl0iY" />
+    <main id="main_page" className="col-start-2 col-span-1 flex flex-col bg-primary-900 mt-[52px]">
+      <VideoHelpPrompt videoId="iIipycBl0iY" initiallyDismissed={videoHelpDismissed} />
       
       {/* utility for compiling list of alg hashes */}
       {/* <AlgCompiler /> */}
@@ -1314,7 +1318,7 @@ export default function Recon({ dailyScramble = "" }: { dailyScramble?: string }
             updateHistoryBtns={memoizedUpdateHistoryBtns}
             html={scrambleHTML}
             setHTML={memoizedSetScrambleHTML}
-            initialContent={dailyScramble}
+            initialContent={solutionHTML ? '' : dailyScramble}
           />
         </div>
       </div>
@@ -1403,6 +1407,6 @@ export default function Recon({ dailyScramble = "" }: { dailyScramble?: string }
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

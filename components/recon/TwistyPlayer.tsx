@@ -1,9 +1,19 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { TwistyPlayer } from 'cubing/twisty';
-import * as THREE from 'three';
-import type { Object3D } from 'three';
+import {
+  Scene,
+  PerspectiveCamera,
+  WebGLRenderer,
+  TextureLoader,
+  LinearMipmapLinearFilter,
+  LinearFilter,
+  MeshBasicMaterial,
+  PlaneGeometry,
+  Mesh,
+  AmbientLight,
+  type Object3D
+} from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import type { MutableRefObject } from 'react';
 import type { Object3DEventMap } from 'three/src/core/Object3D.js';
 import ContextMenuImperative, { ContextMenuHandle } from './ContextMenuImperative';
 import PlayerControls from './PlayerControls';
@@ -58,7 +68,7 @@ const Player = React.memo(({
   setControllerButtonsStatus,
 }: PlayerProps) => {
   const playerRef = useRef<TwistyPlayer | null>(null);
-  const cubeRef = useRef<THREE.Object3D<Object3DEventMap> | null>(null);
+  const cubeRef = useRef<Object3D<Object3DEventMap> | null>(null);
   const divRef = useRef<HTMLDivElement>(null);
 
   const lastSolution = useRef<string>('');
@@ -652,9 +662,9 @@ const Player = React.memo(({
     queuePlayerParams
   ]);
 
-  let scene: THREE.Scene;
-  let camera: THREE.PerspectiveCamera;
-  let renderer: THREE.WebGLRenderer;
+  let scene: Scene;
+  let camera: PerspectiveCamera;
+  let renderer: WebGLRenderer;
   let controls: OrbitControls;
   let cube: Object3D;
     
@@ -686,7 +696,7 @@ const Player = React.memo(({
   };
 
   const addFaceLabels = () => {
-    const loader = new THREE.TextureLoader();      
+    const loader = new TextureLoader();      
     const labels: { file: string, position: { x: number, y: number, z: number }, rotation: { x: number, y: number, z: number } }[] = [
       {
         file: '/U.svg',
@@ -724,20 +734,20 @@ const Player = React.memo(({
     labels.forEach(label => {
       const texture = loader.load(label.file, () => {
         texture.generateMipmaps = true;
-        texture.minFilter = THREE.LinearMipmapLinearFilter;
-        texture.magFilter = THREE.LinearFilter;
+        texture.minFilter = LinearMipmapLinearFilter;
+        texture.magFilter = LinearFilter;
         const maxAnisotropy = renderer.capabilities.getMaxAnisotropy()
         // texture.anisotropy = Math.min(16, maxAnisotropy);
         texture.anisotropy = maxAnisotropy;
         
                   
-        const material = new THREE.MeshBasicMaterial({ 
+        const material = new MeshBasicMaterial({ 
           map: texture, 
           transparent: true 
         });
         
-        const geometry = new THREE.PlaneGeometry(1.1, 1.6);
-        const mesh = new THREE.Mesh(geometry, material);
+        const geometry = new PlaneGeometry(1.1, 1.6);
+        const mesh = new Mesh(geometry, material);
         
         mesh.position.set(label.position.x, label.position.y, label.position.z);
         mesh.rotation.set(label.rotation.x, label.rotation.y, label.rotation.z);
@@ -770,7 +780,7 @@ const Player = React.memo(({
       divRef.current.style.width = '100%';
       divRef.current.style.height = '100%';
 
-      scene = new THREE.Scene();
+      scene = new Scene();
 
       addFaceLabels();
       setStickerColors(cube);
@@ -783,7 +793,7 @@ const Player = React.memo(({
       // console.log('Cube loaded:', cube);
       
       const aspectRatio = (divRef.current.clientWidth - 1) / (divRef.current.clientHeight - 1);
-      camera = new THREE.PerspectiveCamera(75, aspectRatio, 0.1, 5);
+      camera = new PerspectiveCamera(75, aspectRatio, 0.1, 5);
 
       const scaleFactor = (divRef.current.clientHeight * 0.0024) + 0.92; // found through experimentation w/linear system
 
@@ -791,11 +801,11 @@ const Player = React.memo(({
       camera.position.z = (Math.sqrt(3) / 2) * scaleFactor;
       camera.position.y = (1 / 2) * scaleFactor;
 
-      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer = new WebGLRenderer({ antialias: true });
       renderer.setSize(divRef.current.clientWidth - 1, divRef.current.clientHeight - 1);
       divRef.current.appendChild(renderer.domElement);
 
-      const light = new THREE.AmbientLight(0xffffff, 0.5); // soft white light
+      const light = new AmbientLight(0xffffff, 0.5); // soft white light
       scene.add(light);
 
       controls = new OrbitControls(camera, renderer.domElement);
@@ -944,7 +954,7 @@ const Player = React.memo(({
     <>
       <div
         ref={divRef}
-        className="h-full border border-neutral-600 hover:border-primary-100 rounded-t-sm relative bg-black"
+        className="h-full w-full border border-neutral-600 hover:border-primary-100 rounded-t-sm relative bg-black"
         onClick={() => contextMenuRef.current?.close()}
         onContextMenu={handleContextMenu}
         onKeyDown={handleKeyDown}

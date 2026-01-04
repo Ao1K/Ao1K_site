@@ -1,18 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import Cookies from 'js-cookie';
+import React, { useState } from 'react';
 import Youtube from '../icons/youtube';
 import Close from '../icons/close';
 import YouTubeEmbed from '../YoutubeEmbed';
+import { dismissVideoHelp } from '../../app/actions';
 
-export default function VideoHelpPrompt({ videoId }: { videoId: string }) {
-  const [dismissed, setDismissed] = useState(false);
+export default function VideoHelpPrompt({ videoId, initiallyDismissed = false }: { videoId: string, initiallyDismissed?: boolean }) {
+  const [dismissed, setDismissed] = useState(initiallyDismissed);
   const [isOpen, setIsOpen] = useState(false);
-
-  useEffect(() => {
-    if (Cookies.get('videoHelpDismissed') === 'true') {
-      setDismissed(true);
-    }
-  }, []);
 
   const openVideo = () => {
     setIsOpen(true);
@@ -23,7 +17,7 @@ export default function VideoHelpPrompt({ videoId }: { videoId: string }) {
   };
 
   const closeForever = () => {
-    Cookies.set('videoHelpDismissed', 'true', { expires: 9999 });
+    void dismissVideoHelp();
     setDismissed(true);
   };
 

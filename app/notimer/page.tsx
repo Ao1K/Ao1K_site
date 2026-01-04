@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
-import { debounce } from "lodash";
+import debounce from "lodash.debounce";
 import { randomScrambleForEvent } from 'cubing/scramble';
 // import { db } from "../../composables/notimer/db";
 import { getLastSolve, getNextSolve, getPreviousSolve, getChecks, getSolve, addCheck, addSolve, deleteCheck, updateCheck, updateSolve, addCheckTemplate, getCheckTemplate, updateCheckTemplate, deleteCheckTemplate, getLastCheck } from "../../composables/notimer/dbUtils";

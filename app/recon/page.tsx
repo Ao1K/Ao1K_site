@@ -1,6 +1,9 @@
-import { Suspense } from 'react';
-import PageContent from '../../components/recon/_PageContent';
+import { Suspense, lazy } from 'react';
 import { Metadata, ResolvingMetadata } from 'next';
+import { cookies } from 'next/headers';
+
+const PageContent = lazy(() => import('../../components/recon/_PageContent'));
+import ReconSkeleton from '../../components/recon/ReconSkeleton';
 import { customEncodeURL } from '../../composables/recon/urlEncoding';
 import { fetchDailyScramble } from '../../utils/fetchDailyScramble';
 
@@ -39,31 +42,55 @@ export async function generateMetadata(
   if (searchParams.tps) sp.set('tps', searchParams.tps as string);
 
   const ogUrl = `/api/og?${sp.toString()}`;
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  const canonicalUrl = `${baseUrl}/recon?${sp.toString()}`;
+
+  const titleParam = searchParams.title as string | undefined;
+  const timeParam = searchParams.time as string | undefined;
+  
+  let pageTitle = "Reconstruction Tool";
+  if (titleParam) {
+    pageTitle = titleParam;
+  } else if (timeParam) {
+    pageTitle = `${timeParam}s Solve Reconstruction`;
+  }
+
+  const description = `${timeParam ? `${timeParam}s solve` : 'Statistically significant speedcubing analysis'}`;
+
+  const keywords = ["speedcubing", "reconstruction", "rubik's cube", "solve analysis", "alg", "algorithm"];
+  if (timeParam) keywords.push(`${timeParam}s solve`);
 
   return {
+    title: pageTitle,
+    description: description,
+    keywords: keywords,
+    alternates: {
+      canonical: canonicalUrl,
+    },
     openGraph: {
+      title: pageTitle,
+      description: description,
       images: [ogUrl],
     },
     twitter: {
       card: 'summary_large_image',
+      title: pageTitle,
+      description: description,
       images: [ogUrl],
     },
   }
 }
 
 export default async function Page() {
-  const dailyScramble = await fetchDailyScramble();
+  let dailyScramble = await fetchDailyScramble();
+  dailyScramble = `// Scramble of the day\n${dailyScramble}`;
+
+  const cookieStore = await cookies();
+  const videoHelpDismissed = cookieStore.get('videoHelpDismissed')?.value === 'true';
 
   return (
-    <Suspense fallback={    
-      <div className="fixed inset-0 flex items-center justify-center bg-primary-900">
-        <img
-          src="/LoadingSpinner.webp"
-          alt="Loading..."
-          className="w-16 h-16 mx-auto"
-        />
-      </div>}>
-      <PageContent dailyScramble={dailyScramble} />
+    <Suspense fallback={<ReconSkeleton />}>
+      <PageContent dailyScramble={dailyScramble} videoHelpDismissed={videoHelpDismissed} />
     </Suspense>
   );
 }

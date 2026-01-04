@@ -13,6 +13,15 @@ Or compute a bunch of crosses and just give whatever suggestion still works.
 But we don't wanna just show autocomplete right away. Noisey.
   - Unless user requests it via tab!
 
+  Properties of a cross algorithm
+  - Moves should always move a layer that has a cross piece on it
+  - Reward function should tell if cube is closer to being solved
+    - Look at movecount remaining. Not that deep. Well wait, don't we want to follow a gradient?
+  - Multiple solutions should be returned: ideally around 100
+  - Cross solutions of 1-3+ moves should be a lookup table. Keep in mind multiple solutions exist (R2 L2 and L2 R2)
+  
+
+
 Algs page. For your algs. A tab for your recons (click an icon and expand into a whole new page). A profile system. Oofda.
 
 ZBLS autocomplete:

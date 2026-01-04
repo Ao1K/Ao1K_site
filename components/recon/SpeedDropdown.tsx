@@ -36,13 +36,15 @@ export default function ToolbarButton({speed, setSpeed}: SpeedSliderProps) {
   };
 
   useEffect(() => {
-    document.addEventListener('scroll', (e) => {
+    const handleScroll = () => {
       setIsRotated(false);
-    });
+    };
+
+    document.addEventListener('scroll', handleScroll);
     document.addEventListener('mousedown', handleClickOutside);
 
     return () => {
-      document.removeEventListener('scroll', () => {});
+      document.removeEventListener('scroll', handleScroll);
       document.removeEventListener('mousedown', handleClickOutside);
     }
 
