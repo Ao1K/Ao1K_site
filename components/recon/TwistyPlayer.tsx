@@ -21,6 +21,7 @@ import { reverseMove } from '../../composables/recon/transformHTML'
 import type { ControllerRequestOptions } from './_PageContent';
 import type { PlayerParams as RenderRefProps } from './_PageContent';
 import Cookies from 'js-cookie';
+import { getSettings, type CubeColors } from '../../composables/useSettings';
 
 interface PlayerProps {
   scrambleRequest: string;
@@ -46,6 +47,7 @@ interface PlayerProps {
   }>>;
 }
 
+// Default cube colors - kept for backwards compatibility with imports
 export const CUBE_COLORS = {
   red: '#FF0000',
   green: '#0CEC00',
@@ -54,6 +56,11 @@ export const CUBE_COLORS = {
   orange: '#FF7F00',
   white: '#FFFFFF',
 };
+
+// Helper to get current cube colors from settings
+function getCurrentCubeColors(): CubeColors {
+  return getSettings().cubeColors;
+}
 
 
 const Player = React.memo(({
@@ -80,7 +87,9 @@ const Player = React.memo(({
 
   const animatingRef = useRef<boolean>(false);
   const pendingParamsRef = useRef<RenderRefProps>(null);
-
+  
+  // Store initial hint sticker colors to identify them later
+  const initialHintStickerColors = useRef<{ r: number, g: number, b: number }[]>([]);
 
   const [showControls, setShowControls] = useState<boolean>(true);
   const [flashingButtons, setFlashingButtons] = useState<Set<string>>(new Set());
@@ -783,7 +792,7 @@ const Player = React.memo(({
       scene = new Scene();
 
       addFaceLabels();
-      setStickerColors(cube);
+      setStickerColors(cube, true); // Pass true for initial load
 
       scene.add(cube);
 
@@ -836,25 +845,92 @@ const Player = React.memo(({
     return [r, g, b];
   };
 
-  const setStickerColors = (cube: any) => {
+  const setStickerColors = (cube: any, isInitialLoad = false) => {
     if (!playerRef.current) return;
     const stickerColors = cube.kpuzzleFaceletInfo;
     if (!stickerColors) return;
 
-    const red = hexToRgb(CUBE_COLORS.red);
-    const green = hexToRgb(CUBE_COLORS.green);
-    const blue = hexToRgb(CUBE_COLORS.blue);
-    const yellow = hexToRgb(CUBE_COLORS.yellow);
-    const orange = hexToRgb(CUBE_COLORS.orange);
-    const white = hexToRgb(CUBE_COLORS.white);
+    // Get colors from settings (cookie) or use defaults
+    const colors = getCurrentCubeColors();
+
+    const up = hexToRgb(colors.up);
+    const down = hexToRgb(colors.down);
+    const front = hexToRgb(colors.front);
+    const back = hexToRgb(colors.back);
+    const right = hexToRgb(colors.right);
+    const left = hexToRgb(colors.left);
 
     // not sure why I can just set the centers, but I'm not complaining
-    cube.kpuzzleFaceletInfo.CENTERS[0][0].facelet.material.color.setRGB(...white.map(val => val / 255));
-    cube.kpuzzleFaceletInfo.CENTERS[1][0].facelet.material.color.setRGB(...orange.map(val => val / 255));
-    cube.kpuzzleFaceletInfo.CENTERS[2][0].facelet.material.color.setRGB(...green.map(val => val / 255));
-    cube.kpuzzleFaceletInfo.CENTERS[3][0].facelet.material.color.setRGB(...red.map(val => val / 255));
-    cube.kpuzzleFaceletInfo.CENTERS[4][0].facelet.material.color.setRGB(...blue.map(val => val / 255));
-    cube.kpuzzleFaceletInfo.CENTERS[5][0].facelet.material.color.setRGB(...yellow.map(val => val / 255));
+    // CENTERS mapping: [0]=up(white), [1]=left(orange), [2]=front(green), [3]=right(red), [4]=back(blue), [5]=down(yellow)
+    cube.kpuzzleFaceletInfo.CENTERS[0][0].facelet.material.color.setRGB(...up.map(val => val / 255));
+    cube.kpuzzleFaceletInfo.CENTERS[1][0].facelet.material.color.setRGB(...left.map(val => val / 255));
+    cube.kpuzzleFaceletInfo.CENTERS[2][0].facelet.material.color.setRGB(...front.map(val => val / 255));
+    cube.kpuzzleFaceletInfo.CENTERS[3][0].facelet.material.color.setRGB(...right.map(val => val / 255));
+    cube.kpuzzleFaceletInfo.CENTERS[4][0].facelet.material.color.setRGB(...back.map(val => val / 255));
+    cube.kpuzzleFaceletInfo.CENTERS[5][0].facelet.material.color.setRGB(...down.map(val => val / 255));
+
+    // On initial load, capture the default colors
+    if (isInitialLoad) {
+      initialHintStickerColors.current = cube.experimentalHintStickerMeshes.map((mesh: any) => ({
+        r: mesh.material.color.r,
+        g: mesh.material.color.g,
+        b: mesh.material.color.b
+      }));
+    }
+
+    // Map standard colors to custom colors
+    // Standard cube colors: white=up, yellow=down, green=front, blue=back, red=right, orange=left
+    const colorMapping: { [key: string]: number[] } = {
+      'white': up,
+      'yellow': down,
+      'green': front,
+      'blue': back,
+      'red': right,
+      'orange': left
+    };
+
+    // Helper to determine which standard color a given RGB is close to
+    const identifyStandardColor = (r: number, g: number, b: number): string | null => {
+      // Define standard colors as they appear in the default cube
+      const standardColors: { [key: string]: [number, number, number] } = {
+        'white': [1, 1, 1],
+        'yellow': [1, 1, 0],
+        'green': [0, 0.6, 0],
+        'blue': [0, 0, 1],
+        'red': [1, 0, 0],
+        'orange': [1, 0.5, 0]
+      };
+
+      let closestColor: string | null = null;
+      let minDistance = Infinity;
+
+      for (const [colorName, [sr, sg, sb]] of Object.entries(standardColors)) {
+        const distance = Math.sqrt(
+          Math.pow(r - sr, 2) + Math.pow(g - sg, 2) + Math.pow(b - sb, 2)
+        );
+        if (distance < minDistance) {
+          minDistance = distance;
+          closestColor = colorName;
+        }
+      }
+
+      return closestColor;
+    };
+
+    // Iterate through hint sticker meshes and assign colors based on their initial color
+    cube.experimentalHintStickerMeshes.forEach((mesh: any, index: number) => {
+      if (initialHintStickerColors.current[index]) {
+        const initialColor = initialHintStickerColors.current[index];
+        const standardColor = identifyStandardColor(initialColor.r, initialColor.g, initialColor.b);
+        
+        if (standardColor) {
+          const newColor = colorMapping[standardColor];
+          mesh.material.color.setRGB(...newColor.map(val => val / 255));
+        }
+      }
+    });
+
+    console.log('cube: ', cube);
   }
 
   useEffect(() => {
@@ -902,8 +978,17 @@ const Player = React.memo(({
     Cookies.get('showPlayerControls') === 'false' ? setShowControls(false) : setShowControls(true);
     window.addEventListener('resize', handleResize);
 
+    // Listen for cube color changes from settings
+    const handleColorsChanged = () => {
+      if (cubeRef.current) {
+        setStickerColors(cubeRef.current);
+      }
+    };
+    window.addEventListener('ao1kSettingsChanged', handleColorsChanged);
+
     return () => {
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('ao1kSettingsChanged', handleColorsChanged);
     };
   }, []);
 

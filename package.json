@@ -10,13 +10,13 @@
     "sort-algs": "npx tsx scripts/sortAlgs.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.971.0",
     "@babel/plugin-transform-class-properties": "^7.25.9",
     "@babel/plugin-transform-object-rest-spread": "^7.25.9",
     "@npmcli/installed-package-contents": "^3.0.0",
     "@parcel/watcher": "^2.5.0",
     "abbrev": "^3.0.1",
-    "aws-amplify": "^6.15.8",
-    "aws-sdk": "^2.1692.0",
+    "aws-amplify": "^6.15.10",
     "core-js": "^3.47.0",
     "cubing": "0.55.2",
     "dexie": "4.0.10",
@@ -31,6 +31,7 @@
     "npm-bundled": "^4.0.0",
     "npm-normalize-package-bin": "^4.0.0",
     "react": "^19.2.1",
+    "react-colorful": "^5.6.1",
     "react-dom": "^19.1.0",
     "rimraf": "^6.1.2",
     "sanitize-html": "2.13.0",
@@ -40,8 +41,8 @@
     "yaml": "^2.8.1"
   },
   "devDependencies": {
-    "@aws-amplify/backend": "^1.9.0",
-    "@aws-amplify/backend-cli": "^1.4.9",
+    "@aws-amplify/backend": "^1.2.1",
+    "@aws-amplify/backend-cli": "^1.2.2",
     "@next/bundle-analyzer": "^16.1.1",
     "@types/js-cookie": "^3.0.6",
     "@types/json-schema": "^7.0.15",

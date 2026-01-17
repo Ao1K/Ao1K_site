@@ -16,6 +16,9 @@ Don't show suggestions that are direct longer version of other suggestion for sa
  - Ex: R U R' U L U L' when R U R' solves FR.
     - Should only be rejected if R U R' U L U L' doesn't solve another slot as well.
 
+In short:
+ImageStack source data needs to be more rich. It should have starting location of slot being solved, for each slot solved. 
+
 Autocomplete for cross. Would need to brute force solutions to partial cross solution input. 
 Or compute a bunch of crosses and just give whatever suggestion still works.
 But we don't wanna just show autocomplete right away. Noisey.
@@ -42,7 +45,8 @@ Then we search for hash matches only on f2l pieces. The EO is matched separately
 
 Changes for verison 0.6?:
 - Reduced page load times by about half
-- Text substitutions (Uw -> u, UD -> (U D))
+- Text substitutions (Uw -> u, UD -> (U D), UF -> U F)
 - Parens got getting colored
 - Added about 700 f2l algs (counting variants as unique)
-- Better colored previews, gave borders to icons. Unified style between preview and editor.
+- Better colored previews, gave borders to icons. Unified style between preview and editor
+- Cube Colors menu. Note that previews won't be affected.
