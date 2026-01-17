@@ -1,12 +1,20 @@
 Informal Bugs/Todo List. Not guaranteed to be complete or accurate.
 ===================================================================
 
-Screenshot scramble box shouldn't have 3-line minimum width, only 1 line.
+Fix selection bug when there's only one line of text (one div)
 
-Typing Uw should be replaced with u. UU --> should make U2
+If user types "y ", don't show algs for "y' "
 
-Header can be regular element, not fixed. Not that deep.
+Make autocomplete auto-update its starting position if no step yet completed
+ - This idea doesn't really work. We don't have a generalized autocompleter. 
+ - We could, however, detect when cross is solved. Then make suggestion.
+ - Ensure suggestion is not a direct undo of last few moves, 
+    or at least that is solves more of cube.
 
+Suggestions should support multislot icons:
+Don't show suggestions that are direct longer version of other suggestion for same step.
+ - Ex: R U R' U L U L' when R U R' solves FR.
+    - Should only be rejected if R U R' U L U L' doesn't solve another slot as well.
 
 Autocomplete for cross. Would need to brute force solutions to partial cross solution input. 
 Or compute a bunch of crosses and just give whatever suggestion still works.
@@ -31,3 +39,10 @@ So we generate a json specifically for ZBLS with these objects:
 {hash: 'abcd', 'eoIndex': 9, alg: "R U R'"}
 Then we search for hash matches only on f2l pieces. The EO is matched separately.
 
+
+Changes for verison 0.6?:
+- Reduced page load times by about half
+- Text substitutions (Uw -> u, UD -> (U D))
+- Parens got getting colored
+- Added about 700 f2l algs (counting variants as unique)
+- Better colored previews, gave borders to icons. Unified style between preview and editor.

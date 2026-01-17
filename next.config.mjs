@@ -11,6 +11,7 @@ const nextConfig = {
   images: {
     unoptimized: true, // Amplify doesn't optimize images by default
   },
+  allowedDevOrigins: ['http://192.168.1.107:3000', 'http://localhost:3000'],
 };
 
 // const withBundleAnalyzer = bundleAnalyzer({
