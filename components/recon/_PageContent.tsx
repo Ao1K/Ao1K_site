@@ -902,7 +902,7 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
       window.matchMedia("(pointer: coarse)").matches;
 
     const title = solveTitle ? `${solveTitle.trim()}` : '';
-    const text = `[Solve](${window.location.href})`;
+    const text = `[${title || 'Solve'}](${window.location.href})`;
 
     // Native share (mobile, some desktop browsers)
     if (canNativeShare) {
