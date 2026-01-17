@@ -205,7 +205,7 @@ const ImageStack = ({position, moves, lineSteps, editableElement}: ImageStackPro
       
       if (step === 'cross') {
         return (
-          <svg viewBox="0 0 24 24" className="w-full border border-1 border-neutral-600 hover:border-primary-100">
+          <svg viewBox="0 0 24 24" className="w-full border border-1 border-neutral-600 hover:border-primary-100" stroke="#52525b" strokeWidth="1" fill="none">
             <rect x="0" y="0" width="8" height="8" fill={'#161018'} />
             <rect x="8" y="0" width="8" height="8" fill={primaryColors[0]} />
             <rect x="16" y="0" width="8" height="8" fill={'#161018'} />
@@ -270,7 +270,7 @@ const ImageStack = ({position, moves, lineSteps, editableElement}: ImageStackPro
         })();
 
         return (
-          <svg viewBox="-15 -19 30 30" className="w-full border border-1 border-neutral-600 hover:border-primary-100">
+          <svg viewBox="-15 -19 30 30" className="w-full border border-1 border-neutral-600 hover:border-primary-100" stroke="#52525b" strokeWidth="1" fill="none">
             <rect x="-15" y="-19" width="30" height="30" fill="#161018" />
             <polygon points= "0,0 5,-3 0,-6 -5,-3" fill={crossColor} />
             <polygon points= "5,-3 0,-6 5,-9 10,-6" fill={crossColor} />
@@ -308,14 +308,14 @@ const ImageStack = ({position, moves, lineSteps, editableElement}: ImageStackPro
         );
       } else if (step === 'pair') {
         return (
-          <svg viewBox="0 0 24 24" className="w-full border border-1 border-neutral-600 hover:border-primary-100">
+          <svg viewBox="0 0 24 24" className="w-full border border-1 border-neutral-600 hover:border-primary-100" stroke="#52525b" strokeWidth="1" fill="none">
             <polygon points="0,0 24,0 0,24" fill={primaryColors[0]} />
             <polygon points="24,0 24,24 0,24" fill={primaryColors[1]} />
           </svg>
         );
       } else if (step === 'multislot' && primaryColors.length === 3) {
         return (
-          <svg viewBox="0 0 24 24" className="w-full border border-1 border-neutral-600 hover:border-primary-100">
+          <svg viewBox="0 0 24 24" className="w-full border border-1 border-neutral-600 hover:border-primary-100" stroke="#52525b" strokeWidth="1" fill="none">
             <rect x="0" y="0" width="8" height="24" fill={primaryColors[0]} />
             <rect x="8" y="0" width="8" height="24" fill={primaryColors[1]} />
             <rect x="16" y="0" width="8" height="24" fill={primaryColors[2]} />
@@ -323,7 +323,7 @@ const ImageStack = ({position, moves, lineSteps, editableElement}: ImageStackPro
         );
       } else if (step === 'multislot' && primaryColors.length === 4) {
         return (
-          <svg viewBox="0 0 24 24" className="w-full border border-1 border-neutral-600 hover:border-primary-100">
+          <svg viewBox="0 0 24 24" className="w-full border border-1 border-neutral-600 hover:border-primary-100" stroke="#52525b" strokeWidth="1" fill="none">
             <rect x="0" y="0" width="6" height="24" fill={primaryColors[0]} />
             <rect x="6" y="0" width="6" height="24" fill={primaryColors[1]} />
             <rect x="12" y="0" width="6" height="24" fill={primaryColors[2]} />
@@ -348,7 +348,7 @@ const ImageStack = ({position, moves, lineSteps, editableElement}: ImageStackPro
         };
 
         return (
-          <svg viewBox="0 0 24 24" className="w-full border border-1 border-neutral-600 hover:border-primary-100">
+          <svg viewBox="0 0 24 24" className="w-full border border-1 border-neutral-600 hover:border-primary-100" stroke="#52525b" strokeWidth="1" fill="none">
             {/* Row 0 - all outer ring (height 3) */}
             <rect x="0" y="0" width="3" height="3" fill={getCellColor(0, 0)} />
             <rect x="3" y="0" width="6" height="3" fill={getCellColor(0, 1)} />
@@ -388,7 +388,7 @@ const ImageStack = ({position, moves, lineSteps, editableElement}: ImageStackPro
       } else {
         // backup
         return (
-          <svg viewBox="0 0 24 24" className="w-full h-full p-1">
+          <svg viewBox="0 0 24 24" className="w-full h-full p-1" stroke="#52525b" strokeWidth="1" fill="none">
             <circle cx="12" cy="12" r="6" fill={primaryColors[0]} />
           </svg>
         );

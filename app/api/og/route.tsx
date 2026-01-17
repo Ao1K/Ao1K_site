@@ -6,6 +6,8 @@ import { createScreenshotContent, type ScreenshotData, type SolutionLine } from 
 import { type StepIconData, type Grid } from '../../../composables/recon/StepIconRenderer';
 import { SimpleCube } from '../../../composables/recon/SimpleCube';
 import { SimpleCubeInterpreter, type StepInfo } from '../../../composables/recon/SimpleCubeInterpreter';
+import parseText from '../../../composables/recon/validateTextInput';
+import validationToArray from '../../../composables/recon/validationToMoves';
 import React from 'react';
 
 export const runtime = 'nodejs';
@@ -143,42 +145,48 @@ function computeLineIcons(
   });
 }
 
-// filters text to only valid cube moves, preserving line structure if preserveNewlines is true
-function filterToValidMoves(text: string, preserveNewlines: boolean = false): string {
-  const validMoves = [
-    "U", "U2", "U3", "U'", "U2'", "U3'",
-    "u", "u2", "u3", "u'", "u2'", "u3'",
-    "D", "D2", "D3", "D'", "D2'", "D3'",
-    "d", "d2", "d3", "d'", "d2'", "d3'",
-    "R", "R2", "R3", "R'", "R2'", "R3'",
-    "r", "r2", "r3", "r'", "r2'", "r3'",
-    "L", "L2", "L3", "L'", "L2'", "L3'",
-    "l", "l2", "l3", "l'", "l2'", "l3'",
-    "F", "F2", "F3", "F'", "F2'", "F3'",
-    "f", "f2", "f3", "f'", "f2'", "f3'",
-    "B", "B2", "B3", "B'", "B2'", "B3'",
-    "b", "b2", "b3", "b'", "b2'", "b3'",
-    "x","x'","x2","x2'","y","y'","y2","y2'","z","z'","z2","z2'",
-    "M","M'","M2","M2'","E","E'","E2","E2'","S","S'","S2","S2'",
-  ];
+function renderColoredText(text: string): React.ReactNode {
+  const parsed = parseText(text);
+  const elements: React.ReactNode[] = [];
   
-  const validSet = new Set(validMoves);
+  const getColor = (type: string) => {
+    switch(type) {
+      case 'invalid': return '#ef4444';
+      case 'comment': return '#a3a3a3';
+      case 'move': return '#d4d4d4'; // default text color
+      case 'rep':
+      case 'paren': return '#2979A4';
+      default: return '#d4d4d4';
+    }
+  };
+
+  if (parsed.length === 0) return null;
+
+  let currentString = '';
+  let lastType = parsed[0][1];
   
-  if (preserveNewlines) {
-    // split by newlines, filter each line, then rejoin with newlines
-    const lines = text.split('\n\n');
-    return lines
-      .map(line => {
-        const tokens = line.split(/\s+/).filter(t => t.length > 0);
-        return tokens.filter(token => validSet.has(token)).join(' ');
-      })
-      .join('\n');
-  } else {
-    // replace newlines with spaces, then filter
-    const normalizedText = text.replace(/\n/g, ' ');
-    const tokens = normalizedText.split(/\s+/).filter(t => t.length > 0);
-    return tokens.filter(token => validSet.has(token)).join(' ');
+  for (const [char, type] of parsed) {
+    if (type !== lastType) {
+      elements.push(
+        <span key={elements.length} style={{ color: getColor(lastType) }}>{currentString}</span>
+      );
+      currentString = '';
+      lastType = type;
+    }
+    currentString += char;
   }
+  
+  if (currentString.length > 0) {
+    elements.push(
+      <span key={elements.length} style={{ color: getColor(lastType) }}>{currentString}</span>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+      {elements}
+    </div>
+  );
 }
 
 export async function GET(request: Request) {
@@ -186,8 +194,8 @@ export async function GET(request: Request) {
     const { searchParams, origin } = new URL(request.url);
     
     // Decode params
-    const scramble = decodeURI(customDecodeURL(searchParams.get('scramble') || ''));
-    const solution = decodeURI(customDecodeURL(searchParams.get('solution') || ''));
+    const scramble = decodeURIComponent(customDecodeURL(searchParams.get('scramble') || ''));
+    const solution = decodeURIComponent(customDecodeURL(searchParams.get('solution') || ''));
     console.log('[OG Route] Decoded solution:', solution);
     const time = searchParams.get('time');
     const title = customDecodeURL(searchParams.get('title') || '');
@@ -231,37 +239,75 @@ export async function GET(request: Request) {
       height: 630,
     };
 
-    // filter to only valid moves and parse solution into lines
-    const filteredScramble = filterToValidMoves(scramble, false);
-    const filteredSolution = filterToValidMoves(solution, true);
-    const solutionTextLines = filteredSolution.split('\n');
+    // Scramble processing
+    // Parse lines separately to handle comments correctly, then merge valid parts
+    const scrambleLines = scramble.split('\n');
+    let cleanScramble = '';
     
-    // parse moves into arrays for icon computation
-    const scrambleMoves = filteredScramble.split(/\s+/).filter(t => t.length > 0);
-    const solutionMoveLines = solutionTextLines.map(line => 
-      line.split(/\s+/).filter(t => t.length > 0)
-    );
+    for (const line of scrambleLines) {
+      const parsedLine = parseText(line);
+      const validChars = parsedLine
+        .filter(([_, type]) => type !== 'comment' && type !== 'invalid')
+        .map(([char]) => char)
+        .join('')
+        .replace(/\s+/g, ' '); // normalize spaces
+      
+      if (validChars.trim()) {
+        cleanScramble += (cleanScramble ? ' ' : '') + validChars.trim();
+      }
+    }
+
+    const scrambleParsed = parseText(cleanScramble);
+    console.log('scrambleParsed: ', scrambleParsed);
+    const scrambleTokens = validationToArray(scrambleParsed);
+    const scrambleMoves = scrambleTokens.map(t => t.value);
+    const renderedScramble = renderColoredText(cleanScramble);
+
+    // Solution processing
+    // We split by newline to preserve line structure for the image
+    const solutionLinesText = solution.split('\n');
     
-    // compute icons at runtime from scramble + solution
+    const solutionData = solutionLinesText.map(lineText => {
+      // Parse for logic (moves)
+      const parsed = parseText(lineText);
+      const tokens = validationToArray(parsed);
+      const moves = tokens.map(t => t.value);
+      console.log('moves: ', moves);
+      
+      // Parse for display (colors)
+      const rendered = renderColoredText(lineText);
+      
+      return {
+        text: lineText,
+        renderedText: rendered,
+        moves
+      };
+    });
+
+    const solutionMoveLines = solutionData.map(d => d.moves);
+    
+    // compute icons from logical moves
     const icons = computeLineIcons(scrambleMoves, solutionMoveLines);
 
     // calculate stats
-    const calculatedStm = solutionMoveLines.flat().filter(move => move.match(/[^xyz2']/g)).length;
+    const flatMoves = solutionMoveLines.flat();
+    const calculatedStm = flatMoves.filter(move => move.match(/[^xyz2']/g)).length;
     const timeNum = time ? parseFloat(time) : 0;
     const calculatedTps = (timeNum > 0 && calculatedStm > 0) 
       ? (calculatedStm / timeNum).toFixed(2) 
       : '';
     
-    // pair text with computed icon, then filter out empty lines
-    const solutionLines: SolutionLine[] = solutionTextLines
-      .map((text, i) => ({
-        text: text,
+    const solutionLines: SolutionLine[] = solutionData
+      .map((d, i) => ({
+        text: d.text,
+        renderedText: d.renderedText,
         icon: icons[i] || null,
       }))
       .filter(line => line.text.trim() !== '');
 
     const screenshotData: ScreenshotData = {
-      scramble: filteredScramble,
+      scramble: cleanScramble,
+      renderedScramble: renderedScramble,
       solutionLines,
       solveTime: time || '',
       totalMoves: calculatedStm,

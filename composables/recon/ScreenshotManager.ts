@@ -1,4 +1,3 @@
-import html2canvas from 'html2canvas';
 import { highlightClass } from '../../utils/sharedConstants';
 import type { CSSProperties, ReactNode } from 'react';
 import { createStepIcon, type StepIconData } from './StepIconRenderer';
@@ -10,12 +9,14 @@ export { serializeLineIcons, deserializeLineIcons } from './StepIconRenderer';
 // line of solution with optional step icon data
 export interface SolutionLine {
   text: string;
+  renderedText?: ReactNode;
   icon?: StepIconData | null;
 }
 
 // pure data input for screenshot generation, usable both client and server-side
 export interface ScreenshotData {
   scramble: string;
+  renderedScramble?: ReactNode;
   solutionLines: SolutionLine[];
   solveTime: number | string;
   totalMoves: number;
@@ -107,6 +108,7 @@ export function getScreenshotStyles() {
       lineHeight: s.lineHeight,
       marginBottom: 2,
       fontFamily: 'monospace',
+      display: 'flex',
     } as CSSProperties,
     
     solutionLine: {
@@ -197,6 +199,8 @@ const calcMoveTextSize = (lines: SolutionLine[], scramble: string ): number => {
     maxFromLineWidth = 42;
   } else if (longestLine >= 20) {
     maxFromLineWidth = 48;
+  } else {
+    maxFromLineWidth = 48;
   }
   console.log(`Longest line: ${longestLine}, maxFromLineWidth: ${maxFromLineWidth}`);
   console.log(`Lines count: ${lines.length}, maxFromLineCount: ${maxFromLineCount}`);
@@ -216,7 +220,7 @@ export interface ScreenshotContentProps {
 // generates JSX-compatible content for use with Next.js ImageResponse/Satori.
 // returns a tree of elements created via the passed createElement function.
 export function createScreenshotContent({ data, createElement }: ScreenshotContentProps): ReactNode {
-  const { scramble, solutionLines, solveTime, totalMoves, tpsString, title } = data;
+  const { scramble, renderedScramble, solutionLines, solveTime, totalMoves, tpsString, title } = data;
   const styles = getScreenshotStyles();
   
   const h = createElement;
@@ -238,7 +242,7 @@ export function createScreenshotContent({ data, createElement }: ScreenshotConte
     
     return h('div', { key: index, style: styles.solutionLine },
       iconSlot,
-      h('span', { style: styles.solutionText }, line.text)
+      h('span', { style: { ...styles.solutionText, whiteSpace: 'pre-wrap' } }, line.renderedText || line.text)
     );
   });
 
@@ -260,7 +264,7 @@ export function createScreenshotContent({ data, createElement }: ScreenshotConte
       
       h('div', { style: { display: 'flex', flexDirection: 'column' } },
         h('div', { style: styles.label }, 'Scramble'),
-        h('div', { style: styles.textBlock }, scramble)
+        h('div', { style: { ...styles.textBlock, whiteSpace: 'pre-wrap' } }, renderedScramble || scramble)
       ),
       
       h('div', { style: { display: 'flex', flexDirection: 'column', flex: 1, marginBottom: 8, overflow: 'hidden' } },
@@ -302,7 +306,10 @@ export class ScreenshotManager {
       return this.cache!.blob;
     }
 
-    const blob = await this.generateBlob(state, extraData);
+    // Dynamic import for server-side compatibility
+    const html2canvas = (await import('html2canvas')).default;
+
+    const blob = await this.generateBlob(state, extraData, html2canvas);
     if (blob) {
       this.cache = { blob, state };
     }
@@ -321,11 +328,12 @@ export class ScreenshotManager {
     }
   }
 
-  private async generateBlob(state: ScreenshotState, extraData: ScreenshotExtraData): Promise<Blob | null> {
+  private async generateBlob(state: ScreenshotState, extraData: ScreenshotExtraData, html2canvas: any): Promise<Blob | null> {
     const { solveTime } = state;
     const { totalMoves, tpsString } = extraData;
 
     try {
+      // get original DOM elements
       const scrambleDiv = document.getElementById('scramble');
       const richSolutionDiv = document.getElementById('rich-solution-display');
       if (!scrambleDiv || !richSolutionDiv) {
@@ -333,133 +341,158 @@ export class ScreenshotManager {
         return null;
       }
 
+      // create wrapper with styles
       const wrapper = document.createElement('div');
-      wrapper.style.position = 'absolute';
-      wrapper.style.left = '-9999px';
-      wrapper.style.width = 'fit-content';
-      wrapper.style.backgroundColor = '#161018';
-      wrapper.style.padding = '0';
-      wrapper.style.display = 'flex';
-      wrapper.style.flexDirection = 'column';
-      wrapper.style.gap = '0';
-      wrapper.style.padding = '1rem';
-      wrapper.style.border = '1px solid #525252';
-      wrapper.style.borderRadius = '0.5rem';
+      Object.assign(wrapper.style, {
+        position: 'absolute',
+        left: '-9999px',
+        width: 'fit-content',
+        backgroundColor: '#161018',
+        padding: '1rem',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0',
+        border: '1px solid #525252',
+        borderRadius: '0.5rem',
+      });
 
+      // clone and style scramble
       const scrambleClone = scrambleDiv.cloneNode(true) as HTMLElement;
-      scrambleClone.style.width = 'fit-content';
-      scrambleClone.style.maxWidth = 'none';
-      scrambleClone.style.maxHeight = 'none';
+      Object.assign(scrambleClone.style, {
+        width: 'fit-content',
+        maxWidth: 'none',
+        maxHeight: 'none',
+        marginBottom: '1rem',
+        marginTop: '0',
+        paddingTop: '0.25rem',
+      });
 
+      // clone and style solution
       const solutionClone = richSolutionDiv.cloneNode(true) as HTMLElement;
-      solutionClone.style.width = 'fit-content';
-      solutionClone.style.maxWidth = 'none';
-      solutionClone.style.maxHeight = 'none';
-      solutionClone.style.overflow = 'visible';
+      Object.assign(solutionClone.style, {
+        width: 'fit-content',
+        maxWidth: 'none',
+        maxHeight: 'none',
+        overflow: 'visible',
+        paddingTop: '0.5rem',
+        paddingBottom: '0rem',
+        marginBottom: '-1rem',
+      });
+      // remove highlight from solution
+      solutionClone.innerHTML = solutionClone.innerHTML.replace(
+        new RegExp(`<span class="${highlightClass}">`, 'g'), 
+        '<span class="text-primary-100">'
+      );
 
-      // remove highlight
-      solutionClone.innerHTML = solutionClone.innerHTML.replace(new RegExp(`<span class="${highlightClass}">`, 'g'), '<span class="text-primary-100">');
-      
-      // find the solution textbox div in the clone and set its width
-      const clonedSolutionTextbox = solutionClone.querySelector('#solution') as HTMLElement;
-      if (clonedSolutionTextbox) {
-        clonedSolutionTextbox.style.width = 'fit-content';
-        clonedSolutionTextbox.style.minWidth = '0';
+      // query child elements 
+      const solutionTextbox = solutionClone.querySelector('#solution') as HTMLElement | null;
+      const scrambleEditable = scrambleClone.querySelector('div[contenteditable="true"]') as HTMLElement | null;
+      const solutionEditable = solutionClone.querySelector('div[contenteditable="true"]') as HTMLElement | null;
+      const imageStack = solutionClone.querySelector('.flex.flex-col.items-center') as HTMLElement | null;
+
+      // style solution textbox
+      if (solutionTextbox) {
+        Object.assign(solutionTextbox.style, {
+          width: 'fit-content',
+          minWidth: '0',
+        });
       }
 
-      // fix text positioning in both contenteditable divs and remove borders
-      const editableDivs = [scrambleClone, solutionClone].map(clone => 
-        clone.querySelector('div[contenteditable="true"]')
-      ).filter(Boolean) as HTMLElement[];
-      
-      editableDivs.forEach(editableDiv => {
-        editableDiv.style.paddingTop = '0';
-        editableDiv.style.paddingBottom = '1rem';
-        editableDiv.style.paddingLeft = '0.5rem';
-        editableDiv.style.paddingRight = '0.5rem';
-        editableDiv.style.marginTop = '-0.2rem';
-        editableDiv.style.border = '1px solid #525252';
-        editableDiv.style.borderRadius = '0.125rem';
-        editableDiv.style.boxSizing = 'border-box';
-        editableDiv.style.lineHeight = '1.6';
+      // style both contenteditable divs
+      [scrambleEditable, solutionEditable].filter(Boolean).forEach((editableDiv) => {
+        Object.assign(editableDiv!.style, {
+          paddingTop: '0',
+          paddingBottom: '1rem',
+          paddingLeft: '0.5rem',
+          paddingRight: '0.5rem',
+          marginTop: '-0.2rem',
+          border: '1px solid #525252',
+          borderRadius: '0.125rem',
+          boxSizing: 'border-box',
+          lineHeight: '1.6',
+          minHeight: editableDiv === scrambleEditable ? '0' : editableDiv!.style.minHeight,
+        });
 
-        const childDivs = editableDiv.querySelectorAll('div');
-        childDivs.forEach((div: HTMLElement) => {
-          div.style.marginTop = '0';
-          div.style.marginBottom = '0';
-          div.style.paddingTop = '0';
+        // style child divs within contenteditable
+        editableDiv!.querySelectorAll('div').forEach((div: HTMLElement) => {
+          Object.assign(div.style, {
+            marginTop: '0',
+            marginBottom: '0',
+            paddingTop: '0',
+          });
         });
       });
 
-      scrambleClone.style.marginBottom = '1rem';
-      scrambleClone.style.marginTop = '0';
-      scrambleClone.style.paddingTop = '0.25rem';
-
-      solutionClone.style.paddingTop = '0.5rem';
-      solutionClone.style.paddingBottom = '0rem';
-      solutionClone.style.marginBottom = '-1rem';
-
-      // create info div with time, STM, TPS, and watermark
+      // create info div with stats and watermark
       const infoDiv = document.createElement('div');
-      infoDiv.style.display = 'flex';
-      infoDiv.style.justifyContent = 'space-between';
-      infoDiv.style.alignItems = 'center';
-      infoDiv.style.paddingLeft = '0.5rem';
-      infoDiv.style.paddingRight = '0.5rem';
-      infoDiv.style.paddingBottom = '1rem';
-      infoDiv.style.marginTop = '0';
-      infoDiv.style.color = '#e5e5e5';
-      infoDiv.style.fontSize = '1.125rem';
-      infoDiv.style.fontFamily = 'inherit';
-
-      const timeText = solveTime ? `${solveTime}` : '';
-      const stmText = totalMoves ? `${totalMoves} stm` : '';
-      
-      const firstLineParts: string[] = [];
-      if (timeText) firstLineParts.push(`${timeText}\u00A0sec`);
-      if (stmText) firstLineParts.push(stmText.replace(' ', '\u00A0'));
-      const firstLineText = firstLineParts.join(', ');
-      const tpsLine = tpsString ? tpsString.replace(' ', '\u00A0') : '';
-
-      const buildStatsText = (): string => {
-        if (tpsLine) {
-          if (firstLineText.trim()) {
-            return `${firstLineText.trim()}, ${tpsLine}`;
-          }
-          return tpsLine;
-        }
-
-        return firstLineText.trim();
-      };
+      Object.assign(infoDiv.style, {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingLeft: '0.5rem',
+        paddingRight: '0.5rem',
+        paddingBottom: '1rem',
+        marginTop: '0',
+        color: '#e5e5e5',
+        fontSize: '1.125rem',
+        fontFamily: 'inherit',
+      });
 
       const statsSpan = document.createElement('span');
       statsSpan.style.whiteSpace = 'pre-line';
-      infoDiv.appendChild(statsSpan);
-
+      
       const watermarkSpan = document.createElement('span');
       watermarkSpan.textContent = 'Ao1K.com';
+      
+      infoDiv.appendChild(statsSpan);
       infoDiv.appendChild(watermarkSpan);
 
+      // append all elements and add to body
       wrapper.appendChild(scrambleClone);
       wrapper.appendChild(solutionClone);
       wrapper.appendChild(infoDiv);
-
       document.body.appendChild(wrapper);
 
-      const scrambleWidth = scrambleClone.offsetWidth;
-      const solutionWidth = solutionClone.offsetWidth;
-
-      statsSpan.textContent = buildStatsText();
-
-      let minWidth = Math.min(scrambleWidth, solutionWidth);
-      minWidth = Math.max(minWidth, 300);
+      // calculate and apply unified width
+      const minWidth = Math.max(300, Math.min(scrambleClone.offsetWidth, solutionClone.offsetWidth));
+      
       scrambleClone.style.width = `${minWidth}px`;
       solutionClone.style.width = `${minWidth}px`;
-      if (clonedSolutionTextbox) {
-        clonedSolutionTextbox.style.width = `${minWidth}px`;
-      }
       infoDiv.style.width = `${minWidth}px`;
+      if (solutionTextbox) {
+        solutionTextbox.style.width = `${minWidth}px`;
+      }
 
+      // build and set stats text
+      const statsText = [
+        solveTime ? `${solveTime}\u00A0sec` : '',
+        totalMoves ? `${totalMoves}\u00A0stm` : '',
+        tpsString ? tpsString.replace(' ', '\u00A0') : '',
+      ].filter(Boolean).join(', ');
+      statsSpan.textContent = statsText;
+
+      // sync icon heights with text line heights after reflow
+      if (solutionEditable && imageStack) {
+        const textLineDivs = solutionEditable.querySelectorAll(':scope > div');
+        const iconContainers = imageStack.children;
+        
+        for (let i = 0; i < Math.min(textLineDivs.length, iconContainers.length); i++) {
+          const textDiv = textLineDivs[i] as HTMLElement;
+          const iconContainer = iconContainers[i] as HTMLElement;
+          const textHeight = textDiv.getBoundingClientRect().height;
+          const lineWraps = Math.round((textHeight + 5) / 28);
+          const calculatedHeight = lineWraps * 28.4;
+          
+          iconContainer.style.height = `${calculatedHeight}px`;
+          
+          const stepIconDiv = iconContainer.querySelector('[id^="step-icon-"]') as HTMLElement | null;
+          if (stepIconDiv) {
+            stepIconDiv.style.height = `${calculatedHeight}px`;
+          }
+        }
+      }
+
+      // capture and cleanup
       const canvas = await html2canvas(wrapper, {
         backgroundColor: '#221825',
         scale: 1,
