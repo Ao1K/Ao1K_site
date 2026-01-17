@@ -12,7 +12,7 @@ const versionList = {
 
 export default function Header() {
   return (
-    <div className="fixed bg-white text-light_accent w-full z-40 h-16 top-0 right-0">
+    <div className="absolute bg-white text-light_accent w-full z-40 h-16 top-0">
       <nav className="mx-auto flex justify-between w-full">
 
         <img
