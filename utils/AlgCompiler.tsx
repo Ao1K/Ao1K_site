@@ -3,7 +3,7 @@ import { rawGeneric, rawOLLalgs, rawPLLalgs } from "./rawAlgs";
 import type { ExactAlg, LastLayerAlg } from "./rawAlgs";
 import { SimpleCubeInterpreter, type StepInfo } from "../composables/recon/SimpleCubeInterpreter";
 import { SimpleCube } from '../composables/recon/SimpleCube';
-import { reverseMove } from '../composables/recon/transformHTML';
+import { reverseMove, replacementTable_Y } from '../composables/recon/transformHTML';
 import type { CompiledLLAlg } from '../composables/recon/LLsuggester';
 
 interface CompiledExactAlg {
@@ -308,6 +308,47 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
     return simplifiedAlgs;
   };
 
+  const getY2Variant = (alg: string): string => {
+    const moves = alg.trim().split(/\s+/);
+    if (!moves.length || (moves.length === 1 && moves[0] === '')) return alg;
+
+    const rootMoves = new Set<string>();
+    for (const move of moves) {
+      if (!move) continue;
+      const root = move.replace(/['23]/g, '');
+      rootMoves.add(root);
+    }
+
+    const yRU_set = new Set(['y', 'R', 'U']);
+    const yLU_set = new Set(['y', 'L', 'U']);
+    
+    let is_yRU = true;
+    let is_yLU = true;
+    
+    for (const root of rootMoves) {
+      if (!yRU_set.has(root)) is_yRU = false;
+      if (!yLU_set.has(root)) is_yLU = false;
+    }
+    
+    // must be just yRU or just yLU
+    if ((is_yRU && is_yLU) || (!is_yRU && !is_yLU)) {
+      return alg;
+    }
+
+    const newMoves = moves.map(move => {
+        let transformed = move;
+        
+        // apply y transform twice
+        // let program crash if not found in table
+        transformed = replacementTable_Y[transformed]
+        transformed = replacementTable_Y[transformed]
+
+        return transformed;
+    });
+
+    return newMoves.join(' ');
+  };
+
   const findUniqueNewAlgs = (algType: 'Exact' | 'LastLayer', algs: (ExactAlg | LastLayerAlg)[], expandedAlgs: (ExpandedExactAlg | LastLayerAlg)[]) => {
 
     const newAlgs: (ExactAlg | LastLayerAlg)[] = [];
@@ -315,34 +356,42 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
     for (let i = 0; i < expandedAlgs.length; i++) {
 
       const index = algType === 'Exact' ? (expandedAlgs[i] as ExpandedExactAlg).originalIndex : i;
-      const originalAlg = algs[index];
+      const originalAlg = index === -1 ? null : algs[index];
       const simplifiedAlg = expandedAlgs[i];
       
       // warn if old alg is not in its most simplified form
-      if (!originalAlg.new && originalAlg.value !== simplifiedAlg.value) {
+      if (originalAlg && !originalAlg.new && originalAlg.value !== simplifiedAlg.value) {
         console.warn(`Algorithm at index ${index} is not in simplified form. Original: "${originalAlg.value}", Simplified: "${simplifiedAlg.value}"`);
       }
       
+      // add simplified alg to either list depending on if it's new or existing
       if (simplifiedAlg.new) {
         newAlgs.push(simplifiedAlg);
       } else {
-        existingAlgs.add(simplifiedAlg.value);
+        // remove N2'-type moves and turn into N2
+        const cleanExistingValue = simplifiedAlg.value.replace(/2'/g, '2');
+        existingAlgs.add(cleanExistingValue);
       }
     }
 
     console.log('new alg size:', newAlgs.length);
     const actuallyNewAlgs = newAlgs.filter(alg => !existingAlgs.has(alg.value));
-    console.log('actually new alg size:', actuallyNewAlgs.length);
+    
     // filter out duplicate alg.values within new algs
     const uniqueNewAlgSet = new Set<string>();
     const uniqueNewAlgs: (ExactAlg | LastLayerAlg)[] = [];
     actuallyNewAlgs.forEach(alg => {
-      if (!uniqueNewAlgSet.has(alg.value)) {
+      const cleanNewAlgValue = alg.value.replace(/2'/g, '2');
+      
+      // verify both that the alg isn't in the uniqueSet 
+      // and also not in existingAlgs in its cleaned version
+      if (!uniqueNewAlgSet.has(alg.value) && !existingAlgs.has(cleanNewAlgValue)) {
         uniqueNewAlgSet.add(alg.value);
         uniqueNewAlgs.push(alg);
       }
     });
     
+    console.log('unique new alg size:', uniqueNewAlgs.length);
     return uniqueNewAlgs;
   };
 
@@ -381,10 +430,11 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
    * If the algs are LastLayer, just return the original list.
    */
   const expandAlgs = (algs: (ExactAlg | LastLayerAlg)[], algType: 'Exact' | 'LastLayer') => {
-    const expandedAlgs: (ExpandedExactAlg | LastLayerAlg)[] = [];
+    const expandedAlgs: (ExpandedExactAlg)[] = [];
     if (algType === 'LastLayer') {
       return algs as LastLayerAlg[];
     }
+    
 
     algs.forEach((alg, index) => {
       const angles = getAllowedAngles(alg as ExactAlg);
@@ -401,13 +451,34 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
       });
     });
 
+    algs.forEach((alg, index) => {
+      const y2Variant = getY2Variant(alg.value);
+      if (y2Variant !== alg.value) {
+        expandedAlgs.push({
+          value: y2Variant,
+          originalIndex: -1, // no need to associate with original index
+          step: alg.step,
+          name: (alg as ExactAlg).name ?? "",
+          new: true,
+        } as ExpandedExactAlg);
+      }
+    });
+
+    // sort algs by index
+    expandedAlgs.sort((a, b) => {
+      return a.originalIndex - b.originalIndex;
+    });       
+
     return expandedAlgs;
   }
 
   const findUniqueOldAlgSet = (algType: 'Exact' | 'LastLayer', expandedAlgs: (ExpandedExactAlg | LastLayerAlg)[]) => {
     const algSet = new Set<ExactAlg | LastLayerAlg>();
     expandedAlgs.forEach((alg, index) => {
-      if (algSet.has(alg) && alg.new !== true) {
+      // Don't include new variants in the base set
+      if (alg.new) return;
+
+      if (algSet.has(alg)) {
         const i = algType === 'Exact' ? (alg as ExpandedExactAlg).originalIndex : index;
         console.warn(`Duplicate algorithm detected in rawAlgs.tsx at index ${i}`);
         console.log({...alg});
@@ -464,6 +535,7 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
 
     // parse out duplicates in algs without `new: true`
     const algSet = findUniqueOldAlgSet(algType, expandedAlgs);
+    console.log('alg set size before adding new algs:', algSet.size);
 
     const uniqueNewAlgs = findUniqueNewAlgs(algType, algs, expandedAlgs);
 
@@ -487,6 +559,8 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
       console.error('Type mismatch between usableNewAlgs and allAlgs');;
       return;
     }
+    console.log('Usable new algs count:', usableNewAlgs.length);
+    console.log('Existing algs count:', allAlgs.length);
     allAlgs.push(...usableNewAlgs);
 
     switch (algType) {
@@ -609,6 +683,11 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
 
       // Update the cube interpreter with current cube state
       const steps = cubeInterpreter.getStepsCompleted(cube);
+
+      const isCrossSolved = steps.some(step => step.type === 'cross');
+      if (!isCrossSolved) {
+        console.warn(`Algorithm does not solve the cross: ${completeAlg}.`);
+      }
       const cubeState = cubeInterpreter.getCurrentState();
       const hash = cubeState?.hash || 'unknown';
 

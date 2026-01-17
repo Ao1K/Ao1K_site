@@ -106,7 +106,7 @@ const replacementTable_X: { [key: string]: string } = {
   "S": "E'", "S2": "E2", "S'": "E", "S2'": "E2"
 };
 
-const replacementTable_Y: { [key: string]: string } = {
+export const replacementTable_Y: { [key: string]: string } = {
   "U": "U", "U2": "U2", "U3": "U3", "U'": "U'", "U2'": "U2'", "U3'": "U3'",
   "u": "u", "u2": "u2", "u3": "u3", "u'": "u'", "u2'": "u2'", "u3'": "u3'",
   "D": "D", "D2": "D2", "D3": "D3", "D'": "D'", "D2'": "D2'", "D3'": "D3'",
