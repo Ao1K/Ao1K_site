@@ -36,3 +36,4 @@ Changes for verison 0.6?:
 - Added about 700 f2l algs (counting variants as unique)
 - Better colored previews, gave borders to icons. Unified style between preview and editor
 - Cube Colors menu. Note that previews won't be affected.
+- Better alg suggestion filtering and rendering

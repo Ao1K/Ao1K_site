@@ -273,9 +273,7 @@ const ImageStack = ({position, moves, lineSteps, editableElement}: ImageStackPro
 
         const hasBackColor = backColorCount > 0;
         const hasRightColor = leftColorCount > 0;
-        const hasFrontColor = frontColorCount > 0;
-        const hasLeftColor = leftColorCount > 0;
-
+        
         const numberXs = step.length - 'cross'.length;
         const isBackXCrossSolved = (() => {
           if (numberXs === 2) return hasBackColor && hasRightColor;

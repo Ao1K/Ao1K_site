@@ -1143,37 +1143,26 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
       return stepsOnLine;
     };
 
-    const isFirstNonEmptyLine = (lineIdx: number, solutionMoves: string[][]): boolean => {
-      for (let i = 0; i < lineIdx; i++) {
-        if (solutionMoves[i] && solutionMoves[i].length > 0) {
-          return false;
-        }
-      }
-      return true;
-    };
-
-    const buildMoveLine = (line: string[], lineIdx: number, solutionMoves: string[][]): string => {
-      const shouldIncludeScramble = isFirstNonEmptyLine(lineIdx, solutionMoves);
-      const lineAndScram = shouldIncludeScramble ? [...allMovesRef.current[0].flat(), ...line] : line;
+    const buildMoveLine = (line: string[], lineIdx: number, hasAddedScramble: boolean): string => {
+      const lineAndScram = hasAddedScramble ? line : [...allMovesRef.current[0].flat(), ...line];
       return lineAndScram.join(' ');
     };
 
-    const processLineAfterChange = (line: string[], lineIdx: number, updatedSteps: {moveLine: string, stepInfo: StepInfo[]}[], solutionMoves: string[][]): void => {
+    const processLineAfterChange = (line: string[], lineIdx: number, updatedSteps: {moveLine: string, stepInfo: StepInfo[]}[]): void => {
       const stepInfo = getStepsForLine(lineIdx);
       const prevSteps = updatedSteps.map(item => item.stepInfo).flat();
       const newSteps = getNewSteps(prevSteps, stepInfo);
-      const moveLine = isFirstNonEmptyLine(lineIdx, solutionMoves) ? buildMoveLine(line, lineIdx, solutionMoves) : line.join(' ');
-      updatedSteps.push({moveLine, stepInfo: newSteps});
+      updatedSteps.push({moveLine: line.join(' '), stepInfo: newSteps});
     };
 
     const processLineBeforeChange = (
       line: string[], 
       lineIdx: number, 
+      hasAddedScramble: boolean, 
       previousLineSteps: {moveLine: string, stepInfo: StepInfo[]}[],
-      updatedSteps: {moveLine: string, stepInfo: StepInfo[]}[],
-      solutionMoves: string[][]
+      updatedSteps: {moveLine: string, stepInfo: StepInfo[]}[]
     ): boolean => {
-      const flatLine = buildMoveLine(line, lineIdx, solutionMoves);
+      const flatLine = buildMoveLine(line, lineIdx, hasAddedScramble);
       const oldMoveLine = previousLineSteps[lineIdx]?.moveLine || '';
       const movesSame = oldMoveLine === flatLine;
     
@@ -1192,6 +1181,7 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
     const solutionMoves = allMovesRef.current[1];
     
     // update steps
+    let hasAddedScramble = false;
     let isChangeFound = false;
     for (let lineIdx = 0; lineIdx < solutionMoves.length; lineIdx++) {
       const line = solutionMoves[lineIdx];
@@ -1202,9 +1192,10 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
       }
 
       if (isChangeFound) {
-        processLineAfterChange(line, lineIdx, updatedSteps, solutionMoves);
+        processLineAfterChange(line, lineIdx, updatedSteps);
       } else {
-        const changeDetected = processLineBeforeChange(line, lineIdx, previousLineSteps, updatedSteps, solutionMoves);
+        const changeDetected = processLineBeforeChange(line, lineIdx, hasAddedScramble, previousLineSteps, updatedSteps);
+        hasAddedScramble = true;
         if (changeDetected) {
           isChangeFound = true;
         }

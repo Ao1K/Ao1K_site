@@ -281,72 +281,97 @@ function MovesTextEditor({
   /**
    * Applies automatic text substitutions to the input text.
    * Skips text inside comment spans to preserve comments as-is.
-   * Preserves caret markers during substitution by reconstructing the HTML.
+   * Works on plain text to handle patterns that span across HTML elements.
    */
   const applyAutoSubstitutions = (text: string, html: string): [string, string] => {
     const commentClass = colorDict['comment'];
-    const caretMarker = '<<CARET>>';
+    const caretMarker = '___CARET___';
     
-    // Replace caret node with a marker for easier processing
+    // Extract plain text from HTML, tracking caret position
     let workingHtml = html.replace(/<span id="caretNode"[^>]*>.*?<\/span>/i, caretMarker);
+    let plainText = workingHtml.replace(/<[^>]+>/g, '');
     
-    // Split HTML into segments: tags and text content
-    // This regex captures HTML tags as separate segments
+    // Find comment regions in the plain text
+    // We need to preserve comments by identifying them in the HTML structure
+    const commentRegex = new RegExp(
+      `<span[^>]*class=["']${commentClass}["'][^>]*>([^<]*(?:<[^>]+>[^<]*)*?)<\/span>`,
+      'gi'
+    );
+    
+    const commentRanges: Array<{start: number, end: number, text: string}> = [];
+    let commentMatch;
+    let position = 0;
+    
+    // Build a mapping of comment positions in plain text
+    const tempHtml = workingHtml;
     const segmentRegex = /(<[^>]+>)|([^<]+)/g;
-    const segments: string[] = [];
-    let match: RegExpExecArray | null;
-    
-    while ((match = segmentRegex.exec(workingHtml)) !== null) {
-      segments.push(match[0]);
-    }
-    
-    // Track whether we're inside a comment span
-    let inComment = false;
+    let segMatch;
+    let inCommentSpan = false;
     const commentStartRegex = new RegExp(`<span[^>]*class=["']${commentClass}["'][^>]*>`, 'i');
     
-    // Process each segment
-    const processedSegments = segments.map((segment) => {
-      // Check if this is a tag
-      if (segment.startsWith('<')) {
-        // Check if entering a comment span
-        if (commentStartRegex.test(segment)) {
-          inComment = true;
+    while ((segMatch = segmentRegex.exec(tempHtml)) !== null) {
+      if (segMatch[1]) { // Tag
+        if (commentStartRegex.test(segMatch[1])) {
+          inCommentSpan = true;
+          commentRanges.push({ start: position, end: -1, text: '' });
+        } else if (segMatch[1] === '</span>' && inCommentSpan) {
+          inCommentSpan = false;
+          if (commentRanges.length > 0) {
+            commentRanges[commentRanges.length - 1].end = position;
+          }
         }
-        // Check if leaving a span (could be comment or other)
-        if (segment === '</span>' && inComment) {
-          inComment = false;
+      } else if (segMatch[2]) { // Text
+        const textContent = segMatch[2];
+        if (inCommentSpan && commentRanges.length > 0) {
+          const lastComment = commentRanges[commentRanges.length - 1];
+          lastComment.text += textContent;
         }
-        return segment;
+        position += textContent.length;
       }
-      
-      // Skip substitutions for text inside comments
-      if (inComment) {
-        return segment;
-      }
-      
-      // Apply substitutions to non-comment text
-      let processedText = segment;
-      for (const sub of autoSubstitutions) {
-        processedText = processedText.replace(sub.pattern, sub.replacement as any);
-      }
-      
-      return processedText;
-    });
-    
-    // Reconstruct HTML
-    let modifiedHtml = processedSegments.join('');
-    
-    // Restore caret node from marker
-    const hasCaret = modifiedHtml.includes(caretMarker);
-    modifiedHtml = modifiedHtml.replace(caretMarker, '<span id="caretNode"></span>');
-    
-    // Wrap in div if not already wrapped
-    if (!modifiedHtml.startsWith('<div>')) {
-      modifiedHtml = `<div>${modifiedHtml}<br></div>`;
     }
     
-    // Extract plain text for return value
-    const modifiedText = modifiedHtml.replace(/<[^>]+>/g, '');
+    // Apply substitutions to non-comment portions
+    let processedText = plainText;
+    
+    // Protect caret marker from substitution patterns by temporarily replacing it
+    // Use only control characters that won't match any cube notation patterns
+    const caretPlaceholder = '\u0000\u0001\u0002\u0003';
+    processedText = processedText.replace(caretMarker, caretPlaceholder);
+    
+    // For each comment range, replace with a unique placeholder
+    const commentPlaceholders: string[] = [];
+    for (let i = commentRanges.length - 1; i >= 0; i--) {
+      const range = commentRanges[i];
+      if (range.end !== -1) {
+        const placeholder = `\u0000\u0004${i}\u0005\u0000`;
+        commentPlaceholders[i] = processedText.substring(range.start, range.end);
+        processedText = processedText.substring(0, range.start) + placeholder + processedText.substring(range.end);
+      }
+    }
+    
+    // Apply all substitutions to the text (outside of comments)
+    for (const sub of autoSubstitutions) {
+      processedText = processedText.replace(sub.pattern, sub.replacement as any);
+    }
+    
+    // Restore comments
+    for (let i = 0; i < commentPlaceholders.length; i++) {
+      processedText = processedText.replace(`\u0000\u0004${i}\u0005\u0000`, commentPlaceholders[i]);
+    }
+    
+    // Restore caret marker
+    processedText = processedText.replace(caretPlaceholder, caretMarker);
+    
+    // Restore caret marker position
+    const modifiedText = processedText.replace(caretMarker, '');
+    let modifiedHtml = processedText.replace(caretMarker, '<span id="caretNode"></span>');
+    
+    // Wrap in div if not already wrapped (preserve structure)
+    if (!html.startsWith('<div>')) {
+      modifiedHtml = `<div>${modifiedHtml}<br></div>`;
+    } else {
+      modifiedHtml = `<div>${modifiedHtml}<br></div>`;
+    }
     
     return [modifiedText, modifiedHtml];
   };
@@ -363,7 +388,7 @@ function MovesTextEditor({
     // get html
     let text = line.replace(/<[^>]+>/g, '');
 
-  // Apply auto-substitutions
+    // Apply auto-substitutions
     [text, line] = applyAutoSubstitutions(text, line);
 
     const parsed = parseTextInput(text);
