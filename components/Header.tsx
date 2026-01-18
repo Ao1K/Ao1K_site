@@ -7,7 +7,7 @@ import HeaderSidebar from './HeaderSidebar';
 import SettingsMenuWrapper from './SettingsMenuWrapper';
 
 const versionList = {
-  "recon": "v0.5",
+  "recon": "v0.6",
   "changeblog": "",
 }
 

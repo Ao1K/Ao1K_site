@@ -5,7 +5,7 @@ import BulletListIcon from './icons/bulletList';
 import SidebarAutoClose from './SidebarAutoClose';
 
 const versionList = {
-  "recon": "v0.5",
+  "recon": "v0.6",
   "changeblog": "",
 }
 
