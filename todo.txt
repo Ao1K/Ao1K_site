@@ -3,14 +3,6 @@ Informal Bugs/Todo List. Not guaranteed to be complete or accurate.
 
 Fix selection bug when there's only one line of text (one div)
 
-If user types "y ", don't show algs for "y' "
-
-Make autocomplete auto-update its starting position if no step yet completed
- - This idea doesn't really work. We don't have a generalized autocompleter. 
- - We could, however, detect when cross is solved. Then make suggestion.
- - Ensure suggestion is not a direct undo of last few moves, 
-    or at least that is solves more of cube.
-
 Suggestions should support multislot icons:
 Don't show suggestions that are direct longer version of other suggestion for same step.
  - Ex: R U R' U L U L' when R U R' solves FR.
@@ -18,6 +10,10 @@ Don't show suggestions that are direct longer version of other suggestion for sa
 
 In short:
 ImageStack source data needs to be more rich. It should have starting location of slot being solved, for each slot solved. 
+  If a suggestion does not solve more of the cube, 
+  and is a longer version of another suggestion 
+  (Ex: R U R' and R U R' U' are both valid suggestions), 
+  don't show that longer suggestion 
 
 Autocomplete for cross. Would need to brute force solutions to partial cross solution input. 
 Or compute a bunch of crosses and just give whatever suggestion still works.

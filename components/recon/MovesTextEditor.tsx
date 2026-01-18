@@ -1764,13 +1764,74 @@ function MovesTextEditor({
     suggestionStateRef.current = 'showing';
   }
 
-  const completedString = textboxMovesRef.current[lineOffsetRef.current]?.join(' ');
-  const filteredSuggestions = suggestions
+  // Calculate completedString by examining HTML to detect trailing spaces
+  const getCompletedString = (): string => {
+    const moves = textboxMovesRef.current[lineOffsetRef.current];
+    if (!moves || moves.length === 0) return '';
+    
+    const htmlLine = oldHTMLlinesRef.current[lineOffsetRef.current];
+    if (!htmlLine) return moves.join(' ');
+
+    // Valid types that should be considered as "completed" content
+    const validTypes = ['move', 'space', 'paren', 'rep'];
+    const validClasses = validTypes.map(type => colorDict[type as keyof typeof colorDict]);
+
+    // Find all spans in the line
+    const spanRegex = /<span class="([^"]+)">([^<]*)<\/span>/g;
+    const spans: { className: string; content: string; index: number }[] = [];
+    let match: RegExpExecArray | null;
+    
+    while ((match = spanRegex.exec(htmlLine)) !== null) {
+      spans.push({
+        className: match[1],
+        content: match[2],
+        index: match.index
+      });
+    }
+
+    // Find the last span with a valid type
+    let lastValidSpanIndex = -1;
+    for (let i = spans.length - 1; i >= 0; i--) {
+      if (validClasses.includes(spans[i].className)) {
+        lastValidSpanIndex = i;
+        break;
+      }
+    }
+
+    if (lastValidSpanIndex === -1) {
+      return moves.join(' ');
+    }
+
+    // Check if any span from lastValidSpanIndex onwards has trailing space
+    let hasTrailingSpace = false;
+    for (let i = lastValidSpanIndex; i < spans.length; i++) {
+      const content = spans[i].content;
+      if (content.endsWith(' ')) {
+        hasTrailingSpace = true;
+        break;
+      }
+    }
+
+    const baseString = moves.join(' ');
+    return hasTrailingSpace ? baseString + ' ' : baseString;
+  };
+
+  const hasComments = (() => {
+    const htmlLine = oldHTMLlinesRef.current[lineOffsetRef.current];
+    if (!htmlLine) return false;
+    
+    const commentClass = colorDict['comment'];
+    return htmlLine.includes(`class="${commentClass}"`);
+  })();
+
+  const completedString = getCompletedString();
+  console.log('completedString:', `"${completedString}"`);
+  const filteredSuggestions = !hasComments ? suggestions
     ?.map((suggestion, index) => ({ suggestion, originalIndex: index }))
     .filter(({ suggestion }) => {
       // if (suggestion.alg === selectedSuggestionRef.current?.full) return false;
       return suggestion.alg.startsWith(completedString) && suggestion.alg !== completedString;
-    });
+    }) : undefined;
 
 
   useEffect(() => {
