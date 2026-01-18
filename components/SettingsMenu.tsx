@@ -15,7 +15,11 @@ const FACE_LABELS: { key: keyof CubeColors; label: string }[] = [
   { key: 'right', label: 'Right' },
 ];
 
-export default function SettingsMenu() {
+interface SettingsMenuProps {
+  page?: string; // Page identifier for namespacing settings (e.g., 'recon')
+}
+
+export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activePicker, setActivePicker] = useState<keyof CubeColors | null>(null);
   const [cubeColors, setCubeColors, resetColors] = useCubeColors();
@@ -39,9 +43,10 @@ export default function SettingsMenu() {
 
   useEffect(() => {
     // Load showControls from cookies
-    const savedShowControls = Cookies.get('showPlayerControls');
+    const cookieKey = page ? `${page}_showPlayerControls` : 'showPlayerControls';
+    const savedShowControls = Cookies.get(cookieKey);
     setShowControls(savedShowControls !== 'false');
-  }, []);
+  }, [page]);
 
   const handleColorChange = (face: keyof CubeColors, color: string) => {
     setCubeColors({ [face]: color });
@@ -63,7 +68,8 @@ export default function SettingsMenu() {
   const handleToggleControls = () => {
     const newValue = !showControls;
     setShowControls(newValue);
-    Cookies.set('showPlayerControls', newValue.toString(), { expires: 365 });
+    const cookieKey = page ? `${page}_showPlayerControls` : 'showPlayerControls';
+    Cookies.set(cookieKey, newValue.toString(), { expires: 365 });
     // Dispatch event so TwistyPlayer can update immediately
     window.dispatchEvent(new Event('ao1kSettingsChanged'));
   };

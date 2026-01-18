@@ -83,7 +83,7 @@ export async function generateMetadata(
 
 export default async function Page() {
   let dailyScramble = await fetchDailyScramble();
-  dailyScramble = `// Scramble of the day\n${dailyScramble}`;
+  dailyScramble = `// Scramble of the day\n// ${dailyScramble}`;
 
   const cookieStore = await cookies();
   const videoHelpDismissed = cookieStore.get('videoHelpDismissed')?.value === 'true';

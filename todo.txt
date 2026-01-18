@@ -17,8 +17,6 @@ But we don't wanna just show autocomplete right away. Noisey.
   - Multiple solutions should be returned: ideally around 100
   - Cross solutions of 1-3+ moves should be a lookup table. Keep in mind multiple solutions exist (R2 L2 and L2 R2)
   
-
-
 Algs page. For your algs. A tab for your recons (click an icon and expand into a whole new page). A profile system. Oofda.
 
 ZBLS autocomplete:

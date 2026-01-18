@@ -26,12 +26,12 @@ export default function HeaderSidebar() {
       {/* Overlay backdrop - visible when checkbox is checked */}
       <label 
         htmlFor="sidebar-toggle"
-        className="hidden peer-checked:block fixed inset-0 translate-y-[60px] bg-black bg-opacity-50 z-50 cursor-default"
+        className="hidden peer-checked:block fixed inset-0 translate-y-[60px] mt-2 bg-black bg-opacity-50 z-50 cursor-default"
         aria-label="Close sidebar"
       />
 
       {/* Sidebar content */}
-      <div className="hidden peer-checked:flex flex-col bg-white space-y-4 fixed top-[60px] right-0 p-4 z-50">
+      <div className="hidden peer-checked:flex flex-col bg-white space-y-4 fixed top-[60px] right-0 p-4 z-50 border border-primary-300 mt-1">
         {/* <HeaderNavLink href="/" title="Practice" icon={<TimerIcon />} /> */}
         <label htmlFor="sidebar-toggle" className="whitespace-nowrap cursor-pointer">
           <HeaderNavLink href="/recon" title="Reconstruct" icon={<WriteIcon />} version={versionList['recon']} />

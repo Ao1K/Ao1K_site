@@ -4,7 +4,7 @@ import WriteIcon from './icons/write';
 // import TimerIcon from './icons/timer';
 import BulletListIcon from './icons/bulletList';
 import HeaderSidebar from './HeaderSidebar';
-import SettingsMenu from './SettingsMenu';
+import SettingsMenuWrapper from './SettingsMenuWrapper';
 
 const versionList = {
   "recon": "v0.5",
@@ -31,7 +31,7 @@ export default function Header() {
       </nav>
       <div className="flex items-center">
         {/* <Link href="https://login-ao1k.auth.us-east-1.amazoncognito.com">Profile</Link> */}
-        <SettingsMenu/>
+        <SettingsMenuWrapper />
       </div>
     </div>
   );

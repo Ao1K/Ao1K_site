@@ -1,6 +1,4 @@
-// input suggestion text and optional color, get card back.
-import type { Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
-import { CUBE_COLORS } from './TwistyPlayer';
+import { useSettings } from '../../composables/useSettings';
 import React, { JSX } from 'react';
 
 interface SuggestionCardProps {
@@ -12,25 +10,13 @@ interface SuggestionCardProps {
   handleSuggestionAccept: () => void;
 }
 
-const LETTER_TO_COLOR: Record<string, string> = {
-  W: CUBE_COLORS.white,
-  Y: CUBE_COLORS.yellow,
-  G: CUBE_COLORS.green,
-  B: '#0085FF',
-  R: CUBE_COLORS.red,
-  O: CUBE_COLORS.orange,
-};
-
-const DEFAULT_PAIR_COLORS: string[] = [CUBE_COLORS.green, CUBE_COLORS.orange];
-const DEFAULT_MULTISLOT_COLORS: string[] = [CUBE_COLORS.green, '#0085FF', CUBE_COLORS.red, CUBE_COLORS.orange];
-
-const extractF2LColors = (step: string): string[] => {
+const extractF2LColors = (step: string, letterToColor: Record<string, string>): string[] => {
   const prefix = step.split(' ')[0] ?? '';
   const letters = prefix.replace(/[^A-Za-z]/g, '').toUpperCase();
 
   const mapped = letters
     .split('')
-    .map(letter => LETTER_TO_COLOR[letter])
+    .map(letter => letterToColor[letter])
     .filter((color): color is string => Boolean(color));
 
   const uniqueColors = mapped.filter((color, index) => mapped.indexOf(color) === index);
@@ -38,8 +24,8 @@ const extractF2LColors = (step: string): string[] => {
   return uniqueColors;
 };
 
-const renderPairIcon = (colors: string[]): JSX.Element => {
-  const [first, second] = colors.length >= 2 ? colors : DEFAULT_PAIR_COLORS;
+const renderPairIcon = (colors: string[], defaultColors: string[]): JSX.Element => {
+  const [first, second] = colors.length >= 2 ? colors : defaultColors;
 
   return (
     <svg viewBox="0 0 24 24" className="border border-neutral-600">
@@ -49,8 +35,8 @@ const renderPairIcon = (colors: string[]): JSX.Element => {
   );
 };
 
-const renderMultislotIcon = (colors: string[]): JSX.Element => {
-  const palette = colors.length >= 3 ? colors : DEFAULT_MULTISLOT_COLORS;
+const renderMultislotIcon = (colors: string[], defaultColors: string[]): JSX.Element => {
+  const palette = colors.length >= 3 ? colors : defaultColors;
 
   if (palette.length >= 4) {
     return (
@@ -78,13 +64,13 @@ const renderTextIcon = (label: string): JSX.Element => (
   </div>
 );
 
-const renderStepIcon = (steps: string[]): JSX.Element => {
+const renderStepIcon = (steps: string[], letterToColor: Record<string, string>, defaultPairColors: string[], defaultMultislotColors: string[]): JSX.Element => {
   if (steps.length === 0) {
     return renderTextIcon('?');
   }
 
   // Extract all colors from all steps
-  const allColors = steps.flatMap(step => extractF2LColors(step));
+  const allColors = steps.flatMap(step => extractF2LColors(step, letterToColor));
   const uniqueColors = allColors.filter((color, index) => allColors.indexOf(color) === index);
 
   // Check if any step contains 'pair' or 'multislot'
@@ -92,11 +78,11 @@ const renderStepIcon = (steps: string[]): JSX.Element => {
   const hasMultislot = steps.some(step => step.toLowerCase().includes('multislot'));
 
   if (hasMultislot || uniqueColors.length >= 3) {
-    return renderMultislotIcon(uniqueColors.slice(0, 4));
+    return renderMultislotIcon(uniqueColors.length >= 3 ? uniqueColors.slice(0, 4) : defaultMultislotColors, defaultMultislotColors);
   }
 
   if (hasPair || uniqueColors.length === 2) {
-    return renderPairIcon(uniqueColors.slice(0, 2));
+    return renderPairIcon(uniqueColors.length >= 2 ? uniqueColors.slice(0, 2) : defaultPairColors, defaultPairColors);
   }
 
   // Default to text icon using the first step
@@ -104,7 +90,23 @@ const renderStepIcon = (steps: string[]): JSX.Element => {
 };
 
 export const SuggestionCard = ({ alg, steps, id, isFocused, handleSuggestionRequest, handleSuggestionAccept }: SuggestionCardProps) => {
-  const icon = renderStepIcon(steps);
+  const [settings] = useSettings();
+  const { cubeColors } = settings;
+
+  // Create dynamic color mapping based on current cube colors
+  const letterToColor: Record<string, string> = {
+    W: cubeColors.up,      // white/up
+    Y: cubeColors.down,    // yellow/down
+    G: cubeColors.front,   // green/front
+    B: cubeColors.back,    // blue/back
+    R: cubeColors.right,   // red/right
+    O: cubeColors.left,    // orange/left
+  };
+
+  const defaultPairColors: string[] = [cubeColors.front, cubeColors.left];
+  const defaultMultislotColors: string[] = [cubeColors.front, cubeColors.back, cubeColors.right, cubeColors.left];
+
+  const icon = renderStepIcon(steps, letterToColor, defaultPairColors, defaultMultislotColors);
 
   return (
     <div 

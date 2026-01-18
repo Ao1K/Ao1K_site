@@ -959,7 +959,7 @@ const Player = React.memo(({
 
   useEffect(() => {
 
-    Cookies.get('showPlayerControls') === 'false' ? setShowControls(false) : setShowControls(true);
+    Cookies.get('recon_showPlayerControls') === 'false' ? setShowControls(false) : setShowControls(true);
     window.addEventListener('resize', handleResize);
 
     // Listen for settings changes from settings menu
@@ -968,7 +968,7 @@ const Player = React.memo(({
         setStickerColors(cubeRef.current);
       }
       // Update showControls from cookie
-      const savedShowControls = Cookies.get('showPlayerControls');
+      const savedShowControls = Cookies.get('recon_showPlayerControls');
       setShowControls(savedShowControls !== 'false');
     };
     window.addEventListener('ao1kSettingsChanged', handleSettingsChanged);
