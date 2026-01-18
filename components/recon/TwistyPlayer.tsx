@@ -15,7 +15,6 @@ import {
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { Object3DEventMap } from 'three/src/core/Object3D.js';
-import ContextMenuImperative, { ContextMenuHandle } from './ContextMenuImperative';
 import PlayerControls from './PlayerControls';
 import { reverseMove } from '../../composables/recon/transformHTML'
 import type { ControllerRequestOptions } from './_PageContent';
@@ -82,8 +81,6 @@ const Player = React.memo(({
   const lastScramble = useRef<string>('');
   const lastAnimationTimes = useRef<number[]>([]);
   const lastSpeed = useRef<number>(0);
-
-  const contextMenuRef = useRef<ContextMenuHandle>(null);
 
   const animatingRef = useRef<boolean>(false);
   const pendingParamsRef = useRef<RenderRefProps>(null);
@@ -929,9 +926,7 @@ const Player = React.memo(({
         }
       }
     });
-
-    console.log('cube: ', cube);
-  }
+  };
 
   useEffect(() => {
 
@@ -962,33 +957,25 @@ const Player = React.memo(({
 
   }, []);
 
-  // open the menu imperatively
-  const handleContextMenu = (e: React.MouseEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    contextMenuRef.current?.show(e.clientX, e.clientY);
-  };
-
-  const handleToggleControls = () => {
-    Cookies.set('showPlayerControls', (!showControls).toString(), { expires: 365 });
-    setShowControls(prev => !prev);
-  };
-
   useEffect(() => {
 
     Cookies.get('showPlayerControls') === 'false' ? setShowControls(false) : setShowControls(true);
     window.addEventListener('resize', handleResize);
 
-    // Listen for cube color changes from settings
-    const handleColorsChanged = () => {
+    // Listen for settings changes from settings menu
+    const handleSettingsChanged = () => {
       if (cubeRef.current) {
         setStickerColors(cubeRef.current);
       }
+      // Update showControls from cookie
+      const savedShowControls = Cookies.get('showPlayerControls');
+      setShowControls(savedShowControls !== 'false');
     };
-    window.addEventListener('ao1kSettingsChanged', handleColorsChanged);
+    window.addEventListener('ao1kSettingsChanged', handleSettingsChanged);
 
     return () => {
       window.removeEventListener('resize', handleResize);
-      window.removeEventListener('ao1kSettingsChanged', handleColorsChanged);
+      window.removeEventListener('ao1kSettingsChanged', handleSettingsChanged);
     };
   }, []);
 
@@ -1032,8 +1019,6 @@ const Player = React.memo(({
       <div
         ref={divRef}
         className="h-full w-full border border-neutral-600 hover:border-primary-100 rounded-t-sm relative bg-black"
-        onClick={() => contextMenuRef.current?.close()}
-        onContextMenu={handleContextMenu}
         onKeyDown={handleKeyDown}
         tabIndex={2}
       >
@@ -1051,13 +1036,6 @@ const Player = React.memo(({
           handleFlash={handleFlash}
         />
       </div>
-
-      <ContextMenuImperative
-        ref={contextMenuRef}
-        onToggleControls={handleToggleControls}
-        showControls={showControls}
-        containerRef={divRef}
-      />
     </>
   );
 });

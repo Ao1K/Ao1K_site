@@ -121,11 +121,13 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
   const cubeInterpreter = useRef<SimpleCubeInterpreter | null>(null);
   const simpleCubeRef = useRef<SimpleCube>(new SimpleCube());
 
-  const isMac =
-    typeof navigator !== "undefined" &&
-    navigator.userAgent &&
-    /Mac|iPod|iPhone|iPad/.test(navigator.userAgent)
-  const ctrlKey = isMac ? '⌘' : 'Ctrl';
+  // Detect OS on client side only to avoid hydration mismatch
+  const [ctrlKey, setCtrlKey] = useState('Ctrl');
+  
+  useEffect(() => {
+    const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.userAgent);
+    setCtrlKey(isMac ? '⌘' : 'Ctrl');
+  }, []);
 
   /**
    * Finds the first non-empty line at or before the given line index.
@@ -266,7 +268,7 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
       const isEmptyMove = 
         time === 0 || 
         time === undefined; // could be undefined if there's a mismatch between moves and moveIndex
-      if (time === undefined) { console.warn(`Undefined time at line ${lineIndex}, move ${j}.`); }
+      // if (time === undefined) { console.warn(`Undefined time at line ${lineIndex}, move ${j}.`); }
       if (selectedLineAnimationTimes && !isEmptyMove) {
         newMoveTimes.push(time);
       }
@@ -1006,7 +1008,7 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
     const isCtrl = e.ctrlKey || e.metaKey;
     
     // Use alt for most mac shortcuts because cmd+shift+Z is standard on mac for redo.
-    const isModifier = (isMac && e.altKey) || (!isMac && e.shiftKey); 
+    const isModifier = (ctrlKey === '⌘' && e.altKey) || (ctrlKey === 'Ctrl' && e.shiftKey); 
 
     if (isCtrl && isModifier && e.key === 'M') {
     
@@ -1307,7 +1309,7 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
     { id: 'removeComments', text: 'Remove Comments', shortcutHint: `⌘+/ `, onClick: handleRemoveComments, iconText: '// ' },
   ];
 
-  const toolbarButtons = isMac ? macToolbarButtons : windowsToolbarButtons;
+  const toolbarButtons = ctrlKey === '⌘' ? macToolbarButtons : windowsToolbarButtons;
 
   return (
     <main id="main_page" className="col-start-2 col-span-1 flex flex-col bg-primary-900 mt-[52px]">

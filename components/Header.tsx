@@ -15,7 +15,7 @@ export default function Header() {
   return (
     <div className="absolute bg-white flex flex-row text-light_accent w-full z-40 h-16 top-0">
       <img
-        src="/Ao1K Logo v2.svg"
+        src="/Ao1K-Logo-v2.svg"
         className="h-16 w-auto overflow-visible"
       />
       <nav className="w-full flex sm:justify-center relative justify-start">

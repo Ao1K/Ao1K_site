@@ -222,7 +222,7 @@ export async function GET(request: Request) {
             }}
           >
             <img
-              src={`${origin}/Ao1K%20Logo%20v2.svg`}
+              src={`${origin}/Ao1K-Logo-v2.svg`}
               style={{ width: '100%', height: '100%' }}
             />
           </div>

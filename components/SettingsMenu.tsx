@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { HexColorPicker } from 'react-colorful';
 import PhGear from './icons/settings';
 import { useCubeColors, DEFAULT_CUBE_COLORS, type CubeColors } from '../composables/useSettings';
+import Cookies from 'js-cookie';
 
 const FACE_LABELS: { key: keyof CubeColors; label: string }[] = [
   { key: 'up', label: 'Up' },
@@ -18,6 +19,7 @@ export default function SettingsMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const [activePicker, setActivePicker] = useState<keyof CubeColors | null>(null);
   const [cubeColors, setCubeColors, resetColors] = useCubeColors();
+  const [showControls, setShowControls] = useState<boolean>(true);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const handleClickOutside = (event: MouseEvent | TouchEvent) => {
@@ -33,6 +35,12 @@ export default function SettingsMenu() {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
+  }, []);
+
+  useEffect(() => {
+    // Load showControls from cookies
+    const savedShowControls = Cookies.get('showPlayerControls');
+    setShowControls(savedShowControls !== 'false');
   }, []);
 
   const handleColorChange = (face: keyof CubeColors, color: string) => {
@@ -52,6 +60,14 @@ export default function SettingsMenu() {
     ([key, value]) => value === DEFAULT_CUBE_COLORS[key as keyof CubeColors]
   );
 
+  const handleToggleControls = () => {
+    const newValue = !showControls;
+    setShowControls(newValue);
+    Cookies.set('showPlayerControls', newValue.toString(), { expires: 365 });
+    // Dispatch event so TwistyPlayer can update immediately
+    window.dispatchEvent(new Event('ao1kSettingsChanged'));
+  };
+
   return (
     <div ref={menuRef} className="relative inline-block">
       <button
@@ -64,6 +80,19 @@ export default function SettingsMenu() {
 
       {isOpen && (
         <div className="absolute right-0 top-14 bg-white border border-primary-300 rounded-sm shadow-lg z-50 min-w-[250px]">
+          {/* Show Controls Toggle */}
+          <div className="px-3 py-2 border-b border-primary-200">
+            <label className="flex items-center justify-between cursor-pointer">
+              <span className="text-sm font-semibold text-light_accent">Show Player Controls</span>
+              <input
+                type="checkbox"
+                checked={showControls}
+                onChange={handleToggleControls}
+                className="ml-2 w-4 h-4 cursor-pointer"
+              />
+            </label>
+          </div>
+          
           <div className="flex flex-row items-center mb-2">
             <div className="text-sm font-semibold text-light_accent p-3 w-auto">Cube Colors</div>
             {/* Restore Defaults button */}

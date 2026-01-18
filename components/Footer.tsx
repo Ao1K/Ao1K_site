@@ -6,7 +6,8 @@ import Tagline from './Tagline';
 
 const glory = Glory({ 
   subsets: ['latin'],
-  variable: '--font-Glory' 
+  variable: '--font-Glory',
+  preload: false,
 });
 
 export default function Footer() {
