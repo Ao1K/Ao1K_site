@@ -5,7 +5,7 @@ import React, { JSX } from 'react';
 
 interface SuggestionCardProps {
   alg: string;
-  step: string;
+  steps: string[];
   id: string;
   isFocused: boolean;
   handleSuggestionRequest: () => void;
@@ -78,26 +78,33 @@ const renderTextIcon = (label: string): JSX.Element => (
   </div>
 );
 
-const renderStepIcon = (step: string): JSX.Element => {
-  const normalizedStep = step.toLowerCase();
-
-  if (normalizedStep.includes('pair')) {
-    const colors = extractF2LColors(step);
-
-    return renderPairIcon(colors.slice(0, 2));
+const renderStepIcon = (steps: string[]): JSX.Element => {
+  if (steps.length === 0) {
+    return renderTextIcon('?');
   }
 
-  if (normalizedStep.includes('multislot')) {
-    const colors = extractF2LColors(step);
+  // Extract all colors from all steps
+  const allColors = steps.flatMap(step => extractF2LColors(step));
+  const uniqueColors = allColors.filter((color, index) => allColors.indexOf(color) === index);
 
-    return renderMultislotIcon(colors.slice(0, 4));
+  // Check if any step contains 'pair' or 'multislot'
+  const hasPair = steps.some(step => step.toLowerCase().includes('pair'));
+  const hasMultislot = steps.some(step => step.toLowerCase().includes('multislot'));
+
+  if (hasMultislot || uniqueColors.length >= 3) {
+    return renderMultislotIcon(uniqueColors.slice(0, 4));
   }
 
-  return renderTextIcon(step);
+  if (hasPair || uniqueColors.length === 2) {
+    return renderPairIcon(uniqueColors.slice(0, 2));
+  }
+
+  // Default to text icon using the first step
+  return renderTextIcon(steps[0] || '?');
 };
 
-export const SuggestionCard = ({ alg, step, id, isFocused, handleSuggestionRequest, handleSuggestionAccept }: SuggestionCardProps) => {
-  const icon = renderStepIcon(step);
+export const SuggestionCard = ({ alg, steps, id, isFocused, handleSuggestionRequest, handleSuggestionAccept }: SuggestionCardProps) => {
+  const icon = renderStepIcon(steps);
 
   return (
     <div 

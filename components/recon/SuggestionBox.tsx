@@ -25,7 +25,7 @@ const sortSuggestions = (items: SuggestionBoxSuggestion[]) => {
   const groups = new Map<string, SuggestionBoxSuggestion[]>()
 
   for (const item of items) {
-    const step = item.suggestion.step;
+    const step = item.suggestion.steps[0] || '';
     const name = item.suggestion.name ?? "";
     const key = `${name}:::${step}`
     if (!groups.has(key)) groups.set(key, [])
@@ -122,7 +122,7 @@ export const SuggestionBox = ({suggestions, xLocation, yLocation, handleSuggesti
           id={`suggestion-card-${index}`}
           isFocused={selectedCardRef.current === index}
           alg={item.suggestion.alg}
-          step={item.suggestion.step}
+          steps={item.suggestion.steps}
           handleSuggestionRequest={() => focusHoveredElement(index)}
           handleSuggestionAccept={handleSuggestionAccept}
         />

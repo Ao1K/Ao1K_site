@@ -9,7 +9,7 @@ import type { CubeState as SimpleCubeState, Color } from './SimpleCube';
 export interface Suggestion {
   alg: string;
   time: number;
-  step: string;
+  steps: string[];
   name?: string;
 }
 
@@ -2178,7 +2178,7 @@ export class SimpleCubeInterpreter {
     return { index: stepData.index, refPieceMovement, minMovements: stepData.minMovements };
   }
 
-  public getAlgSuggestions(steps?: StepInfo[]): {alg: string, time: number, step: string, name?: string}[] {
+  public getAlgSuggestions(steps?: StepInfo[]): {alg: string, time: number, steps: string[], name?: string}[] {
     if (!this.algSuggester || !this.currentState) {
       return [];
     }
@@ -2205,7 +2205,7 @@ export class SimpleCubeInterpreter {
     }
   }
 
-  private getF2LSuggestions(steps: StepInfo[]): {alg: string, time: number, step: string, name?: string}[] {
+  private getF2LSuggestions(steps: StepInfo[]): {alg: string, time: number, steps: string[], name?: string}[] {
     const queries = this.getQueriesForF2L();
 
     if (!queries || queries.length === 0) {
@@ -2225,30 +2225,67 @@ export class SimpleCubeInterpreter {
       const algs = this.algSuggester!.searchByPosition(query);
       
       algs.forEach(alg => {
+        const [firstColor, secondColor] = pairColors;
+        const firstLetter = firstColor ? firstColor.charAt(0).toUpperCase() : '';
+        const secondLetter = secondColor ? secondColor.charAt(0).toUpperCase() : '';
+        const pairLabel = firstLetter && secondLetter ? `${firstLetter}${secondLetter} pair` : 'pair';
+        
         if (!algSet.has(alg.id)) {
           algSet.add(alg.id);
-          
-          const [firstColor, secondColor] = pairColors;
-          const firstLetter = firstColor ? firstColor.charAt(0).toUpperCase() : '';
-          const secondLetter = secondColor ? secondColor.charAt(0).toUpperCase() : '';
-          const pairLabel = firstLetter && secondLetter ? `${firstLetter}${secondLetter} pair` : 'pair';
           
           suggestions.push({
             alg: alg.id,
             time: speedEstimator.calcScore(alg.id),
-            step: pairLabel
+            steps: [pairLabel]
           });
+        } else {
+          // Algorithm already exists - add this step to the existing suggestion
+          const existingSuggestion = suggestions.find(s => s.alg === alg.id);
+          if (existingSuggestion && !existingSuggestion.steps.includes(pairLabel)) {
+            existingSuggestion.steps.push(pairLabel);
+          }
         }
       });
     });
 
-    // sort suggestions by score (low is better)
-    suggestions = suggestions.sort((a, b) => a.time - b.time);
+    // Helper function to count moves (excluding rotations and modifiers)
+    const countMoves = (alg: string): number => {
+      return alg.split(/\s+/).filter(move => move.match(/[^xyz2']/g)).length;
+    };
 
-    return suggestions;
+    // Sort suggestions by number of moves first
+    suggestions = suggestions.sort((a, b) => {
+      return countMoves(a.alg) - countMoves(b.alg);
+    });
+
+    // Filter out redundant algorithms that are extensions of shorter ones without unique steps
+    const filteredSuggestions: Suggestion[] = [];
+    for (const suggestion of suggestions) {
+      let isRedundant = false;
+      
+      for (const existing of filteredSuggestions) {
+        // Check if current alg starts with the existing alg (with space)
+        if (suggestion.alg.startsWith(existing.alg + ' ')) {
+          // Check if current alg has any unique steps compared to existing
+          const hasUniqueSteps = suggestion.steps.some(step => !existing.steps.includes(step));
+          
+          if (!hasUniqueSteps) {
+            isRedundant = true;
+            break;
+          }
+        }
+      }
+      
+      if (!isRedundant) {
+        filteredSuggestions.push(suggestion);
+      }
+    }
+
+    // Sort by time at the end (low is better)
+    return filteredSuggestions.sort((a, b) => a.time - b.time);
   }
 
-  private getLLSuggestions(steps: StepInfo[], stepTypes: Set<StepInfo['type']>): {alg: string, time: number, name?: string, step: string}[] {
+  private getLLSuggestions(steps: StepInfo[], stepTypes: Set<StepInfo['type']>): {alg: string, time: number, name?: string, steps: string[]}[] {
 
     // Calculate all 4 reference piece origins for different AUF positions
     // preAUFidx 0: green-white, preAUFidx 1: white-red, preAUFidx 2: white-blue, preAUFidx 3: white-orange
@@ -2260,7 +2297,7 @@ export class SimpleCubeInterpreter {
     ];
     
     const llIndices = this.getLLindices(steps, stepTypes);
-    const algs: {alg: string, name: string, step: string}[] = [];
+    const algs: {alg: string, name: string, steps: string[]}[] = [];
 
     llIndices.forEach(index => {
       if (index.step !== 'oll' && index.step !== 'pll' && index.step !== 'auf') {
@@ -2269,7 +2306,7 @@ export class SimpleCubeInterpreter {
       }
       const stepAlgs: string[] = this.LLsuggester!.getAlgsForStep(index.step, index.index, index.minMovements, refPieceOrigins);
       stepAlgs.forEach(alg => {
-        algs.push({alg, name: index.name, step: index.step});
+        algs.push({alg, name: index.name, steps: [index.step]});
       });
     });
 
@@ -2277,7 +2314,7 @@ export class SimpleCubeInterpreter {
     const suggestions: Suggestion[] = algs.map(alg => ({
       alg: alg.alg,
       time: speedEstimator.calcScore(alg.alg),
-      step: alg.step,
+      steps: alg.steps,
       name: alg.name
     }));
 

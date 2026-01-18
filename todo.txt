@@ -1,17 +1,9 @@
 Informal Bugs/Todo List. Not guaranteed to be complete or accurate.
 ===================================================================
 
-Suggestions should support multislot icons:
-Don't show suggestions that are direct longer version of other suggestion for same step.
- - Ex: R U R' U L U L' when R U R' solves FR.
-    - Should only be rejected if R U R' U L U L' doesn't solve another slot as well.
-
-In short:
-ImageStack source data needs to be more rich. It should have starting location of slot being solved, for each slot solved. 
-  If a suggestion does not solve more of the cube, 
-  and is a longer version of another suggestion 
-  (Ex: R U R' and R U R' U' are both valid suggestions), 
-  don't show that longer suggestion 
+Add slot direction to lineStep as an optional param. Pass through to ImageStack (and SuggestionCard?)
+  - Interestingly, the slot start location is obvious during a solve, while slot end location isn't.
+  - Should slot direction be end location for this reason?
 
 Autocomplete for cross. Would need to brute force solutions to partial cross solution input. 
 Or compute a bunch of crosses and just give whatever suggestion still works.

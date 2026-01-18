@@ -1118,8 +1118,6 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
           return [];
         }
 
-        const lastMoveIndex = findLastMoveInLine(solutionMoves, lineIdx);
-
         // build moves up to end of this line
         const scrambleMoves = allMovesRef.current[0].flat();
         const solutionMovesUpToLine = solutionMoves.flatMap((line, idx) => {
@@ -1144,43 +1142,75 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
     );
       return stepsOnLine;
     };
+
+    const isFirstNonEmptyLine = (lineIdx: number, solutionMoves: string[][]): boolean => {
+      for (let i = 0; i < lineIdx; i++) {
+        if (solutionMoves[i] && solutionMoves[i].length > 0) {
+          return false;
+        }
+      }
+      return true;
+    };
+
+    const buildMoveLine = (line: string[], lineIdx: number, solutionMoves: string[][]): string => {
+      const shouldIncludeScramble = isFirstNonEmptyLine(lineIdx, solutionMoves);
+      const lineAndScram = shouldIncludeScramble ? [...allMovesRef.current[0].flat(), ...line] : line;
+      return lineAndScram.join(' ');
+    };
+
+    const processLineAfterChange = (line: string[], lineIdx: number, updatedSteps: {moveLine: string, stepInfo: StepInfo[]}[], solutionMoves: string[][]): void => {
+      const stepInfo = getStepsForLine(lineIdx);
+      const prevSteps = updatedSteps.map(item => item.stepInfo).flat();
+      const newSteps = getNewSteps(prevSteps, stepInfo);
+      const moveLine = isFirstNonEmptyLine(lineIdx, solutionMoves) ? buildMoveLine(line, lineIdx, solutionMoves) : line.join(' ');
+      updatedSteps.push({moveLine, stepInfo: newSteps});
+    };
+
+    const processLineBeforeChange = (
+      line: string[], 
+      lineIdx: number, 
+      previousLineSteps: {moveLine: string, stepInfo: StepInfo[]}[],
+      updatedSteps: {moveLine: string, stepInfo: StepInfo[]}[],
+      solutionMoves: string[][]
+    ): boolean => {
+      const flatLine = buildMoveLine(line, lineIdx, solutionMoves);
+      const oldMoveLine = previousLineSteps[lineIdx]?.moveLine || '';
+      const movesSame = oldMoveLine === flatLine;
+    
+      if (movesSame) {
+        updatedSteps.push({moveLine: oldMoveLine, stepInfo: previousLineSteps[lineIdx]?.stepInfo || []});
+        return false; // no change found
+      } else {
+        const stepInfo = getStepsForLine(lineIdx);
+        const prevSteps = updatedSteps.map(item => item.stepInfo).flat();
+        const newSteps = getNewSteps(prevSteps, stepInfo);
+        updatedSteps.push({moveLine: flatLine, stepInfo: newSteps});
+        return true; // change found
+      }
+    };
     
     const solutionMoves = allMovesRef.current[1];
     
-    let hasAddedScramble = false;
+    // update steps
     let isChangeFound = false;
     for (let lineIdx = 0; lineIdx < solutionMoves.length; lineIdx++) {
       const line = solutionMoves[lineIdx];
+      
       if (!line || line.length === 0) {
         updatedSteps.push({moveLine: '', stepInfo: []});
         continue;
       }
-      if (isChangeFound) {
-        const stepInfo = getStepsForLine(lineIdx);
-        const prevSteps = updatedSteps.map(item => item.stepInfo).flat();
-        const newSteps = getNewSteps(prevSteps, stepInfo);
-        updatedSteps.push({moveLine: line.join(' '), stepInfo: newSteps});
-      } else {
-        // the first moveline contain scramble + first soltution line
-        const lineAndScram = hasAddedScramble ? line : [...allMovesRef.current[0].flat(), ...line];
-        hasAddedScramble = true;
-        const flatLine = lineAndScram.join(' ');
 
-        const oldMoveLine = previousLineSteps[lineIdx]?.moveLine || '';
-        const movesSame = oldMoveLine === flatLine;
-      
-        if (movesSame) {
-          updatedSteps.push({moveLine: oldMoveLine, stepInfo: previousLineSteps[lineIdx]?.stepInfo || []});
-        } else {
+      if (isChangeFound) {
+        processLineAfterChange(line, lineIdx, updatedSteps, solutionMoves);
+      } else {
+        const changeDetected = processLineBeforeChange(line, lineIdx, previousLineSteps, updatedSteps, solutionMoves);
+        if (changeDetected) {
           isChangeFound = true;
-          const stepInfo = getStepsForLine(lineIdx);
-          const prevSteps = updatedSteps.map(item => item.stepInfo).flat();
-          const newSteps = getNewSteps(prevSteps, stepInfo);
-          updatedSteps.push({moveLine: flatLine, stepInfo: newSteps});
         }
       }
-
     };
+
     lineStepsRef.current = updatedSteps;
     setLineSteps(updatedSteps);
   };
