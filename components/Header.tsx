@@ -1,88 +1,38 @@
-"use client";
-import { useState } from 'react';
-import Link from 'next/link';
 import HeaderNavLink from './HeaderNavLink';
 import WriteIcon from './icons/write';
 // import DatabaseIcon from './icons/database';
 // import TimerIcon from './icons/timer';
-import ListIcon from './icons/list';
 import BulletListIcon from './icons/bulletList';
+import HeaderSidebar from './HeaderSidebar';
+import SettingsMenuWrapper from './SettingsMenuWrapper';
 
 const versionList = {
-  "recon": "v0.5",
+  "recon": "v0.6",
   "changeblog": "",
 }
 
 export default function Header() {
-  const [isSidebarOpen, setSidebarOpen] = useState(false);
-
-  const toggleSidebar = () => {
-    setSidebarOpen(!isSidebarOpen);
-  };
-
-  const closeSidebar = () => {
-    setSidebarOpen(false);
-  };
-
-
   return (
-    <div className="fixed bg-white text-light_accent w-full z-40 h-16 top-0 right-0">
-      <nav className="mx-auto flex justify-between w-full">
-
-        <img
-          src="/Ao1K Logo v2.svg"
-          className="h-16 w-auto overflow-visible"
-        />
-
-        <div className="hidden sm:flex p-4 mt-1 flex-row space-x-10">
-          <div onClick={closeSidebar}>
+    <div className="absolute bg-white flex flex-row text-light_accent w-full z-40 h-16 top-0">
+      <img
+        src="/Ao1K-Logo-v2.svg"
+        className="h-16 w-auto overflow-visible"
+      />
+      <nav className="w-full flex sm:justify-center relative justify-start">
+       <div className="hidden sm:flex sm:flex-row items-center space-x-10">
           {/* <HeaderNavLink href="/" title="Practice" icon={<TimerIcon />} /> */}
-          </div>
           <HeaderNavLink href="/recon/" title="Reconstruct" icon={<WriteIcon />} version={versionList['recon']}/>
           {/* <HeaderNavLink href="/algs" title="Learn" icon={<DatabaseIcon />} /> */}
           <HeaderNavLink href="/changeblog/" title="Changeblog" icon={<BulletListIcon />} version={versionList['changeblog']} />
         </div>
 
-        <div className="p-4 mt-1 hidden sm:block">
-          {/* <Link href="https://login-ao1k.auth.us-east-1.amazoncognito.com">Profile</Link> */}
-          By Chet
-        </div>
 
-        <div className="sm:hidden flex flex-row justify-end">
-          <button onClick={toggleSidebar} className="px-3 flex flex-row space-x-2 items-center">
-            <ListIcon />
-            <div className="text-xl">Tools</div>
-          </button>
-        </div>
+        <HeaderSidebar />
       </nav>
-
-
-      {isSidebarOpen && (
-      <div
-        className="fixed translate-y-[60px] inset-0 bg-black bg-opacity-50 z-50"
-        onClick={closeSidebar} // Close sidebar when clicking outside
-      >
-        <div
-          className="bg-white w-1/2 h-full p-4 space-y-4 fixed right-0 top-0"
-          onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the sidebar
-        >
-          {/* <HeaderNavLink href="/" title="Practice" icon={<TimerIcon />} /> */}
-          <button onClick={closeSidebar} className="">
-            <HeaderNavLink href="/recon" title="Reconstruct" icon={<WriteIcon />} version={versionList['recon']}/>
-          </button>
-          {/* <HeaderNavLink href="/algs" title="Learn" icon={<DatabaseIcon />} /> */}
-          <button onClick={closeSidebar} className="">
-            <HeaderNavLink href="/changeblog/" title="Changeblog" icon={<BulletListIcon />} version={versionList['changeblog']} />
-          </button>
-          {/* <Link href="/not a link" className="block mt-4">
-            Profile
-          </Link> */}
-          <div>
-            By Chet
-          </div>
-        </div>
+      <div className="flex items-center">
+        {/* <Link href="https://login-ao1k.auth.us-east-1.amazoncognito.com">Profile</Link> */}
+        <SettingsMenuWrapper />
       </div>
-      )}
     </div>
   );
 }

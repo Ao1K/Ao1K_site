@@ -1,36 +1,22 @@
-// input suggestion text and optional color, get card back.
-import type { Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
-import { CUBE_COLORS } from './TwistyPlayer';
+import { useSettings } from '../../composables/useSettings';
 import React, { JSX } from 'react';
 
 interface SuggestionCardProps {
   alg: string;
-  step: string;
+  steps: string[];
   id: string;
   isFocused: boolean;
   handleSuggestionRequest: () => void;
   handleSuggestionAccept: () => void;
 }
 
-const LETTER_TO_COLOR: Record<string, string> = {
-  W: CUBE_COLORS.white,
-  Y: CUBE_COLORS.yellow,
-  G: CUBE_COLORS.green,
-  B: '#0085FF',
-  R: CUBE_COLORS.red,
-  O: CUBE_COLORS.orange,
-};
-
-const DEFAULT_PAIR_COLORS: string[] = [CUBE_COLORS.green, CUBE_COLORS.orange];
-const DEFAULT_MULTISLOT_COLORS: string[] = [CUBE_COLORS.green, '#0085FF', CUBE_COLORS.red, CUBE_COLORS.orange];
-
-const extractF2LColors = (step: string): string[] => {
+const extractF2LColors = (step: string, letterToColor: Record<string, string>): string[] => {
   const prefix = step.split(' ')[0] ?? '';
   const letters = prefix.replace(/[^A-Za-z]/g, '').toUpperCase();
 
   const mapped = letters
     .split('')
-    .map(letter => LETTER_TO_COLOR[letter])
+    .map(letter => letterToColor[letter])
     .filter((color): color is string => Boolean(color));
 
   const uniqueColors = mapped.filter((color, index) => mapped.indexOf(color) === index);
@@ -38,8 +24,8 @@ const extractF2LColors = (step: string): string[] => {
   return uniqueColors;
 };
 
-const renderPairIcon = (colors: string[]): JSX.Element => {
-  const [first, second] = colors.length >= 2 ? colors : DEFAULT_PAIR_COLORS;
+const renderPairIcon = (colors: string[], defaultColors: string[]): JSX.Element => {
+  const [first, second] = colors.length >= 2 ? colors : defaultColors;
 
   return (
     <svg viewBox="0 0 24 24" className="border border-neutral-600">
@@ -49,8 +35,8 @@ const renderPairIcon = (colors: string[]): JSX.Element => {
   );
 };
 
-const renderMultislotIcon = (colors: string[]): JSX.Element => {
-  const palette = colors.length >= 3 ? colors : DEFAULT_MULTISLOT_COLORS;
+const renderMultislotIcon = (colors: string[], defaultColors: string[]): JSX.Element => {
+  const palette = colors.length >= 3 ? colors : defaultColors;
 
   if (palette.length >= 4) {
     return (
@@ -78,26 +64,49 @@ const renderTextIcon = (label: string): JSX.Element => (
   </div>
 );
 
-const renderStepIcon = (step: string): JSX.Element => {
-  const normalizedStep = step.toLowerCase();
-
-  if (normalizedStep.includes('pair')) {
-    const colors = extractF2LColors(step);
-
-    return renderPairIcon(colors.slice(0, 2));
+const renderStepIcon = (steps: string[], letterToColor: Record<string, string>, defaultPairColors: string[], defaultMultislotColors: string[]): JSX.Element => {
+  if (steps.length === 0) {
+    return renderTextIcon('?');
   }
 
-  if (normalizedStep.includes('multislot')) {
-    const colors = extractF2LColors(step);
+  // Extract all colors from all steps
+  const allColors = steps.flatMap(step => extractF2LColors(step, letterToColor));
+  const uniqueColors = allColors.filter((color, index) => allColors.indexOf(color) === index);
 
-    return renderMultislotIcon(colors.slice(0, 4));
+  // Check if any step contains 'pair' or 'multislot'
+  const hasPair = steps.some(step => step.toLowerCase().includes('pair'));
+  const hasMultislot = steps.some(step => step.toLowerCase().includes('multislot'));
+
+  if (hasMultislot || uniqueColors.length >= 3) {
+    return renderMultislotIcon(uniqueColors.length >= 3 ? uniqueColors.slice(0, 4) : defaultMultislotColors, defaultMultislotColors);
   }
 
-  return renderTextIcon(step);
+  if (hasPair || uniqueColors.length === 2) {
+    return renderPairIcon(uniqueColors.length >= 2 ? uniqueColors.slice(0, 2) : defaultPairColors, defaultPairColors);
+  }
+
+  // Default to text icon using the first step
+  return renderTextIcon(steps[0] || '?');
 };
 
-export const SuggestionCard = ({ alg, step, id, isFocused, handleSuggestionRequest, handleSuggestionAccept }: SuggestionCardProps) => {
-  const icon = renderStepIcon(step);
+export const SuggestionCard = ({ alg, steps, id, isFocused, handleSuggestionRequest, handleSuggestionAccept }: SuggestionCardProps) => {
+  const [settings] = useSettings();
+  const { cubeColors } = settings;
+
+  // Create dynamic color mapping based on current cube colors
+  const letterToColor: Record<string, string> = {
+    W: cubeColors.up,      // white/up
+    Y: cubeColors.down,    // yellow/down
+    G: cubeColors.front,   // green/front
+    B: cubeColors.back,    // blue/back
+    R: cubeColors.right,   // red/right
+    O: cubeColors.left,    // orange/left
+  };
+
+  const defaultPairColors: string[] = [cubeColors.front, cubeColors.left];
+  const defaultMultislotColors: string[] = [cubeColors.front, cubeColors.back, cubeColors.right, cubeColors.left];
+
+  const icon = renderStepIcon(steps, letterToColor, defaultPairColors, defaultMultislotColors);
 
   return (
     <div 

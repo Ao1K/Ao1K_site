@@ -16,7 +16,6 @@ import CatIcon from "../../components/icons/cat";
 import TrashIcon from "../../components/icons/trash";
 import ShareIcon from "../../components/icons/share";
 import InvertIcon from "../../components/icons/invert";
-
 import Cookies from 'js-cookie';
 
 import addCat from "../../composables/recon/addCat";
@@ -28,7 +27,6 @@ import TitleWithPlaceholder from "../../components/recon/TitleInput";
 import TopButton from "../../components/recon/TopButton";
 import CopySolveDropdown from "../../components/recon/CopySolveDropdown";
 import { customDecodeURL, customEncodeURL } from '../../composables/recon/urlEncoding';
-import getDailyScramble from '../../composables/recon/getDailyScramble';
 import VideoHelpPrompt from '../../components/recon/VideoHelpPrompt';
 import ImageStack from '../recon/ImageStack';
 import { SimpleCube } from '../../composables/recon/SimpleCube';
@@ -63,7 +61,7 @@ const TwistyPlayer = lazy(() => import("../../components/recon/TwistyPlayer"));
 
 let currentSpeed = 30;
 
-export default function Recon() {
+export default function Recon({ dailyScramble = "", videoHelpDismissed = false }: { dailyScramble?: string, videoHelpDismissed?: boolean }) {
   const allMovesRef = useRef<string[][][]>([[[]], [[]]]);
   const moveLocation = useRef<[number, number, number]>([0, 0, 0]);
 
@@ -99,7 +97,7 @@ export default function Recon() {
   const bottomBarRef = useRef<HTMLDivElement>(null!);
   const isLoopingRef = useRef<boolean>(false);
   const loopTimeoutRef = useRef<number|null>(null);
-  const screenshotManagerRef = useRef(new ScreenshotManager());
+  const screenshotManagerRef = useRef<ScreenshotManager | null>(null);
   const clearLoopTimeout = useCallback(() => {
     if (loopTimeoutRef.current !== null) {
       clearTimeout(loopTimeoutRef.current);
@@ -123,11 +121,13 @@ export default function Recon() {
   const cubeInterpreter = useRef<SimpleCubeInterpreter | null>(null);
   const simpleCubeRef = useRef<SimpleCube>(new SimpleCube());
 
-  const isMac =
-    typeof navigator !== "undefined" &&
-    navigator.userAgent &&
-    /Mac|iPod|iPhone|iPad/.test(navigator.userAgent)
-  const ctrlKey = isMac ? '⌘' : 'Ctrl';
+  // Detect OS on client side only to avoid hydration mismatch
+  const [ctrlKey, setCtrlKey] = useState('Ctrl');
+  
+  useEffect(() => {
+    const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.userAgent);
+    setCtrlKey(isMac ? '⌘' : 'Ctrl');
+  }, []);
 
   /**
    * Finds the first non-empty line at or before the given line index.
@@ -268,7 +268,7 @@ export default function Recon() {
       const isEmptyMove = 
         time === 0 || 
         time === undefined; // could be undefined if there's a mismatch between moves and moveIndex
-      if (time === undefined) { console.warn(`Undefined time at line ${lineIndex}, move ${j}.`); }
+      // if (time === undefined) { console.warn(`Undefined time at line ${lineIndex}, move ${j}.`); }
       if (selectedLineAnimationTimes && !isEmptyMove) {
         newMoveTimes.push(time);
       }
@@ -873,6 +873,8 @@ export default function Recon() {
   }
 
   const handleScreenshot = async () => {
+    if (!screenshotManagerRef.current) return;
+    
     const tpsString = (tpsRef.current && tpsRef.current.innerHTML !== '(-- tps)') ? tpsRef.current.innerHTML : '';
     const blob = await screenshotManagerRef.current.getBlob(
       { scrambleHTML, solutionHTML, solveTime },
@@ -884,7 +886,7 @@ export default function Recon() {
       return;
     }
     
-    const success = await screenshotManagerRef.current.copyToClipboard(blob);
+    const success = await screenshotManagerRef.current!.copyToClipboard(blob);
     if (success) {
       setTopButtonAlert(["copy-solve", "Screenshot copied!"]);
     } else {
@@ -902,7 +904,7 @@ export default function Recon() {
       window.matchMedia("(pointer: coarse)").matches;
 
     const title = solveTitle ? `${solveTitle.trim()}` : '';
-    const text = `[Solve](${window.location.href})`;
+    const text = `[${title || 'Solve'}](${window.location.href})`;
 
     // Native share (mobile, some desktop browsers)
     if (canNativeShare) {
@@ -984,33 +986,11 @@ export default function Recon() {
       );
       if (isCubeSolved) {
         const tpsString = (tpsRef.current && tpsRef.current.innerHTML !== '(-- tps)') ? tpsRef.current.innerHTML : '';
-        void screenshotManagerRef.current.getBlob(
+        void screenshotManagerRef.current?.getBlob(
           { scrambleHTML, solutionHTML, solveTime },
           { totalMoves, tpsString }
         );
       } 
-    }
-  }
-
-  const showDailyScramble = async () => {
-
-    try {
-      const data = await getDailyScramble(new Date());
-
-      if (data === undefined) {
-        console.error('No daily scramble found.');
-        return;
-      }
-
-      const dailyScramble = data.scramble3x3;
-      const date = data.date;     
-      
-      const scrambleMessage = `// Scramble of the day<br>// ${date}<br>${dailyScramble}`;
-      if (!scrambleHTML) {
-        scrambleMethodsRef.current?.transform(scrambleMessage); // force update inside MovesTextEditor
-      }
-    } catch (error) {
-      console.error('Failed to get daily scramble:', error);
     }
   }
 
@@ -1028,7 +1008,7 @@ export default function Recon() {
     const isCtrl = e.ctrlKey || e.metaKey;
     
     // Use alt for most mac shortcuts because cmd+shift+Z is standard on mac for redo.
-    const isModifier = (isMac && e.altKey) || (!isMac && e.shiftKey); 
+    const isModifier = (ctrlKey === '⌘' && e.altKey) || (ctrlKey === 'Ctrl' && e.shiftKey); 
 
     if (isCtrl && isModifier && e.key === 'M') {
     
@@ -1140,8 +1120,6 @@ export default function Recon() {
           return [];
         }
 
-        const lastMoveIndex = findLastMoveInLine(solutionMoves, lineIdx);
-
         // build moves up to end of this line
         const scrambleMoves = allMovesRef.current[0].flat();
         const solutionMovesUpToLine = solutionMoves.flatMap((line, idx) => {
@@ -1166,53 +1144,79 @@ export default function Recon() {
     );
       return stepsOnLine;
     };
+
+    const buildMoveLine = (line: string[], lineIdx: number, hasAddedScramble: boolean): string => {
+      const lineAndScram = hasAddedScramble ? line : [...allMovesRef.current[0].flat(), ...line];
+      return lineAndScram.join(' ');
+    };
+
+    const processLineAfterChange = (line: string[], lineIdx: number, updatedSteps: {moveLine: string, stepInfo: StepInfo[]}[]): void => {
+      const stepInfo = getStepsForLine(lineIdx);
+      const prevSteps = updatedSteps.map(item => item.stepInfo).flat();
+      const newSteps = getNewSteps(prevSteps, stepInfo);
+      updatedSteps.push({moveLine: line.join(' '), stepInfo: newSteps});
+    };
+
+    const processLineBeforeChange = (
+      line: string[], 
+      lineIdx: number, 
+      hasAddedScramble: boolean, 
+      previousLineSteps: {moveLine: string, stepInfo: StepInfo[]}[],
+      updatedSteps: {moveLine: string, stepInfo: StepInfo[]}[]
+    ): boolean => {
+      const flatLine = buildMoveLine(line, lineIdx, hasAddedScramble);
+      const oldMoveLine = previousLineSteps[lineIdx]?.moveLine || '';
+      const movesSame = oldMoveLine === flatLine;
+    
+      if (movesSame) {
+        updatedSteps.push({moveLine: oldMoveLine, stepInfo: previousLineSteps[lineIdx]?.stepInfo || []});
+        return false; // no change found
+      } else {
+        const stepInfo = getStepsForLine(lineIdx);
+        const prevSteps = updatedSteps.map(item => item.stepInfo).flat();
+        const newSteps = getNewSteps(prevSteps, stepInfo);
+        updatedSteps.push({moveLine: flatLine, stepInfo: newSteps});
+        return true; // change found
+      }
+    };
     
     const solutionMoves = allMovesRef.current[1];
     
+    // update steps
     let hasAddedScramble = false;
     let isChangeFound = false;
     for (let lineIdx = 0; lineIdx < solutionMoves.length; lineIdx++) {
       const line = solutionMoves[lineIdx];
+      
       if (!line || line.length === 0) {
         updatedSteps.push({moveLine: '', stepInfo: []});
         continue;
       }
-      if (isChangeFound) {
-        const stepInfo = getStepsForLine(lineIdx);
-        const prevSteps = updatedSteps.map(item => item.stepInfo).flat();
-        const newSteps = getNewSteps(prevSteps, stepInfo);
-        updatedSteps.push({moveLine: line.join(' '), stepInfo: newSteps});
-      } else {
-        // the first moveline contain scramble + first soltution line
-        const lineAndScram = hasAddedScramble ? line : [...allMovesRef.current[0].flat(), ...line];
-        hasAddedScramble = true;
-        const flatLine = lineAndScram.join(' ');
 
-        const oldMoveLine = previousLineSteps[lineIdx]?.moveLine || '';
-        const movesSame = oldMoveLine === flatLine;
-      
-        if (movesSame) {
-          updatedSteps.push({moveLine: oldMoveLine, stepInfo: previousLineSteps[lineIdx]?.stepInfo || []});
-        } else {
+      if (isChangeFound) {
+        processLineAfterChange(line, lineIdx, updatedSteps);
+      } else {
+        const changeDetected = processLineBeforeChange(line, lineIdx, hasAddedScramble, previousLineSteps, updatedSteps);
+        hasAddedScramble = true;
+        if (changeDetected) {
           isChangeFound = true;
-          const stepInfo = getStepsForLine(lineIdx);
-          const prevSteps = updatedSteps.map(item => item.stepInfo).flat();
-          const newSteps = getNewSteps(prevSteps, stepInfo);
-          updatedSteps.push({moveLine: flatLine, stepInfo: newSteps});
         }
       }
-
     };
+
     lineStepsRef.current = updatedSteps;
     setLineSteps(updatedSteps);
   };
 
   const initializeCubeInterpreter = async () => {
-    const { default: algDoc } = await import('../../utils/compiled-exact-algs.json');
-    cubeInterpreter.current = new SimpleCubeInterpreter(algDoc.algorithms);
+    const algDoc = await import('../../public/recon/compiled-exact-algs.json');
+    cubeInterpreter.current = new SimpleCubeInterpreter(algDoc.default.algorithms);
     updateLineSteps();
 
-    // warm up screenshot renderer
+    // initialize screenshot manager and warm up renderer
+    if (!screenshotManagerRef.current) {
+      screenshotManagerRef.current = new ScreenshotManager();
+    }
     void screenshotManagerRef.current.getBlob(
       { scrambleHTML: '', solutionHTML: '', solveTime: '' },
       { totalMoves: 0, tpsString: '' }
@@ -1252,11 +1256,6 @@ export default function Recon() {
     const scramble = allMovesRef.current[0].flat().join(' ');
     if (scramble) {
       setPlayerParams(prev => ({ ...prev, scramble }));
-    }
-
-    if (!Array.from(urlParams.values()).filter(val => val !== '').length) { 
-      // if no URL query values or empty string values, then show daily scramble
-      showDailyScramble();
     }
 
     Cookies.get('isShowingBottomBar') === 'false' ? setIsShowingToolbar(false) : setIsShowingToolbar(true);
@@ -1310,11 +1309,11 @@ export default function Recon() {
     { id: 'removeComments', text: 'Remove Comments', shortcutHint: `⌘+/ `, onClick: handleRemoveComments, iconText: '// ' },
   ];
 
-  const toolbarButtons = isMac ? macToolbarButtons : windowsToolbarButtons;
+  const toolbarButtons = ctrlKey === '⌘' ? macToolbarButtons : windowsToolbarButtons;
 
   return (
-    <div id="main_page" className="col-start-2 col-span-1 flex flex-col bg-primary-900 mt-[52px]">
-      <VideoHelpPrompt videoId="iIipycBl0iY" />
+    <main id="main_page" className="col-start-2 col-span-1 flex flex-col bg-primary-900 mt-[52px]">
+      <VideoHelpPrompt videoId="iIipycBl0iY" initiallyDismissed={videoHelpDismissed} />
       
       {/* utility for compiling list of alg hashes */}
       {/* <AlgCompiler /> */}
@@ -1342,6 +1341,7 @@ export default function Recon() {
             updateHistoryBtns={memoizedUpdateHistoryBtns}
             html={scrambleHTML}
             setHTML={memoizedSetScrambleHTML}
+            initialContent={solutionHTML ? '' : dailyScramble}
           />
         </div>
       </div>
@@ -1430,6 +1430,6 @@ export default function Recon() {
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

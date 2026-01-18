@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { debounce } from 'lodash';
+import debounce from 'lodash.debounce';
 
 import InfoIcon from '../icons/info';
 
@@ -128,7 +128,7 @@ export default function ReconTimeHelpInfo() {
 
   return (
     <div className="">
-      <div className="cursor-pointer" onClick={handleOpen} onTouchStart={handleOpen} onTouchEnd={handleClose}>
+      <div className="cursor-pointer" onClick={handleOpen}>
         <InfoIcon className="text-dark_accent" />
       </div>
 

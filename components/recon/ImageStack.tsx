@@ -1,8 +1,24 @@
 import React, { useRef, useState, useEffect } from 'react';
 import debounce from 'lodash.debounce';
 import type { StepInfo } from '../../composables/recon/SimpleCubeInterpreter';
-import { CUBE_COLORS } from '../../components/recon/TwistyPlayer';
+import { getSettings, type CubeColors } from '../../composables/useSettings';
 import type { Grid } from '../../composables/recon/LLinterpreter';
+
+// Helper to get current cube colors from settings
+function getCurrentCubeColors(): CubeColors {
+  return getSettings().cubeColors;
+}
+
+// Helper to determine if a color is dark (needs light background)
+function isColorDark(hexColor: string): boolean {
+  const hex = hexColor.replace('#', '');
+  const r = parseInt(hex.slice(0, 2), 16);
+  const g = parseInt(hex.slice(2, 4), 16);
+  const b = parseInt(hex.slice(4, 6), 16);
+  // Using relative luminance formula
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance < 0.5;
+}
 
 interface ImageStackProps {
   position: [number, number, number] | null;
@@ -74,6 +90,17 @@ const ImageStack = ({position, moves, lineSteps, editableElement}: ImageStackPro
       mutationObserver.disconnect();
     };
   }, [editableElement]);
+
+  // Listen for cube color changes and force rerender
+  useEffect(() => {
+    const handleColorsChanged = () => {
+      forceRender({});
+    };
+    window.addEventListener('ao1kSettingsChanged', handleColorsChanged);
+    return () => {
+      window.removeEventListener('ao1kSettingsChanged', handleColorsChanged);
+    };
+  }, []);
 
   const divHeights = editableElement ? getCurrentDivHeights(editableElement) : [];
 
@@ -184,14 +211,15 @@ const ImageStack = ({position, moves, lineSteps, editableElement}: ImageStackPro
     }
 
     const getStepColors = (colors: string[]): string[] => {
-      // Map color names to their hex values from CUBE_COLORS
+      // Map color names to their hex values from settings (cookie)
+      const cubeColors = getCurrentCubeColors();
       const colorMap: Record<string, string> = {
-        'white': CUBE_COLORS.white,
-        'yellow': CUBE_COLORS.yellow,
-        'green': CUBE_COLORS.green,
-        'blue': '#0085FF',
-        'red': CUBE_COLORS.red,
-        'orange': CUBE_COLORS.orange
+        'white': cubeColors.up,      // up face
+        'yellow': cubeColors.down,   // down face
+        'green': cubeColors.front,   // front face
+        'blue': cubeColors.back,     // back face
+        'red': cubeColors.right,     // right face
+        'orange': cubeColors.left    // left face
       };
       return colors.map(color => colorMap[color.toLowerCase()] || '#888888');
     };
@@ -204,17 +232,19 @@ const ImageStack = ({position, moves, lineSteps, editableElement}: ImageStackPro
       // console.log('Rendering step icon for step:', stepInfo.step, 'with colors:', primaryColors, 'and pattern:', stepInfo.pattern);
       
       if (step === 'cross') {
+        const crossColor = primaryColors[0];
+        const bgColor = isColorDark(crossColor) ? '#ECE6EF' : '#161018'; // light : dark
         return (
-          <svg viewBox="0 0 24 24" className="w-full border border-1 border-neutral-600 hover:border-primary-100">
-            <rect x="0" y="0" width="8" height="8" fill={'#161018'} />
-            <rect x="8" y="0" width="8" height="8" fill={primaryColors[0]} />
-            <rect x="16" y="0" width="8" height="8" fill={'#161018'} />
-            <rect x="0" y="8" width="8" height="8" fill={primaryColors[0]} />
-            <rect x="8" y="8" width="8" height="8" fill={primaryColors[0]} />
-            <rect x="16" y="8" width="8" height="8" fill={primaryColors[0]} />
-            <rect x="0" y="16" width="8" height="8" fill={'#161018'} />
-            <rect x="8" y="16" width="8" height="8" fill={primaryColors[0]} />
-            <rect x="16" y="16" width="8" height="8" fill={'#161018'} />
+          <svg viewBox="0 0 24 24" className="w-full border border-1 border-neutral-600 hover:border-primary-100" stroke="#52525b" strokeWidth="1" fill="none">
+            <rect x="0" y="0" width="8" height="8" fill={bgColor} />
+            <rect x="8" y="0" width="8" height="8" fill={crossColor} />
+            <rect x="16" y="0" width="8" height="8" fill={bgColor} />
+            <rect x="0" y="8" width="8" height="8" fill={crossColor} />
+            <rect x="8" y="8" width="8" height="8" fill={crossColor} />
+            <rect x="16" y="8" width="8" height="8" fill={crossColor} />
+            <rect x="0" y="16" width="8" height="8" fill={bgColor} />
+            <rect x="8" y="16" width="8" height="8" fill={crossColor} />
+            <rect x="16" y="16" width="8" height="8" fill={bgColor} />
           </svg>
         );
       } else if (step === 'xcross' || step === 'xxcross' || step === 'xxxcross' || step === 'xxxxcross') {
@@ -222,13 +252,15 @@ const ImageStack = ({position, moves, lineSteps, editableElement}: ImageStackPro
         const frontColor = primaryColors[1];
         const rightColor = primaryColors[2];
 
+        // Get current colors from settings for opposite color mapping
+        const cubeColors = getCurrentCubeColors();
         const oppositeColors: Record<string, string> = {
-          [CUBE_COLORS.white]: CUBE_COLORS.yellow,
-          [CUBE_COLORS.yellow]: CUBE_COLORS.white,
-          [CUBE_COLORS.green]: '#0085FF',
-          '#0085FF': CUBE_COLORS.green,
-          [CUBE_COLORS.red]: CUBE_COLORS.orange,
-          [CUBE_COLORS.orange]: CUBE_COLORS.red
+          [cubeColors.up]: cubeColors.down,
+          [cubeColors.down]: cubeColors.up,
+          [cubeColors.front]: cubeColors.back,
+          [cubeColors.back]: cubeColors.front,
+          [cubeColors.right]: cubeColors.left,
+          [cubeColors.left]: cubeColors.right
         };
 
         const backColorHex = Object.entries(oppositeColors).find(([, opposite]) => opposite === frontColor)?.[0] ?? null;
@@ -241,9 +273,7 @@ const ImageStack = ({position, moves, lineSteps, editableElement}: ImageStackPro
 
         const hasBackColor = backColorCount > 0;
         const hasRightColor = leftColorCount > 0;
-        const hasFrontColor = frontColorCount > 0;
-        const hasLeftColor = leftColorCount > 0;
-
+        
         const numberXs = step.length - 'cross'.length;
         const isBackXCrossSolved = (() => {
           if (numberXs === 2) return hasBackColor && hasRightColor;
@@ -270,7 +300,7 @@ const ImageStack = ({position, moves, lineSteps, editableElement}: ImageStackPro
         })();
 
         return (
-          <svg viewBox="-15 -19 30 30" className="w-full border border-1 border-neutral-600 hover:border-primary-100">
+          <svg viewBox="-15 -19 30 30" className="w-full border border-1 border-neutral-600 hover:border-primary-100" stroke="#52525b" strokeWidth="1" fill="none">
             <rect x="-15" y="-19" width="30" height="30" fill="#161018" />
             <polygon points= "0,0 5,-3 0,-6 -5,-3" fill={crossColor} />
             <polygon points= "5,-3 0,-6 5,-9 10,-6" fill={crossColor} />
@@ -308,14 +338,14 @@ const ImageStack = ({position, moves, lineSteps, editableElement}: ImageStackPro
         );
       } else if (step === 'pair') {
         return (
-          <svg viewBox="0 0 24 24" className="w-full border border-1 border-neutral-600 hover:border-primary-100">
+          <svg viewBox="0 0 24 24" className="w-full border border-1 border-neutral-600 hover:border-primary-100" stroke="#52525b" strokeWidth="1" fill="none">
             <polygon points="0,0 24,0 0,24" fill={primaryColors[0]} />
             <polygon points="24,0 24,24 0,24" fill={primaryColors[1]} />
           </svg>
         );
       } else if (step === 'multislot' && primaryColors.length === 3) {
         return (
-          <svg viewBox="0 0 24 24" className="w-full border border-1 border-neutral-600 hover:border-primary-100">
+          <svg viewBox="0 0 24 24" className="w-full border border-1 border-neutral-600 hover:border-primary-100" stroke="#52525b" strokeWidth="1" fill="none">
             <rect x="0" y="0" width="8" height="24" fill={primaryColors[0]} />
             <rect x="8" y="0" width="8" height="24" fill={primaryColors[1]} />
             <rect x="16" y="0" width="8" height="24" fill={primaryColors[2]} />
@@ -323,7 +353,7 @@ const ImageStack = ({position, moves, lineSteps, editableElement}: ImageStackPro
         );
       } else if (step === 'multislot' && primaryColors.length === 4) {
         return (
-          <svg viewBox="0 0 24 24" className="w-full border border-1 border-neutral-600 hover:border-primary-100">
+          <svg viewBox="0 0 24 24" className="w-full border border-1 border-neutral-600 hover:border-primary-100" stroke="#52525b" strokeWidth="1" fill="none">
             <rect x="0" y="0" width="6" height="24" fill={primaryColors[0]} />
             <rect x="6" y="0" width="6" height="24" fill={primaryColors[1]} />
             <rect x="12" y="0" width="6" height="24" fill={primaryColors[2]} />
@@ -335,20 +365,21 @@ const ImageStack = ({position, moves, lineSteps, editableElement}: ImageStackPro
         const getCellColor = (row: number, col: number): string => {
           if (!pattern[row] || pattern[row][col] === undefined) return '#161018';
           const colorNum = pattern[row][col];
-          // Grid numbers run 1-6, map directly to cube colors
+          // Grid numbers run 1-6, map directly to cube face colors from settings
+          const cubeColors = getCurrentCubeColors();
           const colorMap: Record<number, string> = {
-            1: CUBE_COLORS.white,
-            2: CUBE_COLORS.yellow,
-            3: CUBE_COLORS.green,
-            4: '#0085FF', // blue
-            5: CUBE_COLORS.red,
-            6: CUBE_COLORS.orange
+            1: cubeColors.up,     // white/up
+            2: cubeColors.down,   // yellow/down
+            3: cubeColors.front,  // green/front
+            4: cubeColors.back,   // blue/back
+            5: cubeColors.right,  // red/right
+            6: cubeColors.left    // orange/left
           };
           return colorMap[colorNum] || '#161018';
         };
 
         return (
-          <svg viewBox="0 0 24 24" className="w-full border border-1 border-neutral-600 hover:border-primary-100">
+          <svg viewBox="0 0 24 24" className="w-full border border-1 border-neutral-600 hover:border-primary-100" stroke="#52525b" strokeWidth="1" fill="none">
             {/* Row 0 - all outer ring (height 3) */}
             <rect x="0" y="0" width="3" height="3" fill={getCellColor(0, 0)} />
             <rect x="3" y="0" width="6" height="3" fill={getCellColor(0, 1)} />
@@ -388,7 +419,7 @@ const ImageStack = ({position, moves, lineSteps, editableElement}: ImageStackPro
       } else {
         // backup
         return (
-          <svg viewBox="0 0 24 24" className="w-full h-full p-1">
+          <svg viewBox="0 0 24 24" className="w-full h-full p-1" stroke="#52525b" strokeWidth="1" fill="none">
             <circle cx="12" cy="12" r="6" fill={primaryColors[0]} />
           </svg>
         );

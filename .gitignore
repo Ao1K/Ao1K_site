@@ -139,3 +139,4 @@ dist
 amplify_outputs*
 amplifyconfiguration*
 utils/sortedRawAlgs.tsx
+/.vscode/firefox-profile

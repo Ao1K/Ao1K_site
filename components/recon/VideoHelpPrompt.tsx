@@ -1,18 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import Cookies from 'js-cookie';
+import React, { useState } from 'react';
 import Youtube from '../icons/youtube';
 import Close from '../icons/close';
 import YouTubeEmbed from '../YoutubeEmbed';
+import { dismissVideoHelp } from '../../app/actions';
 
-export default function VideoHelpPrompt({ videoId }: { videoId: string }) {
-  const [dismissed, setDismissed] = useState(false);
+export default function VideoHelpPrompt({ videoId, initiallyDismissed = false }: { videoId: string, initiallyDismissed?: boolean }) {
+  const [dismissed, setDismissed] = useState(initiallyDismissed);
   const [isOpen, setIsOpen] = useState(false);
-
-  useEffect(() => {
-    if (Cookies.get('videoHelpDismissed') === 'true') {
-      setDismissed(true);
-    }
-  }, []);
 
   const openVideo = () => {
     setIsOpen(true);
@@ -23,7 +17,7 @@ export default function VideoHelpPrompt({ videoId }: { videoId: string }) {
   };
 
   const closeForever = () => {
-    Cookies.set('videoHelpDismissed', 'true', { expires: 9999 });
+    void dismissVideoHelp();
     setDismissed(true);
   };
 
@@ -37,14 +31,14 @@ export default function VideoHelpPrompt({ videoId }: { videoId: string }) {
         <div className="flex flex-row">
         <div className="flex mt-6 mx-4">
           <button
-            className="flex p-3 bg-primary-800 rounded-l-md text-primary-100 font-regular select-none border border-primary-100"
+            className="flex p-3 bg-primary-800 rounded-l-sm text-primary-100 font-regular select-none border border-primary-100"
             onClick={openVideo}
           >
             <Youtube className="min-w-6 min-h-6 mr-2 text-primary-100" />
             How to use this
           </button>
             <button
-            className="flex p-3 bg-primary-800 rounded-r-md text-red-500 font-regular select-none border border-primary-100 border-l-0 group relative"
+            className="flex p-3 bg-primary-800 rounded-r-sm text-red-500 font-regular select-none border border-primary-100 border-l-0 group relative"
             onClick={closeForever}
             >
             <Close className="w-5 h-5 mt-[2px]" />

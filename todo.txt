@@ -1,18 +1,22 @@
 Informal Bugs/Todo List. Not guaranteed to be complete or accurate.
 ===================================================================
 
-Screenshot scramble box shouldn't have 3-line minimum width, only 1 line.
-
-Typing Uw should be replaced with u. UU --> should make U2
-
-Header can be regular element, not fixed. Not that deep.
-
+Add slot direction to lineStep as an optional param. Pass through to ImageStack (and SuggestionCard?)
+  - Interestingly, the slot start location is obvious during a solve, while slot end location isn't.
+  - Should slot direction be end location for this reason?
 
 Autocomplete for cross. Would need to brute force solutions to partial cross solution input. 
 Or compute a bunch of crosses and just give whatever suggestion still works.
 But we don't wanna just show autocomplete right away. Noisey.
   - Unless user requests it via tab!
 
+  Properties of a cross algorithm
+  - Moves should always move a layer that has a cross piece on it
+  - Reward function should tell if cube is closer to being solved
+    - Look at movecount remaining. Not that deep. Well wait, don't we want to follow a gradient?
+  - Multiple solutions should be returned: ideally around 100
+  - Cross solutions of 1-3+ moves should be a lookup table. Keep in mind multiple solutions exist (R2 L2 and L2 R2)
+  
 Algs page. For your algs. A tab for your recons (click an icon and expand into a whole new page). A profile system. Oofda.
 
 ZBLS autocomplete:
@@ -22,3 +26,12 @@ So we generate a json specifically for ZBLS with these objects:
 {hash: 'abcd', 'eoIndex': 9, alg: "R U R'"}
 Then we search for hash matches only on f2l pieces. The EO is matched separately.
 
+
+Changes for verison 0.6?:
+- Reduced page load times by about half
+- Text substitutions (Uw -> u, UD -> (U D), UF -> U F)
+- Parens got colored
+- Added about 700 f2l algs (counting variants as unique)
+- Better colored previews, gave borders to icons. Unified style between preview and editor
+- Cube Colors menu. Note that previews won't be affected.
+- Better alg suggestion filtering and rendering

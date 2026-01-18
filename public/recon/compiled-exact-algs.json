@@ -1,63 +1,8 @@
 {
-  "timestamp": "2025-12-09T04:19:04.227Z",
+  "timestamp": "2026-01-16T07:20:54.960Z",
   "step": "exact",
-  "totalAlgorithms": 3930,
+  "totalAlgorithms": 4604,
   "algorithms": [
-        {
-      "alg": "R U2' R'",
-      "hash": "cbaiefghdjklchoflqtwabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "y R U2' R'",
-      "hash": "wdcbefghijmlgdkvnqtaabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "y' R U2' R'",
-      "hash": "advbefghioklepajngtwabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "R' U2' R",
-      "hash": "cbakefghijdlelixnqtcabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "y R' U2' R",
-      "hash": "xdcbefghijkmshajnqdwabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "y' R' U2' R",
-      "hash": "adubefghojklgdmbjqtwabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "L U2 L'",
-      "hash": "cladefghijkbulibnqfwabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "y' L U2 L'",
-      "hash": "wdcbefghijmlgdkvnqtaabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "L' U2 L",
-      "hash": "cjadefghibklcrkfnitwabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "y L' U2 L",
-      "hash": "adubefghojklgdmbjqtwabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "y' L' U2 L",
-      "hash": "xdcbefghijkmshajnqdwabcdef",
-      "step": "f2l"
-    },
     {
       "alg": "R U' R' U' R' U' R",
       "hash": "idkbefghajclkdxhaqtoabcdef",
@@ -2819,23 +2764,23 @@
       "step": "f2l"
     },
     {
-      "alg": "F' r' F2 r F R U R",
-      "hash": "ofdnemghkjulwogdcqtjabcdef",
+      "alg": "F' r' F2 r F R U R'",
+      "hash": "omdnefghujkljcgdoqtwabcdef",
       "step": "f2l"
     },
     {
-      "alg": "U F' r' F2 r F R U R",
-      "hash": "pfaoenghkjulwolidqtcabcdef",
+      "alg": "U F' r' F2 r F R U R'",
+      "hash": "pnaoefghujklcdlioqtwabcdef",
       "step": "f2l"
     },
     {
-      "alg": "U' F' r' F2 r F R U R",
-      "hash": "nfcmepghkjulwofcjqtiabcdef",
+      "alg": "U' F' r' F2 r F R U R'",
+      "hash": "npcmefghujklijfcoqtwabcdef",
       "step": "f2l"
     },
     {
-      "alg": "U2 F' r' F2 r F R U R",
-      "hash": "mfbpeoghkjulwoajiqtdabcdef",
+      "alg": "U2 F' r' F2 r F R U R'",
+      "hash": "mobpefghujkldiajoqtwabcdef",
       "step": "f2l"
     },
     {
@@ -2896,26 +2841,6 @@
     {
       "alg": "U2 F' R' U2 R U F",
       "hash": "cukaefghpjblocxheqtlabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "F' R' U2' R2 U2 R2' U R U2' R' F R",
-      "hash": "aedbifghkjclkdwbhmtqabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "U F' R' U2' R2 U2 R2' U R U2' R' F R",
-      "hash": "beacifghkjdlbiwekmtqabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "U' F' R' U2' R2 U2 R2' U R U2' R' F R",
-      "hash": "decaifghkjblhcwkemtqabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "U2 F' R' U2' R2 U2 R2' U R U2' R' F R",
-      "hash": "cebdifghkjalejwhbmtqabcdef",
       "step": "f2l"
     },
     {
@@ -5651,46 +5576,6 @@
     {
       "alg": "y' U2 L U' L' U2 L' U L U' L' U' L",
       "hash": "baxcefghijpkuifxnqclabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "L U' L' U2 R U' R' U F' L' U2 L",
-      "hash": "lpnavfghqikcanlepsgwabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "U L U' L' U2 R U' R' U F' L' U2 L",
-      "hash": "lmobvfghqikdfnahpslwabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "U' L U' L' U2 R U' R' U F' L' U2 L",
-      "hash": "lomdvfghqikblngbpsfwabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "U2 L U' L' U2 R U' R' U F' L' U2 L",
-      "hash": "lnpcvfghqikagnfkpsawabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "L U' L' U2 r' U2 R2 U R2' U r",
-      "hash": "bdmiefghxjkcafoltqgwabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "U L U' L' U2 r' U2 R2 U R2' U r",
-      "hash": "caniefghxjkdfgoatqlwabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "U' L U' L' U2 r' U2 R2 U R2' U r",
-      "hash": "acpiefghxjkblaogtqfwabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "U2 L U' L' U2 r' U2 R2 U R2' U r",
-      "hash": "dboiefghxjkagloftqawabcdef",
       "step": "f2l"
     },
     {
@@ -9724,123 +9609,123 @@
       "step": "f2l"
     },
     {
-      "alg": "R D R U2 R' D' R",
-      "hash": "cdafebghkjilwbpnhlteabcdef",
+      "alg": "R' D R U2 R' D' R",
+      "hash": "cdabefghijklebphnltwabcdef",
       "step": "f2l"
     },
     {
-      "alg": "y R D R U2 R' D' R",
-      "hash": "gdabefchijlkwteoaqhkabcdef",
+      "alg": "y R' D R U2 R' D' R",
+      "hash": "cdabefghijklkheoaqtwabcdef",
       "step": "f2l"
     },
     {
-      "alg": "y' R D R U2 R' D' R",
-      "hash": "cdebafghjiklkuqnbegwabcdef",
+      "alg": "y' R' D R U2 R' D' R",
+      "hash": "cdabefghijklkuebnqgwabcdef",
       "step": "f2l"
     },
     {
-      "alg": "U R D R U2 R' D' R",
-      "hash": "dabfecghkjilwepnkathabcdef",
+      "alg": "U R' D R U2 R' D' R",
+      "hash": "dabcefghijklhepknatwabcdef",
       "step": "f2l"
     },
     {
-      "alg": "U' R D R U2 R' D' R",
-      "hash": "bcdfeaghkjilwkpnegtbabcdef",
+      "alg": "U' R' D R U2 R' D' R",
+      "hash": "bcdaefghijklbkpengtwabcdef",
       "step": "f2l"
     },
     {
-      "alg": "U2 R D R U2 R' D' R",
-      "hash": "abcfedghkjilwhpnbftkabcdef",
+      "alg": "U2 R' D R U2 R' D' R",
+      "hash": "abcdefghijklkhpbnftwabcdef",
       "step": "f2l"
     },
     {
-      "alg": "y U R D R U2 R' D' R",
-      "hash": "gabcefdhijlkwthofqkbabcdef",
+      "alg": "y U R' D R U2 R' D' R",
+      "hash": "dabcefghijklbkhofqtwabcdef",
       "step": "f2l"
     },
     {
-      "alg": "y U' R D R U2 R' D' R",
-      "hash": "gcdaefbhijlkwtbolqehabcdef",
+      "alg": "y U' R' D R U2 R' D' R",
+      "hash": "bcdaefghijklhebolqtwabcdef",
       "step": "f2l"
     },
     {
-      "alg": "y U2 R D R U2 R' D' R",
-      "hash": "gbcdefahijlkwtkogqbeabcdef",
+      "alg": "y U2 R' D R U2 R' D' R",
+      "hash": "abcdefghijklebkogqtwabcdef",
       "step": "f2l"
     },
     {
-      "alg": "y' U R D R U2 R' D' R",
-      "hash": "daecbfghjiklbuqnehlwabcdef",
+      "alg": "y' U R' D R U2 R' D' R",
+      "hash": "dabcefghijklbuhenqlwabcdef",
       "step": "f2l"
     },
     {
-      "alg": "y' U' R D R U2 R' D' R",
-      "hash": "bceadfghjiklhuqnkbfwabcdef",
+      "alg": "y' U' R' D R U2 R' D' R",
+      "hash": "bcdaefghijklhubknqfwabcdef",
       "step": "f2l"
     },
     {
-      "alg": "y' U2 R D R U2 R' D' R",
-      "hash": "abedcfghjikleuqnhkawabcdef",
+      "alg": "y' U2 R' D R U2 R' D' R",
+      "hash": "abcdefghijkleukhnqawabcdef",
       "step": "f2l"
     },
     {
-      "alg": "R D R' U R D R'",
-      "hash": "bcdagfekijhlvrbenijuabcdef",
+      "alg": "R D' R' U R D R'",
+      "hash": "bcdaefghijklshbenqjwabcdef",
       "step": "f2l"
     },
     {
-      "alg": "y R D R' U R D R'",
-      "hash": "bcdaxhgfijkqhumejcpwabcdef",
+      "alg": "y R D' R' U R D R'",
+      "hash": "bcdaefghijklhrkenctwabcdef",
       "step": "f2l"
     },
     {
-      "alg": "y' R D R' U R D R'",
-      "hash": "bcdaehufsjklskbovqdiabcdef",
+      "alg": "y' R D' R' U R D R'",
+      "hash": "bcdaefghijklekbxnqtiabcdef",
       "step": "f2l"
     },
     {
-      "alg": "U R D R' U R D R'",
-      "hash": "cdabgfekijhlvrehnjcuabcdef",
+      "alg": "U R D' R' U R D R'",
+      "hash": "cdabefghijklskehnqcwabcdef",
       "step": "f2l"
     },
     {
-      "alg": "U' R D R' U R D R'",
-      "hash": "abcdgfekijhlvrkbndiuabcdef",
+      "alg": "U' R D' R' U R D R'",
+      "hash": "abcdefghijklsekbnqiwabcdef",
       "step": "f2l"
     },
     {
-      "alg": "U2 R D R' U R D R'",
-      "hash": "dabcgfekijhlvrhkncduabcdef",
+      "alg": "U2 R D' R' U R D R'",
+      "hash": "dabcefghijklsbhknqdwabcdef",
       "step": "f2l"
     },
     {
-      "alg": "y U R D R' U R D R'",
-      "hash": "cdabxhgfijkqkumhcdpwabcdef",
+      "alg": "y U R D' R' U R D R'",
+      "hash": "cdabefghijklkrbhndtwabcdef",
       "step": "f2l"
     },
     {
-      "alg": "y U' R D R' U R D R'",
-      "hash": "abcdxhgfijkqeumbijpwabcdef",
+      "alg": "y U' R D' R' U R D R'",
+      "hash": "abcdefghijklerhbnjtwabcdef",
       "step": "f2l"
     },
     {
-      "alg": "y U2 R D R' U R D R'",
-      "hash": "dabcxhgfijkqbumkdipwabcdef",
+      "alg": "y U2 R D' R' U R D R'",
+      "hash": "dabcefghijklbreknitwabcdef",
       "step": "f2l"
     },
     {
-      "alg": "y' U R D R' U R D R'",
-      "hash": "cdabehufsjklsbeovqijabcdef",
+      "alg": "y' U R D' R' U R D R'",
+      "hash": "cdabefghijklhbexnqtjabcdef",
       "step": "f2l"
     },
     {
-      "alg": "y' U' R D R' U R D R'",
-      "hash": "abcdehufsjklshkovqcdabcdef",
+      "alg": "y' U' R D' R' U R D R'",
+      "hash": "abcdefghijklbhkxnqtdabcdef",
       "step": "f2l"
     },
     {
-      "alg": "y' U2 R D R' U R D R'",
-      "hash": "dabcehufsjklsehovqjcabcdef",
+      "alg": "y' U2 R D' R' U R D R'",
+      "hash": "dabcefghijklkehxnqtcabcdef",
       "step": "f2l"
     },
     {
@@ -16269,26 +16154,6 @@
       "step": "f2l"
     },
     {
-      "alg": "R' U R U' R' U' R U2 R' F'",
-      "hash": "nadkvighqofljdiwpctoabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "U R' U R U' R' U' R U2 R' F'",
-      "hash": "obakvighqpflcijwpdtoabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "U' R' U R U' R' U' R U2 R' F'",
-      "hash": "mdckvighqnflicdwpjtoabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "U2 R' U R U' R' U' R U2 R' F'",
-      "hash": "pcbkvighqmfldjcwpitoabcdef",
-      "step": "f2l"
-    },
-    {
       "alg": "R' U R U2 F U F'",
       "hash": "dkbvefghimclbepgnxtjabcdef",
       "step": "f2l"
@@ -16526,66 +16391,6 @@
     {
       "alg": "U2 R' U R2 U2 R' U F' U' F",
       "hash": "dokiefghnjaljioawqtdabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "R' U R2 U2 R' U R U R' U R U' R'",
-      "hash": "adibefghkjclvgnbfqtjabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "y R' U R2 U2 R' U R U R' U R U' R'",
-      "hash": "cbawefghijlpeulwnqcgabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "y' R' U R2 U2 R' U R U R' U R U' R'",
-      "hash": "cvadefghniklfqkoiatwabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "U R' U R2 U2 R' U R U R' U R U' R'",
-      "hash": "baicefghkjdlvlnegqtcabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "U' R' U R2 U2 R' U R U R' U R U' R'",
-      "hash": "dciaefghkjblvfnkaqtiabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "U2 R' U R2 U2 R' U R U R' U R U' R'",
-      "hash": "cbidefghkjalvanhlqtdabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "y U R' U R2 U2 R' U R U R' U R U' R'",
-      "hash": "dcbwefghijlmhuawnqdlabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "y U' R' U R2 U2 R' U R U R' U R U' R'",
-      "hash": "badwefghijlobugwnqjfabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "y U2 R' U R2 U2 R' U R U R' U R U' R'",
-      "hash": "adcwefghijlnkufwnqiaabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "y' U R' U R2 U2 R' U R U R' U R U' R'",
-      "hash": "dvbaefghoiklgqbojftwabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "y' U' R' U R2 U2 R' U R U R' U R U' R'",
-      "hash": "bvdcefghmiklaqhodltwabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "y' U2 R' U R2 U2 R' U R U R' U R U' R'",
-      "hash": "avcbefghpikllqeocgtwabcdef",
       "step": "f2l"
     },
     {
@@ -16974,16 +16779,6 @@
       "step": "f2l"
     },
     {
-      "alg": "y R' U' R U R D R' U' R D' R'",
-      "hash": "dacxefghijknbhsknqdwabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "y' R' U' R U R D R' U' R D' R'",
-      "hash": "aubcefghpjklmehbjqtwabcdef",
-      "step": "f2l"
-    },
-    {
       "alg": "U R' U' R U R D R' U' R D' R'",
       "hash": "ackdefghijblhxkbnqtdabcdef",
       "step": "f2l"
@@ -16996,36 +16791,6 @@
     {
       "alg": "U2 R' U' R U R D R' U' R D' R'",
       "hash": "bdkaefghijclkxbenqtiabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "y U R' U' R U R D R' U' R D' R'",
-      "hash": "abdxefghijkoeksbnqiwabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "y U' R' U' R U R D R' U' R D' R'",
-      "hash": "cdbxefghijkmkeshnqcwabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "y U2 R' U' R U R D R' U' R D' R'",
-      "hash": "bcaxefghijkphbsenqjwabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "y' U R' U' R U R D R' U' R D' R'",
-      "hash": "bucdefghmjklmhkecqtwabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "y' U' R' U' R U R D R' U' R D' R'",
-      "hash": "duabefghojklmbekiqtwabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "y' U2 R' U' R U R D R' U' R D' R'",
-      "hash": "cudaefghnjklmkbhdqtwabcdef",
       "step": "f2l"
     },
     {
@@ -19314,23 +19079,43 @@
       "step": "f2l"
     },
     {
-      "alg": "y r' U r' F' R2",
-      "hash": "ebgipfchjmlkqtwkeahoabcdef",
+      "alg": "y r' U r' F' r2",
+      "hash": "pbciefghmjklahoekqtwabcdef",
       "step": "f2l"
     },
     {
-      "alg": "y U r' U r' F' R2",
-      "hash": "ecgimfdhjnlkqtwbhfkoabcdef",
+      "alg": "y U r' U r' F' r2",
+      "hash": "mcdiefghnjklfkohbqtwabcdef",
       "step": "f2l"
     },
     {
-      "alg": "y U' r' U r' F' R2",
-      "hash": "eagiofbhjplkqtwhbleoabcdef",
+      "alg": "y U' r' U r' F' r2",
+      "hash": "oabiefghpjklleobhqtwabcdef",
       "step": "f2l"
     },
     {
-      "alg": "y U2 r' U r' F' R2",
-      "hash": "edginfahjolkqtwekgboabcdef",
+      "alg": "y U2 r' U r' F' r2",
+      "hash": "ndaiefghojklgbokeqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' r' U r' F' r2",
+      "hash": "alndefghijkoukgbnqewabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U r' U r' F' r2",
+      "hash": "bloaefghijkpublenqhwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' r' U r' F' r2",
+      "hash": "dlmcefghijknuhfknqbwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 r' U r' F' r2",
+      "hash": "clpbefghijkmueahnqkwabcdef",
       "step": "f2l"
     },
     {
@@ -19574,63 +19359,23 @@
       "step": "f2l"
     },
     {
-      "alg": "L U' L' U2 L U' L",
-      "hash": "cbdhefgailkjjsqaniewabcdef",
+      "alg": "L U' L' U2 L U' L'",
+      "hash": "cbdaefghijkljsienqawabcdef",
       "step": "f2l"
     },
     {
-      "alg": "U L U' L' U2 L U' L",
-      "hash": "dcahefgbilkjcsqfnjhwabcdef",
+      "alg": "U L U' L' U2 L U' L'",
+      "hash": "dcabefghijklcsjhnqfwabcdef",
       "step": "f2l"
     },
     {
-      "alg": "U' L U' L' U2 L U' L",
-      "hash": "bachefgdilkjisqlndbwabcdef",
+      "alg": "U' L U' L' U2 L U' L'",
+      "hash": "bacdefghijklisdbnqlwabcdef",
       "step": "f2l"
     },
     {
-      "alg": "U2 L U' L' U2 L U' L",
-      "hash": "adbhefgcilkjdsqgnckwabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "R' U R U2 R' U R",
-      "hash": "cabdefghijklblvgnqtdabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "U R' U R U2 R' U R",
-      "hash": "dbcaefghijkleavlnqtiabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "U' R' U R U2 R' U R",
-      "hash": "bdacefghijklkgvfnqtcabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "U2 R' U R U2 R' U R",
-      "hash": "acdbefghijklhfvanqtjabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "L U' L' U2 L U' L",
-      "hash": "cbdhefgailkjjsqaniewabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "U L U' L' U2 L U' L",
-      "hash": "dcahefgbilkjcsqfnjhwabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "U' L U' L' U2 L U' L",
-      "hash": "bachefgdilkjisqlndbwabcdef",
-      "step": "f2l"
-    },
-    {
-      "alg": "U2 L U' L' U2 L U' L",
-      "hash": "adbhefgcilkjdsqgnckwabcdef",
+      "alg": "U2 L U' L' U2 L U' L'",
+      "hash": "adbcefghijkldscknqgwabcdef",
       "step": "f2l"
     },
     {
@@ -19651,6 +19396,3631 @@
     {
       "alg": "U2 R' U R U2 R' U R",
       "hash": "acdbefghijklhfvanqtjabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "R U2' R'",
+      "hash": "cbaiefghdjklchoflqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y R U2' R'",
+      "hash": "wdcbefghijmlgdkvnqtaabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' R U2' R'",
+      "hash": "advbefghioklepajngtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "R' U2' R",
+      "hash": "cbakefghijdlelixnqtcabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y R' U2' R",
+      "hash": "xdcbefghijkmshajnqdwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' R' U2' R",
+      "hash": "adubefghojklgdmbjqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L U2 L'",
+      "hash": "cladefghijkbulibnqfwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' L U2 L'",
+      "hash": "wdcbefghijmlgdkvnqtaabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L' U2 L",
+      "hash": "cjadefghibklcrkfnitwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y L' U2 L",
+      "hash": "adubefghojklgdmbjqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' L' U2 L",
+      "hash": "xdcbefghijkmshajnqdwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L U' L' U' L' U' L",
+      "hash": "jdlbefghiakcrbejnugwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y L U' L' U' L' U' L",
+      "hash": "cuavefghnpklcmehpltwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' L U' L' U' L' U' L",
+      "hash": "cwaxefghijnpkbisnqvfabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U L U' L' U' L' U' L",
+      "hash": "jalcefghibkdrehcnulwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' L U' L' U' L' U' L",
+      "hash": "jclaefghidkbrkbinufwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 L U' L' U' L' U' L",
+      "hash": "jbldefghickarhkdnuawabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U L U' L' U' L' U' L",
+      "hash": "dubvefghomkldmhkpatwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' L U' L' U' L' U' L",
+      "hash": "budvefghmokljmbepgtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 L U' L' U' L' U' L",
+      "hash": "aucvefghpnklimkbpftwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U L U' L' U' L' U' L",
+      "hash": "dwbxefghijombejsnqvgabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' L U' L' U' L' U' L",
+      "hash": "bwdxefghijmohkdsnqvaabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 L U' L' U' L' U' L",
+      "hash": "awcxefghijpnehcsnqvlabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "R U R' U' R U R' U' R U R'",
+      "hash": "bcdaefghijkllibneqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y R U R' U' R U R' U' R U R'",
+      "hash": "bcdaefghijklwajenqthabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' R U R' U' R U R' U' R U R'",
+      "hash": "bcdaefghijkldkqgnbtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U R U R' U' R U R' U' R U R'",
+      "hash": "cdabefghijklajenhqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' R U R' U' R U R' U' R U R'",
+      "hash": "abcdefghijklgdknbqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 R U R' U' R U R' U' R U R'",
+      "hash": "dabcefghijklfchnkqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U R U R' U' R U R' U' R U R'",
+      "hash": "cdabefghijklwfchnqtkabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' R U R' U' R U R' U' R U R'",
+      "hash": "abcdefghijklwlibnqteabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 R U R' U' R U R' U' R U R'",
+      "hash": "dabcefghijklwgdknqtbabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U R U R' U' R U R' U' R U R'",
+      "hash": "cdabefghijklibqlnetwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' R U R' U' R U R' U' R U R'",
+      "hash": "abcdefghijklchqfnktwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 R U R' U' R U R' U' R U R'",
+      "hash": "dabcefghijkljeqanhtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "R U R' U' R U2 R'",
+      "hash": "biacefghdjklcjfngqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y R U R' U' R U2 R'",
+      "hash": "dcwbefghijmlwdcgnqtlabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' R U R' U' R U2 R'",
+      "hash": "vdbaefghiokliaqjnftwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U R U R' U' R U2 R'",
+      "hash": "cibdefghajkldcgnlqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' R U R' U' R U2 R'",
+      "hash": "aidbefghcjkljianfqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 R U R' U' R U2 R'",
+      "hash": "dicaefghbjklidlnaqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U R U R' U' R U2 R'",
+      "hash": "adwcefghijnlwidlnqtaabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' R U R' U' R U2 R'",
+      "hash": "cbwaefghijplwcjfnqtgabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 R U R' U' R U2 R'",
+      "hash": "bawdefghijolwjianqtfabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U R U R' U' R U2 R'",
+      "hash": "vacbefghipkljfqcngtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' R U R' U' R U2 R'",
+      "hash": "vcadefghinkldlqinatwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 R U R' U' R U2 R'",
+      "hash": "vbdcefghimklcgqdnltwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "R U R' U' R U2 R' U' R U R'",
+      "hash": "dbacefghijkllcfhoqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "R U' R' U R' U' R U' R' U R",
+      "hash": "bdkcefghajilkfxiaqtmabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y R U' R' U R' U' R U' R' U R",
+      "hash": "dcaxefghijnkjbgsnqxfabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' R U' R' U R' U' R U' R' U R",
+      "hash": "cubaefghjpklamdhrltwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U R U' R' U R' U' R U' R' U R",
+      "hash": "cakdefghbjilbgxjfqtmabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' R U' R' U R' U' R U' R' U R",
+      "hash": "ackbefghdjilhaxdlqtmabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 R U' R' U R' U' R U' R' U R",
+      "hash": "dbkaefghcjilelxcgqtmabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U R U' R' U R' U' R U' R' U R",
+      "hash": "adbxefghijokcelsnqxgabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' R U' R' U R' U' R U' R' U R",
+      "hash": "cbdxefghijmkikfsnqxaabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 R U' R' U R' U' R U' R' U R",
+      "hash": "bacxefghijpkdhasnqxlabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U R U' R' U R' U' R U' R' U R",
+      "hash": "ducbefghjmklfmikratwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' R U' R' U R' U' R U' R' U R",
+      "hash": "buadefghjokllmcergtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 R U' R' U R' U' R U' R' U R",
+      "hash": "audcefghjnklgmjbrftwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "R U' R' U' R U R'",
+      "hash": "adicefghbjklimfbjqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y R U' R' U' R U R'",
+      "hash": "dbawefghijolejxgnqtcabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' R U' R' U' R U R'",
+      "hash": "cvbdefghimklrakdnitwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U R U' R' U' R U R'",
+      "hash": "baidefghcjkljmgecqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' R U' R' U' R U R'",
+      "hash": "dcibefghajkldmakiqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 R U' R' U' R U R'",
+      "hash": "cbiaefghdjklcmlhdqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U R U' R' U' R U R'",
+      "hash": "acbwefghijplhcxlnqtdabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' R U' R' U' R U R'",
+      "hash": "cadwefghijnlbixfnqtjabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 R U' R' U' R U R'",
+      "hash": "bdcwefghijmlkdxanqtiabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U R U' R' U' R U R'",
+      "hash": "dvcaefghinklrfbinjtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' R U' R' U' R U R'",
+      "hash": "bvacefghipklrlhcndtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 R U' R' U' R U R'",
+      "hash": "avdbefghioklrgejnctwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "R U' R' U' R U' R' U R U R'",
+      "hash": "caidefghbjklilcfnqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y R U' R' U' R U' R' U R U R'",
+      "hash": "adbwefghijolgjadnqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' R U' R' U' R U' R' U R U R'",
+      "hash": "dvcbefghimklgjadnqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U R U' R' U' R U' R' U R U R'",
+      "hash": "dbiaefghcjkljadgnqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' R U' R' U' R U' R' U R U R'",
+      "hash": "bdicefghajkldgjanqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 R U' R' U' R U' R' U R U R'",
+      "hash": "acibefghdjklcfilnqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U R U' R' U' R U' R' U R U R'",
+      "hash": "bacwefghijpllcfinqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' R U' R' U' R U' R' U R U R'",
+      "hash": "dcawefghijnlfilcnqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 R U' R' U' R U' R' U R U R'",
+      "hash": "cbdwefghijmladgjnqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U R U' R' U' R U' R' U R U R'",
+      "hash": "avdcefghinkllcfinqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' R U' R' U' R U' R' U R U R'",
+      "hash": "cvbaefghipklfilcnqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 R U' R' U' R U' R' U R U R'",
+      "hash": "bvadefghiokladgjnqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "R U' R' U' R U2 R'",
+      "hash": "bdcaefghijklemblgqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y R U' R' U' R U2 R'",
+      "hash": "bcadefghijklahxenqtlabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' R U' R' U' R U2 R'",
+      "hash": "cbdaefghijklrkgbnftwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U R U' R' U' R U2 R'",
+      "hash": "cadbefghijklhmealqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' R U' R' U' R U2 R'",
+      "hash": "acbdefghijklbmkgfqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 R U' R' U' R U2 R'",
+      "hash": "dbacefghijklkmhfaqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U R U' R' U' R U2 R'",
+      "hash": "cdbaefghijklfkxhnqtaabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' R U' R' U' R U2 R'",
+      "hash": "abdcefghijkllexbnqtgabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 R U' R' U' R U2 R'",
+      "hash": "dacbefghijklgbxknqtfabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U R U' R' U' R U2 R'",
+      "hash": "dcabefghijklrblengtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' R U' R' U' R U2 R'",
+      "hash": "bacdefghijklrhfknatwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 R U' R' U' R U2 R'",
+      "hash": "adbcefghijklreahnltwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "R U' R' U2 R U R'",
+      "hash": "acbiefghdjklnkhbeqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y R U' R' U2 R U R'",
+      "hash": "wbdcefghijmlewbknqthabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' R U' R' U2 R U R'",
+      "hash": "bavdefghioklhekqnbtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U R U' R' U2 R U R'",
+      "hash": "bdciefghajklnbkehqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' R U' R' U2 R U R'",
+      "hash": "dbaiefghcjklnhekbqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 R U' R' U2 R U R'",
+      "hash": "cadiefghbjklnebhkqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U R U' R' U2 R U R'",
+      "hash": "wcadefghijnlhwebnqtkabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' R U' R' U2 R U R'",
+      "hash": "wacbefghijplbwkhnqteabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 R U' R' U2 R U R'",
+      "hash": "wdbaefghijolkwhenqtbabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U R U' R' U2 R U R'",
+      "hash": "cbvaefghipklkhbqnetwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' R U' R' U2 R U R'",
+      "hash": "advcefghinklebhqnktwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 R U' R' U2 R U R'",
+      "hash": "dcvbefghimklbkeqnhtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "R U' R' U2 R' U R",
+      "hash": "kcbiefghajdlfvhjaqtnabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y R U' R' U2 R' U R",
+      "hash": "wxdcefghijnmcguknqwfabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' R U' R' U2 R' U R",
+      "hash": "bavuefghopkloeiaqltwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U R U' R' U2 R' U R",
+      "hash": "kdciefghbjalgvkcfqtnabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' R U' R' U2 R' U R",
+      "hash": "kbaiefghdjclaveilqtnabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 R U' R' U2 R' U R",
+      "hash": "kadiefghcjbllvbdgqtnabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U R U' R' U2 R' U R",
+      "hash": "wxadefghijondlubnqwgabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' R U' R' U2 R' U R",
+      "hash": "wxcbefghijmpjfuhnqwaabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 R U' R' U2 R' U R",
+      "hash": "wxbaefghijpoiauenqwlabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U R U' R' U2 R' U R",
+      "hash": "cbvuefghpmklohjfqatwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' R U' R' U2 R' U R",
+      "hash": "advuefghnoklobdlqgtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 R U' R' U2 R' U R",
+      "hash": "dcvuefghmnklokcgqftwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "R U' R' U2 R' U R U' R' U' R",
+      "hash": "bkdcefghajiljgmvaqtdabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y R U' R' U2 R' U R U' R' U' R",
+      "hash": "dcxaefghijnkuclxnqifabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' R U' R' U2 R' U R U' R' U' R",
+      "hash": "ucbaefghjpklfroicltwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U R U' R' U2 R' U R U' R' U' R",
+      "hash": "ckadefghbjilclmvfqtiabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' R U' R' U2 R' U R U' R' U' R",
+      "hash": "akcbefghdjilifmvlqtcabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 R U' R' U2 R' U R U' R' U' R",
+      "hash": "dkbaefghcjildamvgqtjabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U R U' R' U2 R' U R U' R' U' R",
+      "hash": "adxbefghijokudaxnqjgabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' R U' R' U2 R' U R U' R' U' R",
+      "hash": "cbxdefghijmkujgxnqdaabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 R U' R' U2 R' U R U' R' U' R",
+      "hash": "baxcefghijpkuifxnqclabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U R U' R' U2 R' U R U' R' U' R",
+      "hash": "udcbefghjmklgrojdatwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' R U' R' U2 R' U R U' R' U' R",
+      "hash": "ubadefghjoklarodjgtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 R U' R' U2 R' U R U' R' U' R",
+      "hash": "uadcefghjnkllrociftwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "R U2 R' U' R U2 R'",
+      "hash": "bcidefghajklmckdgqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y R U2 R' U' R U2 R'",
+      "hash": "acdwefghijnlixdbnqtlabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' R U2 R' U' R U2 R'",
+      "hash": "bvcaefghipkljhcrnftwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U R U2 R' U' R U2 R'",
+      "hash": "cdiaefghbjklmdbilqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' R U2 R' U' R U2 R'",
+      "hash": "abicefghdjklmjhcfqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 R U2 R' U' R U2 R'",
+      "hash": "daibefghcjklmiejaqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U R U2 R' U' R U2 R'",
+      "hash": "bdawefghijoljxienqtaabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' R U2 R' U' R U2 R'",
+      "hash": "dbcwefghijmldxcknqtgabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 R U2 R' U' R U2 R'",
+      "hash": "cabwefghijplcxjhnqtfabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U R U2 R' U' R U2 R'",
+      "hash": "cvdbefghimklckdrngtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' R U2 R' U' R U2 R'",
+      "hash": "avbdefghiokliejrnatwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 R U2 R' U' R U2 R'",
+      "hash": "dvacefghinkldbirnltwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "R U2 R2 U R",
+      "hash": "kbicefghdjalcvfilqtmabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y R U2 R2 U R",
+      "hash": "dxcwefghijmnjdugnqxaabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' R U2 R2 U R",
+      "hash": "avbuefghpokloadjrgtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U R U2 R2 U R",
+      "hash": "kcidefghajbldvgjaqtmabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' R U2 R2 U R",
+      "hash": "kaibefghcjdljvadgqtmabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 R U2 R2 U R",
+      "hash": "kdiaefghbjclivlcfqtmabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U R U2 R2 U R",
+      "hash": "axdwefghijnociulnqxfabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' R U2 R2 U R",
+      "hash": "cxbwefghijpmicufnqxlabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 R U2 R2 U R",
+      "hash": "bxawefghijopdjuanqxgabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U R U2 R2 U R",
+      "hash": "bvcuefghmpkloficrltwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' R U2 R2 U R",
+      "hash": "dvauefghonklolcirftwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 R U2 R2 U R",
+      "hash": "cvduefghnmklogjdratwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "R U2 R2 U2 R U' R' U R",
+      "hash": "iackefghdjblxdialqtoabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y R U2 R2 U2 R U' R' U R",
+      "hash": "xwbdefghijmofsijnqvaabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' R U2 R2 U2 R U' R' U R",
+      "hash": "dbuvefghmoklcdlmpgtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U R U2 R2 U2 R U' R' U R",
+      "hash": "ibdkefghajclxijfaqtoabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' R U2 R2 U2 R U' R' U R",
+      "hash": "idbkefghcjalxcdlgqtoabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 R U2 R2 U2 R U' R' U R",
+      "hash": "icakefghbjdlxjcgfqtoabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U R U2 R2 U2 R U' R' U R",
+      "hash": "xwcaefghijnpgsjcnqvfabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' R U2 R2 U2 R U' R' U R",
+      "hash": "xwacefghijpnasdinqvlabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 R U2 R2 U2 R U' R' U R",
+      "hash": "xwdbefghijomlscdnqvgabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U R U2 R2 U2 R U' R' U R",
+      "hash": "acuvefghnpkldiampltwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' R U2 R2 U2 R U' R' U R",
+      "hash": "cauvefghpnkljcgmpftwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 R U2 R2 U2 R U' R' U R",
+      "hash": "bduvefghomklijfmpatwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "R' U R U' R U2 R'",
+      "hash": "bkaiefghdjclceohwqtjabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y R' U R U' R U2 R'",
+      "hash": "wcxbefghijmpkdhvnqctabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' R' U R U' R U2 R'",
+      "hash": "udvaefghnoklbpejintwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U R' U R U' R U2 R'",
+      "hash": "ckbiefghajdldhokwqtcabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' R' U R U' R U2 R'",
+      "hash": "akdiefghcjbljboewqtiabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 R' U R U' R U2 R'",
+      "hash": "dkciefghbjalikobwqtdabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U R' U R U' R U2 R'",
+      "hash": "wdxcefghijnmbikvnqdtabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' R' U R U' R U2 R'",
+      "hash": "wbxaefghijpohcevnqjtabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 R' U R U' R U2 R'",
+      "hash": "waxdefghijonejbvnqitabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U R' U R U' R U2 R'",
+      "hash": "uavbefghopklephcjntwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' R' U R U' R U2 R'",
+      "hash": "ucvdefghmnklkpbidntwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 R' U R U' R U2 R'",
+      "hash": "ubvcefghpmklhpkdcntwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "R' U R U' R' U R U' R' U R",
+      "hash": "bcdaefghijkldwbgnqtkabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y R' U R U' R' U R U' R' U R",
+      "hash": "bcdaefghijkllitenqbwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' R' U R U' R' U R U' R' U R",
+      "hash": "bcdaefghijklnkfchqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U R' U R U' R' U R U' R' U R",
+      "hash": "cdabefghijkliwelnqtbabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' R' U R U' R' U R U' R' U R",
+      "hash": "abcdefghijklcwkfnqthabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 R' U R U' R' U R U' R' U R",
+      "hash": "dabcefghijkljwhanqteabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U R' U R U' R' U R U' R' U R",
+      "hash": "cdabefghijklajthnqewabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' R' U R U' R' U R U' R' U R",
+      "hash": "abcdefghijklgdtbnqkwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 R' U R U' R' U R U' R' U R",
+      "hash": "dabcefghijklfctknqhwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U R' U R U' R' U R U' R' U R",
+      "hash": "cdabefghijklnbgdkqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' R' U R U' R' U R U' R' U R",
+      "hash": "abcdefghijklnhajeqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 R' U R U' R' U R U' R' U R",
+      "hash": "dabcefghijklnelibqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "R' U R y' U2 R' U R U' R' U' R",
+      "hash": "uadkefghnjclfiocwqtjabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U R' U R y' U2 R' U R U' R' U' R",
+      "hash": "ubakefghojdlgjodwqtcabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' R' U R y' U2 R' U R U' R' U' R",
+      "hash": "udckefghmjbladojwqtiabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 R' U R y' U2 R' U R U' R' U' R",
+      "hash": "ucbkefghpjallcoiwqtdabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y R' U R U2' R' U R",
+      "hash": "adbcefghijklleaunqiwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' R' U R U2' R' U R",
+      "hash": "dacbefghijklgofkcqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U R' U R U2' R' U R",
+      "hash": "bacdefghijklahfunqjwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' R' U R U2' R' U R",
+      "hash": "dcabefghijklgblunqdwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 R' U R U2' R' U R",
+      "hash": "cbdaefghijklfkgunqcwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U R' U R U2' R' U R",
+      "hash": "abdcefghijkllogbdqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' R' U R U2' R' U R",
+      "hash": "cdbaefghijklfoahjqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 R' U R U2' R' U R",
+      "hash": "bcadefghijklaoleiqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "R' U R2 U R' U R U R'",
+      "hash": "daibefghkjclmicfxqtjabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y R' U R2 U R' U R U R'",
+      "hash": "cabwefghijlpgxjdnqcsabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' R' U R2 U R' U R U R'",
+      "hash": "dvacefghnikldjarimtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U R' U R2 U R' U R U R'",
+      "hash": "abicefghkjdlmjdgxqtcabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' R' U R2 U R' U R U R'",
+      "hash": "cdiaefghkjblmdjaxqtiabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 R' U R2 U R' U R U R'",
+      "hash": "bcidefghkjalmcilxqtdabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U R' U R2 U R' U R U R'",
+      "hash": "dbcwefghijlmlxcinqdsabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' R' U R2 U R' U R U R'",
+      "hash": "bdawefghijlofxicnqjsabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 R' U R2 U R' U R U R'",
+      "hash": "acdwefghijlnaxdjnqisabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U R' U R2 U R' U R U R'",
+      "hash": "avbdefghoiklicfrjmtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' R' U R2 U R' U R U R'",
+      "hash": "cvdbefghmiklcilrdmtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 R' U R2 U R' U R U R'",
+      "hash": "bvcaefghpikljdgrcmtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "R' U R2 U2 R' U' R U2 R'",
+      "hash": "bdiaefghkjclmgbdwqtjabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y R' U R2 U2 R' U' R U2 R'",
+      "hash": "bcawefghijlpixlenqctabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' R' U R2 U2 R' U' R U2 R'",
+      "hash": "cvdaefghniklfkcrintwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U R' U R2 U2 R' U' R U2 R'",
+      "hash": "caibefghkjdlmleiwqtcabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' R' U R2 U2 R' U' R U2 R'",
+      "hash": "acidefghkjblmfkcwqtiabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 R' U R2 U2 R' U' R U2 R'",
+      "hash": "dbicefghkjalmahjwqtdabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U R' U R2 U2 R' U' R U2 R'",
+      "hash": "cdbwefghijlmjxahnqdtabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' R' U R2 U2 R' U' R U2 R'",
+      "hash": "abdwefghijlodxgbnqjtabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 R' U R2 U2 R' U' R U2 R'",
+      "hash": "dacwefghijlncxfknqitabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U R' U R2 U2 R' U' R U2 R'",
+      "hash": "dvabefghoiklgbdrjntwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' R' U R2 U2 R' U' R U2 R'",
+      "hash": "bvcdefghmiklahjrdntwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 R' U R2 U2 R' U' R U2 R'",
+      "hash": "avbcefghpiklleircntwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "R' U' R U R U2 R' U' R U R'",
+      "hash": "dcbiefghkjalwdokaqtgabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y R' U' R U R U2 R' U' R U R'",
+      "hash": "wadcefghijlnbtivnqlfabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' R' U' R U R U2 R' U' R U R'",
+      "hash": "bavcefghpiklcphnfltwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U R' U' R U R U2 R' U' R U R'",
+      "hash": "adciefghkjblwiobfqtlabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' R' U' R U R U2 R' U' R U R'",
+      "hash": "cbaiefghkjdlwcohlqtfabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 R' U' R U R U2 R' U' R U R'",
+      "hash": "badiefghkjclwjoegqtaabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U R' U' R U R U2 R' U' R U R'",
+      "hash": "wbadefghijloetjvnqagabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' R' U' R U R U2 R' U' R U R'",
+      "hash": "wdcbefghijlmktdvnqgaabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 R' U' R U R U2 R' U' R U R'",
+      "hash": "wcbaefghijlphtcvnqflabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U R' U' R U R U2 R' U' R U R'",
+      "hash": "cbvdefghmikldpkngatwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' R' U' R U R U2 R' U' R U R'",
+      "hash": "advbefghoikljpenagtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 R' U' R U R U2 R' U' R U R'",
+      "hash": "dcvaefghniklipbnlftwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "R' U' R U' R' U R",
+      "hash": "adkcefghijblkhxdnqtbabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y R' U' R U' R' U R",
+      "hash": "dbaxefghijkoibksnqewabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' R' U' R U' R' U R",
+      "hash": "cubdefghmjklemchkqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U R' U' R U' R' U R",
+      "hash": "bakdefghijclbkxinqteabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' R' U' R U' R' U R",
+      "hash": "dckbefghijalhexcnqtkabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 R' U' R U' R' U R",
+      "hash": "cbkaefghijdlebxjnqthabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U R' U' R U' R' U R",
+      "hash": "acbxefghijkpjebsnqhwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' R' U' R U' R' U R",
+      "hash": "cadxefghijkndkhsnqbwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 R' U' R U' R' U R",
+      "hash": "bdcxefghijkmchesnqkwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U R' U' R U' R' U R",
+      "hash": "ducaefghnjklhmdkbqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' R' U' R U' R' U R",
+      "hash": "buacefghpjklbmjehqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 R' U' R U' R' U R",
+      "hash": "audbefghojklkmibeqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "R' U' R U2 R' U R U' R' U' R",
+      "hash": "badcefghijkljcehnqtvabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y R' U' R U2 R' U R U' R' U' R",
+      "hash": "dcbaefghijklkcdhnquwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' R' U' R U2 R' U R U' R' U' R",
+      "hash": "dcbaefghijkljbeioqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U R' U' R U2 R' U R U' R' U' R",
+      "hash": "cbadefghijklcdhknqtvabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' R' U' R U2 R' U R U' R' U' R",
+      "hash": "adcbefghijklijbenqtvabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 R' U' R U2 R' U R U' R' U' R",
+      "hash": "dcbaefghijkldikbnqtvabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U R' U' R U2 R' U R U' R' U' R",
+      "hash": "adcbefghijklbdiknquwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' R' U' R U2 R' U R U' R' U' R",
+      "hash": "cbadefghijklhjcenquwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 R' U' R U2 R' U R U' R' U' R",
+      "hash": "badcefghijkleijbnquwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U R' U' R U2 R' U R U' R' U' R",
+      "hash": "adcbefghijklcehjoqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' R' U' R U2 R' U R U' R' U' R",
+      "hash": "cbadefghijklikbdoqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 R' U' R U2 R' U R U' R' U' R",
+      "hash": "badcefghijkldhkcoqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "R' U' R y' U2 R' U' R",
+      "hash": "kucdefghnjalfmkavqtgabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U R' U' R y' U2 R' U' R",
+      "hash": "kudaefghojblgmbfvqtlabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' R' U' R y' U2 R' U' R",
+      "hash": "kubcefghmjdlamhlvqtfabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 R' U' R y' U2 R' U' R",
+      "hash": "kuabefghpjcllmegvqtaabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "R' U' R2 U2 R'",
+      "hash": "kbdiefghcjaljaofvqtgabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y R' U' R2 U2 R'",
+      "hash": "wxcaefghijpngcfvnqluabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' R' U' R2 U2 R'",
+      "hash": "acvuefghpnkllpaifotwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U R' U' R2 U2 R'",
+      "hash": "kcaiefghdjblcfogvqtlabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' R' U' R2 U2 R'",
+      "hash": "kaciefghbjdliloavqtfabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 R' U' R2 U2 R'",
+      "hash": "kdbiefghajcldgolvqtaabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U R' U' R2 U2 R'",
+      "hash": "wxdbefghijmoldgvnqauabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' R' U' R2 U2 R'",
+      "hash": "wxbdefghijomfjavnqguabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 R' U' R2 U2 R'",
+      "hash": "wxacefghijnpailvnqfuabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U R' U' R2 U2 R'",
+      "hash": "bdvuefghmoklapfjgotwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' R' U' R2 U2 R'",
+      "hash": "dbvuefghomklgpldaotwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 R' U' R2 U2 R'",
+      "hash": "cavuefghnpklfpgclotwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "R2 U' R2 U' R2 U2 R2",
+      "hash": "bdcaefghijklkebwnqthabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y R2 U' R2 U' R2 U2 R2",
+      "hash": "bcadefghijkltbhenqkwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' R2 U' R2 U' R2 U2 R2",
+      "hash": "cbdaefghijklbknheqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U R2 U' R2 U' R2 U2 R2",
+      "hash": "cadbefghijklbhewnqtkabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' R2 U' R2 U' R2 U2 R2",
+      "hash": "acbdefghijklhbkwnqteabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 R2 U' R2 U' R2 U2 R2",
+      "hash": "dbacefghijklekhwnqtbabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U R2 U' R2 U' R2 U2 R2",
+      "hash": "cdbaefghijkltekhnqbwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' R2 U' R2 U' R2 U2 R2",
+      "hash": "abdcefghijkltkebnqhwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 R2 U' R2 U' R2 U2 R2",
+      "hash": "dacbefghijklthbknqewabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U R2 U' R2 U' R2 U2 R2",
+      "hash": "dcabefghijklebnkhqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' R2 U' R2 U' R2 U2 R2",
+      "hash": "bacdefghijklkhnebqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 R2 U' R2 U' R2 U2 R2",
+      "hash": "adbcefghijklhenbkqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L U L U L U' L' U' L'",
+      "hash": "bjcaefghidklhkbenqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y L U L U L U' L' U' L'",
+      "hash": "bcudefghmjklhkbenqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' L U L U L U' L' U' L'",
+      "hash": "xbdaefghijkohkbenqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U L U L U L U' L' U' L'",
+      "hash": "cjdbefghiaklkbehnqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' L U L U L U' L' U' L'",
+      "hash": "ajbdefghicklehkbnqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 L U L U L U' L' U' L'",
+      "hash": "djacefghibklbehknqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U L U L U L U' L' U' L'",
+      "hash": "cduaefghnjklkbehnqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' L U L U L U' L' U' L'",
+      "hash": "abucefghpjklehkbnqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 L U L U L U' L' U' L'",
+      "hash": "daubefghojklbehknqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U L U L U L U' L' U' L'",
+      "hash": "xcabefghijkpkbehnqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' L U L U L U' L' U' L'",
+      "hash": "xacdefghijknehkbnqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 L U L U L U' L' U' L'",
+      "hash": "xdbcefghijkmbehknqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L U L' U L U L'",
+      "hash": "ldabefghijkcdlshnqcwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y L U L' U L U L'",
+      "hash": "cvabefghipklkiarndtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' L U L' U L U L'",
+      "hash": "cdawefghijnlgxecnqtjabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U L U L' U L U L'",
+      "hash": "labcefghijkdiasknqdwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' L U L' U L U L'",
+      "hash": "lcdaefghijkbcgsenqjwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 L U L' U L U L'",
+      "hash": "lbcdefghijkajfsbnqiwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U L U L' U L U L'",
+      "hash": "dvbcefghimklbjfrnitwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' L U L' U L U L'",
+      "hash": "bvdaefghioklhdlrnctwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 L U L' U L U L'",
+      "hash": "avcdefghinklecgrnjtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U L U L' U L U L'",
+      "hash": "dabwefghijollxhdnqtcabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' L U L' U L U L'",
+      "hash": "bcdwefghijmlfxbjnqtiabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 L U L' U L U L'",
+      "hash": "abcwefghijplaxkinqtdabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L U L' U L U' L'",
+      "hash": "aclbefghijkdaukhnqewabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y L U L' U L U' L'",
+      "hash": "cbdvefghimklkfpbnhtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' L U L' U L U' L'",
+      "hash": "bwadefghijolvhelnqtbabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U L U L' U L U' L'",
+      "hash": "bdlcefghijkafubknqhwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' L U L' U L U' L'",
+      "hash": "dblaefghijkcluhenqbwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 L U L' U L U' L'",
+      "hash": "caldefghijkbguebnqkwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U L U L' U L U' L'",
+      "hash": "dcavefghinklbgpenktwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' L U L' U L U' L'",
+      "hash": "bacvefghipklhapknetwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 L U L' U L U' L'",
+      "hash": "adbvefghioklelphnbtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U L U L' U L U' L'",
+      "hash": "cwbaefghijplvkhanqteabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' L U L' U L U' L'",
+      "hash": "awdcefghijnlvebgnqtkabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 L U L' U L U' L'",
+      "hash": "dwcbefghijmlvbkfnqthabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L U L' U L U2' L2 U L",
+      "hash": "acjbefghidklaifpnktwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y L U L' U L U2' L2 U L",
+      "hash": "cbduefghmjklofjgbqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' L U L' U L U2' L2 U L",
+      "hash": "bxadefghijkodaulnqhwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U L U L' U L U2' L2 U L",
+      "hash": "bdjcefghiaklfjgpnbtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' L U L' U L U2' L2 U L",
+      "hash": "dbjaefghicklldapnhtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 L U L' U L U2' L2 U L",
+      "hash": "cajdefghibklgclpnetwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U L U L' U L U2' L2 U L",
+      "hash": "dcauefghnjklogcleqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' L U L' U L U2' L2 U L",
+      "hash": "bacuefghpjkloaifkqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 L U L' U L U2' L2 U L",
+      "hash": "adbuefghojkloldahqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U L U L' U L U2' L2 U L",
+      "hash": "cxbaefghijkpifuanqkwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' L U L' U L U2' L2 U L",
+      "hash": "axdcefghijknclugnqewabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 L U L' U L U2' L2 U L",
+      "hash": "dxcbefghijkmjgufnqbwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L U L' U' L U' L' U L' U' L",
+      "hash": "jdbaefghilkcrbdlnsgwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y L U L' U' L U' L' U L' U' L",
+      "hash": "buacefghjpklameirltwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' L U L' U' L U' L' U L' U' L",
+      "hash": "cadxefghijnkkcgsnqxfabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U L U L' U' L U' L' U L' U' L",
+      "hash": "jacbefghilkdreianslwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' L U L' U' L U' L' U L' U' L",
+      "hash": "jcadefghilkbrkcgnsfwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 L U L' U' L U' L' U L' U' L",
+      "hash": "jbdcefghilkarhjfnsawabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U L U L' U' L U' L' U L' U' L",
+      "hash": "cubdefghjmklfmhjratwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' L U L' U' L U' L' U L' U' L",
+      "hash": "audbefghjokllmbdrgtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 L U L' U' L U' L' U L' U' L",
+      "hash": "ducaefghjnklgmkcrftwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U L U L' U' L U' L' U L' U' L",
+      "hash": "dbaxefghijokbdlsnqxgabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' L U L' U' L U' L' U L' U' L",
+      "hash": "bdcxefghijmkhjfsnqxaabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 L U L' U' L U' L' U L' U' L",
+      "hash": "acbxefghijpkeiasnqxlabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L U L' U2 L U' L'",
+      "hash": "aldcefghijkbgdkunqawabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y L U L' U2 L U' L'",
+      "hash": "dbvaefghioklplibnftwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' L U L' U2 L U' L'",
+      "hash": "wcbdefghijmlchvfnqtlabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U L U L' U2 L U' L'",
+      "hash": "bladefghijkclibunqfwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' L U L' U2 L U' L'",
+      "hash": "dlcbefghijkafchunqlwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 L U L' U2 L U' L'",
+      "hash": "clbaefghijkdajeunqgwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U L U L' U2 L U' L'",
+      "hash": "acvbefghipklpajengtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' L U L' U2 L U' L'",
+      "hash": "cavdefghinklpgdknatwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 L U L' U2 L U' L'",
+      "hash": "bdvcefghimklpfchnltwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U L U L' U2 L U' L'",
+      "hash": "wdcaefghijnldkvgnqtaabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' L U L' U2 L U' L'",
+      "hash": "wbacefghijpljevanqtgabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 L U L' U2 L U' L'",
+      "hash": "wadbefghijolibvlnqtfabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L U L' U2 L' U' L",
+      "hash": "jldcefghibkardhantjwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y L U L' U2 L' U' L",
+      "hash": "duvaefghonklfmikqctwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' L U L' U2 L' U' L",
+      "hash": "wcbxefghijpmcelsnqwiabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U L U L' U2 L' U' L",
+      "hash": "jladefghickbrikfntcwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' L U L' U2 L' U' L",
+      "hash": "jlcbefghiakdrcelntiwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 L U L' U2 L' U' L",
+      "hash": "jlbaefghidkcrjbgntdwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U L U L' U2 L' U' L",
+      "hash": "auvbefghpoklgmjbqdtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' L U L' U2 L' U' L",
+      "hash": "cuvdefghnmklamdhqjtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 L U L' U2 L' U' L",
+      "hash": "buvcefghmpkllmceqitwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U L U L' U2 L' U' L",
+      "hash": "wdcxefghijmndhasnqwjabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' L U L' U2 L' U' L",
+      "hash": "wbaxefghijopjbgsnqwdabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 L U L' U2 L' U' L",
+      "hash": "wadxefghijnoikfsnqwcabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L U L2 U2 L",
+      "hash": "ljbdefghickacrdgnsjwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y L U L2 U2 L",
+      "hash": "avucefghpnklldmirctwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' L U L2 U2 L",
+      "hash": "xacwefghijpnscfjnqxiabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U L U L2 U2 L",
+      "hash": "ljcaefghidkbdrilnscwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' L U L2 U2 L",
+      "hash": "ljacefghibkdjrcfnsiwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 L U L2 U2 L",
+      "hash": "ljdbefghiakcirjansdwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U L U L2 U2 L",
+      "hash": "bvudefghmoklaimjrdtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' L U L2 U2 L",
+      "hash": "dvubefghomklgcmdrjtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 L U L2 U2 L",
+      "hash": "cvuaefghnpklfjmcritwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U L U L2 U2 L",
+      "hash": "xbdwefghijmosdgcnqxjabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' L U L2 U2 L",
+      "hash": "xdbwefghijomsjainqxdabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 L U L2 U2 L",
+      "hash": "xcawefghijnpsildnqxcabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L U' L' U L U' L' U L U' L'",
+      "hash": "dabcefghijkljetanqhwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y L U' L' U L U' L' U L U' L'",
+      "hash": "dabcefghijklfchqnktwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' L U' L' U L U' L' U L U' L'",
+      "hash": "dabcefghijklbwlinqteabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U L U' L' U L U' L' U L U' L'",
+      "hash": "abcdefghijklchtfnqkwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' L U' L' U L U' L' U L U' L'",
+      "hash": "cdabefghijklibtlnqewabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 L U' L' U L U' L' U L U' L'",
+      "hash": "bcdaefghijkldktgnqbwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U L U' L' U L U' L' U L U' L'",
+      "hash": "abcdefghijklgdkqnbtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' L U' L' U L U' L' U L U' L'",
+      "hash": "cdabefghijklajeqnhtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 L U' L' U L U' L' U L U' L'",
+      "hash": "bcdaefghijkllibqnetwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U L U' L' U L U' L' U L U' L'",
+      "hash": "abcdefghijklewajnqthabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' L U' L' U L U' L' U L U' L'",
+      "hash": "cdabefghijklkwgdnqtbabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 L U' L' U L U' L' U L U' L'",
+      "hash": "bcdaefghijklhwfcnqtkabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L U' L' U L U' L' U2 L U' L'",
+      "hash": "dblaefghijkccitenqjwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y L U' L' U L U' L' U2 L U' L'",
+      "hash": "bacvefghipklhdjqnctwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' L U' L' U L U' L' U2 L U' L'",
+      "hash": "awdcefghijnldwbjnqtiabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U L U' L' U L U' L' U2 L U' L'",
+      "hash": "aclbefghijkddjthnqcwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' L U' L' U L U' L' U2 L U' L'",
+      "hash": "caldefghijkbjdtbnqiwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 L U' L' U L U' L' U2 L U' L'",
+      "hash": "bdlcefghijkaictknqdwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U L U' L' U L U' L' U2 L U' L'",
+      "hash": "cbdvefghimklkicqndtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' L U' L' U L U' L' U2 L U' L'",
+      "hash": "adbvefghiokleciqnjtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 L U' L' U L U' L' U2 L U' L'",
+      "hash": "dcavefghinklbjdqnitwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U L U' L' U L U' L' U2 L U' L'",
+      "hash": "bwadefghijoliwecnqtjabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' L U' L' U L U' L' U2 L U' L'",
+      "hash": "dwcbefghijmlcwkinqtdabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 L U' L' U L U' L' U2 L U' L'",
+      "hash": "cwbaefghijpljwhdnqtcabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y L U' L' U2 L U' L'",
+      "hash": "bdcaefghijklhcrjnftwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' L U' L' U2 L U' L'",
+      "hash": "acdbefghijklxdbinqtlabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U L U' L' U2 L U' L'",
+      "hash": "cadbefghijklkdrcngtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' L U' L' U2 L U' L'",
+      "hash": "acbdefghijklejrinatwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 L U' L' U2 L U' L'",
+      "hash": "dbacefghijklbirdnltwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U L U' L' U2 L U' L'",
+      "hash": "bdacefghijklxiejnqtaabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' L U' L' U2 L U' L'",
+      "hash": "dbcaefghijklxckdnqtgabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 L U' L' U2 L U' L'",
+      "hash": "cabdefghijklxjhcnqtfabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L U' L' y L' U' L U' L' U L",
+      "hash": "buadefghxjkclmcesqgwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U L U' L' y L' U' L U' L' U L",
+      "hash": "cubaefghxjkdamdhsqlwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' L U' L' y L' U' L U' L' U L",
+      "hash": "audcefghxjkbgmjbsqfwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 L U' L' y L' U' L U' L' U L",
+      "hash": "ducbefghxjkafmiksqawabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L U' L' y L' U2 L",
+      "hash": "lduaefghnjkcfkmbtqgwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U L U' L' y L' U2 L",
+      "hash": "laubefghojkdgbmetqlwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' L U' L' y L' U2 L",
+      "hash": "lcudefghmjkbahmktqfwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 L U' L' y L' U2 L",
+      "hash": "lbucefghpjkalemhtqawabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L U' L2 U' L U' L' U' L",
+      "hash": "bdjaefghilkccflpnugwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y L U' L2 U' L U' L' U' L",
+      "hash": "bcauefghjpklodgapltwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' L U' L2 U' L U' L' U' L",
+      "hash": "cxdaefghijnkagujnqvfabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U L U' L2 U' L U' L' U' L",
+      "hash": "cajbefghilkddgapnulwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' L U' L2 U' L U' L' U' L",
+      "hash": "acjdefghilkbjagpnufwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 L U' L2 U' L U' L' U' L",
+      "hash": "dbjcefghilkailfpnuawabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U L U' L2 U' L U' L' U' L",
+      "hash": "cdbuefghjmkloilfpatwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' L U' L2 U' L U' L' U' L",
+      "hash": "abduefghjoklocflpgtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 L U' L2 U' L U' L' U' L",
+      "hash": "dacuefghjnklojagpftwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U L U' L2 U' L U' L' U' L",
+      "hash": "dxabefghijokflucnqvgabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' L U' L2 U' L U' L' U' L",
+      "hash": "bxcdefghijmklfuinqvaabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 L U' L2 U' L U' L' U' L",
+      "hash": "axbcefghijpkgaudnqvlabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L U2 L' U' L U L'",
+      "hash": "clbaefghijkduecinqkwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y L U2 L' U' L U L'",
+      "hash": "bdvcefghimkljphdnbtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' L U2 L' U' L U L'",
+      "hash": "wadbefghijolbjdvnqthabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U L U2 L' U' L U L'",
+      "hash": "dlcbefghijkauhdjnqbwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' L U2 L' U' L U L'",
+      "hash": "bladefghijkcubjdnqhwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 L U2 L' U' L U L'",
+      "hash": "aldcefghijkbukicnqewabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U L U2 L' U' L U L'",
+      "hash": "cavdefghinklcpkinetwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' L U2 L' U' L U L'",
+      "hash": "acvbefghipklipecnktwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 L U2 L' U' L U L'",
+      "hash": "dbvaefghiokldpbjnhtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U L U2 L' U' L U L'",
+      "hash": "wbacefghijplecivnqtkabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' L U2 L' U' L U L'",
+      "hash": "wdcaefghijnlkicvnqteabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 L U2 L' U' L U L'",
+      "hash": "wcbdefghijmlhdjvnqtbabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L U2' L U L' U L U2' L2",
+      "hash": "bcadefghijklfgkbnqswabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y L U2' L U L' U L U2' L2",
+      "hash": "acdbefghijkleglbnrtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' L U2' L U L' U L U2' L2",
+      "hash": "bdcaefghijklfhkanqtxabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U L U2' L U L' U L U2' L2",
+      "hash": "cdbaefghijklglbenqswabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' L U2' L U L' U L U2' L2",
+      "hash": "abdcefghijklafhknqswabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 L U2' L U L' U L U2' L2",
+      "hash": "dacbefghijkllaehnqswabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U L U2' L U L' U L U2' L2",
+      "hash": "bdacefghijklhlaenrtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' L U2' L U L' U L U2' L2",
+      "hash": "dbcaefghijklbfgknrtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 L U2' L U L' U L U2' L2",
+      "hash": "cabdefghijklkafhnrtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U L U2' L U L' U L U2' L2",
+      "hash": "cadbefghijklgkbfnqtxabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' L U2' L U L' U L U2' L2",
+      "hash": "acbdefghijklaehlnqtxabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 L U2' L U L' U L U2' L2",
+      "hash": "dbacefghijkllbegnqtxabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L U2' L' U L U L'",
+      "hash": "adbcefghijkliekunqcwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y L U2' L' U L U L'",
+      "hash": "dbacefghijklpjhbndtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' L U2' L' U L U L'",
+      "hash": "cabdefghijklbhvdnqtjabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U L U2' L' U L U L'",
+      "hash": "bacdefghijkljhbunqdwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' L U2' L' U L U L'",
+      "hash": "dcabefghijkldbhunqjwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 L U2' L' U L U L'",
+      "hash": "cbdaefghijklckeunqiwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U L U2' L' U L U L'",
+      "hash": "acbdefghijklpckenitwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' L U2' L' U L U L'",
+      "hash": "cadbefghijklpieknctwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 L U2' L' U L U L'",
+      "hash": "bdcaefghijklpdbhnjtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U L U2' L' U L U L'",
+      "hash": "dbcaefghijklekvinqtcabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' L U2' L' U L U L'",
+      "hash": "bdacefghijklkevcnqtiabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 L U2' L' U L U L'",
+      "hash": "acdbefghijklhbvjnqtdabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L U2' L' U2 L U' L'",
+      "hash": "badlefghijkctidlnqawabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y L U2' L' U2 L U' L'",
+      "hash": "vcbaefghipklaqjinftwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' L U2' L' U2 L U' L'",
+      "hash": "dcwaefghijnldcgwnqtlabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U L U2' L' U2 L U' L'",
+      "hash": "cbalefghijkdtjianqfwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' L U2' L' U2 L U' L'",
+      "hash": "adclefghijkbtdcgnqlwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 L U2' L' U2 L U' L'",
+      "hash": "dcblefghijkatcjfnqgwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U L U2' L' U2 L U' L'",
+      "hash": "vdcbefghimklfqcjngtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' L U2' L' U2 L U' L'",
+      "hash": "vbadefghiokllqidnatwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 L U2' L' U2 L U' L'",
+      "hash": "vadcefghinklgqdcnltwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U L U2' L' U2 L U' L'",
+      "hash": "adwbefghijolidlwnqtaabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' L U2' L' U2 L U' L'",
+      "hash": "cbwdefghijmlcjfwnqtgabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 L U2' L' U2 L U' L'",
+      "hash": "bawcefghijpljiawnqtfabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L' U L U L' U2 L",
+      "hash": "dacbefghijkliepbnjtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y L' U L U L' U2 L",
+      "hash": "cabdefghijklejhocqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' L' U L U L' U2 L",
+      "hash": "dbacefghijklbukdnqiwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U L' U L U L' U2 L",
+      "hash": "abdcefghijkljhpenctwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' L' U L U L' U2 L",
+      "hash": "cdbaefghijkldbpknitwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 L' U L U L' U2 L",
+      "hash": "bcadefghijklckphndtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U L' U L U L' U2 L",
+      "hash": "dbcaefghijklhckodqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' L' U L U L' U2 L",
+      "hash": "bdacefghijklbieojqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 L' U L U L' U2 L",
+      "hash": "acdbefghijklkdboiqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U L' U L U L' U2 L",
+      "hash": "acbdefghijkleubinqjwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' L' U L U L' U2 L",
+      "hash": "cadbefghijklkuhcnqdwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 L' U L U L' U2 L",
+      "hash": "bdcaefghijklhuejnqcwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L' U L2 U2 L' U2 L U' L'",
+      "hash": "cbdlefghiakjtailndqwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y L' U L2 U2 L' U2 L U' L'",
+      "hash": "vdcaefghniklaqfjintwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' L' U L2 U2 L' U2 L U' L'",
+      "hash": "acwbefghijlpldgwnqctabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U L' U L2 U2 L' U2 L U' L'",
+      "hash": "dcalefghibkjtfjaniqwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' L' U L2 U2 L' U2 L U' L'",
+      "hash": "baclefghidkjtldgncqwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 L' U L2 U2 L' U2 L U' L'",
+      "hash": "adblefghickjtgcfnjqwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U L' U L2 U2 L' U2 L U' L'",
+      "hash": "vadbefghoiklfqgcjntwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' L' U L2 U2 L' U2 L U' L'",
+      "hash": "vcbdefghmikllqaidntwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 L' U L2 U2 L' U2 L U' L'",
+      "hash": "vbacefghpiklgqldcntwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U L' U L2 U2 L' U2 L U' L'",
+      "hash": "bdwcefghijlmailwnqdtabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' L' U L2 U2 L' U2 L U' L'",
+      "hash": "dbwaefghijlogcfwnqjtabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 L' U L2 U2 L' U2 L U' L'",
+      "hash": "cawdefghijlnfjawnqitabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L' U' L U L' U' L U L' U' L",
+      "hash": "dabcefghijklqelinbtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y L' U' L U L' U' L U L' U' L",
+      "hash": "dabcefghijkljnhaeqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' L' U' L U L' U' L U L' U' L",
+      "hash": "dabcefghijklbgdtnqkwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U L' U' L U L' U' L U L' U' L",
+      "hash": "abcdefghijklqhajnetwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' L' U' L U L' U' L U L' U' L",
+      "hash": "cdabefghijklqbgdnktwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 L' U' L U L' U' L U L' U' L",
+      "hash": "bcdaefghijklqkfcnhtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U L' U' L U L' U' L U L' U' L",
+      "hash": "abcdefghijklcnkfhqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' L' U' L U L' U' L U L' U' L",
+      "hash": "cdabefghijklinelbqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 L' U' L U L' U' L U L' U' L",
+      "hash": "bcdaefghijkldnbgkqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U L' U' L U L' U' L U L' U' L",
+      "hash": "abcdefghijklelitnqbwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' L' U' L U L' U' L U L' U' L",
+      "hash": "cdabefghijklkfctnqhwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 L' U' L U L' U' L U L' U' L",
+      "hash": "bcdaefghijklhajtnqewabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L' U' L U L' U2 L",
+      "hash": "dcajefghibklqcgfnjtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y L' U' L U L' U2 L",
+      "hash": "uadbefghojklgndlcqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' L' U' L U L' U2 L",
+      "hash": "bdxcefghijkmjfatnqiwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U L' U' L U L' U2 L",
+      "hash": "adbjefghicklqdlgnctwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' L' U' L U L' U2 L",
+      "hash": "cbdjefghiaklqjfanitwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 L' U' L U L' U2 L",
+      "hash": "bacjefghidklqialndtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U L' U' L U L' U2 L",
+      "hash": "ubacefghpjkllniadqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' L' U' L U L' U2 L",
+      "hash": "udcaefghnjklfncgjqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 L' U' L U L' U2 L",
+      "hash": "ucbdefghmjklanjfiqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U L' U' L U L' U2 L",
+      "hash": "caxdefghijkncgftnqjwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' L' U' L U L' U2 L",
+      "hash": "acxbefghijkpialtnqdwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 L' U' L U L' U2 L",
+      "hash": "dbxaefghijkodlgtnqcwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L' U' L U2 L U L'",
+      "hash": "djlaefghickbgujenaqwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y L' U' L U2 L U L'",
+      "hash": "bauvefghpoklhlpcfntwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' L' U' L U2 L U L'",
+      "hash": "xwdcefghijmnvibfnqltabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U L' U' L U2 L U L'",
+      "hash": "ajlbefghidkcluchnfqwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' L' U' L U2 L U L'",
+      "hash": "cjldefghibkafuibnlqwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 L' U' L U2 L U L'",
+      "hash": "bjlcefghiakdaudkngqwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U L' U' L U2 L U L'",
+      "hash": "cbuvefghmpklkapdgntwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' L' U' L U2 L U L'",
+      "hash": "aduvefghonklegpjantwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 L' U' L U2 L U L'",
+      "hash": "dcuvefghnmklbfpilntwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U L' U' L U2 L U L'",
+      "hash": "xwadefghijnovjegnqatabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' L' U' L U2 L U L'",
+      "hash": "xwcbefghijpmvdkanqgtabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 L' U' L U2 L U L'",
+      "hash": "xwbaefghijopvchlnqftabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L' U' L U2 L' U L",
+      "hash": "djcaefghibklgdrbnjtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y L' U' L U2 L' U L",
+      "hash": "baudefghojklelimcqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' L' U' L U2 L' U L",
+      "hash": "xbdcefghijkmcskfnqiwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U L' U' L U2 L' U L",
+      "hash": "ajdbefghickllirenctwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' L' U' L U2 L' U L",
+      "hash": "cjbdefghiaklfcrknitwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 L' U' L U2 L' U L",
+      "hash": "bjacefghidklajrhndtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U L' U' L U2 L' U L",
+      "hash": "cbuaefghpjklhajmdqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' L' U' L U2 L' U L",
+      "hash": "aducefghnjklbgdmjqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 L' U' L U2 L' U L",
+      "hash": "dcubefghmjklkfcmiqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U L' U' L U2 L' U L",
+      "hash": "xcadefghijkndsbgnqjwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' L' U' L U2 L' U L",
+      "hash": "xacbefghijkpjshanqdwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 L' U' L U2 L' U L",
+      "hash": "xdbaefghijkoiselnqcwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L' U' L U2 L' U' L",
+      "hash": "cbdaefghijklckrinftwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y L' U' L U2 L' U' L",
+      "hash": "bdcaefghijkljdbmgqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' L' U' L U2 L' U' L",
+      "hash": "acdbefghijklhsdjnqawabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U L' U' L U2 L' U' L",
+      "hash": "dcabefghijkldbrjngtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' L' U' L U2 L' U' L",
+      "hash": "bacdefghijkljhrdnatwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 L' U' L U2 L' U' L",
+      "hash": "adbcefghijkliercnltwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U L' U' L U2 L' U' L",
+      "hash": "cadbefghijklciemlqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' L' U' L U2 L' U' L",
+      "hash": "acbdefghijklickmfqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 L' U' L U2 L' U' L",
+      "hash": "dbacefghijkldjhmaqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U L' U' L U2 L' U' L",
+      "hash": "bdacefghijklksicnqfwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' L' U' L U2 L' U' L",
+      "hash": "dbcaefghijklescinqlwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 L' U' L U2 L' U' L",
+      "hash": "cabdefghijklbsjdnqgwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L' U' L y L' U' L",
+      "hash": "juabefghpckllmegpatwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U L' U' L y L' U' L",
+      "hash": "jubcefghmdklamhlpftwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' L' U' L y L' U' L",
+      "hash": "judaefghobklgmbfpltwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 L' U' L y L' U' L",
+      "hash": "jucdefghnaklfmkapgtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L' U' L2 U L'",
+      "hash": "abldefghickjeuqgnajwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y L' U' L2 U L'",
+      "hash": "abcvefghpikllhpnfctwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' L' U' L2 U L'",
+      "hash": "awcdefghijlnvtfbnqliabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U L' U' L2 U L'",
+      "hash": "bclaefghidkjhuqlnfcwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' L' U' L2 U L'",
+      "hash": "dalcefghibkjbuqfnliwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 L' U' L2 U L'",
+      "hash": "cdlbefghiakjkuqangdwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U L' U' L2 U L'",
+      "hash": "bcdvefghmiklakpngdtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' L' U' L2 U L'",
+      "hash": "dabvefghoiklgepnajtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 L' U' L2 U L'",
+      "hash": "cdavefghniklfbpnlitwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U L' U' L2 U L'",
+      "hash": "bwdaefghijlovtgenqajabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' L' U' L2 U L'",
+      "hash": "dwbcefghijlmvtaknqgdabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 L' U' L2 U L'",
+      "hash": "cwabefghijlpvtlhnqfcabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U L' U2 L",
+      "hash": "djbaefghickldrbgnjtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' L' U2 L",
+      "hash": "bjdcefghiakljrhandtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 L' U2 L",
+      "hash": "ajcbefghidklirelnctwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U L' U2 L",
+      "hash": "baucefghpjkllimecqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' L' U2 L",
+      "hash": "dcuaefghnjklfcmkiqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 L' U2 L",
+      "hash": "cbudefghmjklajmhdqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U L' U2 L",
+      "hash": "xadcefghijknskfcnqiwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' L' U2 L",
+      "hash": "xcbaefghijkpselinqcwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 L' U2 L",
+      "hash": "xbadefghijkosbgdnqjwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L' U2' L U L' U2' L",
+      "hash": "dbjcefghiaklahfpnjtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y L' U2' L U L' U2' L",
+      "hash": "dacuefghnjklofkgcqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' L' U2' L U L' U2' L",
+      "hash": "axbcefghijkpeaulnqiwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U L' U2' L U L' U2' L",
+      "hash": "acjdefghibklfkgpnctwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' L' U2' L U L' U2' L",
+      "hash": "cajbefghidklleapnitwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 L' U2' L U L' U2' L",
+      "hash": "bdjaefghicklgblpndtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U L' U2' L U L' U2' L",
+      "hash": "abduefghojklogbldqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' L' U2' L U L' U2' L",
+      "hash": "cdbuefghmjkloahfjqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 L' U2' L U L' U2' L",
+      "hash": "bcauefghpjkloleaiqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U L' U2' L U L' U2' L",
+      "hash": "bxcdefghijkmhfuanqjwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' L' U2' L U L' U2' L",
+      "hash": "dxabefghijkoblugnqdwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 L' U2' L U L' U2' L",
+      "hash": "cxdaefghijknkgufnqcwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L' U2' L U' L' U' L",
+      "hash": "bdcaefghijklhfrbnltwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y L' U2' L U' L' U' L",
+      "hash": "bcadefghijklekgmaqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' L' U2' L U' L' U' L",
+      "hash": "cbdaefghijklaskenqgwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U L' U2' L U' L' U' L",
+      "hash": "cadbefghijklkgrenatwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' L' U2' L U' L' U' L",
+      "hash": "acbdefghijklearkngtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 L' U2' L U' L' U' L",
+      "hash": "dbacefghijklblrhnftwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U L' U2' L U' L' U' L",
+      "hash": "cdbaefghijklhblmfqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' L' U2' L U' L' U' L",
+      "hash": "abdcefghijklbhfmlqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 L' U2' L U' L' U' L",
+      "hash": "dacbefghijklkeamgqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U L' U2' L U' L' U' L",
+      "hash": "dcabefghijklfsbhnqlwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' L' U2' L U' L' U' L",
+      "hash": "bacdefghijkllshbnqfwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 L' U2' L U' L' U' L",
+      "hash": "adbcefghijklgseknqawabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L2 U L2 U L2 U2' L2",
+      "hash": "dacbefghijkltebhnqkwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y L2 U L2 U L2 U2' L2",
+      "hash": "cabdefghijklkqhenbtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' L2 U L2 U L2 U2' L2",
+      "hash": "dbacefghijklbkewnqthabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U L2 U L2 U L2 U2' L2",
+      "hash": "abdcefghijkltheknqbwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' L2 U L2 U L2 U2' L2",
+      "hash": "cdbaefghijkltbkenqhwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 L2 U L2 U L2 U2' L2",
+      "hash": "bcadefghijkltkhbnqewabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U L2 U L2 U L2 U2' L2",
+      "hash": "dbcaefghijklbqkhnetwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' L2 U L2 U L2 U2' L2",
+      "hash": "bdacefghijklhqebnktwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 L2 U L2 U L2 U2' L2",
+      "hash": "acdbefghijkleqbknhtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U L2 U L2 U L2 U2' L2",
+      "hash": "acbdefghijklebhwnqtkabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' L2 U L2 U L2 U2' L2",
+      "hash": "cadbefghijklkhbwnqteabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 L2 U L2 U L2 U2' L2",
+      "hash": "bdcaefghijklhekwnqtbabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L2 U2' L U L' U L2",
+      "hash": "ajbdefghicklcpkdnhtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y L2 U2' L U L' U L2",
+      "hash": "abucefghpjklidobkqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' L2 U2' L U L' U L2",
+      "hash": "xacdefghijknuhcjnqewabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U L2 U2' L U L' U L2",
+      "hash": "bjcaefghidkldpbinktwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' L2 U2' L U L' U L2",
+      "hash": "djacefghibkljphcnetwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 L2 U2' L U L' U L2",
+      "hash": "cjdbefghiaklipejnbtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U L2 U2' L U L' U L2",
+      "hash": "bcudefghmjkljioebqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' L2 U2' L U L' U L2",
+      "hash": "daubefghojkldcokhqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 L2 U2' L U L' U L2",
+      "hash": "cduaefghnjklcjoheqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U L2 U2' L U L' U L2",
+      "hash": "xbdaefghijkoukdcnqhwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' L2 U2' L U L' U L2",
+      "hash": "xdbcefghijkmuejinqbwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 L2 U2' L U L' U L2",
+      "hash": "xcabefghijkpubidnqkwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L2 U2' L' U' L U' L' U2 L'",
+      "hash": "cabdefghijkldikbnquwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y L2 U2' L' U' L U' L' U2 L'",
+      "hash": "adbcefghijkleijbnptwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' L2 U2' L' U' L U' L' U2 L'",
+      "hash": "dacbefghijkldhkcnqtvabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U L2 U2' L' U' L U' L' U2 L'",
+      "hash": "dbcaefghijklijbenquwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' L2 U2' L' U' L U' L' U2 L'",
+      "hash": "bdacefghijklcdhknquwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 L2 U2' L' U' L U' L' U2 L'",
+      "hash": "acdbefghijkljcehnquwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U L2 U2' L' U' L U' L' U2 L'",
+      "hash": "bacdefghijklhjcenptwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' L2 U2' L' U' L U' L' U2 L'",
+      "hash": "dcabefghijklbdiknptwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 L2 U2' L' U' L U' L' U2 L'",
+      "hash": "cbdaefghijklkcdhnptwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U L2 U2' L' U' L U' L' U2 L'",
+      "hash": "abdcefghijklikbdnqtvabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' L2 U2' L' U' L U' L' U2 L'",
+      "hash": "cdbaefghijklcehjnqtvabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 L2 U2' L' U' L U' L' U2 L'",
+      "hash": "bcadefghijkljbeinqtvabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U R U2 R'",
+      "hash": "wadcefghijnllibvnqtfabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' R U2 R'",
+      "hash": "wcbaefghijplfchvnqtlabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 R U2 R'",
+      "hash": "wbadefghijolajevnqtgabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L' U L U L' U L y U' L U L'",
+      "hash": "bdaoefghivklfibjnrtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L' U L y U' L U L' U L U L'",
+      "hash": "cmdbefghivklcilenrtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L' U L y U' L U2 L' U2 L U' L'",
+      "hash": "mcbdefghivklldainqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "R U' R' y' U R' U2' R U2' R' U R",
+      "hash": "mbdcefghujklldainqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y L U2' L' U' L U L'",
+      "hash": "bdvcefghimkljphdnbtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U L U2' L' U' L U L'",
+      "hash": "cavdefghinklcpkinetwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' L U2' L' U' L U L'",
+      "hash": "acvbefghipklipecnktwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 L U2' L' U' L U L'",
+      "hash": "dbvaefghiokldpbjnhtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "R U' R' y' U2 R' U' R U' R' U R",
+      "hash": "dmcbefghujklfcikmqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "R U' R' y' U R' U' R U' R' U' R",
+      "hash": "cdbmefghujklbilfoqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "R U' R' U' R U' R' y' U R' U' R",
+      "hash": "doabefghujklgelcoqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y L' U' L U L' U2' L",
+      "hash": "uadbefghojklgndlcqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U L' U' L U L' U2' L",
+      "hash": "ubacefghpjkllniadqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' L' U' L U L' U2' L",
+      "hash": "udcaefghnjklfncgjqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 L' U' L U L' U2' L",
+      "hash": "ucbdefghmjklanjfiqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y L' U' L U' L' U' L",
+      "hash": "cdauefghnjklodlhaqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U L' U' L U' L' U' L",
+      "hash": "dabuefghojkloiakfqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' L' U' L U' L' U' L",
+      "hash": "bcduefghmjklocgelqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 L' U' L U' L' U' L",
+      "hash": "abcuefghpjklojfbgqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' L' U' L U L' U2' L",
+      "hash": "bdxcefghijkmjfatnqiwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U L' U' L U L' U2' L",
+      "hash": "caxdefghijkncgftnqjwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' L' U' L U L' U2' L",
+      "hash": "acxbefghijkpialtnqdwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 L' U' L U L' U2' L",
+      "hash": "dbxaefghijkodlgtnqcwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "R U2 R2 U' R",
+      "hash": "ibkaefghdjclcdxolqtgabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L U2 L2 U' L",
+      "hash": "jcldefghiakbruijnafwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L2 U' L2 U L2",
+      "hash": "abdcefghilkjekhqnbtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L2 U L2 U' L2",
+      "hash": "dbcaefghilkjbhtenqkwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "R2 U' R2 U R2",
+      "hash": "bacdefghkjilbwkenqthabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "R2 U R2 U' R2",
+      "hash": "acbdefghkjilnkhbeqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L U2 L2' U' L",
+      "hash": "jcldefghiakbruijnafwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y L U2 L2' U' L",
+      "hash": "audvefghnoklcmpjfgtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' L U2 L2' U' L",
+      "hash": "bwcxefghijmpvdisnqlaabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U L U2 L2' U' L",
+      "hash": "jdlaefghibkcrujcnfgwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' L U2 L2' U' L",
+      "hash": "jblcefghidkarudinlawabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 L U2 L2' U' L",
+      "hash": "jalbefghickdrucdnglwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U L U2 L2' U' L",
+      "hash": "buavefghopkldmpcgltwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' L U2 L2' U' L",
+      "hash": "ducvefghmnkljmpiaftwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 L U2 L2' U' L",
+      "hash": "cubvefghpmklimpdlatwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U L U2 L2' U' L",
+      "hash": "cwdxefghijnmvijsnqafabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' L U2 L2' U' L",
+      "hash": "awbxefghijpovcdsnqglabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 L U2 L2' U' L",
+      "hash": "dwaxefghijonvjcsnqfgabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "R U2 R2' U' R",
+      "hash": "ibkaefghdjclcdxolqtgabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y R U2 R2' U' R",
+      "hash": "bwcxefghijmpvdisnqlaabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' R U2 R2' U' R",
+      "hash": "audvefghnoklcmpjfgtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U R U2 R2' U' R",
+      "hash": "ickbefghajdldixoaqtlabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U' R U2 R2' U' R",
+      "hash": "iakdefghcjbljcxogqtfabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "U2 R U2 R2' U' R",
+      "hash": "idkcefghbjalijxofqtaabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U R U2 R2' U' R",
+      "hash": "cwdxefghijnmvijsnqafabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U' R U2 R2' U' R",
+      "hash": "awbxefghijpovcdsnqglabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y U2 R U2 R2' U' R",
+      "hash": "dwaxefghijonvjcsnqfgabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U R U2 R2' U' R",
+      "hash": "buavefghopkldmpcgltwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U' R U2 R2' U' R",
+      "hash": "ducvefghmnkljmpiaftwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' U2 R U2 R2' U' R",
+      "hash": "cubvefghpmklimpdlatwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "R2 U' R2' U R2",
+      "hash": "bacdefghkjilbwkenqthabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y R2 U' R2' U R2",
+      "hash": "acbdefghijlkhetbnqkwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' R2 U' R2' U R2",
+      "hash": "dbcaefghjiklnhbkeqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "R2 U R2' U' R2",
+      "hash": "acbdefghkjilnkhbeqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y R2 U R2' U' R2",
+      "hash": "abdcefghijlkewbknqthabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' R2 U R2' U' R2",
+      "hash": "bacdefghjiklhekqnbtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L2' U' L2 U L2'",
+      "hash": "abdcefghilkjekhqnbtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y L2' U' L2 U L2'",
+      "hash": "dbcaefghjiklnhbkeqtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' L2' U' L2 U L2'",
+      "hash": "acbdefghijlkhetbnqkwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "L2' U L2 U' L2'",
+      "hash": "dbcaefghilkjbhtenqkwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y L2' U L2 U' L2'",
+      "hash": "bacdefghjiklhekqnbtwabcdef",
+      "step": "f2l"
+    },
+    {
+      "alg": "y' L2' U L2 U' L2'",
+      "hash": "abdcefghijlkewbknqthabcdef",
       "step": "f2l"
     }
   ]

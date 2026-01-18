@@ -28,35 +28,39 @@ const supportsHardwareKeyboard =
 
 
 
-const EditorLoader = ({ 
-  editorRef: contentEditableRef, 
-  handleInput, 
-  name, 
-  autofocus 
-}: { 
-  editorRef: React.RefObject<any>, 
-  handleInput: () => void, 
-  name: string, 
-  autofocus: boolean
-})  => {
+const EditorLoader = ({
+  editorRef: contentEditableRef,
+  handleInput,
+  name,
+  autofocus,
+  initialContent
+}: {
+  editorRef: React.RefObject<any>,
+  handleInput: () => void,
+  name: string,
+  autofocus: boolean,
+  initialContent?: string
+}) => {
   // useSearchParams is a hook. Storing searchParams here prevents it from being called again and causing reloads.
   const searchParams = useSearchParams();
-  
-  const handleStartupProcess = () => {
-    const urlText = searchParams.get(name);
-    const otherID = name === 'scramble' ? 'solution' : 'scramble';
-    const otherURLtext = searchParams.get(otherID);
 
-    if (urlText) {
-      let decodedText = decodeURIComponent(customDecodeURL(urlText));
+  const handleStartupProcess = () => {
+    const editorText = searchParams.get(name);
+    const otherID = name === 'scramble' ? 'solution' : 'scramble';
+    const otherEditorText = searchParams.get(otherID);
+
+    if (editorText) {
+      let decodedText = decodeURIComponent(customDecodeURL(editorText));
       contentEditableRef.current.innerText = decodedText;
+    } else if (initialContent && !otherEditorText) {
+      contentEditableRef.current.innerText = initialContent;
     }
 
     // needs to be run regardless to get syntax highlighting on text editors not using URL params
     handleInput();
 
-    
-    if (autofocus && urlText && !otherURLtext) { // TODO: `&& !otherURLtext` isn't desired, but an unknown bug causes animation desync otherwise.
+
+    if (autofocus && editorText && !otherEditorText) { // TODO: `&& !otherURLtext` isn't desired, but an unknown bug causes animation desync otherwise.
       // adds caretNode span, which then is processed by onInputChange
       const selection = window.getSelection();
       const range = document.createRange();
@@ -93,6 +97,7 @@ interface EditorProps {
   setHTML: (html: string) => void;
   ref?: React.Ref<ImperativeRef>;
   suggestionsRef?: React.MutableRefObject<Suggestion[] | undefined>;
+  initialContent?: string;
 }
 
 export interface ImperativeRef {
@@ -115,15 +120,16 @@ function MovesTextEditor({
   html,
   setHTML,
   ref,
-  suggestionsRef
+  suggestionsRef,
+  initialContent
 }: EditorProps) {
-  
+
   const suggestions = suggestionsRef?.current;
   const contentEditableRef = useRef<HTMLDivElement>(null);
   const moveOffsetRef = useRef<number>(0); // number of moves before and at the caret. 0 is at the start of the line before any moves.
   const lineOffsetRef = useRef<number>(0);
   const textboxMovesRef = useRef<string[][]>([['']]); // inner array for line of moves, outer array for all lines in textbox 
-  const selectedSuggestionRef = useRef<{ lineIndex: number,  full: string; remaining: string } | null>(null);
+  const selectedSuggestionRef = useRef<{ lineIndex: number, full: string; remaining: string } | null>(null);
   const suggestionStateRef = useRef<'showing' | 'dismissed' | 'accepted'>('showing');
   const suggestionSignatureRef = useRef<string>(''); // for knowing when to show new suggestions, should previous suggestions be dismissed
   const restoreFrameRef = useRef<number | null>(null);
@@ -136,8 +142,8 @@ function MovesTextEditor({
   const idIndex = name === 'scramble' ? 0 : 1;
 
   const sanitizeConf = {
-    allowedTags: ["b", "i","br","div"],
-    allowedAttributes: { span: ["className","class"]}
+    allowedTags: ["b", "i", "br", "div"],
+    allowedAttributes: { span: ["className", "class"] }
   };
 
   const localColorDict = useRef(JSON.parse(JSON.stringify(colorDict)));
@@ -160,7 +166,7 @@ function MovesTextEditor({
     updateURLTimeout.current ? clearTimeout(updateURLTimeout.current) : null;
     updateURLTimeout.current = setTimeout(passURLupdate, 500);
   };
-  
+
   const htmlToLineArray = (html: string) => {
     // strip properties from div tags
     html = html.replace(/<div[^>]*>/g, '<div>');
@@ -183,18 +189,18 @@ function MovesTextEditor({
     html = html.replace(new RegExp(`<span class="${highlightClass}">`, 'g'), '<span class="text-primary-100">');
 
     let lines = splitHTMLintoLines(html);
-    lines = cleanLines(lines);    
-    
+    lines = cleanLines(lines);
+
     return lines;
   }
-  
+
   const findHTMLchanges = (oldHTML: string[], newHTML: string[]): HTMLUpdateItem[] => {
     const htmlUpdateMatrix: HTMLUpdateItem[] = [];
     const suggestionClass = colorDict['suggestion'];
 
     newHTML.forEach((line, index) => {
       const oldLine = oldHTML[index];
-      
+
       // Check if line contains suggestions and is active line
       if (line.includes(`class="${suggestionClass}"`) && selectedSuggestionRef.current?.lineIndex === index) {
         htmlUpdateMatrix.push({
@@ -206,7 +212,7 @@ function MovesTextEditor({
         htmlUpdateMatrix.push({
           html: line
             .replace(/<img[^>]*>/g, '')
-            .replace(new RegExp(`<span class="${suggestionClass}">.*<\\/span>`, 'g'), 
+            .replace(new RegExp(`<span class="${suggestionClass}">.*<\\/span>`, 'g'),
               (match) => match.includes('id="caretNode"') ? '<span id="caretNode"></span>' : ''
             ),
           change: 'modified'
@@ -216,8 +222,8 @@ function MovesTextEditor({
           html: line,
           change: 'modified'
         });
-        
-      } else { 
+
+      } else {
         htmlUpdateMatrix.push({
           change: 'none'
         });
@@ -244,7 +250,130 @@ function MovesTextEditor({
       console.error('Error in findEndOfMoveOnCaret:', e);
     }
     return i;
+
+  };
+
+  // Auto-substitution patterns for automatic text replacement
+  const autoSubstitutions = [
+    // Convert repeated moves to numbered notation (XX → X2, X2X → X3)
+    { pattern: /([UDFBLRMESxyz])(?!\s)\1(?=\s|$)/g, replacement: '$12 ' },
+    { pattern: /([udfblr])(?!\s)\1(?=\s|$)/g, replacement: '$12 ' },
+    // Special UD/DU patterns
+    { pattern: /U('?)(?!2)D('?)(?!2)\s/g, replacement: '(U$1 D$2) ' },
+    { pattern: /D('?)(?!2)U('?)(?!2)\s/g, replacement: '(U$2 D$1) ' },
+    // Xw → x conversion
+    { pattern: /([UDFBLR])w('?)(?!2)/g, 
+      replacement: (match: string, face: string, prime: string) => 
+        `${face.toLowerCase()}${prime} ` 
+    },
+
+    // Fix missing spaces between moves
+    { pattern: /([UDFBLRMESxyz])(2?)('?)([UDFBLRMESxyzfblr])/g,
+      replacement: (match: string, m1: string, num: string, prime: string, m2: string) => {
+        // Skip if it's UD or DU (handled by special patterns above)
+        if ((m1 === 'U' && m2 === 'D') || (m1 === 'D' && m2 === 'U')) return match;
+        return `${m1}${num}${prime} ${m2}`;
+      }
+    },
+    // Add more substitution patterns here as needed
+  ];
+
+  /**
+   * Applies automatic text substitutions to the input text.
+   * Skips text inside comment spans to preserve comments as-is.
+   * Works on plain text to handle patterns that span across HTML elements.
+   */
+  const applyAutoSubstitutions = (text: string, html: string): [string, string] => {
+    const commentClass = colorDict['comment'];
+    const caretMarker = '___CARET___';
     
+    // Extract plain text from HTML, tracking caret position
+    let workingHtml = html.replace(/<span id="caretNode"[^>]*>.*?<\/span>/i, caretMarker);
+    let plainText = workingHtml.replace(/<[^>]+>/g, '');
+    
+    // Find comment regions in the plain text
+    // We need to preserve comments by identifying them in the HTML structure
+    const commentRegex = new RegExp(
+      `<span[^>]*class=["']${commentClass}["'][^>]*>([^<]*(?:<[^>]+>[^<]*)*?)<\/span>`,
+      'gi'
+    );
+    
+    const commentRanges: Array<{start: number, end: number, text: string}> = [];
+    let commentMatch;
+    let position = 0;
+    
+    // Build a mapping of comment positions in plain text
+    const tempHtml = workingHtml;
+    const segmentRegex = /(<[^>]+>)|([^<]+)/g;
+    let segMatch;
+    let inCommentSpan = false;
+    const commentStartRegex = new RegExp(`<span[^>]*class=["']${commentClass}["'][^>]*>`, 'i');
+    
+    while ((segMatch = segmentRegex.exec(tempHtml)) !== null) {
+      if (segMatch[1]) { // Tag
+        if (commentStartRegex.test(segMatch[1])) {
+          inCommentSpan = true;
+          commentRanges.push({ start: position, end: -1, text: '' });
+        } else if (segMatch[1] === '</span>' && inCommentSpan) {
+          inCommentSpan = false;
+          if (commentRanges.length > 0) {
+            commentRanges[commentRanges.length - 1].end = position;
+          }
+        }
+      } else if (segMatch[2]) { // Text
+        const textContent = segMatch[2];
+        if (inCommentSpan && commentRanges.length > 0) {
+          const lastComment = commentRanges[commentRanges.length - 1];
+          lastComment.text += textContent;
+        }
+        position += textContent.length;
+      }
+    }
+    
+    // Apply substitutions to non-comment portions
+    let processedText = plainText;
+    
+    // Protect caret marker from substitution patterns by temporarily replacing it
+    // Use only control characters that won't match any cube notation patterns
+    const caretPlaceholder = '\u0000\u0001\u0002\u0003';
+    processedText = processedText.replace(caretMarker, caretPlaceholder);
+    
+    // For each comment range, replace with a unique placeholder
+    const commentPlaceholders: string[] = [];
+    for (let i = commentRanges.length - 1; i >= 0; i--) {
+      const range = commentRanges[i];
+      if (range.end !== -1) {
+        const placeholder = `\u0000\u0004${i}\u0005\u0000`;
+        commentPlaceholders[i] = processedText.substring(range.start, range.end);
+        processedText = processedText.substring(0, range.start) + placeholder + processedText.substring(range.end);
+      }
+    }
+    
+    // Apply all substitutions to the text (outside of comments)
+    for (const sub of autoSubstitutions) {
+      processedText = processedText.replace(sub.pattern, sub.replacement as any);
+    }
+    
+    // Restore comments
+    for (let i = 0; i < commentPlaceholders.length; i++) {
+      processedText = processedText.replace(`\u0000\u0004${i}\u0005\u0000`, commentPlaceholders[i]);
+    }
+    
+    // Restore caret marker
+    processedText = processedText.replace(caretPlaceholder, caretMarker);
+    
+    // Restore caret marker position
+    const modifiedText = processedText.replace(caretMarker, '');
+    let modifiedHtml = processedText.replace(caretMarker, '<span id="caretNode"></span>');
+    
+    // Wrap in div if not already wrapped (preserve structure)
+    if (!html.startsWith('<div>')) {
+      modifiedHtml = `<div>${modifiedHtml}<br></div>`;
+    } else {
+      modifiedHtml = `<div>${modifiedHtml}<br></div>`;
+    }
+    
+    return [modifiedText, modifiedHtml];
   };
 
   const getMovesFromTokens = (tokens: Token[]): string[] => {
@@ -254,14 +383,18 @@ function MovesTextEditor({
   }
 
   const handleLineModified = (updateItem: HTMLUpdateItem, i: number, lineMoveCounts: number[]): string => {
-    const line = updateItem.html || '';
+    let line = updateItem.html || '';
 
     // get html
-    const text = line.replace(/<[^>]+>/g, '');
+    let text = line.replace(/<[^>]+>/g, '');
+
+    // Apply auto-substitutions
+    [text, line] = applyAutoSubstitutions(text, line);
+
     const parsed = parseTextInput(text);
-    
+
     const [newHTMLline, caretIndex] = updateLine(parsed, line);
-    
+
     // get move and line offsets
     let moves: string[];
     if (caretIndex !== null) {
@@ -270,7 +403,7 @@ function MovesTextEditor({
       const tokensBeforeCaret = parsingToTokens(parsed.slice(0, caretSplitIndex)); // before and including move at caret
       const movesBeforeCaret: string[] = getMovesFromTokens(tokensBeforeCaret);
       moveOffsetRef.current = movesBeforeCaret.length; // not minus 1. 0 represents before any moves.
-      
+
       // TODO: could be optimized.
       // Can't create tokensAfterCaret because the caret might be in the middle of a group 
       // [ex: (R U | R' U')2]
@@ -292,11 +425,11 @@ function MovesTextEditor({
   };
 
   const handleLineSuggestion = (updateItem: HTMLUpdateItem, index: number, lineMoveCounts: number[]): string => {
-    
+
     if (selectedSuggestionRef.current === null) {
       selectedSuggestionRef.current = { lineIndex: -1, full: '', remaining: '' };
     }
-    
+
     const line = updateItem.html || '';
     const text = line.replace(/<[^>]+>/g, '');
 
@@ -320,7 +453,7 @@ function MovesTextEditor({
 
     // get html without suggestion or image
     const htmlWithoutSuggestion = line.replace(selectedSuggestionRef.current.remaining, '').replace(/<img[^>]*>/g, '');
-    const validatedHTML = handleLineModified({html: htmlWithoutSuggestion, change: 'modified'}, index, lineMoveCounts);
+    const validatedHTML = handleLineModified({ html: htmlWithoutSuggestion, change: 'modified' }, index, lineMoveCounts);
     const suggestionClass = colorDict['suggestion'];
     const tabImageHTML = supportsHardwareKeyboard
       ? `<img src="/tab.svg" alt="Press Tab" style="display: inline; pointer-events-none; width: 51px; height: 20px; margin-left: 8px; margin-bottom: 4px; vertical-align: middle;" />`
@@ -328,10 +461,10 @@ function MovesTextEditor({
 
     const suggestionHTML = remainingSuggestion ? `<span class="${suggestionClass}">${remainingSuggestion}</span>${tabImageHTML}` : '';
     const combinedHTML = validatedHTML.replace(/<br><\/div>$/, `${suggestionHTML}<br></div>`);
-    selectedSuggestionRef.current = { 
+    selectedSuggestionRef.current = {
       lineIndex: index,
       full: selectedSuggestionRef.current.full,
-      remaining: remainingSuggestion 
+      remaining: remainingSuggestion
     };
     return combinedHTML;
   };
@@ -344,7 +477,7 @@ function MovesTextEditor({
 
     // iterate line by line and return painted HTML
     const paintedHTML = htmlUpdateMatrix.map((updateItem, i) => {
-      
+
       if (!textboxMovesRef.current[i]) {
         textboxMovesRef.current[i] = [''];
       }
@@ -364,7 +497,7 @@ function MovesTextEditor({
       }
 
     });
-    
+
     return [paintedHTML, lineMoveCounts];
   };
 
@@ -385,11 +518,11 @@ function MovesTextEditor({
   }
 
   const updateMoveHistory = (html: string, moveCountChanged: boolean) => {
-    
+
     if (moveHistory.current.status === 'loading') {
       moveHistory.current.history = [["", ""]];
       moveHistory.current.index = 0;
-      
+
       moveHistory.current.status = 'ready';
     }
 
@@ -397,8 +530,8 @@ function MovesTextEditor({
       return;
     }
 
-    let i = moveHistory.current.index;    
-    
+    let i = moveHistory.current.index;
+
     const MaxHistoryReached = i >= moveHistory.current.MAX_HISTORY;
 
     if (MaxHistoryReached) {
@@ -411,7 +544,7 @@ function MovesTextEditor({
       i++;
 
     } else if (!moveCountChanged) {
-      
+
       let lastTextboxHistory = moveHistory.current.history[moveHistory.current.index][idIndex];
       let rowIndex = moveHistory.current.index;
       while (lastTextboxHistory === '<unchanged>' && rowIndex > 1) {
@@ -429,24 +562,24 @@ function MovesTextEditor({
     moveCountChanged ? moveHistory.current.history = moveHistory.current.history.slice(0, i + 1) : null;
 
     idIndex === 0 ?
-      moveHistory.current.history[i] = [html, '<unchanged>'] : 
-      moveHistory.current.history[i] = ['<unchanged>', html];    
+      moveHistory.current.history[i] = [html, '<unchanged>'] :
+      moveHistory.current.history[i] = ['<unchanged>', html];
   }
 
   const updateLine = (parsing: [string, string, number?][], line: string): [string, number | null] => {
     line = removeSpansExceptCaret(line);
     line = line.replace(/&nbsp;/g, ' ');
-  
+
     let { updatedLine, caretIndex } = processParsing(parsing, line);
-  
+
     return [updatedLine, caretIndex];
   }
-  
+
   const processParsing = (parsing: [string, string, number?][], line: string): { updatedLine: string, caretIndex: number | null } => {
     let valIndex = 0;
     let valOffset = 0;
     let matchOffset = 0;
-  
+
     let caretIndex: number | null = null;
 
     // find strings between ">" and "<" and modify each
@@ -457,11 +590,11 @@ function MovesTextEditor({
       }
 
       match = match.substring(1, match.length - 1); // remove ">" and "<"
-  
+
       let remainingMatchLength = match.length;
       let paintedMatch = '';
       let prevNonspaceType = '';
-    
+
       while (remainingMatchLength > 0) {
         if (!(parsing[valIndex] && parsing[valIndex][0])) {
           console.error(`ERROR: Parsing at ${valIndex} is undefined`);
@@ -474,11 +607,11 @@ function MovesTextEditor({
           console.error(`Color not found for type: ${type}`);
           color = 'text-primary-100';
         }
-    
+
         const allowableMatchOffset = valLength - valOffset;
         let matchEnd = matchOffset + remainingMatchLength;
         let oldOffset = matchOffset;
-    
+
         if (remainingMatchLength > valLength) {
           matchEnd = allowableMatchOffset + matchOffset;
           remainingMatchLength -= allowableMatchOffset;
@@ -496,14 +629,14 @@ function MovesTextEditor({
           remainingMatchLength = 0;
           valIndex++;
         }
-    
+
         const matchString = match.substring(oldOffset, matchEnd).replace(/\s/g, ' ');
-        
+
         const typeContinuationWhitelist = ['move', 'comment', 'space', 'invalid', 'paren', 'rep', 'hashtag'];
-        const isAllowableContinuation = 
-          (type === 'space' 
-          && typeContinuationWhitelist.includes(prevNonspaceType) 
-          && matchString);
+        const isAllowableContinuation =
+          (type === 'space'
+            && typeContinuationWhitelist.includes(prevNonspaceType)
+            && matchString);
 
         if (type === prevNonspaceType || isAllowableContinuation) {
           // append match to existing span
@@ -512,20 +645,20 @@ function MovesTextEditor({
           // create new span
           paintedMatch += `<span class="${color}">${matchString}</span>`;
         }
-    
+
         if (type !== 'space') {
           prevNonspaceType = type;
         }
       }
-    
+
       paintedMatch = ">" + paintedMatch + "<";
-  
+
       return paintedMatch;
     });
-  
+
     return { updatedLine: line, caretIndex };
   }
-  
+
   const removeSpansExceptCaret = (line: string): string => {
     let line2 = '';
     while (line2 !== line) {
@@ -553,7 +686,7 @@ function MovesTextEditor({
     }
     return lines;
   }
-  
+
   const splitByDiv = (html: string): string[] => {
     const segments: string[] = [];
     const divRegex = /<div>[\s\S]*?<\/div>/gi;
@@ -571,13 +704,13 @@ function MovesTextEditor({
     }
     return segments;
   }
-  
+
   const isDivBlock = (segment: string): boolean => {
     return /^<div>[\s\S]*<\/div>$/i.test(segment);
   }
-  
+
   const divIsEmpty = (divHtml: string): boolean => {
-    
+
     // count caret node as content
     if (/<span id="caretNode">/i.test(divHtml)) return false;
 
@@ -585,7 +718,7 @@ function MovesTextEditor({
     const withoutSpans = inner.replace(/<\/?span[^>]*>/gi, '');
     return withoutSpans === '';
   }
-  
+
   const splitByBr = (segment: string): string[] => {
     const withoutSpaces = segment.replace(/\s/g, '');
     if (/^(<br>)+$/i.test(withoutSpaces)) {
@@ -602,8 +735,8 @@ function MovesTextEditor({
     // 2. The lines of in the textbox are found. Changes are pushed into updateMatrix.
     // 3. Based on updateMatrix, lines in textbox are painted by functional class (valid, invalid, paren, etc).
     // 4. Concurrently, get data for updating refs
-          // moveCount is stored for the purposes of undo/redo. 
-          // MoveHistory updated.
+    // moveCount is stored for the purposes of undo/redo. 
+    // MoveHistory updated.
     // 5. Refs updated.
     // 6. Contenteditable div's and move history buttons' state updated.
     // 7. Cube visualization state passed to page through trackMoves().
@@ -614,7 +747,7 @@ function MovesTextEditor({
     // 2
     let htmlLines = htmlToLineArray(contentEditableRef.current!.innerHTML);
     const htmlUpdateMatrix = findHTMLchanges(oldHTMLlinesRef.current, htmlLines);
-    
+
     // 4
     let lineMoveCounts = [...oldLineMoveCounts.current];
     lineMoveCounts = lineMoveCounts.slice(0, htmlLines.length);
@@ -622,11 +755,11 @@ function MovesTextEditor({
     // 3, 4
     [htmlLines, lineMoveCounts] = handleHTMLlines(htmlUpdateMatrix, lineMoveCounts);
     const newHTMLlines = htmlLines.join('');
-    
+
     // 4
     const moveCountChanged = isQuantifiableMoveChange(oldLineMoveCounts.current, lineMoveCounts);
     updateMoveHistory(newHTMLlines, moveCountChanged);
-    
+
     // 5
     oldHTMLlinesRef.current = htmlLines;
     oldLineMoveCounts.current = lineMoveCounts;
@@ -648,7 +781,7 @@ function MovesTextEditor({
     lines = lines
       .map((line: string) => line.replace(/<\/?div>|<br>/g, ""))
       .map((line: string) => `<div>${line}<br></div>`)
-    ;
+      ;
 
     return lines;
   };
@@ -692,7 +825,7 @@ function MovesTextEditor({
     const range = document.createRange();
     let node: Node | null = focusNode || null;
 
-    if (node === contentEditableRef.current 
+    if (node === contentEditableRef.current
       && contentEditableRef.current.firstChild
       && contentEditableRef.current.firstChild.nodeType === Node.ELEMENT_NODE
       && (contentEditableRef.current.firstChild as Element).tagName === 'DIV'
@@ -722,8 +855,8 @@ function MovesTextEditor({
       }
 
       if (node.nodeType === Node.ELEMENT_NODE &&
-      (node as Element).tagName === 'DIV' &&
-      !(node as Element).querySelector('br')) {
+        (node as Element).tagName === 'DIV' &&
+        !(node as Element).querySelector('br')) {
         (node as Element).appendChild(document.createElement('br'));
       }
 
@@ -734,7 +867,6 @@ function MovesTextEditor({
    * Sets the caret to the location of the caret span (span with id=caretNode)
    */
   const setCaretToCaretSpan = () => {
-
     if (document && document.activeElement !== contentEditableRef.current) {
       return;
     }
@@ -749,7 +881,7 @@ function MovesTextEditor({
       selection?.addRange(range);
     }
   }
-  
+
   const handleCopy = (e: React.ClipboardEvent<HTMLDivElement>) => {
     e.preventDefault();
     const text = window.getSelection()?.toString() || '';
@@ -767,30 +899,30 @@ function MovesTextEditor({
     }
     return ancestors;
   };
-  
+
   const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
     e.stopPropagation();
     e.preventDefault();
-    
+
     let text = e.clipboardData.getData("text");
     let sanitizedText = sanitizeHtml(text, sanitizeConf)
       .replace(/’/g, "'")
-      
+
       // this probably has some unfortunate edge cases with comments, 
       // but people shouldn't be making comments anyway
       .replace(/([UDFBLR])w/g, (match, p1) => p1.toLowerCase());
-  
+
     const selection = window.getSelection();
     if (selection && contentEditableRef.current) {
       const container = contentEditableRef.current;
       const range = selection.getRangeAt(0);
-      
+
       const startAncestors = getAncestors(range.startContainer, container);
       const endAncestors = getAncestors(range.endContainer, container);
       const affected = new Set([...startAncestors, ...endAncestors]);
-      
+
       range.deleteContents();
-      
+
       // remove empty parent nodes
       affected.forEach((el) => {
         if (el.textContent?.trim() === "") {
@@ -802,14 +934,14 @@ function MovesTextEditor({
       lines.forEach((line, index) => {
         const tempElement = document.createElement("div");
         tempElement.innerHTML = line;
-        
+
         // Add caret node to the last line
         if (index === 0) { // First element in reversed array is the last line
           const caretNode = document.createElement('span');
           caretNode.id = 'caretNode';
           tempElement.appendChild(caretNode);
         }
-        
+
         range.insertNode(tempElement);
       });
 
@@ -817,11 +949,11 @@ function MovesTextEditor({
       selection.removeAllRanges();
       setCaretToCaretSpan();
     }
-  
+
     setHTML(contentEditableRef.current!.innerHTML);
     onInputChange();
   };
-  
+
   const passURLupdate = () => {
 
     // don't allow dummy text editors to update the URL
@@ -834,7 +966,7 @@ function MovesTextEditor({
     }
 
     const suggestionClass = colorDict['suggestion'];
-    
+
     // TODO: try just cloning the node and removing suggestions from that
     const removeSuggestions = (element: HTMLElement) => {
       const removedNodes: Array<{ parent: Node; node: Node; nextSibling: Node | null }> = [];
@@ -876,10 +1008,10 @@ function MovesTextEditor({
   const isMultiSelect = () => {
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) return false;
-  
+
     const range = selection.getRangeAt(0);
     return !range.collapsed && (range.startContainer !== range.endContainer || range.startOffset !== range.endOffset);
-  };  
+  };
 
   /**
    * Parses the current caret state and returns structured data.
@@ -893,7 +1025,7 @@ function MovesTextEditor({
     const prevHTML = contentEditableRef.current.innerHTML;
 
     setCaretSpanToCaret();
-    
+
     // check if insertion was a no-op
     if (prevHTML === contentEditableRef.current.innerHTML) {
       return null;
@@ -919,22 +1051,22 @@ function MovesTextEditor({
     let caretOffset = 0;
 
     const newLineOffset = lines.findIndex((line) => line.includes('<span id="caretNode">'));
-    
+
     if (newLineOffset === -1) return;
-    
+
     lineOffsetRef.current = newLineOffset;
 
     caretLine = lines[lineOffsetRef.current];
     const lineTextArray = caretLine?.match(/>[^<>]+<|caretNode">/g);
-    
+
     if (!lineTextArray) return;
-    
+
     let fullRawText = '';
     let caretReached = false;
 
     // find number of characters before caret and get full text for parsing    
-    for (let text of lineTextArray){
-      
+    for (let text of lineTextArray) {
+
       if (text === 'caretNode">') {
         caretReached = true;
         continue;
@@ -957,13 +1089,14 @@ function MovesTextEditor({
     let moveTokens = tokens.filter((token) => token.type === 'move').map((token) => token.value);
     moveOffsetRef.current = moveTokens.length;
 
-    // Clean html for case where user changed caret during move replay
-    const noHighlightHTML = element.innerHTML.replace(new RegExp(`<span class="${highlightClass}">`, 'g'), '<span class="text-primary-100">');
-
-    const hasStyling = /<span class="[^"]+">[^<]+<\/span>/.test(noHighlightHTML);
+    // simplify regex test by removing caret span
+    const caretlessHTML = element.innerHTML.replace(/<span id="caretNode">.*?<\/span>/i, '');
+    const hasStyling = /<span class="[^"]+">[^<]+<\/span>/.test(caretlessHTML);
     // if no styling, we assume that the html is still being loaded and parsed by onInputChange
     // otherwise we'd get a race condition
     if (hasStyling) {
+      // Clean html for case where user changed caret during move replay
+      const noHighlightHTML = element.innerHTML.replace(new RegExp(`<span class="${highlightClass}">`, 'g'), '<span class="text-primary-100">');
       setHTML(noHighlightHTML);
     }
     trackMoves(idIndex, lineOffsetRef.current, moveOffsetRef.current, textboxMovesRef.current);
@@ -977,7 +1110,6 @@ function MovesTextEditor({
     // Parse the current state - returns null if invalid
     const state = parseCaretState();
     if (!state) return;
-
     setCaretState(state);
   };
 
@@ -1006,12 +1138,12 @@ function MovesTextEditor({
       setCaretToCaretSpan();
       handleInput();
     });
-    
+
     // sus. How can we better prevent suggestionBox from showing? Setting a ref to dismissed doesn't update state.
-    selectedSuggestionRef.current = {lineIndex: -1, full: '', remaining: '' };
-    
+    selectedSuggestionRef.current = { lineIndex: -1, full: '', remaining: '' };
+
     suggestionStateRef.current = 'dismissed';
-    
+
   };
 
   const handleCommand = (e: KeyboardEvent) => {
@@ -1050,7 +1182,7 @@ function MovesTextEditor({
     const isCtrl = e.ctrlKey || e.metaKey;
 
     if (isCtrl && !e.shiftKey && !e.altKey && e.key === 'z') {
-      
+
       e.preventDefault();
       handleUndo();
     }
@@ -1074,10 +1206,10 @@ function MovesTextEditor({
   };
 
   const statusTransitions: any = {
-    ready: { start: 'in_progress_one'},
+    ready: { start: 'in_progress_one' },
     in_progress_one: { fail: 'checked_one', success: 'success_one' },
     checked_one: { fail: 'ready', success: 'ready', start: 'in_progress_two' },
-    success_one: { start: 'ready'},
+    success_one: { start: 'ready' },
     in_progress_two: { fail: 'ready', success: 'ready' },
   };
 
@@ -1121,10 +1253,10 @@ function MovesTextEditor({
   const handleSuggestionAccept = () => {
     if (!contentEditableRef.current) return;
     if (name === 'scramble') return; // no suggestions in scramble
-    
+
     const suggestionClass = colorDict['suggestion'];
     const moveClass = colorDict['move'];
-    
+
     runAfterFocus(() => {
       if (!contentEditableRef.current) return;
 
@@ -1162,10 +1294,10 @@ function MovesTextEditor({
       suggestionStateRef.current = 'accepted';
 
       // changed full to '' for testing
-      selectedSuggestionRef.current = {...selectedSuggestionRef.current!, full: '', remaining: '' };
+      selectedSuggestionRef.current = { ...selectedSuggestionRef.current!, full: '', remaining: '' };
     });
   }
-  
+
   const incrementStatus = (type: 'fail' | 'success') => {
     const nextStatus = statusTransitions[moveHistory.current.status]?.[type];
     if (nextStatus) {
@@ -1174,7 +1306,7 @@ function MovesTextEditor({
       console.error('moveHistory status out of sync!');
     }
   };
-  
+
   const handleUndo = () => {
 
     const startStatus = statusTransitions[moveHistory.current.status]?.start;
@@ -1189,31 +1321,31 @@ function MovesTextEditor({
 
     let index = moveHistory.current.index;
     const history = moveHistory.current.history;
-  
+
     if (index < 1) {
       moveHistory.current.index = 0;
       incrementStatus('fail');
       return;
     }
-  
+
     if (history[index] && history[index][idIndex] === '<unchanged>') {
       incrementStatus('fail');
       return;
     }
-  
+
     index--;
     moveHistory.current.index--;
 
     const parentElement = document.getElementById(name);
     const textbox = parentElement?.querySelector<HTMLDivElement>('div[contenteditable="true"]');
     textbox?.focus({ preventScroll: true });
-  
+
     let prevHTML = history[index][idIndex];
     while (prevHTML === '<unchanged>' && index > 0) {
       index--;
       //don't update moveHistory.current.index here. While loop would cause skips.
       prevHTML = history[index][idIndex];
-    }    
+    }
 
     contentEditableRef.current!.innerHTML = prevHTML;
     updateHistoryBtns();
@@ -1222,34 +1354,34 @@ function MovesTextEditor({
 
     incrementStatus('success'); // placed at end to give correct moveHistory state to updateMoveHistory
   };
-  
+
 
   const handleRedo = () => {
-  
+
     const startStatus = statusTransitions[moveHistory.current.status]?.start;
     if (startStatus) {
       moveHistory.current.status = startStatus;
     } else {
       console.error('moveHistory status out of sync!');
     }
-    
+
     if (startStatus === 'ready') {
       return;
     }
 
     let index = moveHistory.current.index;
     const history = moveHistory.current.history;
-    
+
     if (index + 1 > moveHistory.current.MAX_HISTORY || index + 1 >= moveHistory.current.history.length) {
       incrementStatus('fail');
       return;
     }
-    
+
     if (history[index + 1] && history[index + 1][idIndex] === '<unchanged>') {
       incrementStatus('fail');
       return;
     }
-    
+
     index++;
     moveHistory.current.index++;
 
@@ -1352,19 +1484,19 @@ function MovesTextEditor({
   const handleHighlightMove = (moveIndex: number, lineIndex: number) => {
 
     if (!contentEditableRef.current) return;
-    if (name === 'scramble') return; 
+    if (name === 'scramble') return;
     if (moveIndex < 0 || lineIndex < 0) return; // invalid move index or line index
-    
+
     // should only highlight if moves have been painted
-    if (!contentEditableRef.current.innerHTML.includes('<span')) return; 
+    if (!contentEditableRef.current.innerHTML.includes('<span')) return;
 
     let lines = htmlToLineArray(contentEditableRef.current.innerHTML);
 
     if (lineIndex >= lines.length) return; // invalid line index
     const line = lines[lineIndex];
-    
+
     // iterate through valid spans, counting moves, and highlighting the move at moveIndex
-    const text = line.replace(/<[^>]+>/g, '');    
+    const text = line.replace(/<[^>]+>/g, '');
     const parsing = parseTextInput(text);
     const newVal = degroup(parsing, true) as MovesDisplayParsing[];
     const moveDisplayIndex = findMoveDisplayIndex(newVal, moveIndex);
@@ -1372,8 +1504,8 @@ function MovesTextEditor({
     const highlightedParsing: MovesParsing[] = addHighlightParsing(parsing, moveDisplayIndex);
 
     // apply highlighted class. Do some cleanup.
-    let [ updatedLine, _ ] = updateLine(highlightedParsing, line);
-    
+    let [updatedLine, _] = updateLine(highlightedParsing, line);
+
     lines[lineIndex] = updatedLine;
 
     // Update the contentEditable with highlighted content
@@ -1383,7 +1515,7 @@ function MovesTextEditor({
 
   const removeAllSuggestions = (): string[] => {
     if (!contentEditableRef.current) return [];
-    
+
     const lines = htmlToLineArray(contentEditableRef.current.innerHTML);
     const suggestionClass = colorDict['suggestion'];
     return lines.map(line => line.replace(new RegExp(`<span class="${suggestionClass}">[^<]*<\/span>(<img[^>]*>)?`, 'g'), ''));
@@ -1395,8 +1527,8 @@ function MovesTextEditor({
     if (selectedSuggestionRef.current?.full === suggestion) return; // same suggestion already shown
 
     let lines = removeAllSuggestions();
-    
-    
+
+
     const isCommentSuggestion = suggestion.startsWith('//');
     if (isCommentSuggestion) {
       // not currently using comment suggestions
@@ -1421,7 +1553,7 @@ function MovesTextEditor({
     // if there's already a comment, return
     const commentClass = colorDict['comment'];
     if (lines[lineOffsetRef.current].includes(`class="${commentClass}"`)) return
-    
+
     const oldLine = lines[lineOffsetRef.current] || '';
     const suggestionClass = colorDict['suggestion'];
     const newline = oldLine.replace(/<br>/, `<span class="${suggestionClass}">${suggestion}</span><span id="caretNode"></span><br>`);
@@ -1429,9 +1561,9 @@ function MovesTextEditor({
     oldHTMLlinesRef.current = lines;
     const newHTML = lines.join('');
     selectedSuggestionRef.current = {
-      lineIndex: lineOffsetRef.current, 
-      full: suggestion, 
-      remaining: suggestion 
+      lineIndex: lineOffsetRef.current,
+      full: suggestion,
+      remaining: suggestion
     };
     suggestionStateRef.current = 'showing';
     setHTML(newHTML);
@@ -1445,7 +1577,7 @@ function MovesTextEditor({
       existingCaretNode.parentNode!.removeChild(existingCaretNode);
       existingCaretNode = contentEditableRef.current!.querySelector('#caretNode');
     }
-    
+
     const oldLineMoves = textboxMovesRef.current[lineOffsetRef.current] || [];
     const movecount = oldLineMoveCounts.current[lineOffsetRef.current];
     const remainingMoves = suggestion.split(' ');
@@ -1471,7 +1603,7 @@ function MovesTextEditor({
     const tabInstruction = supportsHardwareKeyboard
       ? `<img src="/tab.svg" alt="Press Tab" style="display: inline; pointer-events-none; width: 51px; height: 20px; margin-left: 8px; margin-bottom: 4px; vertical-align: middle;" />`
       : '';
-    
+
     const optionalSpace = (oldLineMoveCounts.current[lineOffsetRef.current] > 0 && !isMidMove) ? ' ' : '';
     const oldMoves = oldLineMoves.join(' ');
     const validClass = colorDict['move'];
@@ -1482,9 +1614,9 @@ function MovesTextEditor({
     oldHTMLlinesRef.current = lines; // update oldHTMLlines to prevent undo/redo issues
     const newHTML = lines.join('');
     selectedSuggestionRef.current = {
-      lineIndex: lineOffsetRef.current, 
-      full: suggestion, 
-      remaining: remainingSuggestion 
+      lineIndex: lineOffsetRef.current,
+      full: suggestion,
+      remaining: remainingSuggestion
     };
     suggestionStateRef.current = 'showing';
     setHTML(newHTML);
@@ -1518,7 +1650,7 @@ function MovesTextEditor({
   const { x: locationX, y: locationY } = suggestionStateRef.current === 'showing' && name === 'solution'
     ? getSuggestionPosition(lineOffsetRef.current)
     : { x: 0, y: 0 };
-  
+
   useImperativeHandle(ref, () => ({
     undo: () => {
       handleUndo();
@@ -1554,7 +1686,7 @@ function MovesTextEditor({
   }), []);
 
   useEffect(() => {
-        
+
     document.addEventListener('selectionchange', handleCaretChange);
     document.addEventListener('keydown', handleCommand);
 
@@ -1608,12 +1740,12 @@ function MovesTextEditor({
   const checkCaretRestore = () => {
     if (typeof window === 'undefined') {
       // logCaretRestoreExit('window undefined');
-    // } else  if (restoreFrameRef.current !== null) {
-    //   logCaretRestoreExit('frame already scheduled');
+      // } else  if (restoreFrameRef.current !== null) {
+      //   logCaretRestoreExit('frame already scheduled');
     } else if (!contentEditableRef.current) {
       // logCaretRestoreExit('missing contentEditableRef');
-    // } else if (document.activeElement !== contentEditableRef.current) {
-    //   logCaretRestoreExit('editor not focused');
+      // } else if (document.activeElement !== contentEditableRef.current) {
+      //   logCaretRestoreExit('editor not focused');
     } else {
       if (isMultiSelect()) {
         const selection = window.getSelection();
@@ -1642,13 +1774,13 @@ function MovesTextEditor({
 
   // Dismiss suggestion if caret line has changed
   // TODO: move this to caret change handler
-  if (selectedSuggestionRef.current 
+  if (selectedSuggestionRef.current
     && selectedSuggestionRef.current.lineIndex !== lineOffsetRef.current
     && suggestionStateRef.current !== 'accepted'
   ) {
 
     suggestionStateRef.current = 'dismissed';
-  // Show if caret is on the suggestion line
+    // Show if caret is on the suggestion line
   } else if (selectedSuggestionRef.current
     && selectedSuggestionRef.current.lineIndex === lineOffsetRef.current
     && suggestionStateRef.current !== 'accepted'
@@ -1656,13 +1788,73 @@ function MovesTextEditor({
     suggestionStateRef.current = 'showing';
   }
 
-  const completedString = textboxMovesRef.current[lineOffsetRef.current]?.join(' ');
-  const filteredSuggestions = suggestions
+  // Calculate completedString by examining HTML to detect trailing spaces
+  const getCompletedString = (): string => {
+    const moves = textboxMovesRef.current[lineOffsetRef.current];
+    if (!moves || moves.length === 0) return '';
+    
+    const htmlLine = oldHTMLlinesRef.current[lineOffsetRef.current];
+    if (!htmlLine) return moves.join(' ');
+
+    // Valid types that should be considered as "completed" content
+    const validTypes = ['move', 'space', 'paren', 'rep'];
+    const validClasses = validTypes.map(type => colorDict[type as keyof typeof colorDict]);
+
+    // Find all spans in the line
+    const spanRegex = /<span class="([^"]+)">([^<]*)<\/span>/g;
+    const spans: { className: string; content: string; index: number }[] = [];
+    let match: RegExpExecArray | null;
+    
+    while ((match = spanRegex.exec(htmlLine)) !== null) {
+      spans.push({
+        className: match[1],
+        content: match[2],
+        index: match.index
+      });
+    }
+
+    // Find the last span with a valid type
+    let lastValidSpanIndex = -1;
+    for (let i = spans.length - 1; i >= 0; i--) {
+      if (validClasses.includes(spans[i].className)) {
+        lastValidSpanIndex = i;
+        break;
+      }
+    }
+
+    if (lastValidSpanIndex === -1) {
+      return moves.join(' ');
+    }
+
+    // Check if any span from lastValidSpanIndex onwards has trailing space
+    let hasTrailingSpace = false;
+    for (let i = lastValidSpanIndex; i < spans.length; i++) {
+      const content = spans[i].content;
+      if (content.endsWith(' ')) {
+        hasTrailingSpace = true;
+        break;
+      }
+    }
+
+    const baseString = moves.join(' ');
+    return hasTrailingSpace ? baseString + ' ' : baseString;
+  };
+
+  const hasComments = (() => {
+    const htmlLine = oldHTMLlinesRef.current[lineOffsetRef.current];
+    if (!htmlLine) return false;
+    
+    const commentClass = colorDict['comment'];
+    return htmlLine.includes(`class="${commentClass}"`);
+  })();
+
+  const completedString = getCompletedString();
+  const filteredSuggestions = !hasComments ? suggestions
     ?.map((suggestion, index) => ({ suggestion, originalIndex: index }))
     .filter(({ suggestion }) => {
       // if (suggestion.alg === selectedSuggestionRef.current?.full) return false;
       return suggestion.alg.startsWith(completedString) && suggestion.alg !== completedString;
-    });
+    }) : undefined;
 
 
   useEffect(() => {
@@ -1673,7 +1865,13 @@ function MovesTextEditor({
   return (
     <>
       <Suspense fallback={null}>
-        <EditorLoader editorRef={contentEditableRef} handleInput={handleInput} name={name} autofocus={autofocus} />   
+        <EditorLoader
+          editorRef={contentEditableRef}
+          handleInput={handleInput}
+          name={name}
+          autofocus={autofocus}
+          initialContent={initialContent}
+        />
       </Suspense>
       <div
         contentEditable
@@ -1697,7 +1895,7 @@ function MovesTextEditor({
         tabIndex={idIndex === 0 ? 1 : 3}
       />
       {name === 'solution' && suggestions?.length && suggestionStateRef.current === 'showing' ? (
-        <SuggestionBox 
+        <SuggestionBox
           suggestions={filteredSuggestions || []}
           xLocation={locationX}
           yLocation={locationY}

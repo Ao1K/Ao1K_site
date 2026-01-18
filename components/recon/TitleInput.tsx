@@ -10,6 +10,7 @@ const InputWithPlaceholder: React.FC<InputWithPlaceholderProps> = ({ solveTitle,
   const inputRef = useRef<HTMLInputElement>(null);
   const [placeholderText, setPlaceholderText] = useState("");
   const lastWidth = useRef(inputRef.current?.clientWidth);
+  const canvasContextRef = useRef<CanvasRenderingContext2D | null>(null);
 
   useEffect(() => {
     let resizeTimeout: NodeJS.Timeout;
@@ -22,8 +23,12 @@ const InputWithPlaceholder: React.FC<InputWithPlaceholderProps> = ({ solveTitle,
 
       const inputWidth = inputRef.current.clientWidth;
       const font = window.getComputedStyle(inputRef.current).font;
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d');
+      
+      if (!canvasContextRef.current) {
+        const canvas = document.createElement('canvas');
+        canvasContextRef.current = canvas.getContext('2d');
+      }
+      const context = canvasContextRef.current;
 
       if (context) {
         context.font = font;
