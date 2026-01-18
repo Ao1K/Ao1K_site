@@ -1,8 +1,6 @@
 Informal Bugs/Todo List. Not guaranteed to be complete or accurate.
 ===================================================================
 
-Fix selection bug when there's only one line of text (one div)
-
 Suggestions should support multislot icons:
 Don't show suggestions that are direct longer version of other suggestion for same step.
  - Ex: R U R' U L U L' when R U R' solves FR.

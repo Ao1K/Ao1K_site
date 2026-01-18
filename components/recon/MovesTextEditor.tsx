@@ -842,7 +842,6 @@ function MovesTextEditor({
    * Sets the caret to the location of the caret span (span with id=caretNode)
    */
   const setCaretToCaretSpan = () => {
-
     if (document && document.activeElement !== contentEditableRef.current) {
       return;
     }
@@ -1065,13 +1064,14 @@ function MovesTextEditor({
     let moveTokens = tokens.filter((token) => token.type === 'move').map((token) => token.value);
     moveOffsetRef.current = moveTokens.length;
 
-    // Clean html for case where user changed caret during move replay
-    const noHighlightHTML = element.innerHTML.replace(new RegExp(`<span class="${highlightClass}">`, 'g'), '<span class="text-primary-100">');
-
-    const hasStyling = /<span class="[^"]+">[^<]+<\/span>/.test(noHighlightHTML);
+    // simplify regex test by removing caret span
+    const caretlessHTML = element.innerHTML.replace(/<span id="caretNode">.*?<\/span>/i, '');
+    const hasStyling = /<span class="[^"]+">[^<]+<\/span>/.test(caretlessHTML);
     // if no styling, we assume that the html is still being loaded and parsed by onInputChange
     // otherwise we'd get a race condition
     if (hasStyling) {
+      // Clean html for case where user changed caret during move replay
+      const noHighlightHTML = element.innerHTML.replace(new RegExp(`<span class="${highlightClass}">`, 'g'), '<span class="text-primary-100">');
       setHTML(noHighlightHTML);
     }
     trackMoves(idIndex, lineOffsetRef.current, moveOffsetRef.current, textboxMovesRef.current);
@@ -1085,7 +1085,6 @@ function MovesTextEditor({
     // Parse the current state - returns null if invalid
     const state = parseCaretState();
     if (!state) return;
-
     setCaretState(state);
   };
 
@@ -1825,7 +1824,6 @@ function MovesTextEditor({
   })();
 
   const completedString = getCompletedString();
-  console.log('completedString:', `"${completedString}"`);
   const filteredSuggestions = !hasComments ? suggestions
     ?.map((suggestion, index) => ({ suggestion, originalIndex: index }))
     .filter(({ suggestion }) => {
