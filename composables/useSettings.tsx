@@ -93,18 +93,20 @@ export function useCubeColors(): [CubeColors, (colors: Partial<CubeColors>) => v
   const [settings, setSettings] = useSettings();
 
   const setCubeColors = useCallback((colors: Partial<CubeColors>) => {
-    setSettings((prevSettings) => ({
-      ...prevSettings,
-      cubeColors: { ...prevSettings.cubeColors, ...colors },
-    }));
-  }, [setSettings]);
+    if (!settings) return;
+    setSettings({
+      ...settings,
+      cubeColors: { ...settings.cubeColors, ...colors },
+    });
+  }, [settings, setSettings]);
 
   const resetColors = useCallback(() => {
-    setSettings((prevSettings) => ({
-      ...prevSettings,
+    if (!settings) return;
+    setSettings({
+      ...settings,
       cubeColors: { ...DEFAULT_CUBE_COLORS },
-    }));
-  }, [setSettings]);
+    });
+  }, [settings, setSettings]);
 
   return [settings?.cubeColors || DEFAULT_CUBE_COLORS, setCubeColors, resetColors];
 }

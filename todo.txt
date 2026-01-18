@@ -32,7 +32,7 @@ Then we search for hash matches only on f2l pieces. The EO is matched separately
 Changes for verison 0.6?:
 - Reduced page load times by about half
 - Text substitutions (Uw -> u, UD -> (U D), UF -> U F)
-- Parens got getting colored
+- Parens got colored
 - Added about 700 f2l algs (counting variants as unique)
 - Better colored previews, gave borders to icons. Unified style between preview and editor
 - Cube Colors menu. Note that previews won't be affected.
