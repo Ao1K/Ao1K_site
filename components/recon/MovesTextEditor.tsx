@@ -255,20 +255,34 @@ function MovesTextEditor({
 
   // Auto-substitution patterns for automatic text replacement
   const autoSubstitutions = [
-    // Convert repeated moves to numbered notation (XX → X2, X2X → X3)
-    { pattern: /([UDFBLRMESxyz])(?!\s)\1(?=\s|$)/g, replacement: '$12 ' },
-    { pattern: /([udfblr])(?!\s)\1(?=\s|$)/g, replacement: '$12 ' },
+    // Convert repeated moves to numbered notation (XX → X2)
+    { pattern: /([UDFBLRMESudfblrxyz])(?!\s)\1/g, replacement: '$12' },
+    
+    // Convert X2X into X3 for r and l moves only. 
+    // Other moves can't really be fingertricked as X3.
+    { pattern: /([LRlr])2(?!\s)\1/g, replacement: (match: string, move: string) => {
+      const face = move.charAt(0);
+      return `${face}3`;
+    } },
+    
     // Special UD/DU patterns
     { pattern: /U('?)(?!2)D('?)(?!2)\s/g, replacement: '(U$1 D$2) ' },
     { pattern: /D('?)(?!2)U('?)(?!2)\s/g, replacement: '(U$2 D$1) ' },
+    
     // Xw → x conversion
     { pattern: /([UDFBLR])w('?)(?!2)/g, 
       replacement: (match: string, face: string, prime: string) => 
         `${face.toLowerCase()}${prime} ` 
     },
+    
+    // X -> x conversion
+    { pattern: /([XYZ])/g,
+      replacement: (match: string, axis: string) => axis.toLowerCase()
+    },
+
 
     // Fix missing spaces between moves
-    { pattern: /([UDFBLRMESxyz])(2?)('?)([UDFBLRMESxyzfblr])/g,
+    { pattern: /([UDFBLRMESudfblrxyz])([23]?)('?)([UDFBLRMESudfblrxyzfblr])/g,
       replacement: (match: string, m1: string, num: string, prime: string, m2: string) => {
         // Skip if it's UD or DU (handled by special patterns above)
         if ((m1 === 'U' && m2 === 'D') || (m1 === 'D' && m2 === 'U')) return match;
