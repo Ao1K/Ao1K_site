@@ -48,7 +48,7 @@ export async function generateMetadata(
   const titleParam = searchParams.title as string | undefined;
   const timeParam = searchParams.time as string | undefined;
   
-  let pageTitle = "Reconstruction Tool";
+  let pageTitle = "Reconstruction";
   if (titleParam) {
     pageTitle = titleParam;
   } else if (timeParam) {
