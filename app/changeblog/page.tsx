@@ -77,6 +77,7 @@ export default function Changeblog() {
           <li>- Typing "UD" and pressing space creates "(U D) "</li>
           <li>- Typing two moves like "RF" creates "R F"</li>
           <li>- Typing a wide move like "Uw" creates "u"</li>
+          <li>- Typing repeated moves like "RR" creates "R2"</li>
         </ul>
         <div>I lied about the whole "not needing spacebar" thing.</div>
         <div>The (U D) substitution is great for conveying you did both moves at the same time.

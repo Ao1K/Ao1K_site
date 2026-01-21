@@ -19,8 +19,7 @@ import PlayerControls from './PlayerControls';
 import { reverseMove } from '../../composables/recon/transformHTML'
 import type { ControllerRequestOptions } from './_PageContent';
 import type { PlayerParams as RenderRefProps } from './_PageContent';
-import Cookies from 'js-cookie';
-import { getSettings, type CubeColors } from '../../composables/useSettings';
+import { useSyncedSettings, useShowControls, type CubeColors } from '../../composables/useSettings';
 
 interface PlayerProps {
   scrambleRequest: string;
@@ -56,12 +55,6 @@ export const CUBE_COLORS = {
   white: '#FFFFFF',
 };
 
-// Helper to get current cube colors from settings
-function getCurrentCubeColors(): CubeColors {
-  return getSettings().cubeColors;
-}
-
-
 const Player = React.memo(({
   scrambleRequest,
   solutionRequest,
@@ -73,6 +66,10 @@ const Player = React.memo(({
   controllerButtonsStatus,
   setControllerButtonsStatus,
 }: PlayerProps) => {
+  const { settings } = useSyncedSettings();
+  const cubeColors = settings.cubeColors;
+  const [showControls] = useShowControls();
+  
   const playerRef = useRef<TwistyPlayer | null>(null);
   const cubeRef = useRef<Object3D<Object3DEventMap> | null>(null);
   const divRef = useRef<HTMLDivElement>(null);
@@ -88,7 +85,6 @@ const Player = React.memo(({
   // Store initial hint sticker colors to identify them later
   const initialHintStickerColors = useRef<{ r: number, g: number, b: number }[]>([]);
 
-  const [showControls, setShowControls] = useState<boolean>(true);
   const [flashingButtons, setFlashingButtons] = useState<Set<string>>(new Set());
 
   const calcCubeSpeed = (speed: number) => {
@@ -847,8 +843,8 @@ const Player = React.memo(({
     const stickerColors = cube.kpuzzleFaceletInfo;
     if (!stickerColors) return;
 
-    // Get colors from settings (cookie) or use defaults
-    const colors = getCurrentCubeColors();
+    // Get colors from settings
+    const colors = cubeColors;
 
     const up = hexToRgb(colors.up);
     const down = hexToRgb(colors.down);
@@ -958,26 +954,19 @@ const Player = React.memo(({
   }, []);
 
   useEffect(() => {
-
-    Cookies.get('recon_showPlayerControls') === 'false' ? setShowControls(false) : setShowControls(true);
     window.addEventListener('resize', handleResize);
-
-    // Listen for settings changes from settings menu
-    const handleSettingsChanged = () => {
-      if (cubeRef.current) {
-        setStickerColors(cubeRef.current);
-      }
-      // Update showControls from cookie
-      const savedShowControls = Cookies.get('recon_showPlayerControls');
-      setShowControls(savedShowControls !== 'false');
-    };
-    window.addEventListener('ao1kSettingsChanged', handleSettingsChanged);
 
     return () => {
       window.removeEventListener('resize', handleResize);
-      window.removeEventListener('ao1kSettingsChanged', handleSettingsChanged);
     };
   }, []);
+
+  // Update sticker colors when cubeColors change
+  useEffect(() => {
+    if (cubeRef.current) {
+      setStickerColors(cubeRef.current);
+    }
+  }, [cubeColors]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     // Handle if this div has focus OR if focus is on any element within this container

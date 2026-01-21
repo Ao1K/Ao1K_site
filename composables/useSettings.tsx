@@ -17,96 +17,112 @@ export type CubeColors = typeof DEFAULT_CUBE_COLORS;
 
 export interface AppSettings {
   cubeColors: CubeColors;
+  showPlayerControls: boolean;
 }
 
 const SETTINGS_COOKIE_KEY = 'ao1kSettings';
-const SETTINGS_CHANGED_EVENT = 'ao1kSettingsChanged';
+const BROADCAST_CHANNEL_NAME = 'ao1k-settings-sync';
 
-// Get settings from cookie (non-reactive, for use outside React)
-export function getSettings(): AppSettings {
+// Read settings from cookie (non-reactive)
+function readSettingsFromCookie(): AppSettings {
   const cookieValue = Cookies.get(SETTINGS_COOKIE_KEY);
   if (cookieValue) {
     try {
       const parsed = JSON.parse(cookieValue);
-      return {
+      const result = {
         cubeColors: { ...DEFAULT_CUBE_COLORS, ...parsed.cubeColors },
+        showPlayerControls: parsed.showPlayerControls ?? true,
       };
-    } catch {
+      return result;
+    } catch (e) {
       // Invalid JSON, return defaults
     }
   }
-  return { cubeColors: { ...DEFAULT_CUBE_COLORS } };
-}
-
-// Save settings to cookie and dispatch change event
-export function saveSettings(settings: AppSettings): void {
-  Cookies.set(SETTINGS_COOKIE_KEY, JSON.stringify(settings), { expires: 365 });
-  window.dispatchEvent(new CustomEvent(SETTINGS_CHANGED_EVENT, { detail: settings }));
-}
-
-// Update a specific setting
-export function updateCubeColors(colors: Partial<CubeColors>): void {
-  const current = getSettings();
-  const newSettings: AppSettings = {
-    ...current,
-    cubeColors: { ...current.cubeColors, ...colors },
-  };
-  saveSettings(newSettings);
-}
-
-// Reset cube colors to defaults
-export function resetCubeColors(): void {
-  const current = getSettings();
-  const newSettings: AppSettings = {
-    ...current,
+  return { 
     cubeColors: { ...DEFAULT_CUBE_COLORS },
+    showPlayerControls: true,
   };
-  saveSettings(newSettings);
 }
 
-// React hook for reactive settings
-export function useSettings(): [AppSettings, (settings: AppSettings) => void] {
-  const [settings, setSettingsState] = useState<AppSettings>(() => getSettings());
-
-  const updateSettings = useCallback((newSettings: AppSettings) => {
-    setSettingsState(newSettings);
-    saveSettings(newSettings);
-  }, []);
+// Synced settings hook - manages cube colors with cross-tab synchronization
+export function useSyncedSettings() {
+  const [settings, setSettings] = useState<AppSettings>(() => readSettingsFromCookie());
 
   useEffect(() => {
-    // Listen for settings changes from other components
-    const handleSettingsChange = (event: CustomEvent<AppSettings>) => {
-      setSettingsState(event.detail);
+    const channel = new BroadcastChannel(BROADCAST_CHANNEL_NAME);
+
+    const syncFromCookie = () => {
+      const newSettings = readSettingsFromCookie();
+      setSettings(newSettings);
+      // Dispatch event for other components in this tab (like TwistyPlayer)
+      window.dispatchEvent(new Event('ao1kSettingsChanged'));
     };
 
-    window.addEventListener(SETTINGS_CHANGED_EVENT, handleSettingsChange as EventListener);
+    channel.onmessage = (e) => {
+      syncFromCookie();
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        syncFromCookie();
+      }
+    };
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
     return () => {
-      window.removeEventListener(SETTINGS_CHANGED_EVENT, handleSettingsChange as EventListener);
+      channel.close();
+      document.removeEventListener('visibilitychange', onVisibilityChange);
     };
   }, []);
 
-  return [settings, updateSettings];
+  const updateSettings = useCallback((next: AppSettings) => {
+    Cookies.set(SETTINGS_COOKIE_KEY, JSON.stringify(next), { expires: 365 });
+    setSettings(next);
+
+    // Dispatch event for other components in this tab
+    window.dispatchEvent(new Event('ao1kSettingsChanged'));
+
+    const channel = new BroadcastChannel(BROADCAST_CHANNEL_NAME);
+    channel.postMessage('updated');
+    channel.close();
+  }, []);
+
+  return { settings, updateSettings };
 }
 
 // Hook specifically for cube colors
 export function useCubeColors(): [CubeColors, (colors: Partial<CubeColors>) => void, () => void] {
-  const [settings, setSettings] = useSettings();
+  const { settings, updateSettings } = useSyncedSettings();
 
   const setCubeColors = useCallback((colors: Partial<CubeColors>) => {
-    if (!settings) return;
-    setSettings({
+    updateSettings({
       ...settings,
       cubeColors: { ...settings.cubeColors, ...colors },
     });
-  }, [settings, setSettings]);
+  }, [settings, updateSettings]);
 
   const resetColors = useCallback(() => {
-    if (!settings) return;
-    setSettings({
+    updateSettings({
       ...settings,
       cubeColors: { ...DEFAULT_CUBE_COLORS },
     });
-  }, [settings, setSettings]);
+  }, [settings, updateSettings]);
 
-  return [settings?.cubeColors || DEFAULT_CUBE_COLORS, setCubeColors, resetColors];
+  return [settings.cubeColors, setCubeColors, resetColors];
 }
+
+// Hook for show controls
+export function useShowControls(): [boolean, (value: boolean) => void] {
+  const { settings, updateSettings } = useSyncedSettings();
+  
+  const setShowControls = useCallback((value: boolean) => {
+    updateSettings({
+      ...settings,
+      showPlayerControls: value,
+    });
+  }, [settings, updateSettings]);
+  
+  return [settings.showPlayerControls, setShowControls] as const;
+}
+
