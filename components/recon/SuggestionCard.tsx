@@ -1,4 +1,4 @@
-import { useSettings } from '../../composables/useSettings';
+import { useSyncedSettings } from '../../composables/useSettings';
 import React, { JSX } from 'react';
 
 interface SuggestionCardProps {
@@ -90,7 +90,7 @@ const renderStepIcon = (steps: string[], letterToColor: Record<string, string>, 
 };
 
 export const SuggestionCard = ({ alg, steps, id, isFocused, handleSuggestionRequest, handleSuggestionAccept }: SuggestionCardProps) => {
-  const [settings] = useSettings();
+  const { settings } = useSyncedSettings();
   const { cubeColors } = settings;
 
   // Create dynamic color mapping based on current cube colors

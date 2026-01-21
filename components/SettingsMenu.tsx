@@ -3,8 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { HexColorPicker } from 'react-colorful';
 import PhGear from './icons/settings';
-import { useCubeColors, DEFAULT_CUBE_COLORS, type CubeColors } from '../composables/useSettings';
-import Cookies from 'js-cookie';
+import { useCubeColors, useShowControls, DEFAULT_CUBE_COLORS, type CubeColors } from '../composables/useSettings';
 
 const FACE_LABELS: { key: keyof CubeColors; label: string }[] = [
   { key: 'up', label: 'Up' },
@@ -23,7 +22,7 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activePicker, setActivePicker] = useState<keyof CubeColors | null>(null);
   const [cubeColors, setCubeColors, resetColors] = useCubeColors();
-  const [showControls, setShowControls] = useState<boolean>(true);
+  const [showControls, setShowControls] = useShowControls();
   const menuRef = useRef<HTMLDivElement>(null);
 
   const handleClickOutside = (event: MouseEvent | TouchEvent) => {
@@ -40,13 +39,6 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
-
-  useEffect(() => {
-    // Load showControls from cookies
-    const cookieKey = page ? `${page}_showPlayerControls` : 'showPlayerControls';
-    const savedShowControls = Cookies.get(cookieKey);
-    setShowControls(savedShowControls !== 'false');
-  }, [page]);
 
   const handleColorChange = (face: keyof CubeColors, color: string) => {
     setCubeColors({ [face]: color });
@@ -66,12 +58,7 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
   );
 
   const handleToggleControls = () => {
-    const newValue = !showControls;
-    setShowControls(newValue);
-    const cookieKey = page ? `${page}_showPlayerControls` : 'showPlayerControls';
-    Cookies.set(cookieKey, newValue.toString(), { expires: 365 });
-    // Dispatch event so TwistyPlayer can update immediately
-    window.dispatchEvent(new Event('ao1kSettingsChanged'));
+    setShowControls(!showControls);
   };
 
   return (

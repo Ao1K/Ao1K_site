@@ -1,13 +1,8 @@
 import React, { useRef, useState, useEffect } from 'react';
 import debounce from 'lodash.debounce';
 import type { StepInfo } from '../../composables/recon/SimpleCubeInterpreter';
-import { getSettings, type CubeColors } from '../../composables/useSettings';
+import { useSyncedSettings, type CubeColors } from '../../composables/useSettings';
 import type { Grid } from '../../composables/recon/LLinterpreter';
-
-// Helper to get current cube colors from settings
-function getCurrentCubeColors(): CubeColors {
-  return getSettings().cubeColors;
-}
 
 // Helper to determine if a color is dark (needs light background)
 function isColorDark(hexColor: string): boolean {
@@ -31,6 +26,9 @@ const ImageStack = ({position, moves, lineSteps, editableElement}: ImageStackPro
   // const scramble = moves?.[0]?.map((move) => move.join(' ')).join(' ') || '';
   const solutionLines = moves?.[1]?.map((move) => move.join(' ')) || [''];
 
+  const { settings } = useSyncedSettings();
+  const cubeColors = settings.cubeColors;
+  
   const [, forceRender] = useState({});
   const observerRef = useRef<ResizeObserver | null>(null);
 
@@ -90,17 +88,6 @@ const ImageStack = ({position, moves, lineSteps, editableElement}: ImageStackPro
       mutationObserver.disconnect();
     };
   }, [editableElement]);
-
-  // Listen for cube color changes and force rerender
-  useEffect(() => {
-    const handleColorsChanged = () => {
-      forceRender({});
-    };
-    window.addEventListener('ao1kSettingsChanged', handleColorsChanged);
-    return () => {
-      window.removeEventListener('ao1kSettingsChanged', handleColorsChanged);
-    };
-  }, []);
 
   const divHeights = editableElement ? getCurrentDivHeights(editableElement) : [];
 
@@ -211,8 +198,7 @@ const ImageStack = ({position, moves, lineSteps, editableElement}: ImageStackPro
     }
 
     const getStepColors = (colors: string[]): string[] => {
-      // Map color names to their hex values from settings (cookie)
-      const cubeColors = getCurrentCubeColors();
+      // Map color names to their hex values from settings
       const colorMap: Record<string, string> = {
         'white': cubeColors.up,      // up face
         'yellow': cubeColors.down,   // down face
@@ -252,8 +238,7 @@ const ImageStack = ({position, moves, lineSteps, editableElement}: ImageStackPro
         const frontColor = primaryColors[1];
         const rightColor = primaryColors[2];
 
-        // Get current colors from settings for opposite color mapping
-        const cubeColors = getCurrentCubeColors();
+        // Get opposite color mapping
         const oppositeColors: Record<string, string> = {
           [cubeColors.up]: cubeColors.down,
           [cubeColors.down]: cubeColors.up,
@@ -366,7 +351,6 @@ const ImageStack = ({position, moves, lineSteps, editableElement}: ImageStackPro
           if (!pattern[row] || pattern[row][col] === undefined) return '#161018';
           const colorNum = pattern[row][col];
           // Grid numbers run 1-6, map directly to cube face colors from settings
-          const cubeColors = getCurrentCubeColors();
           const colorMap: Record<number, string> = {
             1: cubeColors.up,     // white/up
             2: cubeColors.down,   // yellow/down

@@ -27,6 +27,7 @@ export const titlePlaceholders = [
   "Cheap, generic silicone oil can work just as good as cube lube",
   "Plan as much as you can every time",
   "Use unlimited inspection!",
+  "Fingertricks take time",
   "There's always more F2L to learn!",
   "Drill A perms with the AUF and regrip included",
   "Move notation is an abstraction. Fingertricks are ground truth.",
@@ -48,7 +49,6 @@ export const titlePlaceholders = [
   "RUS U perms are probably too risky to use",
   "yRUL moves are best for lookahead",
   "You're more likely to practice if it's fun",
-  "Mirroring A perms keeps headlights on one side for all PLLs. But at what cost?",
   "Use rotations to deal with bad edge orientation",
   "If you want a tutor, you need a friend or money",
   "Study example solves",
@@ -77,7 +77,8 @@ export const titlePlaceholders = [
   'Get your ass to Mars',
   "Roux = Flour + Butter",
   "Hey you forgot a title",
-  "Gan 356 Not Recommended",
+  "Gan 356 not recommended",
+  "Unless it's 356 maglev",
   "Okayest solve ever okayed",
   "Solve'); DROP TABLE Titles;",
   "I don't know how I got here",
@@ -103,7 +104,8 @@ export const titlePlaceholders = [
   "SVGs are cool!",
   "Thanks Ari", // for helping me test Mac shortcuts that one time
   "Never code at 2 am",
-  "Now 13% messier code!",
+  "Now 12% messier code!",
+  "Spacebar optional!",
   "Remove the title. It's cleaner."
 
   
