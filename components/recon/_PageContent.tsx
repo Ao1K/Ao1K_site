@@ -840,7 +840,7 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
     return textboxClone.innerText;
   }
 
-  const getAlertMessage = (type: 'solve-text' | 'screenshot' | 'preview'): { message: string, messageType: 'info' | 'warn' } => {
+  const getAlertMessage: (type: 'solve-text' | 'screenshot' | 'preview') => { message: string, messageType: 'info' | 'warn' } = (type) => {
     const scrambleMoves = allMovesRef.current[0].flat();
     const solutionMoves = allMovesRef.current[1].flat();
 
@@ -955,6 +955,7 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
     if (canNativeShare) {
       try {
         await navigator.share({ title, text });
+        const alert = getAlertMessage('preview');
         setTopButtonAlert({ id: "share", ...alert });
       } catch (err) {
         // User canceled or browser rejected
@@ -962,6 +963,7 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
     } else {
       try {
         navigator.clipboard.writeText(text);
+        const alert = getAlertMessage('preview');
         setTopButtonAlert({ id: "share", ...alert });
       } catch (error) {
         console.error('Failed to copy to clipboard:', error);

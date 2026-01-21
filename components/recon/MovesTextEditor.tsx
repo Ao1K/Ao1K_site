@@ -53,7 +53,7 @@ const EditorLoader = ({
       let decodedText = decodeURIComponent(customDecodeURL(editorText));
       contentEditableRef.current.innerText = decodedText;
     } else if (initialContent && !otherEditorText) {
-      contentEditableRef.current.innerText = initialContent;
+      contentEditableRef.current.innerHTML = initialContent;
     }
 
     // needs to be run regardless to get syntax highlighting on text editors not using URL params

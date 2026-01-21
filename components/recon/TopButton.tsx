@@ -8,16 +8,16 @@ export interface ButtonProps {
   shortcutHint?: string;
   icon?: React.ReactNode;
   iconText?: string; // icon or iconText should be used, but not both
-  alert: [string, string];
-  setAlert: React.Dispatch<React.SetStateAction<[string, string]>>;
+  alert: {id: string; message: string; messageType: 'info' | 'warn'};
+  setAlert: React.Dispatch<React.SetStateAction<{id: string; message: string; messageType: 'info' | 'warn'}>>;
 }
 
 export default function TopButton({ id, text, onClick, buttonRef, shortcutHint, icon, iconText, alert, setAlert}: ButtonProps) {
 
   useEffect(() => {
-    if (alert && alert[0] === id && alert[1] && setAlert) {
+    if (alert && alert.id === id && alert.message && setAlert) {
       const timeoutId = setTimeout(() => {
-        setAlert(['','']) // do not ever set to a truthy value
+        setAlert({id: '', message: '', messageType: 'info'}) // do not ever set to a truthy value
       }, 2000);
 
       return () => clearTimeout(timeoutId);
@@ -26,9 +26,11 @@ export default function TopButton({ id, text, onClick, buttonRef, shortcutHint, 
 
   return (
     <div id={id} className="flex flex-col items-center group relative">
-      {alert[0] === id && 
-        <div className="py-1 px-2 font-semibold -translate-y-[120%] absolute text-dark bg-primary-100 rounded-sm text-sm pointer-events-none select-none z-50 mb-2 whitespace-nowrap">
-          {alert[1]}
+      {alert.id === id && 
+        <div className={`py-1 px-2 font-semibold -translate-y-[120%] absolute text-dark rounded-sm text-sm pointer-events-none select-none z-50 mb-2 whitespace-nowrap ${
+          alert.messageType === 'warn' ? 'bg-orange-500' : 'bg-primary-100'
+        }`}>
+          {alert.message}
         </div>
       }
       <button

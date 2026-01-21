@@ -9,8 +9,8 @@ import Image from 'next/image';
 interface CopySolveDropdownProps {
   onCopyText: () => void;
   onScreenshot: () => void;
-  alert: [string, string];
-  setAlert: React.Dispatch<React.SetStateAction<[string, string]>>;
+  alert: {id: string; message: string; messageType: 'info' | 'warn'};
+  setAlert: React.Dispatch<React.SetStateAction<{id: string; message: string; messageType: 'info' | 'warn'}>>;
 }
 
 export default function CopySolveDropdown({ onCopyText, onScreenshot, alert, setAlert }: CopySolveDropdownProps) {
@@ -40,12 +40,12 @@ export default function CopySolveDropdown({ onCopyText, onScreenshot, alert, set
   };
 
   useEffect(() => {
-    if (alert && alert[0] === 'copy-solve' && alert[1] && setAlert) {
+    if (alert && alert.id === 'copy-solve' && alert.message && setAlert) {
       // When alert appears, screenshot is done, so stop loading
       setIsLoading(false);
       
       const timeoutId = setTimeout(() => {
-        setAlert(['', '']); // do not ever set to a truthy value
+        setAlert({id: '', message: '', messageType: 'info'}); // do not ever set to a truthy value
       }, 2000);
 
       return () => clearTimeout(timeoutId);
@@ -71,9 +71,11 @@ export default function CopySolveDropdown({ onCopyText, onScreenshot, alert, set
           <Image src="/LoadingSpinner.webp" alt="Loading..." width={32} height={32} className="" />
         </div>
       }
-      {alert[0] === 'copy-solve' && !isLoading &&
-        <div className="py-1 px-2 font-semibold -translate-y-[120%] absolute left-1/2 -translate-x-1/2 text-dark bg-primary-100 rounded-sm text-sm pointer-events-none select-none z-50 mb-2 whitespace-nowrap">
-          {alert[1]}
+      {alert.id === 'copy-solve' && !isLoading &&
+        <div className={`py-1 px-2 font-semibold -translate-y-[120%] absolute left-1/2 -translate-x-1/2 text-dark rounded-sm text-sm pointer-events-none select-none z-50 mb-2 whitespace-nowrap ${
+          alert.messageType === 'warn' ? 'bg-orange-500' : 'bg-primary-100'
+        }`}>
+          {alert.message}
         </div>
       }
       <button
