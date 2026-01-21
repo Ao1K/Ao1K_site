@@ -5,6 +5,10 @@ Add slot direction to lineStep as an optional param. Pass through to ImageStack 
   - Interestingly, the slot start location is obvious during a solve, while slot end location isn't.
   - Should slot direction be end location for this reason?
 
+Roux support (learn roux)
+
+Recon saving via profiles. Check if file system api thing is worth our time.
+
 Autocomplete for cross. Would need to brute force solutions to partial cross solution input. 
 Or compute a bunch of crosses and just give whatever suggestion still works.
 But we don't wanna just show autocomplete right away. Noisey.
@@ -26,12 +30,10 @@ So we generate a json specifically for ZBLS with these objects:
 {hash: 'abcd', 'eoIndex': 9, alg: "R U R'"}
 Then we search for hash matches only on f2l pieces. The EO is matched separately.
 
+Extend suggestion filtering logic. 
+- Measure number of edges oriented
+- If alg is clearly worse (in time estimate metric) and don't solve anything including EO, don't show it.
 
-Changes for verison 0.6?:
-- Reduced page load times by about half
-- Text substitutions (Uw -> u, UD -> (U D), UF -> U F)
-- Parens got colored
-- Added about 700 f2l algs (counting variants as unique)
-- Better colored previews, gave borders to icons. Unified style between preview and editor
-- Cube Colors menu. Note that previews won't be affected.
-- Better alg suggestion filtering and rendering
+Add algs:
+Every combination of RUR trigger + U* + LUL trigger
+Every combo of LUL + U + RUR
