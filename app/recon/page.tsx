@@ -1,9 +1,8 @@
-import { Suspense, lazy } from 'react';
+import { lazy } from 'react';
 import { Metadata, ResolvingMetadata } from 'next';
 import { cookies } from 'next/headers';
 
 const PageContent = lazy(() => import('../../components/recon/_PageContent'));
-import ReconSkeleton from '../../components/recon/ReconSkeleton';
 import { customEncodeURL } from '../../composables/recon/urlEncoding';
 import { fetchDailyScramble } from '../../utils/fetchDailyScramble';
 
@@ -52,13 +51,12 @@ export async function generateMetadata(
   if (titleParam) {
     pageTitle = titleParam;
   } else if (timeParam) {
-    pageTitle = `${timeParam}s Solve Reconstruction`;
+    pageTitle = `${timeParam}s Solve`;
   }
 
-  const description = `${timeParam ? `${timeParam}s solve` : 'Statistically significant speedcubing analysis'}`;
+  const description = `${(timeParam && !titleParam) ? `${timeParam}s solve` : ''}`;
 
   const keywords = ["speedcubing", "reconstruction", "rubik's cube", "solve analysis", "alg", "algorithm"];
-  if (timeParam) keywords.push(`${timeParam}s solve`);
 
   return {
     title: pageTitle,
@@ -89,9 +87,5 @@ export default async function Page() {
   const cookieStore = await cookies();
   const videoHelpDismissed = cookieStore.get('videoHelpDismissed')?.value === 'true';
 
-  return (
-    <Suspense fallback={<ReconSkeleton />}>
-      <PageContent dailyScramble={dailyScramble} videoHelpDismissed={videoHelpDismissed} />
-    </Suspense>
-  );
+  return <PageContent dailyScramble={dailyScramble} videoHelpDismissed={videoHelpDismissed} />;
 }
