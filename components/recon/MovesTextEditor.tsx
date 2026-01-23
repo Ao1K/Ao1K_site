@@ -20,7 +20,7 @@ import { colorDict, highlightClass } from '../../utils/sharedConstants';
 
 interface HTMLUpdateItem {
   html?: string;
-  change: 'modified' | 'none' | 'suggestion';
+  change: 'modified' | 'none' | 'suggestion' | 'pasted';
 }
 
 const supportsHardwareKeyboard =
@@ -201,12 +201,22 @@ function MovesTextEditor({
     newHTML.forEach((line, index) => {
       const oldLine = oldHTML[index];
 
+      // prioritize handling paste
+      if (line.includes('<span class="paste-marker"></span>')) {
+        line = line.replace('<span class="paste-marker"></span>', '');
+        htmlUpdateMatrix.push({
+          html: line,
+          change: 'pasted'
+        });
+
       // Check if line contains suggestions and is active line
-      if (line.includes(`class="${suggestionClass}"`) && selectedSuggestionRef.current?.lineIndex === index) {
+      } else if (line.includes(`class="${suggestionClass}"`) && selectedSuggestionRef.current?.lineIndex === index) {
         htmlUpdateMatrix.push({
           html: line,
           change: 'suggestion'
         });
+
+      // if not an active line
       } else if (line.includes(`class="${suggestionClass}"`) && selectedSuggestionRef.current?.lineIndex !== index) {
         suggestionStateRef.current = 'dismissed';
         htmlUpdateMatrix.push({
@@ -217,7 +227,9 @@ function MovesTextEditor({
             ),
           change: 'modified'
         });
-      } else if (line !== oldLine || !line.includes('span')) { //adds changed lines or lines that are not painted
+
+      // adds changed lines or lines that are not painted
+      } else if (line !== oldLine || !line.includes('span')) { 
         htmlUpdateMatrix.push({
           html: line,
           change: 'modified'
@@ -396,14 +408,14 @@ function MovesTextEditor({
       .map((token) => token.value);
   }
 
-  const handleLineModified = (updateItem: HTMLUpdateItem, i: number, lineMoveCounts: number[]): string => {
+  const handleLineModified = (updateItem: HTMLUpdateItem, i: number, lineMoveCounts: number[], isPaste: boolean): string => {
     let line = updateItem.html || '';
 
     // get html
     let text = line.replace(/<[^>]+>/g, '');
 
-    // Apply auto-substitutions
-    [text, line] = applyAutoSubstitutions(text, line);
+    // Apply auto-substitutions if not a paste action
+    if (!isPaste) [text, line] = applyAutoSubstitutions(text, line);
 
     const parsed = parseTextInput(text);
 
@@ -467,7 +479,7 @@ function MovesTextEditor({
 
     // get html without suggestion or image
     const htmlWithoutSuggestion = line.replace(selectedSuggestionRef.current.remaining, '').replace(/<img[^>]*>/g, '');
-    const validatedHTML = handleLineModified({ html: htmlWithoutSuggestion, change: 'modified' }, index, lineMoveCounts);
+    const validatedHTML = handleLineModified({ html: htmlWithoutSuggestion, change: 'modified' }, index, lineMoveCounts, false);
     const suggestionClass = colorDict['suggestion'];
     const tabImageHTML = supportsHardwareKeyboard
       ? `<img src="/tab.svg" alt="Press Tab" style="display: inline; pointer-events-none; width: 51px; height: 20px; margin-left: 8px; margin-bottom: 4px; vertical-align: middle;" />`
@@ -500,9 +512,12 @@ function MovesTextEditor({
         lineMoveCounts.push(0);
       }
 
+      const isPaste = updateItem.change === 'pasted';
+
       switch (updateItem.change) {
+        case 'pasted':
         case 'modified':
-          return handleLineModified(updateItem, i, lineMoveCounts);
+          return handleLineModified(updateItem, i, lineMoveCounts, isPaste);
         case 'suggestion':
           return handleLineSuggestion(updateItem, i, lineMoveCounts);
         case 'none':
@@ -947,7 +962,13 @@ function MovesTextEditor({
       const lines = sanitizedText.split("\n").reverse();
       lines.forEach((line, index) => {
         const tempElement = document.createElement("div");
+        
+        // add paste marker for processing.
+        // allows for disabling auto-substitutions on pasted text.
         tempElement.innerHTML = line;
+        const pasteMarker = document.createElement('span');
+        pasteMarker.className = 'paste-marker';
+        tempElement.appendChild(pasteMarker);
 
         // Add caret node to the last line
         if (index === 0) { // First element in reversed array is the last line

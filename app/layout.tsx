@@ -7,7 +7,7 @@ import Header from "../components/Header";
 import type { Metadata } from "next";
 import { Rubik } from "next/font/google";
 import Footer from "../components/Footer";
-import Image from "next/image";
+import ReconSkeleton from "../components/recon/ReconSkeleton";
 
 import { Amplify } from 'aws-amplify';
 import outputs from "../amplify_outputs.json"
@@ -69,22 +69,10 @@ export default async function RootLayout({
           <div id="left-margin" className="block bg-primary-900 h-full grid-lines-50-l -z-10"></div> 
           
           <main className="col-start-2 flex flex-col mx-0 sm:mx-10 bg-primary-900">
-            <React.Suspense fallback={
-              // show a centered spinner image while children are loading
-              <div className="flex flex-1 items-center justify-center min-h-[200px]">
-              <Image
-                src="/LoadingSpinner.webp"
-                alt="Loading..."
-                width={32}
-                height={32}
-                className="h-8 w-8"
-                priority={false}
-              />
-              </div>
-            }>
+            <React.Suspense fallback={<ReconSkeleton />}>
               {children}
+              <Footer />
             </React.Suspense>
-            <Footer />
           </main>
           
           <div id="right-margin" className="block bg-primary-900 h-full grid-lines-50-r -z-10"></div> 
