@@ -4,6 +4,7 @@ import type { ExactAlg, LastLayerAlg } from "./rawAlgs";
 import { SimpleCubeInterpreter, type StepInfo } from "../composables/recon/SimpleCubeInterpreter";
 import { SimpleCube } from '../composables/recon/SimpleCube';
 import { reverseMove, replacementTable_Y } from '../composables/recon/transformHTML';
+import AlgSpeedEstimator from '../composables/recon/AlgSpeedEstimator';
 import type { CompiledLLAlg } from '../composables/recon/LLsuggester';
 
 interface CompiledExactAlg {
@@ -349,21 +350,193 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
     return newMoves.join(' ');
   };
 
+  /**
+   * Filters out new F2L algs where a move doesn't change the value at the slot's indices.
+   *
+   * Logic:
+   * 1. Determine which slot the alg solves based on ending move:
+   *    - R' → FR (Front-Right): edge 8, corner 16
+   *    - R → BR (Back-Right): edge 10, corner 19
+   *    - L' → BL (Back-Left): edge 11, corner 18
+   *    - L → FL (Front-Left): edge 9, corner 17
+   * 2. For right slot algs (R/R'): if there's an L move that doesn't change the value at the slot's indices, filter out
+   * 3. For left slot algs (L/L'): if there's an R move that doesn't change the value at the slot's indices, filter out
+   * 4. If the alg starts with a U move (after optional y), and it doesn't change the value at the slot's indices, filter out
+   */
+  const filterInefficientNewF2LAlgs = <T extends ExactAlg>(newAlgs: T[]): T[] => {
+    // Slot indices in hash: edge index comes from 0-11, corner from 12-19
+    const slotIndices: { [key: string]: { edge: number; corner: number } } = {
+      "R'": { edge: 8, corner: 16 },  // FR slot
+      "R": { edge: 10, corner: 19 },  // BR slot
+      "L'": { edge: 11, corner: 18 }, // BL slot
+      "L": { edge: 9, corner: 17 },   // FL slot
+    };
+
+    const inefficientEndings = new Set([
+      "U2 L' U2 L", 
+      "U2 L U2 L'", 
+      "U2 R' U2 R", 
+      "U2 R U2 R'", 
+      "U' L' U2 L", 
+      "U L U2 L'", 
+      "U R U2 R'", 
+      "U' R' U2 R", 
+      "U' R U' R'", 
+      "U R' U R", 
+      "U L' U L",
+      "U' L U' L'",
+      "U R U2 R'",
+      "U' R' U2 R",
+      "U L U2 L'",
+      "U' L' U2 L"
+    ])
+
+    // Pattern to detect opposite-side moves for each ending move
+    const oppositeMovePattern: { [key: string]: RegExp } = {
+      "R'": /^L['2]?$/,  // Right slot algs - look for L moves
+      "R": /^L['2]?$/,
+      "L'": /^R['2]?$/,  // Left slot algs - look for R moves
+      "L": /^R['2]?$/,
+    };
+
+    const filteredAlgs: T[] = [];
+
+    for (const alg of newAlgs) {
+      const DEBUG = alg.value === "";
+
+      if (alg.step !== 'f2l') {
+        filteredAlgs.push(alg);
+        console.log(`Keeping non-F2L alg: "${alg.value}"`);
+        continue;
+      }
+
+      // Check if alg ends with an inefficient pattern
+      const hasInefficientEnding = Array.from(inefficientEndings).some(ending => alg.value.endsWith(ending));
+      if (hasInefficientEnding) {
+        console.log(`Filtering out alg with inefficient ending: "${alg.value}"`);
+        continue;
+      }
+
+      const moves = alg.value.trim().split(/\s+/).filter(m => m.length > 0);
+      if (moves.length <= 1) {
+        continue;
+      }
+
+      const lastMove = moves[moves.length - 1];
+      const slot = slotIndices[lastMove];
+      const oppositePattern = oppositeMovePattern[lastMove];
+
+      if (DEBUG) console.log(`DEBUG: lastMove=${lastMove}, slot=${JSON.stringify(slot)}, oppositePattern=${oppositePattern}`);
+
+      if (!slot || !oppositePattern) {
+        if (DEBUG) console.log(`DEBUG: No slot or oppositePattern, keeping alg`);
+        filteredAlgs.push(alg);
+        continue;
+      }
+
+      // Check if there are any opposite-side moves in the alg
+      const hasOppositeMove = moves.some(m => oppositePattern.test(m));
+      if (DEBUG) console.log(`DEBUG: hasOppositeMove=${hasOppositeMove}, moves=${JSON.stringify(moves)}`);
+      if (!hasOppositeMove) {
+        // No opposite-side moves, keep the alg
+        if (DEBUG) console.log(`DEBUG: No opposite moves, keeping alg`);
+        filteredAlgs.push(alg);
+        continue;
+      }
+
+      // Initialize cube with inverse of alg
+      const inverseAlg = getAlgInverse(alg.value);
+      const tempCube = new SimpleCube();
+      const tempInterpreter = new SimpleCubeInterpreter();
+
+      const inverseMoves = inverseAlg.split(' ').filter(m => m.length > 0);
+      let cubeState = tempCube.getCubeState(inverseMoves);
+      tempInterpreter.getStepsCompleted(cubeState);
+      let prevHash = tempInterpreter.getCurrentState()?.hash || '';
+
+      if (DEBUG) console.log(`DEBUG: inverseAlg="${inverseAlg}", initial prevHash="${prevHash}"`);
+
+      // Check if any opposite-side move or starting U move doesn't change the value at slot indices
+      let hasUselessMove = false;
+
+      // Determine the index of the first U move (after optional y)
+      const movesAfterY = /^y['2]?$/.test(moves[0]) ? moves.slice(1) : moves;
+      const firstUMoveIndex = /^U['2]?$/.test(movesAfterY[0])
+        ? (moves.length - movesAfterY.length)
+        : -1;
+
+      if (DEBUG) console.log(`DEBUG: firstUMoveIndex=${firstUMoveIndex}`);
+
+      for (let i = 0; i < moves.length; i++) {
+        const move = moves[i];
+
+        // Apply this move
+        cubeState = tempCube.getCubeState([...inverseMoves, ...moves.slice(0, i + 1)]);
+        const stepsCompleted = tempInterpreter.getStepsCompleted(cubeState);
+        const currHash = tempInterpreter.getCurrentState()?.hash || '';
+        const crossSolved = stepsCompleted.some(s => s.type === 'cross');
+
+        if (DEBUG) console.log(`DEBUG: i=${i}, move="${move}", prevHash="${prevHash}", currHash="${currHash}", crossSolved=${crossSolved}`);
+
+        // Check if this is the starting U move (after optional y)
+        if (i === firstUMoveIndex) {
+          const edgeChanged = prevHash[slot.edge] !== currHash[slot.edge];
+          const cornerChanged = prevHash[slot.corner] !== currHash[slot.corner];
+
+          if (DEBUG) console.log(`DEBUG: Starting U check - edgeChanged=${edgeChanged} (prev=${prevHash[slot.edge]}, curr=${currHash[slot.edge]}), cornerChanged=${cornerChanged} (prev=${prevHash[slot.corner]}, curr=${currHash[slot.corner]})`);
+
+          if (!edgeChanged && !cornerChanged && !crossSolved) {
+            if (DEBUG) console.log(`DEBUG: Marking as useless due to starting U move`);
+            hasUselessMove = true;
+            break;
+          }
+        }
+
+        // If this is an opposite-side move, check if it changed the value at slot indices
+        if (oppositePattern.test(move)) {
+          const edgeChanged = prevHash[slot.edge] !== currHash[slot.edge];
+          const cornerChanged = prevHash[slot.corner] !== currHash[slot.corner];
+
+          if (DEBUG) console.log(`DEBUG: Opposite move check - edgeChanged=${edgeChanged}, cornerChanged=${cornerChanged}`);
+
+          if (!edgeChanged && !cornerChanged && !crossSolved) {
+            // This opposite-side move didn't change the value at slot indices - bad alg
+            if (DEBUG) console.log(`DEBUG: Marking as useless due to opposite move`);
+            hasUselessMove = true;
+            break;
+          }
+        }
+
+        prevHash = currHash;
+      }
+
+      if (hasUselessMove) {
+        console.log(`Filtering out inefficient F2L alg: "${alg.value}" - move doesn't change value at slot indices (edge: ${slot.edge}, corner: ${slot.corner})`);
+      } else {
+        if (DEBUG) console.log(`DEBUG: Keeping alg - no useless moves found`);
+        filteredAlgs.push(alg);
+      }
+    }
+
+    console.log(`Filtered F2L algs: kept ${filteredAlgs.length} out of ${newAlgs.length}`);
+    return filteredAlgs;
+  };
+
   const findUniqueNewAlgs = (algType: 'Exact' | 'LastLayer', algs: (ExactAlg | LastLayerAlg)[], expandedAlgs: (ExpandedExactAlg | LastLayerAlg)[]) => {
 
     const newAlgs: (ExactAlg | LastLayerAlg)[] = [];
-    const existingAlgs = new Set<string>();    
+    const existingAlgs = new Set<string>();
     for (let i = 0; i < expandedAlgs.length; i++) {
 
       const index = algType === 'Exact' ? (expandedAlgs[i] as ExpandedExactAlg).originalIndex : i;
       const originalAlg = index === -1 ? null : algs[index];
       const simplifiedAlg = expandedAlgs[i];
-      
+
       // warn if old alg is not in its most simplified form
       if (originalAlg && !originalAlg.new && originalAlg.value !== simplifiedAlg.value) {
         console.warn(`Algorithm at index ${index} is not in simplified form. Original: "${originalAlg.value}", Simplified: "${simplifiedAlg.value}"`);
       }
-      
+
       // add simplified alg to either list depending on if it's new or existing
       if (simplifiedAlg.new) {
         newAlgs.push(simplifiedAlg);
@@ -376,21 +549,21 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
 
     console.log('new alg size:', newAlgs.length);
     const actuallyNewAlgs = newAlgs.filter(alg => !existingAlgs.has(alg.value));
-    
+
     // filter out duplicate alg.values within new algs
     const uniqueNewAlgSet = new Set<string>();
     const uniqueNewAlgs: (ExactAlg | LastLayerAlg)[] = [];
     actuallyNewAlgs.forEach(alg => {
       const cleanNewAlgValue = alg.value.replace(/2'/g, '2');
-      
-      // verify both that the alg isn't in the uniqueSet 
+
+      // verify both that the alg isn't in the uniqueSet
       // and also not in existingAlgs in its cleaned version
       if (!uniqueNewAlgSet.has(alg.value) && !existingAlgs.has(cleanNewAlgValue)) {
         uniqueNewAlgSet.add(alg.value);
         uniqueNewAlgs.push(alg);
       }
     });
-    
+
     console.log('unique new alg size:', uniqueNewAlgs.length);
     return uniqueNewAlgs;
   };
@@ -527,11 +700,25 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
   const compileAlgorithms = (algs: ExactAlg[] | LastLayerAlg[], algType: 'Exact' | 'LastLayer') => {
 
     console.log(`Compiling ${algType} algorithms... Total algs: ${algs.length}`);
-    
 
     const simplifiedAlgs: (ExactAlg | LastLayerAlg)[] = simplifyAlgs(algs, algType);
 
-    const expandedAlgs: (ExpandedExactAlg | LastLayerAlg)[] = expandAlgs(simplifiedAlgs, algType);
+    let expandedAlgs: (ExpandedExactAlg | LastLayerAlg)[] = expandAlgs(simplifiedAlgs, algType);
+
+    // Filter inefficient new F2L algs AFTER expansion (U moves are added during expansion)
+    if (algType === 'Exact') {
+      const newAlgs: ExpandedExactAlg[] = [];
+      const oldAlgs: (ExpandedExactAlg | LastLayerAlg)[] = [];
+      expandedAlgs.forEach(alg => {
+        if (alg.new) {
+          newAlgs.push(alg as ExpandedExactAlg);
+        } else {
+          oldAlgs.push(alg);
+        }
+      });
+      const filteredNewAlgs = filterInefficientNewF2LAlgs(newAlgs);
+      expandedAlgs = [...oldAlgs, ...filteredNewAlgs];
+    }
 
     // parse out duplicates in algs without `new: true`
     const algSet = findUniqueOldAlgSet(algType, expandedAlgs);
@@ -712,6 +899,11 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
     if (!isCompilingRef.current) {
       return;
     }
+
+    // sort by speed estimate (fastest first)
+    const speedEstimator = new AlgSpeedEstimator();
+    const scores = new Map(data.map(d => [d, speedEstimator.calcScore(d.alg)]));
+    data.sort((a, b) => scores.get(a)! - scores.get(b)!);
 
     const jsonData = {
       timestamp: new Date().toISOString(),
