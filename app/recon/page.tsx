@@ -43,37 +43,24 @@ export async function generateMetadata(
   const ogUrl = `/api/og?${sp.toString()}`;
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
   const canonicalUrl = `${baseUrl}/recon?${sp.toString()}`;
-
-  const titleParam = searchParams.title as string | undefined;
-  const timeParam = searchParams.time as string | undefined;
   
   let pageTitle = "Reconstruction";
-  if (titleParam) {
-    pageTitle = titleParam;
-  } else if (timeParam) {
-    pageTitle = `${timeParam}s Solve`;
-  }
-
-  const description = `${(timeParam && !titleParam) ? `${timeParam}s solve` : ''}`;
 
   const keywords = ["speedcubing", "reconstruction", "rubik's cube", "solve analysis", "alg", "algorithm"];
 
   return {
     title: pageTitle,
-    description: description,
     keywords: keywords,
     alternates: {
       canonical: canonicalUrl,
     },
     openGraph: {
       title: pageTitle,
-      description: description,
       images: [ogUrl],
     },
     twitter: {
       card: 'summary_large_image',
       title: pageTitle,
-      description: description,
       images: [ogUrl],
     },
   }
