@@ -234,12 +234,6 @@ export default class AlgSuggester {
   }
 }
 
-// Legacy function exports for backward compatibility
-export function buildPositionIndex(docs: Doc[]) {
-  const suggester = new AlgSuggester(docs);
-  return suggester.getIndexData()!;
-}
-
 export function searchByPosition(
   db: IndexData,
   q: Query
@@ -257,31 +251,3 @@ export function clearIndex() {
   AlgSuggester.clearGlobalInstance();
 }
 
-/* ---------- Example usage ----------
-const data: Doc[] = [
-  { id: 1, hash: "adefpqjrousmfaedqprjawxbvj" },
-  { id: 2, hash: "fadepqjrousmefdaqprjawxbvj" },
-  // ...
-];
-
-// Using the class directly:
-const suggester = new AlgSuggester(data);
-
-const query: Query = {
-  positions: {
-    3: { must: "p" },     // 4th character (0-based index 3) must be 'p'
-    6: { not: ["r","q"]}, // 7th char (0-based index 6) must not be r or q
-    8: { may: ["o","u"] } // prefer hashes with 'o' or 'u' at position 8 (9th character)
-  },
-  limit: 50,
-  scoreBy: 'may'
-};
-
-const out = suggester.searchByPosition(query);
-console.log(out);
-
-// Or using the legacy function approach:
-const db = buildPositionIndex(data);
-const legacyOut = searchByPosition(db, query);
-console.log(legacyOut);
------------------------------------- */

@@ -157,7 +157,7 @@ export function getScreenshotStyles() {
 
 const calcMoveTextSize = (lines: SolutionLine[], scramble: string ): number => {
   lines = [...lines, { text: scramble }];
-  console.log('lines:', lines);
+  // console.log('lines:', lines);
   let maxFromLineCount: number;
   switch (lines.length) {
     case 0:
@@ -202,8 +202,8 @@ const calcMoveTextSize = (lines: SolutionLine[], scramble: string ): number => {
   } else {
     maxFromLineWidth = 48;
   }
-  console.log(`Longest line: ${longestLine}, maxFromLineWidth: ${maxFromLineWidth}`);
-  console.log(`Lines count: ${lines.length}, maxFromLineCount: ${maxFromLineCount}`);
+  // console.log(`Longest line: ${longestLine}, maxFromLineWidth: ${maxFromLineWidth}`);
+  // console.log(`Lines count: ${lines.length}, maxFromLineCount: ${maxFromLineCount}`);
   return Math.min(maxFromLineCount, maxFromLineWidth)
 };
 
