@@ -33,6 +33,7 @@ import { SimpleCube } from '../../composables/recon/SimpleCube';
 import { SimpleCubeInterpreter } from '../../composables/recon/SimpleCubeInterpreter';
 import type { StepInfo, Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
 import { AlgCompiler } from '../../utils/AlgCompiler';
+import ManualAlgVerifier from './ManualAlgVerifier';
 import LLpatternBuilder from '../../utils/LLpatternBuilder';
 import { highlightClass } from '../../utils/sharedConstants';
 import { ScreenshotManager } from '../../composables/recon/ScreenshotManager';
@@ -1364,6 +1365,12 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
 
       {/* utility for compiling list of alg hashes */}
       {/* <AlgCompiler /> */}
+
+      {/* utility for verifying manual algs */}
+      {/* <ManualAlgVerifier
+        scrambleRef={scrambleMethodsRef}
+        solutionRef={solutionMethodsRef}
+      /> */}
 
       {/* utility for building case patterns */}
       {/* <LLpatternBuilder /> */}

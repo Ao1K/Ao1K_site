@@ -26,8 +26,6 @@ interface HTMLUpdateItem {
 const supportsHardwareKeyboard =
   typeof window !== 'undefined' && !window.matchMedia('(pointer: coarse)').matches;
 
-
-
 const EditorLoader = ({
   editorRef: contentEditableRef,
   handleInput,
@@ -36,7 +34,7 @@ const EditorLoader = ({
   initialContent
 }: {
   editorRef: React.RefObject<any>,
-  handleInput: () => void,
+  handleInput: (shouldUpdateURL: boolean) => void,
   name: string,
   autofocus: boolean,
   initialContent?: string
@@ -51,13 +49,19 @@ const EditorLoader = ({
 
     if (editorText) {
       let decodedText = decodeURIComponent(customDecodeURL(editorText));
-      contentEditableRef.current.innerText = decodedText;
+      // ensure substitutions do not occur on initial load from URL
+      const lines = decodedText.replace(/\n+/g, '\n').split('\n');
+      const formattedHTML = lines.map(line => `<div>${line}<span class="paste-marker"></span><br></div>`).join('');
+      contentEditableRef.current.innerHTML = formattedHTML;
+
     } else if (initialContent && !otherEditorText) {
-      contentEditableRef.current.innerHTML = initialContent;
+      // if initial content (such as scramble of day) gets passed in,
+      // pass it in as pre-formatted html
+      contentEditableRef.current.innerHTML = initialContent; 
     }
 
-    // needs to be run regardless to get syntax highlighting on text editors not using URL params
-    handleInput();
+    // Run for syntax highlighting, but skip URL update since we just loaded from URL
+    handleInput(false);
 
 
     if (autofocus && editorText && !otherEditorText) { // TODO: `&& !otherURLtext` isn't desired, but an unknown bug causes animation desync otherwise.
@@ -159,12 +163,16 @@ function MovesTextEditor({
     console.log(idIndex, "[MovesTextEditor]", ...args);
   }
 
-  const handleInput = () => {
+  const handleInput = (shouldUpdateURL = true) => {
     if (!contentEditableRef.current) return;
 
     onInputChange();
-    updateURLTimeout.current ? clearTimeout(updateURLTimeout.current) : null;
-    updateURLTimeout.current = setTimeout(passURLupdate, 500);
+
+    // Only debounce URL updates for user interactions, not initialization
+    if (shouldUpdateURL) {
+      updateURLTimeout.current ? clearTimeout(updateURLTimeout.current) : null;
+      updateURLTimeout.current = setTimeout(passURLupdate, 500);
+    }
   };
 
   const htmlToLineArray = (html: string) => {
@@ -1027,7 +1035,10 @@ function MovesTextEditor({
 
     // Temporarily remove inline suggestion UI, capture text (with newlines), restore nodes.
     const removedNodes = removeSuggestions(root);
-    const text = root.innerText || '';
+    // innerText produces double newlines because each <div>...<br></div> line
+    // contributes both a <br> newline and a block-boundary newline.
+    // Normalize to single newlines.
+    const text = (root.innerText || '').replace(/\n\n/g, '\n');
 
     removedNodes.reverse().forEach(({ parent, node, nextSibling }) => {
       if (nextSibling && nextSibling.parentNode === parent) {
@@ -1917,7 +1928,7 @@ function MovesTextEditor({
           rounded-sm whitespace-pre-wrap 
           border border-neutral-600 focus:border-primary-100 hover:border-primary-100
           outline-none resize-none caret-primary-200 bg-primary-800 `}
-        onInput={() => handleInput()}
+        onInput={() => handleInput(true)}
         onCopy={handleCopy}
         onPaste={handlePaste}
         onBlur={() => passURLupdate()}

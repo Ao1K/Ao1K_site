@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "sort-algs": "npx tsx scripts/sortAlgs.ts"
+    "sort-algs": "npx tsx scripts/sortAlgs.ts",
+    "trigger-combos": "npx tsx scripts/generateTriggerCombos.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.971.0",

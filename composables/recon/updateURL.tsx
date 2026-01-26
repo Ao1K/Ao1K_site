@@ -27,9 +27,8 @@ export default function updateURL(queryName: string, textToEncode: string | null
   }
 
   const text = replaceText(textToEncode);
-  const newParam = encodeURIComponent(text);
 
-  currentParams.set(queryName, newParam);
+  currentParams.set(queryName, text);
   const newQueryString = currentParams.toString();
   window.history.pushState({}, '', `${window.location.pathname}?${newQueryString}`); // used to use useRouter, but it was reloading the page
 }
