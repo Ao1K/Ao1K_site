@@ -2219,8 +2219,12 @@ export class SimpleCubeInterpreter {
     
     // iterate and collect suggestions
     queries.forEach(({ query, pairColors }) => {
-      query.limit = 20;
-      query.scoreBy = 'exact'; // use 'exact' context for F2L searches
+
+      // some f2l cases will return a lot of algs, and the good ones may be later in the list
+      // however, the list is now sorted to help avoid this
+      query.limit = 40; 
+      
+      query.scoreBy = 'exact'; // use 'exact' context for F2L searches.
       
       const algs = this.algSuggester!.searchByPosition(query);
       
@@ -2259,30 +2263,43 @@ export class SimpleCubeInterpreter {
     });
 
     // Filter out redundant algorithms that are extensions of shorter ones without unique steps
+    
+    // spread out algs with double moves
+    const spreadSuggestions = suggestions.map(suggestion => {
+      const spreadAlg = suggestion.alg.replace(/([A-Za-z])([23])('?)/g, (_, letter, num, prime) => {
+        if (num === '2') return `${letter} ${letter}`;
+        return prime ? letter : `${letter}'`; // 3' → letter, 3 → letter'
+      });
+      return spreadAlg;
+    });
     const filteredSuggestions: Suggestion[] = [];
-    for (const suggestion of suggestions) {
+    const filteredSpreadAlgs: string[] = [];
+    for (let i = 0; i < suggestions.length; i++) {
+      const suggestion = suggestions[i];
+      const spreadAlg = spreadSuggestions[i];
       let isRedundant = false;
-      
-      for (const existing of filteredSuggestions) {
-        // Check if current alg starts with the existing alg (with space)
-        if (suggestion.alg.startsWith(existing.alg + ' ')) {
+
+      for (let j = 0; j < filteredSuggestions.length; j++) {
+        // Check if current spread alg starts with an existing spread alg
+        if (spreadAlg.startsWith(filteredSpreadAlgs[j] + ' ')) {
           // Check if current alg has any unique steps compared to existing
-          const hasUniqueSteps = suggestion.steps.some(step => !existing.steps.includes(step));
-          
+          const hasUniqueSteps = suggestion.steps.some(step => !filteredSuggestions[j].steps.includes(step));
+
           if (!hasUniqueSteps) {
             isRedundant = true;
             break;
           }
         }
       }
-      
+
       if (!isRedundant) {
         filteredSuggestions.push(suggestion);
+        filteredSpreadAlgs.push(spreadAlg);
       }
     }
 
     // Sort by time at the end (low is better)
-    return filteredSuggestions.sort((a, b) => a.time - b.time);
+    return filteredSuggestions.sort((a, b) => a.time - b.time).splice(0, 20); // limit to top 20
   }
 
   private getLLSuggestions(steps: StepInfo[], stepTypes: Set<StepInfo['type']>): {alg: string, time: number, name?: string, steps: string[]}[] {
