@@ -1,13 +1,7 @@
 Informal Bugs/Todo List. Not guaranteed to be complete or accurate.
 ===================================================================
 
-Add slot direction to lineStep as an optional param. Pass through to ImageStack (and SuggestionCard?)
-  - Interestingly, the slot start location is obvious during a solve, while slot end location isn't.
-  - Should slot direction be end location for this reason?
-
 Roux support (learn roux)
-
-Fix URL query param parsing  ("scramb le")
 
 Recon saving via profiles. Check if file system api thing is worth our time.
 
@@ -15,6 +9,7 @@ Autocomplete for cross. Would need to brute force solutions to partial cross sol
 Or compute a bunch of crosses and just give whatever suggestion still works.
 But we don't wanna just show autocomplete right away. Noisey.
   - Unless user requests it via tab!
+  - Otherwise wait till user is 3 moves away
 
   Properties of a cross algorithm
   - Moves should always move a layer that has a cross piece on it
@@ -25,16 +20,14 @@ But we don't wanna just show autocomplete right away. Noisey.
   
 Algs page. For your algs. A tab for your recons (click an icon and expand into a whole new page). A profile system. Oofda.
 
-ZBLS autocomplete:
-Case = f2l && (EO + AUF)
-Noteably, adding U* to start of alg is still the same case.
-So we generate a json specifically for ZBLS with these objects:
-{hash: 'abcd', 'eoIndex': 9, alg: "R U R'"}
-Then we search for hash matches only on f2l pieces. The EO is matched separately.
-
-Extend suggestion filtering logic. 
-- Measure number of edges oriented
-- If alg is clearly worse (in time estimate metric) and don't solve anything including EO, don't show it.
-
 Add basic y move algs, like for
 http://localhost:3000/recon/?scramble=%2F%2F_Scramble_of_the_day%0A%2F%2F_2026-01-22%0AR_D%27_B%27_L2_F%27_U%27_L_F_D%27_F_B2_U_B2_U%27_B2_U2_D%27_R2_B2_U%27_L2&time=10.826&solution=y%27_F2_D%27_R%27_F_D2%0Ay%27_R%27_U2_R%0AL%27_U_L_U_L%27_U%27_L
+
+Fix pre-post AUFS for symmetrical algs
+
+Make toolbar collapse a more normal button on bottom of twisty player. Animate it smoothly.
+- show simply as toolbox icon?
+
+Oriented (relative to blocks) LR edges may be a valid substep for roux
+
+Try making preview image smaller for less compression

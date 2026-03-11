@@ -2,109 +2,36 @@
 
 import { ImageResponse } from 'next/og';
 import { customDecodeURL } from '../../../composables/recon/urlEncoding';
-import { createScreenshotContent, type ScreenshotData, type SolutionLine } from '../../../composables/recon/ScreenshotManager';
-import { type StepIconData, type Grid } from '../../../composables/recon/StepIconRenderer';
+import { createPreviewContent, type ScreenshotData, type SolutionLine } from '../../../composables/recon/ScreenshotManager';
 import { SimpleCube } from '../../../composables/recon/SimpleCube';
 import { SimpleCubeInterpreter, type StepInfo } from '../../../composables/recon/SimpleCubeInterpreter';
 import parseText from '../../../composables/recon/validateTextInput';
 import validationToArray from '../../../composables/recon/validationToMoves';
+import { getLineStepInfo } from '../../../composables/recon/getLineStepInfo';
+import { fetchDailyScramble } from '../../../utils/fetchDailyScramble';
 import React from 'react';
 
 export const runtime = 'nodejs';
 
-// converts StepInfo[] to a single StepIconData for display
-// mirrors getLineStepInfo logic from ImageStack.tsx
-function consolidateStepsToIcon(
-  currentSteps: StepInfo[],
-  prevSteps: StepInfo[]
-): StepIconData | null {
-  if (currentSteps.length === 0) return null;
-
-  // get the most recent pattern from previous steps
-  let prevPattern: Grid = [];
-  for (let i = prevSteps.length - 1; i >= 0; i--) {
-    if (prevSteps[i].pattern && prevSteps[i].pattern!.length > 0) {
-      prevPattern = prevSteps[i]!.pattern!;
-      break;
-    }
-  }
-
-  // priority: solved > last layer steps > f2l > cross
-  for (const step of currentSteps) {
-    if (step.type === 'solved') {
-      return { step: 'solved', type: 'solved', colors: step.colors, pattern: prevPattern };
-    }
-  }
-
-  const llSteps = currentSteps.filter(step => step.type === 'last layer');
-  const llStepNames = llSteps.map(s => s.step);
-  const prevLLSteps = prevSteps.filter(step => step.type === 'last layer').map(s => s.step);
-  const f2lSteps = currentSteps.filter(step => step.type === 'f2l');
-  const crossSteps = currentSteps.filter(step => step.type === 'cross');
-
-  // xcross, xxcross, etc
-  if (crossSteps.length === 1 && f2lSteps.length > 0) {
-    const colors = [...crossSteps[0].colors];
-    colors.push(...f2lSteps.flatMap(step => step.colors));
-    return { step: "x".repeat(f2lSteps.length) + 'cross', type: 'cross', colors };
-  }
-
-  // F2L pairs
-  if (f2lSteps.length > 1) {
-    const uniqueColors = [...new Set(f2lSteps.flatMap(step => step.colors))];
-    return { step: 'multislot', type: 'f2l', colors: uniqueColors };
-  } else if (f2lSteps.length === 1) {
-    return { step: 'pair', type: 'f2l', colors: [...new Set([...f2lSteps[0].colors])] };
-  }
-
-  // LL combos
-  if (llStepNames.includes('ep') && llStepNames.includes('cp') && llStepNames.includes('co') && llStepNames.includes('eo')) {
-    return { step: '1lll', type: 'last layer', colors: llSteps[0]?.colors || [], pattern: prevPattern };
-  }
-  if (llStepNames.includes('ep') && llStepNames.includes('cp') && llStepNames.includes('co')) {
-    return { step: 'zbll', type: 'last layer', colors: llSteps[0]?.colors || [], pattern: prevPattern };
-  }
-  if (llStepNames.includes('eo') && llStepNames.includes('cp') && llStepNames.includes('co')) {
-    return { step: 'oll(cp)', type: 'last layer', colors: llSteps[0]?.colors || [], pattern: prevPattern };
-  }
-  if (llStepNames.includes('eo') && llStepNames.includes('co')) {
-    return { step: 'oll', type: 'last layer', colors: llSteps[0]?.colors || [], pattern: prevPattern };
-  }
-  if (llStepNames.includes('ep') && llStepNames.includes('cp')) {
-    return { step: 'pll', type: 'last layer', colors: llSteps[0]?.colors || [], pattern: prevPattern };
-  }
-  if (llStepNames.includes('co') && llStepNames.includes('cp') && prevLLSteps.includes('eo')) {
-    return { step: 'coll', type: 'last layer', colors: llSteps[0]?.colors || [], pattern: prevPattern };
-  }
-  if (llStepNames.includes('eo') && llStepNames.includes('ep')) {
-    return { step: 'ell', type: 'last layer', colors: llSteps[0]?.colors || [], pattern: prevPattern };
-  }
-  if (llStepNames.includes('co') && llStepNames.includes('cp')) {
-    return { step: 'cll', type: 'last layer', colors: llSteps[0]?.colors || [], pattern: prevPattern };
-  }
-
-  // individual LL steps
-  if (currentSteps.length === 1 && llSteps.length === 1) {
-    const step = llSteps[0];
-    if (step.step === 'eo') return { step: '1st look oll', type: 'last layer', colors: step.colors, pattern: prevPattern };
-    if (step.step === 'co') return { step: '2nd look oll', type: 'last layer', colors: step.colors, pattern: prevPattern };
-    if (step.step === 'cp') return { step: '1st look pll', type: 'last layer', colors: step.colors, pattern: prevPattern };
-    if (step.step === 'ep') return { step: '2nd look pll', type: 'last layer', colors: step.colors, pattern: prevPattern };
-  }
-
-  // cross
-  if (crossSteps.length > 0) return { step: 'cross', type: 'cross', colors: crossSteps[crossSteps.length - 1].colors };
-
-  // fallback
-  const lastStep = currentSteps[currentSteps.length - 1];
-  return { step: lastStep.step, type: lastStep.type, colors: lastStep.colors, pattern: lastStep.pattern };
+// cache Rubik font data for Satori rendering
+let rubikRegularData: ArrayBuffer | null = null;
+let rubikBoldData: ArrayBuffer | null = null;
+async function getRubikFonts(): Promise<{ regular: ArrayBuffer; bold: ArrayBuffer }> {
+  if (rubikRegularData && rubikBoldData) return { regular: rubikRegularData, bold: rubikBoldData };
+  const [regRes, boldRes] = await Promise.all([
+    fetch('https://fonts.gstatic.com/s/rubik/v31/iJWZBXyIfDnIV5PNhY1KTN7Z-Yh-B4i1UA.ttf'),
+    fetch('https://fonts.gstatic.com/s/rubik/v31/iJWZBXyIfDnIV5PNhY1KTN7Z-Yh-2Y-1UA.ttf'),
+  ]);
+  rubikRegularData = await regRes.arrayBuffer();
+  rubikBoldData = await boldRes.arrayBuffer();
+  return { regular: rubikRegularData, bold: rubikBoldData };
 }
 
 // computes icons for each solution line by simulating cube state
 function computeLineIcons(
   scrambleMoves: string[],
   solutionLines: string[][]
-): (StepIconData | null)[] {
+): { stepInfo: StepInfo | null; hasEO: boolean }[] {
   const simpleCube = new SimpleCube();
   // pass empty array to skip loading algorithm suggester
   const interpreter = new SimpleCubeInterpreter([]);
@@ -141,7 +68,9 @@ function computeLineIcons(
   // consolidate each line's steps into a single icon
   return allLineSteps.map((lineSteps, idx) => {
     const prevSteps = allLineSteps.slice(0, idx).flat();
-    return consolidateStepsToIcon(lineSteps, prevSteps);
+    return {
+      ...getLineStepInfo(lineSteps, prevSteps),
+    };
   });
 }
 
@@ -166,7 +95,8 @@ function renderColoredText(text: string): React.ReactNode {
   let lastType = parsed[0][1];
   
   for (const [char, type] of parsed) {
-    if (type !== lastType) {
+    // if type changes, push the accumulated string with the previous type's color
+    if (type !== 'space' && type !== lastType) {
       elements.push(
         <span key={elements.length} style={{ color: getColor(lastType) }}>{currentString}</span>
       );
@@ -258,7 +188,6 @@ export async function GET(request: Request) {
     }
 
     const scrambleParsed = parseText(cleanScramble);
-    console.log('scrambleParsed: ', scrambleParsed);
     const scrambleTokens = validationToArray(scrambleParsed);
     const scrambleMoves = scrambleTokens.map(t => t.value);
     const renderedScramble = renderColoredText(cleanScramble);
@@ -293,31 +222,65 @@ export async function GET(request: Request) {
     const flatMoves = solutionMoveLines.flat();
     const calculatedStm = flatMoves.filter(move => move.match(/[^xyz2']/g)).length;
     const timeNum = time ? parseFloat(time) : 0;
-    const calculatedTps = (timeNum > 0 && calculatedStm > 0) 
-      ? (calculatedStm / timeNum).toFixed(2) 
+    // only use time if it's valid (not NaN, not 0, not negative, not > 99999)
+    const isValidTime = !isNaN(timeNum) && timeNum > 0 && timeNum <= 99999;
+    const calculatedTps = (isValidTime && calculatedStm > 0)
+      ? (calculatedStm / timeNum).toFixed(2)
       : '';
     
     const solutionLines: SolutionLine[] = solutionData
       .map((d, i) => ({
         text: d.text,
         renderedText: d.renderedText,
-        icon: icons[i] || null,
+        icon: icons[i]?.stepInfo || undefined,
+        hasEO: icons[i]?.hasEO,
       }))
       .filter(line => line.text.trim() !== '');
+
+    // check if scramble matches daily scramble
+    let isScrambleOfTheDay = false;
+    try {
+      const dailyScramble = await fetchDailyScramble();
+      if (dailyScramble) {
+        const s = dailyScramble.split('\n').slice(1).join('');
+        isScrambleOfTheDay = s === scrambleMoves.join(' ');
+      }
+    } catch (e) {
+      console.error('Failed to fetch daily scramble for comparison:', e);
+    }
 
     const screenshotData: ScreenshotData = {
       scramble: cleanScramble,
       renderedScramble: renderedScramble,
       solutionLines,
-      solveTime: time || '',
+      solveTime: isValidTime ? time! : '',
       totalMoves: calculatedStm,
       tpsString: calculatedTps ? `${calculatedTps} tps` : '',
       title: title || undefined,
+      isScrambleOfTheDay,
     };
 
+    const rubikFonts = await getRubikFonts();
+
     return new ImageResponse(
-      createScreenshotContent({ data: screenshotData, createElement: React.createElement }) as React.ReactElement,
-      imageOptions
+      createPreviewContent({ data: screenshotData, createElement: React.createElement }) as React.ReactElement,
+      {
+        ...imageOptions,
+        fonts: [
+          {
+            name: 'Rubik',
+            data: rubikFonts.regular,
+            weight: 400,
+            style: 'normal',
+          },
+          {
+            name: 'Rubik',
+            data: rubikFonts.bold,
+            weight: 600,
+            style: 'normal',
+          },
+        ],
+      }
     );
   } catch (e: any) {
     console.log(`${e.message}`);

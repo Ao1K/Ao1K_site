@@ -68,7 +68,7 @@ export default async function RootLayout({
           
           <div id="left-margin" className="block bg-primary-900 h-full grid-lines-50-l -z-10"></div> 
           
-          <main className="col-start-2 flex flex-col mx-0 sm:mx-10 bg-primary-900">
+          <main className="col-start-2 flex flex-col mx-0 sm:mx-10 bg-primary-900 main-content">
             <React.Suspense fallback={<ReconSkeleton />}>
               {children}
               <Footer />

@@ -47,7 +47,6 @@ export const SuggestionBox = ({suggestions, xLocation, yLocation, handleSuggesti
   const sortedSuggestions = sortSuggestions(suggestions);
   const selectedCardRef = useRef<number | null>(null);
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
-
   
   const selectCard = (index: number) => {
     const cardElement = document.getElementById(`suggestion-card-${index}`);
@@ -123,6 +122,7 @@ export const SuggestionBox = ({suggestions, xLocation, yLocation, handleSuggesti
           isFocused={selectedCardRef.current === index}
           alg={item.suggestion.alg}
           steps={item.suggestion.steps}
+          hasEOsolved={item.suggestion.hasEOsolved}
           handleSuggestionRequest={() => focusHoveredElement(index)}
           handleSuggestionAccept={handleSuggestionAccept}
         />

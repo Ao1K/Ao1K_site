@@ -6,6 +6,7 @@ interface SuggestionCardProps {
   steps: string[];
   id: string;
   isFocused: boolean;
+  hasEOsolved?: boolean;
   handleSuggestionRequest: () => void;
   handleSuggestionAccept: () => void;
 }
@@ -24,11 +25,11 @@ const extractF2LColors = (step: string, letterToColor: Record<string, string>): 
   return uniqueColors;
 };
 
-const renderPairIcon = (colors: string[], defaultColors: string[]): JSX.Element => {
+const renderPairIcon = (colors: string[], defaultColors: string[], eoColor?: string): JSX.Element => {
   const [first, second] = colors.length >= 2 ? colors : defaultColors;
 
   return (
-    <svg viewBox="0 0 24 24" className="border border-neutral-600">
+    <svg viewBox="0 0 24 24" style={eoColor ? { border: `2px solid ${eoColor}` } : undefined} className={eoColor ? undefined : "border border-neutral-600"}>
       <polygon points="0,0 24,0 0,24" fill={first} />
       <polygon points="24,0 24,24 0,24" fill={second} />
     </svg>
@@ -64,7 +65,7 @@ const renderTextIcon = (label: string): JSX.Element => (
   </div>
 );
 
-const renderStepIcon = (steps: string[], letterToColor: Record<string, string>, defaultPairColors: string[], defaultMultislotColors: string[]): JSX.Element => {
+const renderStepIcon = (steps: string[], letterToColor: Record<string, string>, defaultPairColors: string[], defaultMultislotColors: string[], eoColor?: string): JSX.Element => {
   if (steps.length === 0) {
     return renderTextIcon('?');
   }
@@ -82,14 +83,14 @@ const renderStepIcon = (steps: string[], letterToColor: Record<string, string>, 
   }
 
   if (hasPair || uniqueColors.length === 2) {
-    return renderPairIcon(uniqueColors.length >= 2 ? uniqueColors.slice(0, 2) : defaultPairColors, defaultPairColors);
+    return renderPairIcon(uniqueColors.length >= 2 ? uniqueColors.slice(0, 2) : defaultPairColors, defaultPairColors, eoColor);
   }
 
   // Default to text icon using the first step
   return renderTextIcon(steps[0] || '?');
 };
 
-export const SuggestionCard = ({ alg, steps, id, isFocused, handleSuggestionRequest, handleSuggestionAccept }: SuggestionCardProps) => {
+export const SuggestionCard = ({ alg, steps, id, isFocused, hasEOsolved, handleSuggestionRequest, handleSuggestionAccept }: SuggestionCardProps) => {
   const { settings } = useSyncedSettings();
   const { cubeColors } = settings;
 
@@ -105,8 +106,9 @@ export const SuggestionCard = ({ alg, steps, id, isFocused, handleSuggestionRequ
 
   const defaultPairColors: string[] = [cubeColors.front, cubeColors.left];
   const defaultMultislotColors: string[] = [cubeColors.front, cubeColors.back, cubeColors.right, cubeColors.left];
+  const eoColor = hasEOsolved ? cubeColors.eo : undefined;
 
-  const icon = renderStepIcon(steps, letterToColor, defaultPairColors, defaultMultislotColors);
+  const icon = renderStepIcon(steps, letterToColor, defaultPairColors, defaultMultislotColors, eoColor);
 
   return (
     <div 

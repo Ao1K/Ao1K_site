@@ -11,10 +11,27 @@ export interface Suggestion {
   time: number;
   steps: string[];
   name?: string;
+  hasEOsolved?: boolean;
 }
 
+type ColorName = 'white' | 'yellow' | 'red' | 'orange' | 'green' | 'blue';
+type DirectionChar = 'U' | 'D' | 'L' | 'R' | 'F' | 'B';
+
+// Block pattern types for Roux-style blocks
+type BlockOrigin = 'UFL' | 'UFR' | 'DFR' | 'DFL';
+type Face = [string, string, string, string, string, string, string, string, string]; // 9 stickers, reading top-left to bottom-right when facing the face
+export type BlockPattern = {
+  origin: BlockOrigin;
+  U?: Face;
+  D?: Face;
+  F?: Face;
+  B?: Face;
+  L?: Face;
+  R?: Face;
+};
+
 // maps single-char color codes to full color names
-const colorCharToName: { [key in Color]: string } = {
+const colorCharToName: { [key in Color]: ColorName } = {
   'W': 'white',
   'Y': 'yellow',
   'R': 'red',
@@ -25,8 +42,8 @@ const colorCharToName: { [key in Color]: string } = {
 
 interface StickerState {
   faceIdx: number;
-  colorName: string;
-  direction: string; // U, D, L, R, F, B
+  colorName: ColorName;
+  direction: DirectionChar;
 }
 
 interface PieceState {
@@ -39,13 +56,42 @@ interface CubeState {
   hash: string;
 }
 
+/**
+ * Represents a connected block on the cube.
+ * A block is "solid" when adjacent pieces have matching colors on their shared faces.
+ * origin: [x, y, z] position of the piece in the block closest to (0,0,0)
+ * where 0,0,0 = UFL corner (x: 0=L, y: 0=U, z: 0=F)
+ * dimensions: maps each face direction to a string containing the color and dimension size
+ *   e.g., { L: "B3", U: "W2", F: "R1" } means the block spans:
+ *   3 pieces on the L (left) face with blue color
+ *   2 pieces on the U (up) face with white color
+ *   1 piece on the F (front) face with red color
+ * blockPattern: the 3 faces that compose the block, each with 9 stickers (empty string if not part of block)
+ */
+export interface Block {
+  origin: [number, number, number]; // position of piece closest to (0,0,0)
+  dimensions: Partial<Record<DirectionChar, [Color, number]>>; // Maps face directions to "Color+Size" strings (e.g., "B3")
+  blockPattern?: BlockPattern; // The 3 faces of the block with color patterns
+}
+
+// 6 rows × 5 cols grid. Middle 3 cols = U face (rows 0-2) then F face (rows 3-5).
+// Col 0 = L stickers adjacent to U/F, col 4 = R stickers adjacent to U/F.
+// Cells [3][0] and [3][4] are 0 (blank) — the wrap-around gap between U and F on the sides.
+export type LSEPattern = number[][];
+
+export type F2LDirection = 'front' | 'back' | 'left' | 'right';
+
 export interface StepInfo {
   step: string;
-  type: 'cross' | 'f2l' | 'last layer' | 'solved' | 'none';
+  type: 'cross' | 'f2l' | 'last layer' | 'solved' | 'none' | 'eo' | 'block' | 'lse' | 'cmll' | 'eoLine';
   colors: string[];
-  caseIndex: number | null;
-  name?: string; // Optional name for LL cases (OLL/PLL names)
-  pattern?: Grid;
+  caseIndex?: number;
+  name?: string; // Optional name for cases (OLL/PLL names)
+  nameType?: 'oll' | 'pll';
+  blockPattern?: BlockPattern;
+  lsePattern?: LSEPattern;
+  gridPattern?: Grid;
+  f2lSlotList?: Partial<Record<F2LDirection, string>>[];
 }
 
 /**
@@ -59,7 +105,7 @@ export class SimpleCubeInterpreter {
    * Fixed string representing the state of a solved 3x3 cube.
    * The index of each character in the string corresponds to a piece of 
    * a specific set of colors. Colors are then mapped based on cube rotation.
-   * Finally, we get the location of each piece that has those mapped (effective) colors.
+   * Finally, we get the position of each piece that has those mapped (effective) colors.
    * 
    * Example: 
    *  We have a solved cube where an x rotation was applied, and we want to find the 0th 
@@ -83,13 +129,14 @@ export class SimpleCubeInterpreter {
     { faceIdx: 5, colorName: 'orange' },  // L
   ];
   private currentPieces: PieceState[] = [];
+  private pieceColorMapping: Map<number, { effectivePieceIndex: number, stickerOrder: string[] }> = new Map();
 
   /**
    * Maps edge piece positions to their sticker locations in SimpleCubeState.
    * Each entry: [face1, row1, col1, dir1, face2, row2, col2, dir2]
    * face indices: 0=U, 1=D, 2=F, 3=R, 4=B, 5=L
    */
-  private readonly edgePositions: [number, number, number, string, number, number, number, string][] = [
+  private readonly edgePositions: [number, number, number, DirectionChar, number, number, number, DirectionChar][] = [
     [0, 2, 1, 'U', 2, 0, 1, 'F'], // 0: UF
     [0, 1, 2, 'U', 3, 0, 1, 'R'], // 1: UR
     [0, 0, 1, 'U', 4, 0, 1, 'B'], // 2: UB
@@ -109,7 +156,7 @@ export class SimpleCubeInterpreter {
    * Each entry: [face1, row1, col1, dir1, face2, row2, col2, dir2, face3, row3, col3, dir3]
    * Order matches original piece indices 12-19: UFR, UBR, UBL, UFL, DFR, DFL, DBL, DBR
    */
-  private readonly cornerPositions: [number, number, number, string, number, number, number, string, number, number, number, string][] = [
+  private readonly cornerPositions: [number, number, number, DirectionChar, number, number, number, DirectionChar, number, number, number, DirectionChar][] = [
     [0, 2, 2, 'U', 2, 0, 2, 'F', 3, 0, 0, 'R'], // 12: UFR
     [0, 0, 2, 'U', 4, 0, 0, 'B', 3, 0, 2, 'R'], // 13: UBR
     [0, 0, 0, 'U', 4, 0, 2, 'B', 5, 0, 0, 'L'], // 14: UBL
@@ -125,7 +172,7 @@ export class SimpleCubeInterpreter {
    * Each entry: [face, row, col, direction]
    * Order: U, L, F, R, B, D (indices 20-25)
    */
-  private readonly centerPositions: [number, number, number, string][] = [
+  private readonly centerPositions: [number, number, number, DirectionChar][] = [
     [0, 1, 1, 'U'], // 20: U center
     [5, 1, 1, 'L'], // 21: L center
     [2, 1, 1, 'F'], // 22: F center
@@ -163,8 +210,8 @@ export class SimpleCubeInterpreter {
     ["z' y", [3, 5, 1, 4, 0, 2]],
     ["z' y2", [3, 5, 4, 0, 2, 1]],
     ["z' y'", [3, 5, 0, 2, 1, 4]],
-  ]); 
-  
+  ]);
+
   // maps U center color + F center color to rotation name
   private readonly cubeRotationMap = new Map<string, string>([
     ["W,G", "no_rotation"],
@@ -194,29 +241,32 @@ export class SimpleCubeInterpreter {
   ]);
 
   private crossColorsSolved: string[] = [];
+  private blocksSolved: Block[] = [];
+  private topInfo: { actualColor: string; effectiveColor: string; direction: string } = { actualColor: '', effectiveColor: '', direction: '' };
+  private eoValue: number = -1;
 
-  private readonly edgePieceDirections: { [key: string]: number} = {
-    'UF': 0, 'UR': 1, 'UB': 2, 'UL': 3, 
-    'DF': 4, 'DR': 5, 'DB': 6, 'DL': 7, 
+  private readonly edgePieceDirections: { [key: string]: number } = {
+    'UF': 0, 'UR': 1, 'UB': 2, 'UL': 3,
+    'DF': 4, 'DR': 5, 'DB': 6, 'DL': 7,
     'FR': 8, 'FL': 9, 'BR': 10, 'BL': 11,
     'FU': 12, 'RU': 13, 'BU': 14, 'LU': 15,
     'FD': 16, 'RD': 17, 'BD': 18, 'LD': 19,
     'RF': 20, 'LF': 21, 'RB': 22, 'LB': 23
   };
 
-  private readonly centerPieceDirections: { [key: string]: number} = {
-    'U': 0, 
-    'L': 1, 
-    'F': 2, 
+  private readonly centerPieceDirections: { [key: string]: number } = {
+    'U': 0,
+    'L': 1,
+    'F': 2,
     'R': 3,
-    'B': 4, 
+    'B': 4,
     'D': 5
   };
 
   /**
    * characters in each key sorted alphabetically
-   *  */ 
-  private readonly cornerPieceDirections: { [key: string]: number} = {
+   *  */
+  private readonly cornerPieceDirections: { [key: string]: number } = {
     'FLU': 0, // 'UFL': 0,
     'FRU': 1, // 'URF': 1,
     'BRU': 2, // 'UBR': 2,
@@ -227,12 +277,53 @@ export class SimpleCubeInterpreter {
     'BDR': 7, // 'DRB': 7,
   };
 
+  // reverse mappings for hash decoding (initialized in constructor)
+  private readonly edgeIdxToDir: string[];
+  private readonly centerIdxToDir: string[];
+  private readonly cornerLocToDir: string[];
+
+  // 3D position lookups for block detection
+  // coordinate system: x: 0=L, 1=center, 2=R | y: 0=U, 1=center, 2=D | z: 0=F, 1=center, 2=B
+  private readonly centerDirToCoord: Record<string, [number, number, number]> = {
+    'U': [1, 0, 1], 'D': [1, 2, 1], 'F': [1, 1, 0],
+    'B': [1, 1, 2], 'L': [0, 1, 1], 'R': [2, 1, 1],
+  };
+
+  // edge slot (0-11) → position
+  private readonly edgeLocToCoord: [number, number, number][] = [
+    [1, 0, 0], [2, 0, 1], [1, 0, 2], [0, 0, 1], // UF, UR, UB, UL
+    [1, 2, 0], [2, 2, 1], [1, 2, 2], [0, 2, 1], // DF, DR, DB, DL
+    [2, 1, 0], [0, 1, 0], [2, 1, 2], [0, 1, 2], // FR, FL, BR, BL
+  ];
+
+  // corner slot (0-7) → position
+  private readonly cornerLocToCoord: [number, number, number][] = [
+    [0, 0, 0], [2, 0, 0], [2, 0, 2], [0, 0, 2], // UFL, UFR, UBR, UBL
+    [2, 2, 0], [0, 2, 0], [0, 2, 2], [2, 2, 2], // DFR, DFL, DBL, DBR
+  ];
+
   /**
    * Used for determining if last layer corners and edges are correctly permuted.
    */
   private readonly effectiveColorOrder: string[] = ['green', 'red', 'blue', 'orange'];
   private readonly lastLayerEdgeOrder: string[] = ['UF', 'UR', 'UB', 'UL'];
   private readonly lastLayerCornerOrder: string[] = ['UFR', 'UBR', 'UBL', 'UFL'];
+
+  // grid color indices used for icon rendering (gridColorMap in stepIconDescriptors)
+  private readonly gridColorIndex: Record<string, number> = {
+    'white': 1, 'yellow': 2, 'green': 3, 'blue': 4, 'red': 5, 'orange': 6
+  };
+
+  // clockwise side color order (F, R, B, L) for each top color.
+  // any rotation that gives the same top produces a cyclic shift, handled by offset loop.
+  private readonly sideColorOrderByTop: Record<string, string[]> = {
+    'white': ['green', 'red', 'blue', 'orange'],
+    'yellow': ['blue', 'red', 'green', 'orange'],
+    'green': ['yellow', 'red', 'white', 'orange'],
+    'blue': ['white', 'red', 'yellow', 'orange'],
+    'red': ['green', 'yellow', 'blue', 'white'],
+    'orange': ['green', 'white', 'blue', 'yellow'],
+  };
 
   /**
    * In practice, since cross is mostly on down face, effective color for cross
@@ -246,6 +337,13 @@ export class SimpleCubeInterpreter {
     '1,5,8,10': 'red', // right
     '2,6,10,11': 'blue', // back
     '3,7,9,11': 'orange' // left
+  };
+
+  private readonly eoLinePieceIndices: { [key: string]: string } = {
+    // only down face edges are valid, because who would possibly do
+    // EOLine on side? No, we're not going to support that behavior.
+    '4,6': 'yellow,vertical', // down front, down back
+    '5,7': 'yellow,horizontal', // down right, down left
   };
 
   /**
@@ -272,19 +370,19 @@ export class SimpleCubeInterpreter {
       { corner: 16, edge: 5, slotColors: ['yellow', 'red'] },  // DFR corner + DR edge
       { corner: 17, edge: 7, slotColors: ['orange', 'yellow'] }   // DFL corner + DL edge
     ],
-    'red': [ 
+    'red': [
       { corner: 12, edge: 0, slotColors: ['white', 'green'] },  // UFR corner + UF edge
       { corner: 13, edge: 2, slotColors: ['blue', 'white'] },  // UBR corner + UB edge
       { corner: 16, edge: 4, slotColors: ['green', 'yellow'] },  // DFR corner + DF edge
       { corner: 19, edge: 6, slotColors: ['yellow', 'blue'] }   // DBR corner + DB edge
     ],
-    'blue': [ 
+    'blue': [
       { corner: 13, edge: 1, slotColors: ['white', 'red'] },  // UBR corner + UR edge
       { corner: 14, edge: 3, slotColors: ['orange', 'white'] },  // UBL corner + UL edge
       { corner: 19, edge: 5, slotColors: ['red', 'yellow'] },  // DBR corner + DR edge
       { corner: 18, edge: 7, slotColors: ['yellow', 'orange'] }   // DBL corner + DL edge
     ],
-    'orange': [ 
+    'orange': [
       { corner: 15, edge: 0, slotColors: ['green', 'white'] },  // UFL corner + UF edge
       { corner: 14, edge: 2, slotColors: ['white', 'blue'] },  // UBL corner + UB edge
       { corner: 17, edge: 4, slotColors: ['yellow', 'green'] },  // DFL corner + DF edge
@@ -294,6 +392,22 @@ export class SimpleCubeInterpreter {
 
   constructor(algs: Doc[] = []) {
     this.solvedState = { hash: this.solved3x3Hash };
+
+    // build reverse mappings for hash decoding
+    this.edgeIdxToDir = [];
+    for (const [dir, idx] of Object.entries(this.edgePieceDirections)) {
+      this.edgeIdxToDir[idx] = dir;
+    }
+
+    this.centerIdxToDir = [];
+    for (const [dir, idx] of Object.entries(this.centerPieceDirections)) {
+      this.centerIdxToDir[idx] = dir;
+    }
+
+    this.cornerLocToDir = [];
+    for (const [dir, slot] of Object.entries(this.cornerPieceDirections)) {
+      this.cornerLocToDir[slot] = dir;
+    }
 
     if (algs.length > 0) {
       this.algSuggester = new AlgSuggester(algs);
@@ -311,7 +425,7 @@ export class SimpleCubeInterpreter {
     }
 
     // color sets that define each piece index (sorted for matching)
-    // edges 0-11: derived from getPieceStart (UF=white+green, UR=white+red, etc.)
+    // edges 0-11
     const edgeColors: [number, number][] = [
       [0, 2], // 0: UF → white, green
       [0, 3], // 1: UR → white, red
@@ -327,7 +441,7 @@ export class SimpleCubeInterpreter {
       [4, 5], // 11: BL → blue, orange
     ];
 
-    // corners 12-19: derived from getPieceStart (UFR=white+green+red, etc.)
+    // corners 12-19
     const cornerColors: [number, number, number][] = [
       [0, 2, 3], // 12: UFR → white, green, red
       [0, 4, 3], // 13: UBR → white, blue, red
@@ -351,7 +465,7 @@ export class SimpleCubeInterpreter {
 
       edgesByLocation.push({
         type: 'edge',
-        origin: this.getPieceStart(i),
+        origin: d1 + d2,
         stickers: [
           { faceIdx: this.colorCharToFaceIdx(color1), colorName: colorCharToName[color1], direction: d1 },
           { faceIdx: this.colorCharToFaceIdx(color2), colorName: colorCharToName[color2], direction: d2 },
@@ -369,7 +483,7 @@ export class SimpleCubeInterpreter {
 
       cornersByLocation.push({
         type: 'corner',
-        origin: this.getPieceStart(12 + i),
+        origin: d1 + d2 + d3,
         stickers: [
           { faceIdx: this.colorCharToFaceIdx(color1), colorName: colorCharToName[color1], direction: d1 },
           { faceIdx: this.colorCharToFaceIdx(color2), colorName: colorCharToName[color2], direction: d2 },
@@ -386,7 +500,7 @@ export class SimpleCubeInterpreter {
 
       centersByLocation.push({
         type: 'center',
-        origin: this.getPieceStart(20 + i),
+        origin: d,
         stickers: [
           { faceIdx: this.colorCharToFaceIdx(color), colorName: colorCharToName[color], direction: d },
         ]
@@ -408,7 +522,7 @@ export class SimpleCubeInterpreter {
           const reorderedStickers = edge.stickers[0].faceIdx === primaryColor
             ? [...edge.stickers]
             : [edge.stickers[1], edge.stickers[0]];
-          
+
           pieces[targetIdx] = {
             ...edge,
             stickers: reorderedStickers
@@ -432,7 +546,7 @@ export class SimpleCubeInterpreter {
             corner.stickers[primaryIdx],
             ...corner.stickers.filter((_, i) => i !== primaryIdx)
           ];
-          
+
           pieces[12 + targetIdx] = {
             ...corner,
             stickers: reorderedStickers
@@ -474,7 +588,7 @@ export class SimpleCubeInterpreter {
   /**
    * Gets the direction a sticker is facing based on piece index and sticker index.
    */
-  private getFaceletDirection(pieceIndex: number, stickerIndex: number): string | null {
+  private getFaceletDirection(pieceIndex: number, stickerIndex: number): DirectionChar | null {
     const piece = this.currentPieces[pieceIndex];
     if (!piece || !piece.stickers || stickerIndex >= piece.stickers.length) {
       console.warn(`Invalid piece or sticker index: piece ${pieceIndex}, sticker ${stickerIndex}`);
@@ -496,7 +610,7 @@ export class SimpleCubeInterpreter {
       console.error('No color mapping found for current rotation:', this.currentCubeRotation);
       return pieceMapping;
     }
-    
+
     this.currentPieces.forEach((currentPiece, currentIndex) => {
 
       // save order of colors on each piece for later
@@ -508,7 +622,7 @@ export class SimpleCubeInterpreter {
 
       // find which piece these colors match
       const sortedStickers = [...stickerOrder].sort().join(',');
-      
+
       for (let i = 0; i < this.currentPieces.length; i++) {
         const pieceToCheck = this.currentPieces[i];
         if (pieceToCheck.type !== currentPiece.type) {
@@ -520,57 +634,19 @@ export class SimpleCubeInterpreter {
           break;
         }
         if (i === this.currentPieces.length - 1) {
-          console.warn('No matching original piece found for current piece:', currentPiece); 
+          console.warn('No matching original piece found for current piece:', currentPiece);
         }
       }
     });
-    
-    return pieceMapping;
-  }
 
-  /**
-   * Determines the start position string for a piece based on its index
-   */
-  private getPieceStart(index: number): string {
-    switch (index) {
-      // Edges (0-11)
-      case 0: return 'UF';
-      case 1: return 'UR';
-      case 2: return 'UB';
-      case 3: return 'UL';
-      case 4: return 'DF';
-      case 5: return 'DR';
-      case 6: return 'DB';
-      case 7: return 'DL';
-      case 8: return 'FR';
-      case 9: return 'FL';
-      case 10: return 'BR';
-      case 11: return 'BL';
-      // Corners (12-19)
-      case 12: return 'UFR';
-      case 13: return 'UBR';
-      case 14: return 'UBL';
-      case 15: return 'UFL';
-      case 16: return 'DFR';
-      case 17: return 'DFL';
-      case 18: return 'DBL';
-      case 19: return 'DBR';
-      // Centers (20-25)
-      case 20: return 'U'; // white
-      case 21: return 'L'; // orange
-      case 22: return 'F'; // green
-      case 23: return 'R'; // red
-      case 24: return 'B'; // blue
-      case 25: return 'D'; // yellow
-      default: return 'Unknown';
-    }
+    return pieceMapping;
   }
 
   private calcCrossColorsSolved(): string[] {
     const solvedPieces = this.getSolvedPieces();
 
     const effectiveColorsSolved: string[] = [];
-    
+
     Object.keys(this.crossPieceIndices).forEach((key) => {
       let piecesSolved = 0;
       key.split(',').forEach((indexStr) => {
@@ -579,7 +655,7 @@ export class SimpleCubeInterpreter {
           piecesSolved++;
         }
       });
-      
+
       if (piecesSolved === key.split(',').length) {
         // entire cross is solved
         effectiveColorsSolved.push(this.crossPieceIndices[key]);
@@ -587,7 +663,7 @@ export class SimpleCubeInterpreter {
     });
 
     // Map effective colors to actual colors based on cube rotation
-    const actualColorsSolved = effectiveColorsSolved.map(effectiveColor => 
+    const actualColorsSolved = effectiveColorsSolved.map(effectiveColor =>
       this.mapEffectiveColorToActual(effectiveColor)
     );
 
@@ -595,9 +671,733 @@ export class SimpleCubeInterpreter {
   }
 
   /**
+   * Calculates all the blocks (1x2x2 or larger) solved on the cube.
+   * Decodes piece positions from the hash instead of iterating through stickers.
+   * Uses flood-fill to find connected pieces with matching colors on shared faces.
+   */
+  private calcBlocksSolved(): Block[] {
+    if (!this.currentState?.hash) {
+      return [];
+    }
+
+    const hash = this.currentState.hash;
+
+    type PieceInfo = {
+      type: 'center' | 'edge' | 'corner';
+      pieceIdx: number;
+      coord: [number, number, number];
+      coordKey: string;
+      blockIds: Set<number>;
+    };
+
+    const pieces = new Map<string, PieceInfo>();
+
+    // decode edges from hash (indices 0-11)
+    for (let i = 0; i < 12; i++) {
+      const charCode = hash.charCodeAt(i) - 'a'.charCodeAt(0);
+      const loc = charCode % 12;
+      const coord = this.edgeLocToCoord[loc];
+      const dir = this.edgeIdxToDir[charCode];
+      const effectiveIdx = this.pieceColorMapping.get(i)!.effectivePieceIndex;
+      if (coord && dir) {
+        const sortedDir = dir.split('').sort().join('');
+        pieces.set(`edge:${sortedDir}`, { type: 'edge', pieceIdx: effectiveIdx, coord, coordKey: coord.join(','), blockIds: new Set() });
+      }
+    }
+
+    // decode corners from hash (indices 12-19)
+    for (let i = 12; i < 20; i++) {
+      const charCode = hash.charCodeAt(i) - 'a'.charCodeAt(0);
+      const loc = Math.floor(charCode / 3);
+      const coord = this.cornerLocToCoord[loc];
+      const dir = this.cornerLocToDir[loc];
+      const effectiveIdx = this.pieceColorMapping.get(i)!.effectivePieceIndex;
+      if (coord && dir) {
+        pieces.set(`corner:${dir}`, { type: 'corner', pieceIdx: effectiveIdx, coord, coordKey: coord.join(','), blockIds: new Set() });
+      }
+    }
+
+    // decode centers from hash (indices 20-25)
+    for (let i = 20; i < 26; i++) {
+      const charCode = hash.charCodeAt(i) - 'a'.charCodeAt(0);
+      const dir = this.centerIdxToDir[charCode] as DirectionChar;
+      const coord = this.centerDirToCoord[dir];
+      const effectiveIdx = this.pieceColorMapping.get(i)!.effectivePieceIndex;
+      if (coord && dir) {
+        pieces.set(`center:${dir}`, { type: 'center', pieceIdx: effectiveIdx, coord, coordKey: coord.join(','), blockIds: new Set() });
+      }
+    }
+
+    // Helper: Get color of a piece's sticker facing a specific direction
+    const getPieceStickerColor = (pieceIdx: number, dir: DirectionChar): Color | null => {
+      const piece = this.currentPieces[pieceIdx];
+      if (!piece) return null;
+      for (const sticker of piece.stickers) {
+        if (sticker.direction === dir) {
+          return Object.keys(colorCharToName).find(
+            key => colorCharToName[key as Color] === sticker.colorName
+          ) as Color;
+        }
+      }
+      return null;
+    };
+
+    // Helper: Get the shared face directions between two adjacent positions
+    const getSharedDirections = (pos1: [number, number, number], pos2: [number, number, number]): DirectionChar[] => {
+      const sharedDirs: DirectionChar[] = [];
+
+      // x axis: if same x, they share either L or R face
+      if (pos1[0] === pos2[0]) {
+        if (pos1[0] === 0) sharedDirs.push('L');
+        else if (pos1[0] === 2) sharedDirs.push('R');
+      }
+
+      // y axis: if same y, they share either U or D face
+      if (pos1[1] === pos2[1]) {
+        if (pos1[1] === 0) sharedDirs.push('U');
+        else if (pos1[1] === 2) sharedDirs.push('D');
+      }
+
+      // z axis: if same z, they share either F or B face
+      if (pos1[2] === pos2[2]) {
+        if (pos1[2] === 0) sharedDirs.push('F');
+        else if (pos1[2] === 2) sharedDirs.push('B');
+      }
+
+      return sharedDirs;
+    };
+
+    // Helper: Check if two pieces connect (matching colors on shared faces)
+    const piecesConnect = (info1: PieceInfo, info2: PieceInfo): boolean => {
+      const sharedDirs = getSharedDirections(info1.coord, info2.coord);
+      if (sharedDirs.length === 0) return false;
+
+      for (const dir of sharedDirs) {
+        const color1 = getPieceStickerColor(info1.pieceIdx, dir);
+        const color2 = getPieceStickerColor(info2.pieceIdx, dir);
+
+        if (color1 !== color2) {
+          return false;
+        }
+      }
+
+      return true;
+    };
+
+    // Helper: Check if two positions are adjacent (Manhattan distance of 1)
+    const areAdjacent = (pos1: [number, number, number], pos2: [number, number, number]): boolean => {
+      const dist = Math.abs(pos1[0] - pos2[0]) + Math.abs(pos1[1] - pos2[1]) + Math.abs(pos1[2] - pos2[2]);
+      return dist === 1;
+    };
+
+    // Helper: Find all pieces adjacent to a given position
+    const getAdjacentPieces = (pos: [number, number, number]): PieceInfo[] => {
+      const adjacent: PieceInfo[] = [];
+      for (const info of pieces.values()) {
+        if (areAdjacent(pos, info.coord)) {
+          adjacent.push(info);
+        }
+      }
+      return adjacent;
+    };
+
+    // BFS flood-fill to assign block IDs to connected pieces
+    let nextBlockId = 0;
+
+    const floodFill = (startInfo: PieceInfo, blockId: number): void => {
+      const inThisBlock = new Set<string>();
+
+      startInfo.blockIds.add(blockId);
+      inThisBlock.add(startInfo.coordKey);
+
+      const queue: PieceInfo[] = [startInfo];
+
+      while (queue.length > 0) {
+        const current = queue.shift()!;
+
+        // don't find adjacent via center pieces due to 
+        // possible incorrect color order of connected edges
+        const isCenter = current.type === 'center';
+        const adjacentPieces = isCenter ? [] : getAdjacentPieces(current.coord);
+
+        for (const adj of adjacentPieces) {
+          if (inThisBlock.has(adj.coordKey)) continue;
+          if (adj.blockIds.size > 0) continue;
+
+          if (piecesConnect(current, adj)) {
+            adj.blockIds.add(blockId);
+            inThisBlock.add(adj.coordKey);
+            queue.push(adj);
+          }
+        }
+      }
+    };
+
+    // Helper: Get piece at a specific position
+    const getPieceAtPos = (pos: [number, number, number]): PieceInfo | undefined => {
+      for (const info of pieces.values()) {
+        if (info.coord[0] === pos[0] && info.coord[1] === pos[1] && info.coord[2] === pos[2]) {
+          return info;
+        }
+      }
+      return undefined;
+    };
+
+    // Helper: Get any unassigned corner piece
+    const getUnassignedCornerPiece = (): PieceInfo | undefined => {
+      for (const info of pieces.values()) {
+        if (info.type === 'corner' && info.blockIds.size === 0) {
+          return info;
+        }
+      }
+      return undefined;
+    };
+
+    // TODO: Delete this
+    // Start from the piece at origin (0,0,0) - this is the UFL corner
+    const originPiece = getPieceAtPos([0, 0, 0]);
+    if (originPiece) {
+      const blockId = nextBlockId++;
+      floodFill(originPiece, blockId);
+    }
+
+    // Continue assigning blocks until all corner pieces are assigned
+    let unassignedPiece = getUnassignedCornerPiece();
+    while (unassignedPiece) {
+      const blockId = nextBlockId++;
+      floodFill(unassignedPiece, blockId);
+      unassignedPiece = getUnassignedCornerPiece();
+    }
+
+    // log flood fill pattern as 3D cube representation
+    // build position -> blockId map
+    // const coordToBlock = new Map<string, string>();
+    // for (const info of pieces.values()) {
+    //   const coordKey = info.coord.join(',');
+    //   const blockStr = info.blockIds.size > 0 ? Array.from(info.blockIds).sort().join('') : '.';
+    //   coordToBlock.set(coordKey, blockStr);
+    // }
+    // console.log('Flood fill (layers F→B, rows U→D, cols L→R):');
+    // for (let z = 0; z < 3; z++) {
+    //   const layerName = z === 0 ? 'Front' : z === 1 ? 'Middle' : 'Back';
+    //   let layer = `  ${layerName}:\n`;
+    //   for (let y = 0; y < 3; y++) {
+    //     let row = '    ';
+    //     for (let x = 0; x < 3; x++) {
+    //       const val = coordToBlock.get(`${x},${y},${z}`) ?? '-';
+    //       row += val.padStart(3) + ' ';
+    //     }
+    //     layer += row + '\n';
+    //   }
+    //   console.log(layer);
+    // }
+
+    // Collect pieces by block ID
+    const blockPieces = new Map<number, PieceInfo[]>();
+    for (const info of pieces.values()) {
+      for (const blockId of info.blockIds) {
+        if (!blockPieces.has(blockId)) {
+          blockPieces.set(blockId, []);
+        }
+        blockPieces.get(blockId)!.push(info);
+      }
+    }
+
+    // Find valid rectangular sub-regions within each connected group
+    const validBlocks: Block[] = [];
+    for (const [, blockPieceList] of blockPieces) {
+      validBlocks.push(...this.findBlockRects(blockPieceList, getPieceStickerColor));
+    }
+
+    return validBlocks;
+  }
+
+  /**
+   * Given a connected group of pieces, finds all valid solid rectangular
+   * sub-regions and computes their dimensions and face colors.
+   */
+  private findBlockRects(
+    blockPieceList: { pieceIdx: number; coord: [number, number, number]; coordKey: string }[],
+    getPieceStickerColor: (pieceIdx: number, dir: DirectionChar) => Color | null,
+  ): Block[] {
+    const positionsInBlock = new Set<string>();
+    for (const piece of blockPieceList) {
+      positionsInBlock.add(piece.coordKey);
+    }
+
+    const isSubRectSolid = (
+      x1: number, x2: number,
+      y1: number, y2: number,
+      z1: number, z2: number
+    ): boolean => {
+      for (let x = x1; x <= x2; x++) {
+        for (let y = y1; y <= y2; y++) {
+          for (let z = z1; z <= z2; z++) {
+            // skip internal center position (1,1,1) - no piece exists there
+            if (x === 1 && y === 1 && z === 1) continue;
+            if (!positionsInBlock.has(`${x},${y},${z}`)) {
+              return false;
+            }
+          }
+        }
+      }
+      return true;
+    };
+
+    const getBlockFaceColor = (pieces: typeof blockPieceList, dir: DirectionChar): Color | null => {
+      for (const piece of pieces) {
+        const color = getPieceStickerColor(piece.pieceIdx, dir);
+        if (color !== null) return color;
+      }
+      return null;
+    };
+
+    // calculate bounding box
+    const xs = blockPieceList.map(p => p.coord[0]);
+    const ys = blockPieceList.map(p => p.coord[1]);
+    const zs = blockPieceList.map(p => p.coord[2]);
+
+    const boundMinX = Math.min(...xs);
+    const boundMaxX = Math.max(...xs);
+    const boundMinY = Math.min(...ys);
+    const boundMaxY = Math.max(...ys);
+    const boundMinZ = Math.min(...zs);
+    const boundMaxZ = Math.max(...zs);
+
+    // find all valid solid sub-rectangles
+    type Rect = { minX: number; maxX: number; minY: number; maxY: number; minZ: number; maxZ: number; volume: number };
+    const candidateRects: Rect[] = [];
+
+    for (let minX = boundMinX; minX <= boundMaxX; minX++) {
+      for (let maxX = minX; maxX <= boundMaxX; maxX++) {
+        for (let minY = boundMinY; minY <= boundMaxY; minY++) {
+          for (let maxY = minY; maxY <= boundMaxY; maxY++) {
+            for (let minZ = boundMinZ; minZ <= boundMaxZ; minZ++) {
+              for (let maxZ = minZ; maxZ <= boundMaxZ; maxZ++) {
+                const dx = maxX - minX + 1;
+                const dy = maxY - minY + 1;
+                const dz = maxZ - minZ + 1;
+                const volume = dx * dy * dz;
+
+                const sortedDims = [dx, dy, dz].sort((a, b) => a - b);
+
+                // minimum 1x2x2 = 4, maximum 2x2x3 = 12
+                if (volume < 4 || volume > 12) continue;
+                if (sortedDims[1] >= 3 && sortedDims[2] >= 3) continue;
+
+                // skip blocks that only live in a slice layer
+                const floatingInX = dx === 1 && minX === 1;
+                const floatingInY = dy === 1 && minY === 1;
+                const floatingInZ = dz === 1 && minZ === 1;
+                if (floatingInX || floatingInY || floatingInZ) continue;
+
+                if (!isSubRectSolid(minX, maxX, minY, maxY, minZ, maxZ)) continue;
+
+                candidateRects.push({ minX, maxX, minY, maxY, minZ, maxZ, volume });
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // sort by volume descending, then greedily select non-overlapping rects
+    candidateRects.sort((a, b) => b.volume - a.volume);
+    const selectedRects: Rect[] = [];
+    for (const rect of candidateRects) {
+      const overlaps = selectedRects.some(sel =>
+        sel.minX <= rect.maxX && sel.maxX >= rect.minX &&
+        sel.minY <= rect.maxY && sel.maxY >= rect.minY &&
+        sel.minZ <= rect.maxZ && sel.maxZ >= rect.minZ
+      );
+      if (!overlaps) selectedRects.push(rect);
+    }
+
+    const results: Block[] = [];
+
+    for (const rect of selectedRects) {
+      const { minX, maxX, minY, maxY, minZ, maxZ } = rect;
+      const dx = maxX - minX + 1;
+      const dy = maxY - minY + 1;
+      const dz = maxZ - minZ + 1;
+
+      const piecesInRect = blockPieceList.filter(p =>
+        p.coord[0] >= minX && p.coord[0] <= maxX &&
+        p.coord[1] >= minY && p.coord[1] <= maxY &&
+        p.coord[2] >= minZ && p.coord[2] <= maxZ
+      );
+
+      const blockDimensions: Partial<Record<DirectionChar, [Color, number]>> = {};
+
+      if (minX === 0) {
+        const lColor = getBlockFaceColor(piecesInRect, 'L');
+        if (lColor) blockDimensions['L'] = [lColor, dx];
+      } else if (maxX === 2) {
+        const rColor = getBlockFaceColor(piecesInRect, 'R');
+        if (rColor) blockDimensions['R'] = [rColor, dx];
+      }
+
+      if (minY === 0) {
+        const uColor = getBlockFaceColor(piecesInRect, 'U');
+        if (uColor) blockDimensions['U'] = [uColor, dy];
+      } else if (maxY === 2) {
+        const dColor = getBlockFaceColor(piecesInRect, 'D');
+        if (dColor) blockDimensions['D'] = [dColor, dy];
+      }
+
+      if (minZ === 0) {
+        const fColor = getBlockFaceColor(piecesInRect, 'F');
+        if (fColor) blockDimensions['F'] = [fColor, dz];
+      } else if (maxZ === 2) {
+        const bColor = getBlockFaceColor(piecesInRect, 'B');
+        if (bColor) blockDimensions['B'] = [bColor, dz];
+      }
+
+      const blockPattern = this.generateBlockPattern(minX, maxX, minY, maxY, minZ, maxZ);
+
+      results.push({
+        origin: [minX, minY, minZ],
+        dimensions: blockDimensions,
+        blockPattern,
+      });
+    }
+
+    return results;
+  }
+
+  /**
+   * Generates a BlockPattern for a block given its bounding box.
+   * Only includes sticker colors for positions that are part of the block.
+   */
+  private generateBlockPattern(
+    minX: number,
+    maxX: number,
+    minY: number,
+    maxY: number,
+    minZ: number,
+    maxZ: number
+  ): BlockPattern | undefined {
+    if (!this.cubeState) return undefined;
+
+    // count how many block stickers are visible on each face
+    const dx = maxX - minX + 1;
+    const dy = maxY - minY + 1;
+    const dz = maxZ - minZ + 1;
+    const stickersU = minY === 0 ? dx * dz : 0;
+    const stickersD = maxY === 2 ? dx * dz : 0;
+    const stickersF = minZ === 0 ? dx * dy : 0;
+    const stickersL = minX === 0 ? dy * dz : 0;
+    const stickersR = maxX === 2 ? dy * dz : 0;
+
+    // pick the viewpoint that shows the most block stickers (tie-break order: UFL, UFR, DFL, DFR)
+    const viewScores: [BlockOrigin, number][] = [
+      ['UFL', stickersU + stickersF + stickersL],
+      ['UFR', stickersU + stickersF + stickersR],
+      ['DFL', stickersD + stickersF + stickersL],
+      ['DFR', stickersD + stickersF + stickersR],
+    ];
+
+    let blockOriginType: BlockOrigin = viewScores[0][0];
+    let bestScore = viewScores[0][1];
+    for (let i = 1; i < viewScores.length; i++) {
+      if (viewScores[i][1] > bestScore) {
+        bestScore = viewScores[i][1];
+        blockOriginType = viewScores[i][0];
+      }
+    }
+
+    if (bestScore === 0) return undefined;
+
+    // Helper to get sticker color at a specific position and face
+    const getStickerAt = (faceIdx: 0 | 1 | 2 | 3 | 4 | 5, row: number, col: number): string => {
+      if (!this.cubeState) return '';
+      return this.cubeState[faceIdx][row][col] || '';
+    };
+
+    // Helper to check if a position is in the block
+    const isInBlock = (x: number, y: number, z: number): boolean => {
+      return x >= minX && x <= maxX && y >= minY && y <= maxY && z >= minZ && z <= maxZ;
+    };
+
+    // Helper to generate a face pattern (9 stickers, top-left to bottom-right when facing the face)
+    const generateFace = (faceIdx: 0 | 1 | 2 | 3 | 4 | 5, faceDir: DirectionChar): Face => {
+      const stickers: [string, string, string, string, string, string, string, string, string] = ['', '', '', '', '', '', '', '', ''];
+      let idx = 0;
+
+      for (let row = 0; row < 3; row++) {
+        for (let col = 0; col < 3; col++) {
+          // Map face grid position to 3D cube coordinates
+          let x: number, y: number, z: number;
+
+          switch (faceDir) {
+            case 'U': // face index 0, looking down at U face
+              x = col;
+              y = 0;
+              z = 2 - row;
+              break;
+            case 'D': // face index 1, looking up at D face (mirrored horizontally)
+              x = col;
+              y = 2;
+              z = row;
+              break;
+            case 'F': // face index 2, looking at F face from front
+              x = col;
+              y = row;
+              z = 0;
+              break;
+            case 'B': // face index 4, looking at B face from behind (mirrored)
+              x = 2 - col;
+              y = row;
+              z = 2;
+              break;
+            case 'L': // face index 5, looking at L face from left
+              x = 0;
+              y = row;
+              z = 2 - col;
+              break;
+            case 'R': // face index 3, looking at R face from right
+              x = 2;
+              y = row;
+              z = col;
+              break;
+            default:
+              x = y = z = -1;
+          }
+
+          // Only include color if position is in the block
+          if (isInBlock(x, y, z)) {
+            stickers[idx] = getStickerAt(faceIdx, row, col);
+          } else {
+            stickers[idx] = '';
+          }
+          idx++;
+        }
+      }
+
+      return stickers;
+    };
+
+    // Generate the 3 faces based on block origin type
+    const pattern: Partial<BlockPattern> = { origin: blockOriginType };
+
+    // face indices: U=0, D=1, F=2, R=3, B=4, L=5
+    switch (blockOriginType) {
+      case 'UFL':
+        pattern.U = generateFace(0, 'U');
+        pattern.F = generateFace(2, 'F');
+        pattern.L = generateFace(5, 'L');
+        break;
+      case 'UFR':
+        pattern.U = generateFace(0, 'U');
+        pattern.F = generateFace(2, 'F');
+        pattern.R = generateFace(3, 'R');
+        break;
+      case 'DFR':
+        pattern.D = generateFace(1, 'D');
+        pattern.F = generateFace(2, 'F');
+        pattern.R = generateFace(3, 'R');
+        break;
+      case 'DFL':
+        pattern.D = generateFace(1, 'D');
+        pattern.F = generateFace(2, 'F');
+        pattern.L = generateFace(5, 'L');
+        break;
+    }
+
+    return pattern as BlockPattern;
+  }
+
+  /**
+   * Only creates a stepInfo entry if blocks are properly placed.
+   * @returns 
+   */
+  private calcRouxBlockSteps(): StepInfo[] {
+    const steps: StepInfo[] = [];
+
+    for (const block of this.blocksSolved) {
+      const dim = block.dimensions;
+
+      const height = dim['D']?.[1] ?? dim['U']?.[1] ?? 0;
+      // true when the block fills the middle and bottom layers
+      const isFillHeight = (block.origin[1] === 1 && height === 2)
+        || (block.origin[1] === 2 && height === 3);
+      // true when the block fills any two adjacent vertical layers
+      const isTwoHigh = height >= 2;
+
+      // get the dimension orthogonal to the F face
+      const width = dim['F']?.[1] ?? dim['B']?.[1] ?? 0;
+
+      const isLAndR = (dim['L']?.[1] ?? dim['R']?.[1] ?? 0) === 3;
+
+      for (const prefix of ['L', 'R'] as const) {
+        if (dim[prefix] === undefined && !isLAndR) continue;
+        if (width === 3 && isFillHeight) {
+          steps.push({ step: `${prefix}-Block`, type: 'block', caseIndex: 0, colors: [], blockPattern: block.blockPattern! });
+        } else if (width === 2 && isTwoHigh) {
+          steps.push({ step: `${prefix}-Square`, type: 'block', caseIndex: 0, colors: [], blockPattern: block.blockPattern! });
+        }
+      }
+    }
+
+    return steps;
+  }
+
+  private calcZZEOLine(): StepInfo | null {
+    if (this.eoValue !== 0) {
+      return null;
+    }
+
+    const topColor = this.topInfo.actualColor;
+    const lineColor = this.getOppositeColor(topColor);
+
+    if (this.crossColorsSolved.includes(lineColor)) {
+      // handled by CFOP
+      return null;
+    }
+
+    const linesSolved: [string, string][] = [];
+
+    const solvedPieces = this.getSolvedPieces();
+    Object.keys(this.eoLinePieceIndices).forEach((key) => {
+      let piecesSolved = 0;
+      key.split(',').forEach((indexStr) => {
+        const index = parseInt(indexStr, 10);
+        if (solvedPieces.includes(index)) {
+          piecesSolved++;
+        }
+      });
+
+      if (piecesSolved === key.split(',').length) {
+        // line is solved
+        const direction = this.eoLinePieceIndices[key].split(',')[1];
+        linesSolved.push([lineColor, direction]);
+      }
+    });
+
+    if (linesSolved.length > 1) {
+      throw new Error('Multiple EO lines solved, which should be impossible');
+    } else if (linesSolved.length === 1) {
+      return {
+        step: linesSolved[0][1] === 'vertical' ? 'v-eoLine' : 'h-eoLine',
+        type: 'eoLine',
+        colors: [linesSolved[0][0]],
+      };
+    }
+
+    return null;
+  }
+
+
+  private calcZZStepsCompleted(): StepInfo[] {
+    const steps: StepInfo[] = [];
+
+    const eoLineStep = this.calcZZEOLine();
+    if (eoLineStep) {
+      steps.push(eoLineStep);
+    }
+
+    // TODO: ZZ-CT support
+    // Because ZZ users don't deserve the owl icon
+
+    // other steps are handled by CFOP
+    return steps;
+  }
+
+  private calcRouxStepsCompleted(): StepInfo[] {
+    const steps: StepInfo[] = [];
+
+    const blockSteps = this.calcRouxBlockSteps();
+    steps.push(...blockSteps);
+
+    if (blockSteps.length !== 2) return steps;
+
+    // both blocks solved — attach grid pattern to both block steps,
+    // since getNewSteps filters by name/colors and we don't know which block is "new"
+    const gridAfterBlocks = this.getLLcoloring('exact');
+    for (const step of steps) {
+      if (step.type === 'block') step.gridPattern = gridAfterBlocks;
+    }
+
+    // Derive top info from block corners instead of the top center,
+    // since the M-layer center is unreliable during roux.
+    // Find any corner with a sticker facing Down to determine the bottom color.
+    const topInfo = this.getTopInfoFromCorners();
+
+    if (!topInfo) return steps;
+
+    const topColor = topInfo.actualColor;
+    const LLpattern = this.getLLcoloring('exact');
+    const LSEpattern = this.getLSEPattern();
+    const isTopCOsolved = this.isTopCOsolved(topInfo);
+    if (isTopCOsolved) {
+      steps.push({
+        step: 'co',
+        type: 'cmll',
+        colors: [topColor],
+        gridPattern: LLpattern
+      });
+    }
+
+    const cornerResult = this.calcCornerPermutation(topInfo);
+    const isCornersSolved = !!cornerResult?.matched
+    if (isCornersSolved) {
+      steps.push({
+        step: 'cp',
+        type: 'cmll',
+        colors: [],
+        ...(isTopCOsolved // if CMLL is solved, add LSE pattern for next step instead
+          ? { lsePattern: LSEpattern }
+          : { gridPattern: LLpattern }),
+      });
+    } else {
+      return steps
+    }
+
+    // 4a, aka eo
+    // TODO: think about if this in the context of variants like EOLRb
+    const isCMLLSolved = steps.some(s => s.step === 'co') && steps.some(s => s.step === 'cp');
+    if (this.eoValue === 0) {
+      steps.push({ 
+        step: 'eo', 
+        type: 'lse', 
+        caseIndex: this.eoValue, 
+        colors: [], 
+        ...(isCMLLSolved ? { lsePattern: this.getLSEPattern() } : {})
+      });
+    }
+
+    const LREdgesSolved = this.calcLREdgePermutation(topInfo);
+    if (LREdgesSolved) {
+      steps.push({
+        step: '4b',
+        type: 'lse',
+        colors: [],
+        lsePattern: LSEpattern
+      });
+    }
+
+    // 4c already checked as solved step
+
+    return steps;
+  }
+
+  /**
+   * Updates all internally cached state values derived from the current cube state.
+   * Must be called after cubeState is set and before any step calculation.
+   */
+  private updateCachedState(): void {
+    this.currentCubeRotation = this.getCubeRotation();
+    this.currentState = this.calcCurrentState();
+    const topInfo = this.getTopCenterInfo();
+    if (!topInfo) throw new Error('Failed to determine top center info');
+    this.topInfo = topInfo;
+    this.eoValue = this.getEOvalue();
+  }
+
+  /**
    * Method for passing in SimpleCubeState to update and interpret the current state.
    */
-  public getStepsCompleted(cubeState?: SimpleCubeState | null): StepInfo[] {
+  public getStepsCompleted(cubeState?: SimpleCubeState | null, method: 'Roux' | 'ZZ' |'CFOP' | 'All' = 'All'): StepInfo[] {
     if (cubeState) {
       this.cubeState = cubeState;
     }
@@ -607,11 +1407,25 @@ export class SimpleCubeInterpreter {
       return [];
     }
 
-    this.currentCubeRotation = this.getCubeRotation();
-    this.currentState = this.calcCurrentState();
-    this.crossColorsSolved = this.calcCrossColorsSolved();
+    this.updateCachedState();
 
-    const steps = this.calcStepsCompleted();
+    const steps: StepInfo[] = [];
+
+    if (method === 'CFOP' || method === 'ZZ'|| method === 'All') {
+      this.crossColorsSolved = this.calcCrossColorsSolved();
+      steps.push(...this.calcCFOPstepsCompleted());
+    }
+
+    if (method === 'Roux' || method === 'All') {
+      this.blocksSolved = this.calcBlocksSolved();
+      steps.push(...this.calcRouxStepsCompleted());
+    }
+
+    if (method === 'ZZ' || method === 'All') {
+      // make the additional check of EOLine
+      steps.push(...this.calcZZStepsCompleted());
+    }
+
     return steps;
   }
 
@@ -648,15 +1462,15 @@ export class SimpleCubeInterpreter {
 
     this.currentPieces = this.getPieces();
 
-    const pieceColorMapping = this.mapPiecesByColor();
+    this.pieceColorMapping = this.mapPiecesByColor();
 
-    if (pieceColorMapping.size !== this.currentPieces.length) {
+    if (this.pieceColorMapping.size !== this.currentPieces.length) {
       console.warn('Piece mapping size does not match current pieces length');
       return null;
     }
 
-    const hash = this.hashRecoloredPieces(pieceColorMapping);
-    
+    const hash = this.hashRecoloredPieces(this.pieceColorMapping);
+
     if (!hash) {
       console.warn('Failed to generate hash from recolored pieces');
       return null;
@@ -672,10 +1486,10 @@ export class SimpleCubeInterpreter {
     let hash = '';
 
     pieceColorMapping.forEach(({ effectivePieceIndex, stickerOrder }, currentIndex) => {
-      
+
       const leadColorIdx = stickerOrder[0]; // effective color
       const piece = this.currentPieces[effectivePieceIndex];
-      
+
       const leadStickerIndex = this.currentPieces[effectivePieceIndex].stickers.findIndex(s => s.faceIdx.toString() === leadColorIdx);
       const leadSticker = leadStickerIndex !== -1 ? this.currentPieces[effectivePieceIndex].stickers[leadStickerIndex] : null;
 
@@ -689,7 +1503,7 @@ export class SimpleCubeInterpreter {
           const leadStickerDirection = this.getFaceletDirection(effectivePieceIndex, leadStickerIndex);
           const axis = leadStickerDirection ? this.mapDirectionToAxis(leadStickerDirection) : null;
           const axisIndex = axis === 'x' ? 0 : axis === 'y' ? 1 : axis === 'z' ? 2 : null;
-          
+
           if (axisIndex === null) {
             console.warn(`Invalid axis for lead sticker direction ${leadStickerDirection} on corner piece at current index ${currentIndex}`);
             return null;
@@ -719,7 +1533,7 @@ export class SimpleCubeInterpreter {
         case 'edge': {
           const leadStickerDirection = this.getFaceletDirection(effectivePieceIndex, leadStickerIndex);
           const secondStickerDirection = this.getFaceletDirection(effectivePieceIndex, leadStickerIndex === 0 ? 1 : 0);
-          
+
           if (!leadStickerDirection || !secondStickerDirection) {
             console.warn(`Invalid sticker directions on edge piece at current index ${currentIndex}`);
             return null;
@@ -740,7 +1554,7 @@ export class SimpleCubeInterpreter {
         case 'center': {
           const leadStickerDirection = this.getFaceletDirection(effectivePieceIndex, leadStickerIndex);
           const dirIndex = leadStickerDirection ? this.centerPieceDirections[leadStickerDirection] : null;
-          
+
           if (dirIndex === null || dirIndex === undefined) {
             console.warn(`Invalid direction for lead sticker on center piece at current index ${currentIndex}`);
             return null;
@@ -751,7 +1565,7 @@ export class SimpleCubeInterpreter {
         }
       }
     });
-    
+
     return hash;
   }
 
@@ -985,7 +1799,7 @@ export class SimpleCubeInterpreter {
     return this.crossColorsSolved.length > 0;
   }
 
-  private getOppositeColor(color: string): string {
+  private getOppositeColor(color: ColorName | string): ColorName {
     switch (color.toLowerCase()) {
       case 'white':
         return 'yellow';
@@ -1004,43 +1818,49 @@ export class SimpleCubeInterpreter {
     }
   }
 
+  private effectiveColorToDirection(effectiveColor: string): F2LDirection | null {
+    switch (effectiveColor.toLowerCase()) {
+      case 'green': return 'front';
+      case 'red': return 'right';
+      case 'blue': return 'back';
+      case 'orange': return 'left';
+      default: return null;
+    }
+  }
+
   /**
-   * Check which f2l pairs are solved
-   * Assumes cross on bottom
+   * Returns solved F2L pairs with direction-to-color mappings.
+   * Each entry has the actual colors and which physical direction each color faces.
    */
-  public getPairsSolved(): string[] {
-    const topInfo = this.getTopCenterInfo();
+  private getF2LPairDirections(): { colors: string[], f2lDirections: Partial<Record<F2LDirection, string>> }[] {
     const crossColors = this.crossColorsSolved;
 
-    if (!topInfo || crossColors.length === 0) {
+    if (crossColors.length === 0) {
       return [];
     }
+
+    const topInfo = this.topInfo;
 
     const topColor = topInfo.actualColor;
     const bottomColor = this.getOppositeColor(topColor);
 
     if (crossColors.find(c => c.toLowerCase() === bottomColor) === undefined) {
-      // cross not on bottom
       return [];
     }
     const crossColor = bottomColor;
 
-    const pairsSolved: string[] = [];
+    const result: { colors: string[], f2lDirections: Partial<Record<F2LDirection, string>> }[] = [];
 
-    // Map actual color to effective color (yellow cross-based mapping)
     const effectiveColor = this.mapActualColorToEffective(crossColor);
     const slots = this.f2lSlots[effectiveColor.toLowerCase()];
     if (!slots) {
-      console.warn(`No F2L slots defined for effective color: ${effectiveColor} (from actual cross color: ${crossColor})`);
       return [];
     }
 
     slots.forEach((slot) => {
-      // get the starting location of each piece
       const cornerIndex = slot.corner;
       const edgeIndex = slot.edge;
 
-      // compare their resulting locations to their solved locations
       const cornerSolvedChar = this.solvedState!.hash[cornerIndex];
       const edgeSolvedChar = this.solvedState!.hash[edgeIndex];
 
@@ -1048,16 +1868,33 @@ export class SimpleCubeInterpreter {
       const edgeCurrentChar = this.currentState!.hash[edgeIndex];
 
       if (cornerSolvedChar === cornerCurrentChar && edgeSolvedChar === edgeCurrentChar) {
-        // get the slot colors and map from effective colors to actual colors
-        const actualSlotColors = slot.slotColors.map(effectiveColor => 
-          this.mapEffectiveColorToActual(effectiveColor)[0].toUpperCase()
-        );
+        const f2lDirections: Partial<Record<F2LDirection, string>> = {};
+        const actualColors: string[] = [];
 
-        pairsSolved.push(actualSlotColors.join('') + ' pair');
+        for (const effColor of slot.slotColors) {
+          const dir = this.effectiveColorToDirection(effColor);
+          const actualColor = this.mapEffectiveColorToActual(effColor);
+          if (dir) {
+            f2lDirections[dir] = actualColor;
+          }
+          actualColors.push(actualColor);
+        }
+
+        result.push({ colors: actualColors, f2lDirections });
       }
     });
 
-    return pairsSolved;
+    return result;
+  }
+
+  /**
+   * Check which f2l pairs are solved
+   * Assumes cross on bottom
+   */
+  public getPairsSolved(): string[] {
+    return this.getF2LPairDirections().map(pair =>
+      pair.colors.map(c => c[0].toUpperCase()).join('') + ' pair'
+    );
   }
   /**
    * Checks if the entire cube is solved
@@ -1073,7 +1910,8 @@ export class SimpleCubeInterpreter {
 
   /**
    * Gets all currently solved pieces by comparing current state to solved state.
-   * This is the foundation for hash-based solve detection
+   * This is the foundation for hash-based solve detectionabstract
+   * @returns Array of piece indices that are solved. Index is hash position.
    */
   public getSolvedPieces(): number[] {
     if (!this.solvedState || !this.currentState) {
@@ -1084,7 +1922,7 @@ export class SimpleCubeInterpreter {
 
     this.currentState.hash.split('').forEach((currentChar, idx) => {
       const solvedChar = this.solvedState ? this.solvedState.hash[idx] : null;
-      if (currentChar === solvedChar) { 
+      if (currentChar === solvedChar) {
         // position matches
         solvedPieces.push(idx);
       }
@@ -1110,10 +1948,10 @@ export class SimpleCubeInterpreter {
       }
 
       const direction = this.getFaceletDirection(i, 0);
-      if (direction && direction.toUpperCase() === 'U') {
+      if (direction && direction === 'U') {
         const actualColor = centerPiece.stickers[0].colorName;
         const effectiveColor = this.mapActualColorToEffective(actualColor);
-        return { actualColor, effectiveColor, direction: direction.toUpperCase() };
+        return { actualColor, effectiveColor, direction: direction };
       }
     }
 
@@ -1121,15 +1959,152 @@ export class SimpleCubeInterpreter {
     return null;
   }
 
-  public isEOsolved(): boolean {
+  // derives top info from any corner with a sticker facing Down.
+  // useful during roux where the M-layer center position is unreliable.
+  private getTopInfoFromCorners(): { actualColor: string; effectiveColor: string; direction: string } | null {
+    for (let i = 12; i < 20; i++) {
+      const piece = this.currentPieces[i];
+      if (!piece || piece.type !== 'corner') continue;
+
+      for (let stickerIndex = 0; stickerIndex < piece.stickers.length; stickerIndex++) {
+        const direction = this.getFaceletDirection(i, stickerIndex);
+        if (direction === 'D') {
+          const bottomActualColor = piece.stickers[stickerIndex].colorName;
+          const topActualColor = this.getOppositeColor(bottomActualColor);
+          const topEffectiveColor = this.mapActualColorToEffective(topActualColor);
+          return { actualColor: topActualColor, effectiveColor: topEffectiveColor, direction: 'U' };
+        }
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Performs bitwise calculation to determine EO value.
+   * EO value is a 12-bit number. The location of the bit is determined by (edgePieceDirections Mod 12)
+   * Edge Oriented = 0, Not Oriented = 1.
+   */
+  public getEOvalue(): number {
     if (!this.ensureState() || !this.currentState) {
-      return false;
+      console.warn('Current state not available for EO calculation');
+      return -1;
     }
 
     const topInfo = this.getTopCenterInfo();
     if (!topInfo) {
+      console.warn('Top center info not available for EO calculation');
+      return -1;
+    }
+
+    const verticalColors: ColorName[] = [topInfo.actualColor as ColorName, this.getOppositeColor(topInfo.actualColor) as ColorName];
+
+    const xDirections: DirectionChar[] = ['R', 'L'];
+    const xColors: ColorName[] = [];
+
+    for (let i = 20; i <= 25; i++) {
+      const centerPiece = this.currentPieces[i];
+      if (!centerPiece || centerPiece.type !== 'center' || centerPiece.stickers.length === 0) {
+        console.warn(`Center piece at index ${i} is not standard`);
+        continue;
+      }
+      const direction = this.getFaceletDirection(i, 0);
+      if (direction && xDirections.includes(direction)) {
+        const actualColor: ColorName = centerPiece.stickers[0].colorName;
+        xColors.push(actualColor);
+      }
+    }
+
+    if (xColors.length !== 2) {
+      console.warn('Unable to determine x-direction colors for EO calculation');
+      return -1;
+    }
+
+    let eoValue = 0;
+
+    for (let i = 0; i < 12; i++) {
+      const piece = this.currentPieces[i];
+      if (!piece || piece.type !== 'edge') {
+        console.warn(`Piece at index ${i} is not a valid edge for EO calculation`);
+        return -1;
+      }
+
+      const directions: DirectionChar[] = piece.stickers.map((_, stickerIndex) => {
+        const direction = this.getFaceletDirection(i, stickerIndex);
+        if (!direction) {
+          throw new Error(`Missing direction for edge piece ${i}, sticker ${stickerIndex}`);
+        }
+        return direction;
+      });
+
+      const directionKey = directions.join('');
+      const edgeIndex = this.edgePieceDirections[directionKey] % 12; // Normalize to 0-11
+
+      const isEdgeOriginVertical = piece.stickers.some(sticker => {
+        const color: ColorName = sticker.colorName;
+        return verticalColors.includes(color);
+      });
+
+      let isOriented: boolean;
+      const isEdgeInVertical = directions.includes('U') || directions.includes('D');
+
+      if (isEdgeOriginVertical) {
+        // must be a top/bottom edge
+
+        if (isEdgeInVertical) {
+          // vertical edge in vertical position: good if vertical sticker faces top or bottom only
+          const isVerticalStickerUD = piece.stickers.some((sticker, stickerIndex) => {
+            const color: ColorName = sticker.colorName;
+            const direction = this.getFaceletDirection(i, stickerIndex);
+            return verticalColors.includes(color) && (direction === 'U' || direction === 'D');
+          });
+          isOriented = isVerticalStickerUD;
+        } else {
+          // vertical edge not in vertical position: good if vertical sticker faces up-down or front-back
+          const isVerticalStickerYZ = piece.stickers.some((sticker, stickerIndex) => {
+            const color: ColorName = sticker.colorName;
+            const direction = this.getFaceletDirection(i, stickerIndex);
+            return verticalColors.includes(color) &&
+              (direction === 'U' || direction === 'D'
+                || direction === 'F' || direction === 'B');
+          });
+          isOriented = isVerticalStickerYZ;
+        }
+      } else {
+        // must be f2l edge, must have x-color
+
+        // f2l edge good if x-color faces x-direction in 2nd layer or x-color faces side direction in top/bottom layer
+        // we can tell it is in 2nd layer if neither sticker is vertical
+        const xColorSticker = piece.stickers.find((sticker) => {
+          const color: ColorName = sticker.colorName;
+          return xColors.includes(color);
+        });
+        if (!xColorSticker) throw new Error('X color sticker not found on edge piece during EO calculation');
+
+        if (isEdgeInVertical) {
+          // top/bottom layer
+          const xStickerDirection = this.getFaceletDirection(i, piece.stickers.indexOf(xColorSticker));
+          const isXStickerFacingSide = xStickerDirection ? ['L', 'R', 'F', 'B'].includes(xStickerDirection) : false;
+          isOriented = isXStickerFacingSide;
+        } else {
+          const xStickerDirection = this.getFaceletDirection(i, piece.stickers.indexOf(xColorSticker));
+          const isXStickerFacingX = xStickerDirection ? xDirections.includes(xStickerDirection as DirectionChar) : false;
+          isOriented = isXStickerFacingX;
+        }
+      }
+      if (!isOriented) {
+        eoValue ^= (1 << edgeIndex);
+      }
+    }
+    return eoValue;
+  }
+
+  public isTopEOsolved(): boolean {
+    if (!this.ensureState() || !this.currentState) {
       return false;
     }
+
+    const topInfo = this.topInfo;
 
     let edgesOriented = 0;
 
@@ -1153,13 +2128,8 @@ export class SimpleCubeInterpreter {
     return edgesOriented === 4;
   }
 
-  public isCOsolved(): boolean {
+  public isTopCOsolved(topInfo: { actualColor: string; effectiveColor: string; direction: string }): boolean {
     if (!this.ensureState() || !this.currentState) {
-      return false;
-    }
-
-    const topInfo = this.getTopCenterInfo();
-    if (!topInfo) {
       return false;
     }
 
@@ -1261,19 +2231,26 @@ export class SimpleCubeInterpreter {
       cornerPairs.push(pairKey(nonTopColors[0], nonTopColors[1]));
     }
 
-    if (cornerPairs.length !== this.effectiveColorOrder.length) {
-      return { matched: false, cornerInfos };
+    // derive the side color order from the effective top color so that
+    // the check works even when the effective mapping is wrong (e.g. Roux M-layer)
+    const sideOrder = this.sideColorOrderByTop[topInfo.effectiveColor];
+    if (!sideOrder) {
+      throw new Error(`No side color order defined for effective top color: ${topInfo.effectiveColor}`);
+    }
+
+    if (cornerPairs.length !== sideOrder.length) {
+      throw new Error('Corner pairs length does not match side order length');
     }
 
     const adjacentPairsForOffset = (offset: number): string[] => (
-      this.effectiveColorOrder.map((_, index) => {
-        const current = this.effectiveColorOrder[(offset + index) % this.effectiveColorOrder.length];
-        const next = this.effectiveColorOrder[(offset + index + 1) % this.effectiveColorOrder.length];
+      sideOrder.map((_, index) => {
+        const current = sideOrder[(offset + index) % sideOrder.length];
+        const next = sideOrder[(offset + index + 1) % sideOrder.length];
         return pairKey(current, next);
       })
     );
 
-    for (let offset = 0; offset < this.effectiveColorOrder.length; offset++) {
+    for (let offset = 0; offset < sideOrder.length; offset++) {
       const pattern = adjacentPairsForOffset(offset);
       const matches = pattern.every((pair, index) => cornerPairs[index] === pair);
       if (matches) {
@@ -1282,6 +2259,78 @@ export class SimpleCubeInterpreter {
     }
 
     return { matched: false, cornerInfos };
+  }
+
+  private getCenterColorAtDirection(direction: DirectionChar): string | null {
+    for (let i = 20; i <= 25; i++) {
+      const piece = this.currentPieces[i];
+      if (!piece || piece.type !== 'center') continue;
+      if (this.getFaceletDirection(i, 0) === direction) {
+        return piece.stickers[0].colorName;
+      }
+    }
+    return null;
+  }
+
+  private getActualColorAtDirection(pieceIndex: number, direction: DirectionChar): string | null {
+    const piece = this.currentPieces[pieceIndex];
+    if (!piece) return null;
+    for (let s = 0; s < piece.stickers.length; s++) {
+      if (this.getFaceletDirection(pieceIndex, s) === direction) {
+        return piece.stickers[s].colorName;
+      }
+    }
+    return null;
+  }
+
+  // checks whether the LR edges are solved relative to the corners.
+  // identifies LR edges by actual colors (top + L/R center), then for each one
+  // checks that an adjacent corner's sticker on the shared face has the same color.
+  private calcLREdgePermutation(
+    topInfo: { actualColor: string; effectiveColor: string; direction: string },
+  ): boolean {
+    const topColor = topInfo.actualColor;
+
+    for (const side of ['L', 'R'] as DirectionChar[]) {
+      const centerColor = this.getCenterColorAtDirection(side);
+      if (!centerColor) return false;
+      if (!this.isEdgeSolvedRelativeToCorners(topColor, centerColor)) return false;
+    }
+
+    return true;
+  }
+
+  private isEdgeSolvedRelativeToCorners(topColor: string, sideColor: string): boolean {
+    const targetColors = [topColor, sideColor].sort();
+
+    for (let i = 0; i < this.currentPieces.length; i++) {
+      const piece = this.currentPieces[i];
+      if (piece.type !== 'edge') continue;
+
+      const actualColors = piece.stickers.map(s => s.colorName).sort();
+      if (actualColors[0] !== targetColors[0] || actualColors[1] !== targetColors[1]) continue;
+
+      // edge must be on U layer with top color facing U
+      if (this.getActualColorAtDirection(i, 'U') !== topColor) return false;
+
+      // get the non-U direction this edge faces
+      const dir0 = this.getFaceletDirection(i, 0);
+      const dir1 = this.getFaceletDirection(i, 1);
+      const sideDir = (dir0 === 'U' ? dir1 : dir0) as DirectionChar;
+
+      // check that an adjacent corner's sticker on the same face matches
+      const adjacentCornerDirs = this.lastLayerCornerOrder.find(c => c.includes(sideDir));
+      if (!adjacentCornerDirs) return false;
+
+      const cornerIdx = this.getCornerIndexByDirections(adjacentCornerDirs.split(''));
+      if (cornerIdx === null) return false;
+
+      const cornerFaceColor = this.getActualColorAtDirection(cornerIdx, sideDir);
+
+      return sideColor === cornerFaceColor;
+    }
+
+    return false;
   }
 
   private getHighestIndexColor(colors: string[]): string | null {
@@ -1339,12 +2388,7 @@ export class SimpleCubeInterpreter {
       return false;
     }
 
-    const topInfo = this.getTopCenterInfo();
-    if (!topInfo) {
-      return false;
-    }
-
-    const { edgesSolved } = this.calcLLPermutationStatus(topInfo);
+    const { edgesSolved } = this.calcLLPermutationStatus(this.topInfo);
     return edgesSolved;
   }
 
@@ -1353,12 +2397,7 @@ export class SimpleCubeInterpreter {
       return false;
     }
 
-    const topInfo = this.getTopCenterInfo();
-    if (!topInfo) {
-      return false;
-    }
-
-    const { cornersSolved } = this.calcLLPermutationStatus(topInfo);
+    const { cornersSolved } = this.calcLLPermutationStatus(this.topInfo);
     return cornersSolved;
   }
 
@@ -1368,150 +2407,128 @@ export class SimpleCubeInterpreter {
    * @returns 
    */
   public getLLPermutationStatus(): { edgesSolved: boolean; cornersSolved: boolean } {
-    if (!this.ensureState() || !this.currentState || !this.solvedState) {
+    if (!this.ensureState() || !this.currentState || !this.solvedState.hash) {
       return { edgesSolved: false, cornersSolved: false };
     }
 
-    const topInfo = this.getTopCenterInfo();
-    if (!topInfo) {
-      return { edgesSolved: false, cornersSolved: false };
-    }
-
-    return this.calcLLPermutationStatus(topInfo);
+    return this.calcLLPermutationStatus(this.topInfo);
   }
-  
-  public calcStepsCompleted(): StepInfo[] {
-    // TODO: in parallel, return results for different methods, mainly Roux and ZZ.
+
+  private getCrossSteps(): StepInfo[] {
+    if (!this.isCrossSolved()) return [];
 
     const steps: StepInfo[] = [];
-    if (this.isCubeSolved()) {
-    
-      steps.push({
-        step: 'solved',
-        type: 'solved',
-        colors: [],
-        caseIndex: null
+    // presume cross color on bottom, if multiple
+    if (this.crossColorsSolved.length > 1) {
+      const topColor = this.topInfo.actualColor;
+      const bottomColor = this.getOppositeColor(topColor);
+      this.crossColorsSolved.forEach(color => {
+        if (color.toLowerCase() === bottomColor) {
+          steps.push({ step: 'cross', type: 'cross', colors: [bottomColor] });
+        }
       });
-    
-      return steps;
-    
+    } else {
+      steps.push({ step: 'cross', type: 'cross', colors: [this.crossColorsSolved[0]] });
     }
-      
-    if (this.isCrossSolved()) {
-      // presume cross color on bottom, if multiple
-      if (this.crossColorsSolved.length > 1) {
-        this.crossColorsSolved.forEach(color => {
-          const topColor = this.getTopCenterInfo()!.actualColor;
-          const bottomColor = this.getOppositeColor(topColor);
-          if (color.toLowerCase() === bottomColor) {
-            steps.push({
-              step: `cross`,
-              type: 'cross',
-              colors: [bottomColor],
-              caseIndex: null
-            });
-          }
-        });
-      } else {
-        steps.push({
-          step: `cross`,
-          type: 'cross',
-          colors: [this.crossColorsSolved[0]],
-          caseIndex: null
-        });
-      }
+    return steps;
+  }
+
+  private getF2LSteps(): StepInfo[] {
+    const pairsInfo = this.getF2LPairDirections();
+
+    let postPairGridPattern: Grid | undefined = undefined;
+    if (pairsInfo.length === 4) {
+      postPairGridPattern = this.getLLcoloring('exact') || undefined;
     }
 
-    // we do allow pairs to be solved without cross, because humans make mistakes
-    const pairsSolved = this.getPairsSolved();
+    return pairsInfo.map(pair => ({
+      step: 'pair' as const,
+      type: 'f2l' as const,
+      colors: pair.colors,
+      f2lSlotList: [pair.f2lDirections],
+      gridPattern: postPairGridPattern,
+    }));
+  }
 
-    let postPairPattern = undefined;
-    if (pairsSolved.length === 4 && steps.filter(s => s.type === 'last layer').length === 0) {
-      // on last pair, get LL pattern for later steps
-      postPairPattern = this.getLLcoloring('exact');
-    }
-
-    pairsSolved.forEach((pairString, i) => {
-      // Extract colors from pair string (e.g., "WR pair" -> ["white", "red"])
-      const colors = pairString.replace(' pair', '').match(/[A-Z]/g) || [];
-      const colorNames = colors.map(c => {
-        const colorMap: Record<string, string> = {
-          'W': 'white', 'Y': 'yellow', 'R': 'red', 
-          'O': 'orange', 'B': 'blue', 'G': 'green'
-        };
-        return colorMap[c] || c.toLowerCase();
-      });
-
-      
-      steps.push({
-        step: 'pair',
-        type: 'f2l',
-        colors: colorNames,
-        caseIndex: null,
-        pattern: postPairPattern
-      });
-    });
-
-    if (pairsSolved.length !== 4) {
-      return steps; // no need to check further
-    }
-
-    // check last layer base steps
+  private getLLSteps(): StepInfo[] {
+    const steps: StepInfo[] = [];
     const LLpattern = this.getLLcoloring('exact');
-  
-    const topColor = this.getTopCenterInfo()?.actualColor || '';
-    if (this.isEOsolved()) {
-      steps.push({
-        step: 'eo',
-        type: 'last layer',
-        colors: [topColor],
-        caseIndex: null,
-        pattern: LLpattern
-      });
+    const topColor = this.topInfo.actualColor;
+
+    if (this.isTopEOsolved()) {
+      steps.push({ step: 'eo', type: 'last layer', colors: [topColor], gridPattern: LLpattern });
     }
-    if (this.isCOsolved()) {
-      steps.push({
-        step: 'co',
-        type: 'last layer',
-        colors: [topColor],
-        caseIndex: null,
-        pattern: LLpattern
-      });
+    if (this.isTopCOsolved(this.topInfo)) {
+      steps.push({ step: 'co', type: 'last layer', colors: [topColor], gridPattern: LLpattern });
     }
 
     const { edgesSolved, cornersSolved } = this.getLLPermutationStatus();
     if (edgesSolved) {
-      steps.push({
-        step: 'ep',
-        type: 'last layer',
-        colors: [topColor],
-        caseIndex: null,
-        pattern: LLpattern
-      });
+      steps.push({ step: 'ep', type: 'last layer', colors: [topColor], gridPattern: LLpattern });
     }
     if (cornersSolved) {
-      steps.push({
-        step: 'cp',
-        type: 'last layer',
-        colors: [topColor],
-        caseIndex: null,
-        pattern: LLpattern
-      });
-    }
-
-    // check if all edges are oriented
-    // if (this.isPureEOsolved()) steps.push('pure_eo');
-
-    if (steps.length === 0) {
-      steps.push({
-        step: 'none',
-        type: 'none',
-        colors: [],
-        caseIndex: null
-      });
+      steps.push({ step: 'cp', type: 'last layer', colors: [topColor], gridPattern: LLpattern });
     }
 
     return steps;
+  }
+
+  // annotate steps with LL case names (OLL/PLL) using pattern matching
+  private annotateLLCaseNames(steps: StepInfo[]): void {
+    const llSteps = steps.filter(s => s.type === 'last layer');
+    const llStepNames = new Set(llSteps.map(s => s.step));
+    const patternGrid = this.getLLcoloring('pattern');
+
+    // OLL name: F2L complete, but EO and CO are not yet both solved
+    if (!(llStepNames.has('eo') && llStepNames.has('co'))) {
+      try {
+        const ollInfo = this.LLinterpreter.getStepInfo(patternGrid, 'oll');
+        let lastPair: StepInfo | null = null;
+        for (let i = steps.length - 1; i >= 0; i--) {
+          if (steps[i].type === 'f2l' && steps[i].step === 'pair') {
+            lastPair = steps[i];
+            break;
+          }
+        }
+        if (lastPair && ollInfo.name) { lastPair.name = ollInfo.name; lastPair.nameType = 'oll'; }
+      } catch { /* pattern not recognized */ }
+    }
+
+    // PLL name: OLL solved (eo+co) but PLL not yet → PLL case is visible
+    if (llStepNames.has('eo') && llStepNames.has('co') && !(llStepNames.has('ep') && llStepNames.has('cp'))) {
+      try {
+        const pllInfo = this.LLinterpreter.getStepInfo(patternGrid, 'pll');
+        const target = llSteps.find(s => s.step === 'co') || llSteps[llSteps.length - 1];
+        if (target && pllInfo.name) { target.name = pllInfo.name; target.nameType = 'pll'; }
+      } catch { /* pattern not recognized */ }
+    }
+  }
+
+  public calcCFOPstepsCompleted(): StepInfo[] {
+
+    if (this.isCubeSolved()) {
+      return [{ step: 'solved', type: 'solved', colors: [] }];
+    }
+
+    const steps: StepInfo[] = [];
+
+    // always add eo step
+    steps.push({ step: this.eoValue.toString(), type: 'eo', colors: [] });
+
+    steps.push(...this.getCrossSteps());
+
+    // we do allow pairs to be solved without cross, because humans make mistakes
+    const f2lSteps = this.getF2LSteps();
+    steps.push(...f2lSteps);
+
+    if (f2lSteps.length !== 4) {
+      return steps.length > 0 ? steps : [{ step: 'none', type: 'none', colors: [] }];
+    }
+
+    steps.push(...this.getLLSteps());
+    this.annotateLLCaseNames(steps);
+
+    return steps.length > 0 ? steps : [{ step: 'none', type: 'none', colors: [] }];
   }
 
   /**
@@ -1522,203 +2539,38 @@ export class SimpleCubeInterpreter {
   }
 
   /**
-   * Thought out only for f2l where multiple crosses are solved.
-   * Unverified AI-generated code.
-   * 
-   * For each position, for each condition:
-   *   if query A and B match, then just preserve 
-   * 
-   *   must A + must B => may A or B;
-   *   must A + may B => may A or B;
-   *   may A + must B => may A or B;
-   *   must A + not B => may A, not B;
-   *   may A + not B => may A, not B;
-   *   not A + not B => not A or B;
-   *  
-   */
-  private accumulateQueries(queries: Query[]): Query {
-    if (queries.length === 0) {
-      return { positions: {} };
-    }
-    
-    if (queries.length === 1) {
-      return queries[0];
-    }
-
-    const result: Query = { positions: {} };
-    const allPositions = new Set<string | number>();
-
-    // Collect all positions from all queries
-    queries.forEach(query => {
-      Object.keys(query.positions).forEach(pos => {
-        allPositions.add(isNaN(Number(pos)) ? pos : Number(pos));
-      });
-    });
-
-    // For each position, accumulate constraints
-    allPositions.forEach(position => {
-      const constraints: Constraint[] = [];
-      
-      // Collect constraints for this position from all queries
-      queries.forEach(query => {
-        const constraint = query.positions[position];
-        if (constraint) {
-          constraints.push(constraint);
-        }
-      });
-
-      if (constraints.length === 0) {
-        return; // No constraints for this position
-      }
-
-      const accumulated: Constraint = {};
-
-      // Helper functions to normalize constraint values to arrays
-      const normalizeToArray = (value: string | string[] | undefined): string[] => {
-        if (!value) return [];
-        return Array.isArray(value) ? value : [value];
-      };
-
-      const combineArrays = (...arrays: string[][]): string[] => {
-        const combined = new Set<string>();
-        arrays.forEach(arr => arr.forEach(item => combined.add(item)));
-        return Array.from(combined);
-      };
-
-      // Process each constraint type
-      for (let i = 0; i < constraints.length; i++) {
-        const constraint = constraints[i];
-        const mustValues = normalizeToArray(constraint.must);
-        const mayValues = normalizeToArray(constraint.may);
-        const notValues = normalizeToArray(constraint.not);
-
-        if (i === 0) {
-          // First constraint, just copy
-          if (mustValues.length > 0) accumulated.must = mustValues;
-          if (mayValues.length > 0) accumulated.may = mayValues;
-          if (notValues.length > 0) accumulated.not = notValues;
-        } else {
-          // Accumulate with previous constraints according to the rules
-          const currentMust = normalizeToArray(accumulated.must);
-          const currentMay = normalizeToArray(accumulated.may);
-          const currentNot = normalizeToArray(accumulated.not);
-
-          // New accumulated values
-          let newMust: string[] = [];
-          let newMay: string[] = [];
-          let newNot: string[] = [];
-
-          // Handle must constraints
-          if (mustValues.length > 0) {
-            if (currentMust.length > 0) {
-              // must A + must B: may A or B
-              newMay = combineArrays(newMay, currentMust, mustValues);
-            } else if (currentMay.length > 0) {
-              // may A + must B: may A or B  
-              newMay = combineArrays(newMay, currentMay, mustValues);
-            } else if (currentNot.length > 0) {
-              // not A + must B: may B, not A
-              newMay = combineArrays(newMay, mustValues);
-              newNot = combineArrays(newNot, currentNot);
-            } else {
-              // No previous constraint, preserve must
-              newMust = combineArrays(newMust, mustValues);
-            }
-          }
-
-          // Handle may constraints
-          if (mayValues.length > 0) {
-            if (currentMust.length > 0) {
-              // must A + may B: may A or B
-              newMay = combineArrays(newMay, currentMust, mayValues);
-            } else if (currentMay.length > 0) {
-              // may A + may B: may A or B
-              newMay = combineArrays(newMay, currentMay, mayValues);
-            } else if (currentNot.length > 0) {
-              // not A + may B: may B, not A
-              newMay = combineArrays(newMay, mayValues);
-              newNot = combineArrays(newNot, currentNot);
-            } else {
-              // No previous constraint, preserve may
-              newMay = combineArrays(newMay, mayValues);
-            }
-          }
-
-          // Handle not constraints  
-          if (notValues.length > 0) {
-            if (currentMust.length > 0) {
-              // must A + not B: may A, not B
-              newMay = combineArrays(newMay, currentMust);
-              newNot = combineArrays(newNot, notValues);
-            } else if (currentMay.length > 0) {
-              // may A + not B: may A, not B
-              newMay = combineArrays(newMay, currentMay);
-              newNot = combineArrays(newNot, notValues);
-            } else if (currentNot.length > 0) {
-              // not A + not B: not A or B
-              newNot = combineArrays(newNot, currentNot, notValues);
-            } else {
-              // No previous constraint, preserve not
-              newNot = combineArrays(newNot, notValues);
-            }
-          }
-
-          // If no new constraints from this iteration, preserve existing
-          if (mustValues.length === 0 && mayValues.length === 0 && notValues.length === 0) {
-            newMust = currentMust;
-            newMay = currentMay;
-            newNot = currentNot;
-          }
-
-          // Update accumulated
-          accumulated.must = newMust.length > 0 ? newMust : undefined;
-          accumulated.may = newMay.length > 0 ? newMay : undefined;
-          accumulated.not = newNot.length > 0 ? newNot : undefined;
-        }
-      }
-
-      // Only add to result if there are actual constraints
-      if (accumulated.must || accumulated.may || accumulated.not) {
-        result.positions[position] = accumulated;
-      }
-    });
-
-    return result;
-  }
-
-  /**
    * Get the indices of pieces where their f2l pair is not solved.
    * @param color The actual color of the cross
    * @returns Dictionary for each pair, containing colors, indices, and solve status
    */
-  private getF2LPairStatus(color: string): { pairColors: [string, string], pairIndices: [number, number], isSolved: boolean}[] | [] {
-    
+  private getF2LPairStatus(color: string): { pairColors: [string, string], pairIndices: [number, number], isSolved: boolean }[] | [] {
+
     const effectiveColor = this.mapActualColorToEffective(color);
-  
+
     const slots = this.f2lSlots[effectiveColor];
     if (!slots) {
       console.warn(`No F2L slots found for color: ${color}`);
-      return [{ pairColors: ['',''], pairIndices: [-1,-1], isSolved: false }];
+      return [{ pairColors: ['', ''], pairIndices: [-1, -1], isSolved: false }];
     }
 
 
-    const status: {pairColors: [string, string], pairIndices: [number, number], isSolved: boolean}[]  = [];
+    const status: { pairColors: [string, string], pairIndices: [number, number], isSolved: boolean }[] = [];
     const solvedIndices = this.getSolvedPieces();
-    
+
     slots.forEach(slot => {
       const cornerIndex = slot.corner;
       const edgeIndex = slot.edge;
       const pairColors: [string, string] = [
-        this.mapEffectiveColorToActual(slot.slotColors[0]), 
+        this.mapEffectiveColorToActual(slot.slotColors[0]),
         this.mapEffectiveColorToActual(slot.slotColors[1])
       ];
-      
+
       const isCornerSolved: boolean = !!solvedIndices.find((index) => index === cornerIndex) // undefined is false
       const isEdgeSolved: boolean = !!solvedIndices.find((index) => index === edgeIndex)
       if (isCornerSolved && isEdgeSolved) {
-        status.push({pairColors, pairIndices: [cornerIndex, edgeIndex], isSolved: true})
+        status.push({ pairColors, pairIndices: [cornerIndex, edgeIndex], isSolved: true })
       } else {
-        status.push({pairColors, pairIndices: [cornerIndex, edgeIndex], isSolved: false })        
+        status.push({ pairColors, pairIndices: [cornerIndex, edgeIndex], isSolved: false })
       }
     });
 
@@ -1766,25 +2618,25 @@ export class SimpleCubeInterpreter {
       console.warn('No cross solved on bottom. Cannot generate F2L queries.');
       return [];
     }
-    
-      
+
+
     const crossIndices: string = Object
       .keys(this.crossPieceIndices)
       .find(key => this.crossPieceIndices[key] === effectiveDownColor)!;
-    
+
     const pairStatus = this.getF2LPairStatus(color);
     const crossArray = crossIndices.split(',').map(Number);
-    
+
     // Create a query for each unsolved slot
     pairStatus.forEach((pair) => {
-      if (pair.isSolved) { 
+      if (pair.isSolved) {
         return;
       }
 
       const query: Query = {
         positions: {}
       };
-      
+
       // Cross pieces must stay solved
       crossArray.forEach((index) => {
         const position = this.currentState!.hash[index];
@@ -1796,7 +2648,7 @@ export class SimpleCubeInterpreter {
           must: [position],
         };
       });
-      
+
       // Already solved F2L pairs must stay solved
       pairStatus.forEach((otherPair) => {
         if (otherPair.isSolved) {
@@ -1814,9 +2666,9 @@ export class SimpleCubeInterpreter {
           query.positions[cornerIndex] = {
             must: [cornerPosition]
           };
-        }    
+        }
       });
-        
+
       // query must look for pieces in this unsolved position
       const cornerIndex = pair.pairIndices[0];
       const cornerPosition = this.currentState!.hash[cornerIndex];
@@ -1832,7 +2684,7 @@ export class SimpleCubeInterpreter {
       query.positions[cornerIndex] = {
         must: [cornerPosition]
       };
-      
+
       queries.push({ query, pairColors: [pair.pairColors[0], pair.pairColors[1]] });
     });
 
@@ -1852,11 +2704,7 @@ export class SimpleCubeInterpreter {
       console.warn('Current state not available for pattern generation');
       return [];
     }
-    const topInfo = this.getTopCenterInfo();
-    if (!topInfo) {
-      console.warn('Top center info not available for pattern generation');
-      return [];
-    }
+    const topInfo = this.topInfo;
 
     const colorOrdering: Record<string, number> = {};
     let nextColorIndex: number;
@@ -1866,12 +2714,7 @@ export class SimpleCubeInterpreter {
       nextColorIndex = 2;
 
     } else if (colorOrder === 'exact') {
-      colorOrdering['white'] = 1;
-      colorOrdering['yellow'] = 2;
-      colorOrdering['green'] = 3;
-      colorOrdering['blue'] = 4;
-      colorOrdering['red'] = 5;
-      colorOrdering['orange'] = 6;
+      Object.assign(colorOrdering, this.gridColorIndex);
       nextColorIndex = 7; // all colors assigned
     }
 
@@ -1891,37 +2734,37 @@ export class SimpleCubeInterpreter {
       if (nextColorIndex >= 4) {
         throw new Error('All colors should have been assigned by now. Colors: ' + JSON.stringify(colorOrdering));
       }
-      
+
       // Assign the next available index
       colorOrdering[colorName] = nextColorIndex++;
       const assignedIndex = colorOrdering[colorName];
-      
+
       // If we've assigned indices 1, 2, 3, now assign their opposites to 6, 4, 5
       if (assignedIndex === 3) {
         const color1 = Object.keys(colorOrdering).find(k => colorOrdering[k] === 1)!;
         const color2 = Object.keys(colorOrdering).find(k => colorOrdering[k] === 2)!;
         const color3 = Object.keys(colorOrdering).find(k => colorOrdering[k] === 3)!;
-        
+
         const opposite1 = this.getOppositeColor(color1);
         const opposite2 = this.getOppositeColor(color2);
         const opposite3 = this.getOppositeColor(color3);
-        
+
         colorOrdering[opposite1] = 6; // should never be used
         colorOrdering[opposite2] = 4;
         colorOrdering[opposite3] = 5;
-        
+
         nextColorIndex = 7;
       }
-      
+
       return assignedIndex;
     };
 
     const findPieceByDirections = (targetDirections: string[]): { index: number, piece: PieceState } | null => {
       const normalizedTarget = targetDirections.map(d => d.toUpperCase()).sort();
-      
+
       for (let index = 0; index < this.currentPieces.length; index++) {
         const piece = this.currentPieces[index];
-        if (!piece || !piece.stickers.some(s => s.colorName === topInfo.actualColor)) {
+        if (!piece || piece.stickers.length === 0) {
           continue;
         }
 
@@ -1938,12 +2781,16 @@ export class SimpleCubeInterpreter {
           return { index, piece };
         }
       }
+      console.warn(`Piece with directions ${targetDirections.join(',')} not found`);
       return null;
     };
 
     const getColorOnFace = (pieceIndex: number, face: string): string | null => {
       const piece = this.currentPieces[pieceIndex];
-      if (!piece) return null;
+      if (!piece) {
+        console.warn(`Piece at index ${pieceIndex} not found when getting color for face ${face}`);
+        return null;
+      }
 
       for (let stickerIndex = 0; stickerIndex < piece.stickers.length; stickerIndex++) {
         const direction = this.getFaceletDirection(pieceIndex, stickerIndex);
@@ -1951,6 +2798,8 @@ export class SimpleCubeInterpreter {
           return piece.stickers[stickerIndex].colorName;
         }
       }
+
+      console.warn(`${face} face not found on piece index ${pieceIndex}`);
       return null;
     };
 
@@ -1958,14 +2807,14 @@ export class SimpleCubeInterpreter {
 
     // Process pieces in specific order to build color indices dynamically
     // Order: UBL, UB, UBR, UL, center (U), UR, UFL, UF, UFR
-    
+
     // 1. UBL corner
     const ublPiece = findPieceByDirections(['U', 'B', 'L']);
     if (ublPiece) {
       const lColor = getColorOnFace(ublPiece.index, 'L');
       const bColor = getColorOnFace(ublPiece.index, 'B');
       const uColor = getColorOnFace(ublPiece.index, 'U');
-      
+
       if (lColor) grid[1][0] = getColorIndex(lColor);
       if (bColor) grid[0][1] = getColorIndex(bColor);
       if (uColor) grid[1][1] = getColorIndex(uColor);
@@ -1976,7 +2825,7 @@ export class SimpleCubeInterpreter {
     if (ubPiece) {
       const bColor = getColorOnFace(ubPiece.index, 'B');
       const uColor = getColorOnFace(ubPiece.index, 'U');
-      
+
       if (bColor) grid[0][2] = getColorIndex(bColor);
       if (uColor) grid[1][2] = getColorIndex(uColor);
     }
@@ -1987,7 +2836,7 @@ export class SimpleCubeInterpreter {
       const bColor = getColorOnFace(ubrPiece.index, 'B');
       const rColor = getColorOnFace(ubrPiece.index, 'R');
       const uColor = getColorOnFace(ubrPiece.index, 'U');
-      
+
       if (bColor) grid[0][3] = getColorIndex(bColor);
       if (rColor) grid[1][4] = getColorIndex(rColor);
       if (uColor) grid[1][3] = getColorIndex(uColor);
@@ -1998,7 +2847,7 @@ export class SimpleCubeInterpreter {
     if (ulPiece) {
       const lColor = getColorOnFace(ulPiece.index, 'L');
       const uColor = getColorOnFace(ulPiece.index, 'U');
-      
+
       if (lColor) grid[2][0] = getColorIndex(lColor);
       if (uColor) grid[2][1] = getColorIndex(uColor);
     }
@@ -2015,7 +2864,7 @@ export class SimpleCubeInterpreter {
     if (urPiece) {
       const rColor = getColorOnFace(urPiece.index, 'R');
       const uColor = getColorOnFace(urPiece.index, 'U');
-      
+
       if (rColor) grid[2][4] = getColorIndex(rColor);
       if (uColor) grid[2][3] = getColorIndex(uColor);
     }
@@ -2026,7 +2875,7 @@ export class SimpleCubeInterpreter {
       const fColor = getColorOnFace(uflPiece.index, 'F');
       const lColor = getColorOnFace(uflPiece.index, 'L');
       const uColor = getColorOnFace(uflPiece.index, 'U');
-      
+
       if (fColor) grid[4][1] = getColorIndex(fColor);
       if (lColor) grid[3][0] = getColorIndex(lColor);
       if (uColor) grid[3][1] = getColorIndex(uColor);
@@ -2037,7 +2886,7 @@ export class SimpleCubeInterpreter {
     if (ufPiece) {
       const fColor = getColorOnFace(ufPiece.index, 'F');
       const uColor = getColorOnFace(ufPiece.index, 'U');
-      
+
       if (fColor) grid[4][2] = getColorIndex(fColor);
       if (uColor) grid[3][2] = getColorIndex(uColor);
     }
@@ -2048,7 +2897,7 @@ export class SimpleCubeInterpreter {
       const fColor = getColorOnFace(ufrPiece.index, 'F');
       const rColor = getColorOnFace(ufrPiece.index, 'R');
       const uColor = getColorOnFace(ufrPiece.index, 'U');
-      
+
       if (fColor) grid[4][3] = getColorIndex(fColor);
       if (rColor) grid[3][4] = getColorIndex(rColor);
       if (uColor) grid[3][3] = getColorIndex(uColor);
@@ -2057,10 +2906,58 @@ export class SimpleCubeInterpreter {
     return grid;
   }
 
-  private getAUFindex(): {step: string, index: number, minMovements: number[], name: string} {
+  public getLSEPattern(): LSEPattern {
+    if (!this.cubeState) {
+      return Array.from({ length: 6 }, () => Array(5).fill(0));
+    }
+
+    const cs = this.cubeState;
+    const g = (face: number, row: number, col: number) => this.gridColorIndex[colorCharToName[cs[face][row][col]]];
+
+    // 6×5 grid: middle 3 cols = U (rows 0-2) then F (rows 3-5)
+    // col 0 = L stickers adjacent to U/F, col 4 = R stickers adjacent to U/F
+    // L face (5): row 0 adjacent to U, col 0=B side, col 2=F side
+    // R face (3): row 0 adjacent to U, col 0=F side, col 2=B side
+    const grid: number[][] = [];
+
+    // rows 0-2: U face with L/R side stickers adjacent to U
+    for (let row = 0; row < 3; row++) {
+      grid.push([
+        g(5, 0, row),           // L face top row, running back-to-front
+        g(0, row, 0),           // U face left col
+        g(0, row, 1),           // U face middle col
+        g(0, row, 2),           // U face right col
+        g(3, 0, 2 - row),      // R face top row, running back-to-front
+      ]);
+    }
+
+    // row 3: F top row, side cells blank (wrap-around gap)
+    grid.push([
+      0,                        // blank
+      g(2, 0, 0),              // F face top-left
+      g(2, 0, 1),              // F face top-center
+      g(2, 0, 2),              // F face top-right
+      0,                        // blank
+    ]);
+
+    // rows 4-5: F face middle/bottom rows with L/R side stickers adjacent to F
+    for (let row = 1; row < 3; row++) {
+      grid.push([
+        g(5, row, 2),           // L face right col (adjacent to F), running top-to-bottom
+        g(2, row, 0),           // F face left col
+        g(2, row, 1),           // F face middle col
+        g(2, row, 2),           // F face right col
+        g(3, row, 0),           // R face left col (adjacent to F), running top-to-bottom
+      ]);
+    }
+
+    return grid;
+  }
+
+  private getAUFindex(): { step: string, index: number, minMovements: number[], name: string } {
     const index = this.getReferencePieceLocation('green', 'white');
     const name = ['', "U'", "U2", "U"][index];
-    return { step: 'auf', index, minMovements: [-1], name } 
+    return { step: 'auf', index, minMovements: [-1], name }
   }
 
   private getLLindices(steps: StepInfo[], types: Set<StepInfo['type']>) {
@@ -2072,7 +2969,7 @@ export class SimpleCubeInterpreter {
       return [];
     }
 
-    let indices: {step: string, index: number, minMovements: number[], name: string}[] = [];
+    let indices: { step: string, index: number, minMovements: number[], name: string }[] = [];
     // co is covered by oll
     // ep covered by pll
 
@@ -2089,7 +2986,7 @@ export class SimpleCubeInterpreter {
     } else {
       if ((!steps.find(s => s.step === 'eo') || !steps.find(s => s.step === 'co')) && (!steps.find(s => s.step === 'ep') || !steps.find(s => s.step === 'cp'))) {
         indices.push(this.LLinterpreter.getStepInfo(LLpattern, 'oll'));
-      }      
+      }
       if (steps.find(s => s.step === 'eo') && !steps.find(s => s.step === 'co') && !steps.find(s => s.step === 'ep') && !steps.find(s => s.step === 'cp')) {
         // zbllIndex = this.LLinterpreter.getStepInfo(LLpattern, 'zbll');
         // onelllIndex = this.LLinterpreter.getStepInfo(LLpattern, 'onelll');
@@ -2155,7 +3052,7 @@ export class SimpleCubeInterpreter {
   /**
    * Get state information of a last layer case. Used for building llAlgs.json
    */
-  public identifyLLcase(step: string, alg: string): { index: number, refPieceMovement: number, minMovements: number[]} {
+  public identifyLLcase(step: string, alg: string): { index: number, refPieceMovement: number, minMovements: number[] } {
 
     // verify f2l solved
     if (this.getPairsSolved().length !== 4) {
@@ -2165,7 +3062,7 @@ export class SimpleCubeInterpreter {
     const refPieceMovement = this.getReferencePieceLocation('green', 'white', alg);
 
     const LLpattern: Grid = this.getLLcoloring('pattern');
-    let stepData: {step: string, index: number, minMovements: number[]} = {step: '', index: -1, minMovements: [-1]};
+    let stepData: { step: string, index: number, minMovements: number[] } = { step: '', index: -1, minMovements: [-1] };
     switch (step) {
       case 'oll':
         stepData = this.LLinterpreter.getStepInfo(LLpattern, 'oll');
@@ -2178,18 +3075,18 @@ export class SimpleCubeInterpreter {
     return { index: stepData.index, refPieceMovement, minMovements: stepData.minMovements };
   }
 
-  public getAlgSuggestions(steps?: StepInfo[]): {alg: string, time: number, steps: string[], name?: string}[] {
+  public getAlgSuggestions(steps?: StepInfo[]): { alg: string, time: number, steps: string[], name?: string }[] {
     if (!this.algSuggester || !this.currentState) {
       return [];
     }
     if (!steps) {
-      steps = this.calcStepsCompleted();
+      steps = this.calcCFOPstepsCompleted();
     }
 
     if (steps.filter(s => s.type === 'solved').length === 1) {
       return [];
     }
-    
+
     const stepTypes = new Set(steps.map(s => s.type));
     const f2lSteps = steps.filter(s => s.type === 'f2l');
     const isF2LComplete = f2lSteps.length === 4;
@@ -2205,7 +3102,85 @@ export class SimpleCubeInterpreter {
     }
   }
 
-  private getF2LSuggestions(steps: StepInfo[]): {alg: string, time: number, steps: string[], name?: string}[] {
+  /**
+   * Filters out redundant algorithms that are extensions of shorter ones without unique steps.
+   * Handles edge case where L' doesn't match L L (but should when L2 is spread).
+   */
+  private filterRedundantAlgorithms(suggestions: Suggestion[]): Suggestion[] {
+    // Helper function to spread double and triple moves
+    const spreadAlg = (alg: string): string => {
+      return alg.replace(/([A-Za-z])([23])('?)/g, (_, letter, num, prime) => {
+        if (num === '2') return `${letter} ${letter}`;
+        return prime ? letter : `${letter}'`; // 3' → letter, 3 → letter'
+      });
+    };
+
+    // Check if longAlg starts with shortAlg (with special handling for last move)
+    const isPrefix = (shortAlg: string, longAlg: string): boolean => {
+      const shortMoves = shortAlg.split(/\s+/);
+      const longMoves = longAlg.split(/\s+/);
+
+      if (shortMoves.length > longMoves.length) return false;
+      if (shortMoves.length === 0) return false;
+
+      // Compare all moves except the last one
+      for (let i = 0; i < shortMoves.length - 1; i++) {
+        if (shortMoves[i] !== longMoves[i]) return false;
+      }
+
+      // Handle last move specially
+      const lastShortMove = shortMoves[shortMoves.length - 1];
+      const lastShortIndex = shortMoves.length - 1;
+      const correspondingLongMove = longMoves[lastShortIndex];
+
+      // If last move has prime and the corresponding position has repeated move
+      if (lastShortMove.endsWith("'")) {
+        const letter = lastShortMove.slice(0, -1);
+        // Check if long alg has "L L" at this position (meaning L2 was spread)
+        if (correspondingLongMove === letter && longMoves[lastShortIndex + 1] === letter) {
+          // L' matches the start of "L L", so it's a prefix
+          return true;
+        }
+      }
+
+      // Otherwise, just check if the moves match
+      return lastShortMove === correspondingLongMove;
+    };
+
+    const spreadSuggestions = suggestions.map(suggestion => spreadAlg(suggestion.alg));
+    const filteredSuggestions: Suggestion[] = [];
+    const filteredSpreadAlgs: string[] = [];
+
+    for (let i = 0; i < suggestions.length; i++) {
+      const suggestion = suggestions[i];
+      const spreadCurrent = spreadSuggestions[i];
+      let isRedundant = false;
+
+      for (let j = 0; j < filteredSuggestions.length; j++) {
+        const spreadFiltered = filteredSpreadAlgs[j];
+
+        // Check if current spread alg starts with an existing spread alg
+        if (isPrefix(spreadFiltered, spreadCurrent)) {
+          // Check if current alg has any unique steps compared to existing
+          const hasUniqueSteps = suggestion.steps.some(step => !filteredSuggestions[j].steps.includes(step));
+
+          if (!hasUniqueSteps) {
+            isRedundant = true;
+            break;
+          }
+        }
+      }
+
+      if (!isRedundant) {
+        filteredSuggestions.push(suggestion);
+        filteredSpreadAlgs.push(spreadCurrent);
+      }
+    }
+
+    return filteredSuggestions;
+  }
+
+  private getF2LSuggestions(steps: StepInfo[]): { alg: string, time: number, steps: string[], name?: string }[] {
     const queries = this.getQueriesForF2L();
 
     if (!queries || queries.length === 0) {
@@ -2216,31 +3191,33 @@ export class SimpleCubeInterpreter {
     const speedEstimator = new AlgSpeedEstimator();
     let suggestions: Suggestion[] = [];
     const algSet = new Set<string>();
-    
+    const currentEO = this.eoValue;
+
     // iterate and collect suggestions
     queries.forEach(({ query, pairColors }) => {
 
       // some f2l cases will return a lot of algs, and the good ones may be later in the list
       // however, the list is now sorted to help avoid this
-      query.limit = 40; 
-      
+      query.limit = 40;
+
       query.scoreBy = 'exact'; // use 'exact' context for F2L searches.
-      
+
       const algs = this.algSuggester!.searchByPosition(query);
-      
+
       algs.forEach(alg => {
         const [firstColor, secondColor] = pairColors;
         const firstLetter = firstColor ? firstColor.charAt(0).toUpperCase() : '';
         const secondLetter = secondColor ? secondColor.charAt(0).toUpperCase() : '';
         const pairLabel = firstLetter && secondLetter ? `${firstLetter}${secondLetter} pair` : 'pair';
-        
+
         if (!algSet.has(alg.id)) {
           algSet.add(alg.id);
-          
+
           suggestions.push({
             alg: alg.id,
             time: speedEstimator.calcScore(alg.id),
-            steps: [pairLabel]
+            steps: [pairLabel],
+            hasEOsolved: alg.eoValue !== undefined && currentEO >= 0 && alg.eoValue === currentEO,
           });
         } else {
           // Algorithm already exists - add this step to the existing suggestion
@@ -2263,46 +3240,29 @@ export class SimpleCubeInterpreter {
     });
 
     // Filter out redundant algorithms that are extensions of shorter ones without unique steps
-    
-    // spread out algs with double moves
-    const spreadSuggestions = suggestions.map(suggestion => {
-      const spreadAlg = suggestion.alg.replace(/([A-Za-z])([23])('?)/g, (_, letter, num, prime) => {
-        if (num === '2') return `${letter} ${letter}`;
-        return prime ? letter : `${letter}'`; // 3' → letter, 3 → letter'
-      });
-      return spreadAlg;
-    });
-    const filteredSuggestions: Suggestion[] = [];
-    const filteredSpreadAlgs: string[] = [];
-    for (let i = 0; i < suggestions.length; i++) {
-      const suggestion = suggestions[i];
-      const spreadAlg = spreadSuggestions[i];
-      let isRedundant = false;
+    const filteredSuggestions = this.filterRedundantAlgorithms(suggestions);
 
-      for (let j = 0; j < filteredSuggestions.length; j++) {
-        // Check if current spread alg starts with an existing spread alg
-        if (spreadAlg.startsWith(filteredSpreadAlgs[j] + ' ')) {
-          // Check if current alg has any unique steps compared to existing
-          const hasUniqueSteps = suggestion.steps.some(step => !filteredSuggestions[j].steps.includes(step));
-
-          if (!hasUniqueSteps) {
-            isRedundant = true;
-            break;
-          }
+    // Calculate cutoff time for each pair
+    const cutoffTimes = new Map<string, number>();
+    filteredSuggestions.forEach(suggestion => {
+      suggestion.steps.forEach(pairLabel => {
+        const currentBest = cutoffTimes.get(pairLabel);
+        if (currentBest === undefined || suggestion.time < currentBest) {
+          cutoffTimes.set(pairLabel, suggestion.time * 1.5);
         }
-      }
+      });
+    });
 
-      if (!isRedundant) {
-        filteredSuggestions.push(suggestion);
-        filteredSpreadAlgs.push(spreadAlg);
-      }
-    }
+    // Filter suggestions based on their pair's cutoff time
+    const fastSuggestions = filteredSuggestions.filter(suggestion =>
+      suggestion.steps.some(pairLabel => suggestion.time <= (cutoffTimes.get(pairLabel) || Infinity))
+    );
 
     // Sort by time at the end (low is better)
-    return filteredSuggestions.sort((a, b) => a.time - b.time).splice(0, 20); // limit to top 20
+    return fastSuggestions.sort((a, b) => a.time - b.time).splice(0, 20); // limit to top 20
   }
 
-  private getLLSuggestions(steps: StepInfo[], stepTypes: Set<StepInfo['type']>): {alg: string, time: number, name?: string, steps: string[]}[] {
+  private getLLSuggestions(steps: StepInfo[], stepTypes: Set<StepInfo['type']>): { alg: string, time: number, name?: string, steps: string[] }[] {
 
     // Calculate all 4 reference piece origins for different AUF positions
     // preAUFidx 0: green-white, preAUFidx 1: white-red, preAUFidx 2: white-blue, preAUFidx 3: white-orange
@@ -2312,9 +3272,9 @@ export class SimpleCubeInterpreter {
       this.getReferencePieceLocation('white', 'blue'),   // preAUFidx 2
       this.getReferencePieceLocation('white', 'orange'),  // preAUFidx 3
     ];
-    
+
     const llIndices = this.getLLindices(steps, stepTypes);
-    const algs: {alg: string, name: string, steps: string[]}[] = [];
+    const algs: { alg: string, name: string, steps: string[] }[] = [];
 
     llIndices.forEach(index => {
       if (index.step !== 'oll' && index.step !== 'pll' && index.step !== 'auf') {
@@ -2323,7 +3283,7 @@ export class SimpleCubeInterpreter {
       }
       const stepAlgs: string[] = this.LLsuggester!.getAlgsForStep(index.step, index.index, index.minMovements, refPieceOrigins);
       stepAlgs.forEach(alg => {
-        algs.push({alg, name: index.name, steps: [index.step]});
+        algs.push({ alg, name: index.name, steps: [index.step] });
       });
     });
 

@@ -10,6 +10,7 @@ import type { CompiledLLAlg } from '../composables/recon/LLsuggester';
 interface CompiledExactAlg {
   alg: string;
   hash: string;
+  eoValue: number;
   step?: string;
 }
 
@@ -877,6 +878,7 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
       }
       const cubeState = cubeInterpreter.getCurrentState();
       const hash = cubeState?.hash || 'unknown';
+      const eoValue = cubeInterpreter.getEOvalue();
 
       // console.log(`Algorithm: ${completeAlg}, Hash: ${hash}`);
 
@@ -884,6 +886,7 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
       compiledData.push({
         alg: completeAlg,
         hash: hash,
+        eoValue,
         step: alg.step || '',
       });
 

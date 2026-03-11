@@ -16,6 +16,8 @@ export const titlePlaceholders = [
   "Good ideas can come from anyone",
   "You don't have to be good",
   "Always be learning",
+  "The cube doesn't lock up, you lock it up",
+  "Some day, you will be worse",
   "Liberty is the ability to enact your will",
   "You're under no requirements", // however...
   '"You gotta do what the fuck you say" -RA',
