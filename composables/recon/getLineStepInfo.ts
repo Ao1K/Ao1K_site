@@ -41,7 +41,6 @@ const getCFOPStep = (currentSteps: StepInfo[], prevSteps: StepInfo[], prevGridPa
   }
 
   if (llStepNames.includes('ep') && llStepNames.includes('cp') && llStepNames.includes('co') && llStepNames.includes('eo')) {
-    console.log('1lll')
     return { step: '1lll', type: 'last layer', colors: llSteps[0]?.colors || [], gridPattern: prevGridPattern, name: prevName, nameType: prevNameType };
   }
   if (llStepNames.includes('ep') && llStepNames.includes('cp') && llStepNames.includes('co')) {
@@ -154,7 +153,7 @@ const getRouxStep = (currentSteps: StepInfo[], prevSteps: StepInfo[], prevLSEPat
 
 /**
  * Uses a variety of heuristics to determine the step most likely to have been solved.
- * Works for CFOP, Roux, and ZZ.
+ * Works for CFOP, Roux, Petrus, and ZZ.
  * Also detects whether EO was solved on this line (hasEO).
  */
 export function getLineStepInfo(currentSteps: StepInfo[], prevSteps: StepInfo[]): { stepInfo: StepInfo | null; hasEO: boolean } {
@@ -170,14 +169,14 @@ export function getLineStepInfo(currentSteps: StepInfo[], prevSteps: StepInfo[])
     if (!prevLSEPattern && prevSteps[i].lsePattern) {
       prevLSEPattern = prevSteps[i].lsePattern;
     }
-    const eoValue = prevSteps[i].type === 'eo' ? Number(prevSteps[i].step) : undefined;
+    const eoValue = prevSteps[i].type === 'genericEO' ? Number(prevSteps[i].step) : undefined;
     if (prevEOvalue === undefined && eoValue !== undefined) {
       prevEOvalue = eoValue;
     }
   }
   
   // detect if EO was solved on this line (or re-solved from a previous line)
-  const currentEOStep = currentSteps.find(step => step.type === 'eo');
+  const currentEOStep = currentSteps.find(step => step.type === 'genericEO');
   const eoValue = currentEOStep !== undefined ? Number(currentEOStep.step) : undefined;
   const hasEO = eoValue === 0 && prevEOvalue !== eoValue;
   
@@ -187,11 +186,10 @@ export function getLineStepInfo(currentSteps: StepInfo[], prevSteps: StepInfo[])
 
   // CFOP
   const crossSteps = allSteps.filter(step => step.type === 'cross');  
-  const isLikelyCFOP = // TODO: this heuristic will need to be reworked if we ever add more sophisticated ZZ steps
-  (crossSteps.length > 0 && 
-    allSteps.filter(step => step.type !== 'eoLine' && step.step !== 'eo' && step.type !== 'eo').length === 1)
-  || (crossSteps.length > 0 &&
-    allSteps.some(step => step.type === 'f2l'));
+  const isLikelyCFOP =
+    crossSteps.length > 0 &&
+    allSteps.some(step => step.type === 'f2l' || (step.type === 'cross' &&
+      !['eoLine', 'eo', 'genericEO', 'genericBlock'].includes(step.type)));
   
   if (isLikelyCFOP) {
     const cfopStep = getCFOPStep(currentSteps, prevSteps, prevGridPattern);
@@ -204,18 +202,32 @@ export function getLineStepInfo(currentSteps: StepInfo[], prevSteps: StepInfo[])
   const cmllSteps = allSteps.filter(step => step.type === 'cmll');
   const lseSteps = allSteps.filter(step => step.type === 'lse');
 
-  const isRoux = rouxBlockSteps.length > 0 || cmllSteps.length > 0 || lseSteps.length > 0;
-  if (isRoux) {
+  const isLikelyRoux = rouxBlockSteps.length > 0 || cmllSteps.length > 0 || lseSteps.length > 0;
+  if (isLikelyRoux) {
     const rouxStep = getRouxStep(currentSteps, prevSteps, prevLSEPattern, prevGridPattern);
     if (rouxStep) return { stepInfo: rouxStep, hasEO };
   }
   
-  // ZZ
+  // ZZ/EOLine
   const eoLineSteps = allSteps.filter(step => step.type === 'eoLine');
-  const isLikelyZZ = eoLineSteps.length > 0 && prevSteps.length === 0;
+  const isLikelyEOLine = eoLineSteps.length > 0 && prevSteps.length === 0;
 
-  if (isLikelyZZ) {
+  if (isLikelyEOLine) {
     return { stepInfo: eoLineSteps[eoLineSteps.length - 1], hasEO };
+  } else {
+    // remove eoLine steps from consideration, as they might otherwise be the most recent step
+    currentSteps = currentSteps.filter(step => step.type !== 'eoLine');
+  }
+
+  // Petrus/Blocks
+  const blockSteps = currentSteps.filter(step => step.type === 'block');
+  const wasOtherMethodUsed = allSteps.some(step => {
+    return !['block', 'genericBlock', 'eo', 'genericEO', 'eoLine'].includes(step.type);
+  });
+  const isLikelyBlocks = blockSteps.length > 0 && !isLikelyRoux; // if it's Roux, we should have already returned above
+
+  if (isLikelyBlocks && !wasOtherMethodUsed) {
+    return { stepInfo: blockSteps[blockSteps.length - 1], hasEO };
   }
 
   // Return the last step if no special handling

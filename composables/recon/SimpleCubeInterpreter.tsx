@@ -83,7 +83,7 @@ export type F2LDirection = 'front' | 'back' | 'left' | 'right';
 
 export interface StepInfo {
   step: string;
-  type: 'cross' | 'f2l' | 'last layer' | 'solved' | 'none' | 'eo' | 'block' | 'lse' | 'cmll' | 'eoLine';
+  type: 'cross' | 'f2l' | 'last layer' | 'solved' | 'none' | 'genericEO' | 'block' | 'genericBlock' | 'lse' | 'cmll' | 'eoLine';
   colors: string[];
   caseIndex?: number;
   name?: string; // Optional name for cases (OLL/PLL names)
@@ -822,7 +822,9 @@ export class SimpleCubeInterpreter {
 
         for (const adj of adjacentPieces) {
           if (inThisBlock.has(adj.coordKey)) continue;
-          if (adj.blockIds.size > 0) continue;
+          // centers can belong to multiple blocks since they sit between groups,
+          // but non-center pieces should only belong to one block
+          if (adj.blockIds.size > 0 && adj.type !== 'center') continue;
 
           if (piecesConnect(current, adj)) {
             adj.blockIds.add(blockId);
@@ -1207,6 +1209,16 @@ export class SimpleCubeInterpreter {
     return pattern as BlockPattern;
   }
 
+  private calcBlockStepsCompleted(): StepInfo[] {
+    const blocks = this.blocksSolved;
+    const steps: StepInfo[] = [];
+    for (const block of blocks) {
+      const blockStepName = `${block.dimensions['L'] ? 'L' : ''}${block.dimensions['R'] ? 'R' : ''}${block.dimensions['U'] ? 'U' : ''}${block.dimensions['D'] ? 'D' : ''}${block.dimensions['F'] ? 'F' : ''}${block.dimensions['B'] ? 'B' : ''}-Block`;
+      steps.push({ step: blockStepName, type: 'genericBlock', colors: [], blockPattern: block.blockPattern! });
+    }
+    return steps;
+  }
+
   /**
    * Only creates a stepInfo entry if blocks are properly placed.
    * @returns 
@@ -1397,7 +1409,7 @@ export class SimpleCubeInterpreter {
   /**
    * Method for passing in SimpleCubeState to update and interpret the current state.
    */
-  public getStepsCompleted(cubeState?: SimpleCubeState | null, method: 'Roux' | 'ZZ' |'CFOP' | 'All' = 'All'): StepInfo[] {
+  public getStepsCompleted(cubeState?: SimpleCubeState | null, method: 'Roux' | 'ZZ' |'CFOP' | 'Petrus' | 'All' = 'All'): StepInfo[] {
     if (cubeState) {
       this.cubeState = cubeState;
     }
@@ -1411,14 +1423,22 @@ export class SimpleCubeInterpreter {
 
     const steps: StepInfo[] = [];
 
+    // always add eo step
+    steps.push({ step: this.eoValue.toString(), type: 'genericEO', colors: [] });
+
     if (method === 'CFOP' || method === 'ZZ'|| method === 'All') {
       this.crossColorsSolved = this.calcCrossColorsSolved();
       steps.push(...this.calcCFOPstepsCompleted());
     }
 
-    if (method === 'Roux' || method === 'All') {
+    if (['Roux', 'Petrus', 'All'].includes(method)) {
       this.blocksSolved = this.calcBlocksSolved();
+    }
+    if (method === 'Roux' || method === 'All') {
       steps.push(...this.calcRouxStepsCompleted());
+    }
+    if (['Petrus', 'All'].includes(method)) {
+      steps.push(...this.calcBlockStepsCompleted());
     }
 
     if (method === 'ZZ' || method === 'All') {
@@ -2511,9 +2531,6 @@ export class SimpleCubeInterpreter {
     }
 
     const steps: StepInfo[] = [];
-
-    // always add eo step
-    steps.push({ step: this.eoValue.toString(), type: 'eo', colors: [] });
 
     steps.push(...this.getCrossSteps());
 
