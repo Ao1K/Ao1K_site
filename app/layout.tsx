@@ -6,8 +6,6 @@ import Header from "../components/Header";
 
 import type { Metadata } from "next";
 import { Rubik } from "next/font/google";
-import Footer from "../components/Footer";
-import ReconSkeleton from "../components/recon/ReconSkeleton";
 
 import { Amplify } from 'aws-amplify';
 import outputs from "../amplify_outputs.json"
@@ -43,44 +41,18 @@ export const metadata: Metadata = {
   },
 }
 
-
-
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  
-
   return (
-    <>
-      <html lang="en" className={`min-h-full flex flex-col ${rubik.variable} font-san`}>
-        
-        
-        <body
-          className={`min-h-screen pt-16 grid overflow-auto bg-primary-900 
-            grid-cols-[0,minmax(0,8fr),0] 
-            md:grid-cols-[1fr,minmax(0,5fr),1fr] 
-            lg:grid-cols-[1fr,minmax(0,4fr),1fr] 
-            xl:grid-cols-[4fr,minmax(0,5fr),4fr] `}
-          >
-          <Header />
-          
-          <div id="left-margin" className="block bg-primary-900 h-full grid-lines-50-l -z-10"></div> 
-          
-          <main className="col-start-2 flex flex-col mx-0 sm:mx-10 bg-primary-900 main-content">
-            <React.Suspense fallback={<ReconSkeleton />}>
-              {children}
-              <Footer />
-            </React.Suspense>
-          </main>
-          
-          <div id="right-margin" className="block bg-primary-900 h-full grid-lines-50-r -z-10"></div> 
-
-          
-        </body>
-      </html>
-    </>
+    <html lang="en" className={`min-h-full flex flex-col ${rubik.variable} font-san`}>
+      <body className="min-h-screen pt-16 overflow-auto bg-primary-900">
+        <Header />
+        {children}
+      </body>
+    </html>
   );
 }
 
