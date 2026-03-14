@@ -3,7 +3,28 @@
 import { useState, useEffect, useRef } from 'react';
 import { HexColorPicker } from 'react-colorful';
 import PhGear from './icons/settings';
-import { useCubeColors, useShowControls, DEFAULT_CUBE_COLORS, type CubeColors } from '../composables/useSettings';
+import { useCubeColors, useShowControls, useIconSize, ICON_SIZE_CONFIG, DEFAULT_CUBE_COLORS, type CubeColors, type IconSize } from '../composables/useSettings';
+
+function GridIcon({ size }: { size: number }) {
+  const edgeSize = 3;
+  const cellSize = 6;
+  const getPos = (i: number) => i === 0 ? 0 : i === 4 ? 21 : edgeSize + (i - 1) * cellSize;
+  const getSize = (i: number) => (i === 0 || i === 4) ? edgeSize : cellSize;
+  const gray = '#888';
+  const bg = '#fff';
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24">
+      {Array.from({ length: 25 }, (_, k) => {
+        const row = Math.floor(k / 5), col = k % 5;
+        const isCorner = (row === 0 || row === 4) && (col === 0 || col === 4);
+        return (
+          <rect key={k} x={getPos(col)} y={getPos(row)} width={getSize(col)} height={getSize(row)}
+            fill={isCorner ? 'transparent' : gray} />
+        );
+      })}
+    </svg>
+  );
+}
 
 const FACE_LABELS: { key: keyof CubeColors; label: string }[] = [
   { key: 'up', label: 'Up' },
@@ -12,6 +33,7 @@ const FACE_LABELS: { key: keyof CubeColors; label: string }[] = [
   { key: 'back', label: 'Back' },
   { key: 'left', label: 'Left' },
   { key: 'right', label: 'Right' },
+  { key: 'eo', label: 'EO' },
 ];
 
 interface SettingsMenuProps {
@@ -23,6 +45,7 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
   const [activePicker, setActivePicker] = useState<keyof CubeColors | null>(null);
   const [cubeColors, setCubeColors, resetColors] = useCubeColors();
   const [showControls, setShowControls] = useShowControls();
+  const [iconSize, setIconSize] = useIconSize();
   const menuRef = useRef<HTMLDivElement>(null);
 
   const handleClickOutside = (event: MouseEvent | TouchEvent) => {
@@ -85,7 +108,30 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
               />
             </label>
           </div>
-          
+
+          {/* Icon Size Toggle */}
+          <div className="px-3 py-2 border-b border-primary-200">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-light_accent">Step Icon Size</span>
+              <div className="flex gap-1">
+                {(['small', 'medium'] as IconSize[]).map((size) => (
+                  <button
+                    key={size}
+                    onClick={() => setIconSize(size)}
+                    className={`p-1 rounded-sm border-2 transition-all ${
+                      iconSize === size
+                        ? 'border-primary-500 bg-primary-100'
+                        : 'border-primary-300 hover:border-primary-400'
+                    }`}
+                    title={size.charAt(0).toUpperCase() + size.slice(1)}
+                  >
+                    <GridIcon size={ICON_SIZE_CONFIG[size].iconWidth} />
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
           <div className="flex flex-row items-center mb-2">
             <div className="text-sm font-semibold text-light_accent p-3 w-auto">Cube Colors</div>
             {/* Restore Defaults button */}

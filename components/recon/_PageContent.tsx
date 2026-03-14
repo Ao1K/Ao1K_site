@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef, useEffect, lazy, Suspense, useCallback } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, lazy, Suspense, useCallback } from 'react';
 import MovesTextEditor from "../../components/recon/MovesTextEditor";
 import SpeedDropdown from "../../components/recon/SpeedDropdown";
 
@@ -28,7 +28,8 @@ import TopButton from "../../components/recon/TopButton";
 import CopySolveDropdown from "../../components/recon/CopySolveDropdown";
 import { customDecodeURL, customEncodeURL } from '../../composables/recon/urlEncoding';
 import VideoHelpPrompt from '../../components/recon/VideoHelpPrompt';
-import ImageStack from '../recon/ImageStack';
+import IconStack, { computeLineIconData } from './IconStack';
+import { useIconSize, ICON_SIZE_CONFIG, useCubeColors } from '../../composables/useSettings';
 import { SimpleCube } from '../../composables/recon/SimpleCube';
 import { SimpleCubeInterpreter } from '../../composables/recon/SimpleCubeInterpreter';
 import type { StepInfo, Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
@@ -63,6 +64,10 @@ const TwistyPlayer = lazy(() => import("../../components/recon/TwistyPlayer"));
 let currentSpeed = 30;
 
 export default function Recon({ dailyScramble = "", videoHelpDismissed = false }: { dailyScramble?: string, videoHelpDismissed?: boolean }) {
+  const [iconSize] = useIconSize();
+  const solutionLineHeight = ICON_SIZE_CONFIG[iconSize].lineHeight;
+  const [cubeColors] = useCubeColors();
+
   const allMovesRef = useRef<string[][][]>([[[]], [[]]]);
   const moveLocation = useRef<[number, number, number]>([0, 0, 0]);
 
@@ -94,6 +99,7 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
   const solutionMethodsRef = useRef<ImperativeRef>(null);
   const undoRef = useRef<HTMLButtonElement>(null!);
   const redoRef = useRef<HTMLButtonElement>(null!);
+  const iconScrollRef = useRef<HTMLDivElement>(null);
   const oldSelectionRef = useRef<OldSelectionRef>({ range: null, textbox: null, status: "init" });
   const bottomBarRef = useRef<HTMLDivElement>(null!);
   const isLoopingRef = useRef<boolean>(false);
@@ -107,6 +113,10 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
   }, []);
 
   const totalMoves = allMovesRef.current[1].flat(2).filter(move => move.match(/[^xyz2']/g)).length
+
+  const solutionLines = allMovesRef.current[1]?.map((move: string[]) => move.join(' ')) || [''];
+  const lineIconData = computeLineIconData(solutionLines, lineSteps.map(item => item.stepInfo), cubeColors);
+  const hasIcons = lineIconData.some(d => !d.isEmptyIcon);
 
   const MAX_EDITOR_HISTORY = 100;
   const moveHistory = useRef<MoveHistory>({ history: [['', '']], index: 0, MAX_HISTORY: MAX_EDITOR_HISTORY, status: 'loading' });
@@ -654,21 +664,7 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
       if (!isMoveLineContentSame) {
         updateLineSteps();
       } else {
-        let hasSpaceChanges = false;
-        moves.forEach((line, idx) => {
-          const lineStepEntry = currentLineSteps[idx];
-          if (!lineStepEntry) {
-            return;
-          }
-          const lineAndScram = idx === 0 ? [...allMovesRef.current[0].flat(), ...line] : line;
-          const flatLine = lineAndScram.join(' ');
-          const existingLineMoves = lineStepEntry.moveLine
-          if (existingLineMoves !== flatLine) {
-            hasSpaceChanges = true;
-          }
-
-        });
-        if (hasSpaceChanges) {
+        if (hasLineStepSpaceChanges(moves, currentLineSteps)) {
           respaceLineSteps();
         }
       };
@@ -1128,19 +1124,35 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
     }
   };
 
+  const hasLineStepSpaceChanges = (moves: string[][], currentLineSteps: { moveLine: string; stepInfo: StepInfo[] }[]): boolean => {
+    let hasAddedScramble = false;
+    for (let idx = 0; idx < moves.length; idx++) {
+      const line = moves[idx];
+      const lineStepEntry = currentLineSteps[idx];
+      if (!lineStepEntry) continue;
+      if (!line || line.length === 0) continue;
+      const lineAndScram = hasAddedScramble ? line : [...allMovesRef.current[0].flat(), ...line];
+      hasAddedScramble = true;
+      if (lineStepEntry.moveLine !== lineAndScram.join(' ')) return true;
+    }
+    return false;
+  };
+
   const respaceLineSteps = () => {
     const respacedSteps: { moveLine: string, stepInfo: StepInfo[] }[] = [];
     const solutionMoves = allMovesRef.current[1];
     const currentLineSteps = lineStepsRef.current;
     const filteredLineSteps = currentLineSteps.filter(item => item.moveLine.trim() !== '');
     let hasStepsCount = 0;
+    let hasAddedScramble = false;
     for (let lineIdx = 0; lineIdx < solutionMoves.length; lineIdx++) {
       const line = solutionMoves[lineIdx];
       if (!line || line.length === 0) {
         respacedSteps.push({ moveLine: '', stepInfo: [] });
         continue;
       }
-      const lineAndScram = lineIdx === 0 ? [...allMovesRef.current[0].flat(), ...line] : line;
+      const lineAndScram = hasAddedScramble ? line : [...allMovesRef.current[0].flat(), ...line];
+      hasAddedScramble = true;
       const flatLine = lineAndScram.join(' ');
       const existingLine = filteredLineSteps[hasStepsCount];
       if (existingLine && existingLine.moveLine === flatLine) {
@@ -1181,16 +1193,38 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
       return steps;
     };
 
+    const sameStepAndColors = (a: StepInfo, b: StepInfo) =>
+      a.step === b.step &&
+      a.colors.length === b.colors.length &&
+      a.colors.every((color, index) => color === b.colors[index]);
+
     const getNewSteps = (previousSteps: StepInfo[] | undefined, steps: StepInfo[]): StepInfo[] => {
       if (!previousSteps) return steps;
-      const stepsOnLine = steps.filter(step =>
-        !previousSteps.some(prevStep =>
-          prevStep.step === step.step &&
-          prevStep.colors.length === step.colors.length &&
-          prevStep.colors.every((color, index) => color === step.colors[index])
-        )
-      );
-      return stepsOnLine;
+
+      // collect annotations from filtered-out steps so they aren't lost
+      let carriedName: string | undefined;
+      let carriedNameType: StepInfo['nameType'];
+
+      const newSteps = steps.filter(step => {
+        if (previousSteps.some(prev => sameStepAndColors(prev, step))) {
+          if (step.name) { carriedName = step.name; carriedNameType = step.nameType; }
+          return false;
+        }
+        return true;
+      });
+
+      // transfer carried annotation to the last new F2L pair
+      if (carriedName) {
+        for (let i = newSteps.length - 1; i >= 0; i--) {
+          if (newSteps[i].type === 'f2l' && newSteps[i].step === 'pair') {
+            newSteps[i].name = carriedName;
+            newSteps[i].nameType = carriedNameType;
+            break;
+          }
+        }
+      }
+
+      return newSteps;
     };
 
     const buildMoveLine = (line: string[], lineIdx: number, hasAddedScramble: boolean): string => {
@@ -1435,16 +1469,36 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
         <div className="border border-neutral-600 hover:border-primary-100 h-[6px] rounded-b-sm w-full z-0 bg-primary-700 mb-2" onClick={() => toggleShowBottomBar()}></div>
       </div>
       <div id="datafields" className="w-full items-start transition-width duration-500 ease-linear">
-        <div id="solution-area" className="px-3 mt-1 mb-6 flex flex-col w-full backdrop-blur-sm">
+        <div id="solution-area" className="px-3 mt-1 mb-14 flex flex-col w-full">
           <div className="text-xl text-dark_accent font-medium w-full z-10">Solution</div>
-          <div id="rich-solution-display" className="flex flex-row lg:max-h-[20rem] max-h-[10rem] border-none overflow-y-auto">
-            <ImageStack
-              moves={allMovesRef.current}
-              position={moveLocation.current}
-              editableElement={solutionMethodsRef.current?.getElement() || null}
-              lineSteps={lineSteps.map(item => item.stepInfo)}
-            />
-            <div className="w-full min-w-0 pb-6" id="solution">
+          <div id="rich-solution-display" className="relative max-h-[35vh] -mb-20 border-none overflow-visible">
+            <div
+              className="icon-column-clip max-h-[35vh] absolute left-0 top-0"
+              style={{ width: ICON_SIZE_CONFIG[iconSize].iconWidth }}
+            >
+              <div ref={iconScrollRef}>
+                <IconStack
+                  moves={allMovesRef.current}
+                  position={moveLocation.current}
+                  editableElement={solutionMethodsRef.current?.getElement() || null}
+                  lineIconData={lineIconData}
+                />
+                <div className="h-6 z-10" /> {/* buffer at bottom so last line of icons doesn't get cut off */}
+              </div>
+            </div>
+            <div
+              className="min-w-0 overflow-y-auto max-h-[35vh] relative z-10"
+              id="solution"
+              style={{
+                marginLeft: hasIcons ? ICON_SIZE_CONFIG[iconSize].iconWidth : 0,
+                transition: 'margin-left 200ms linear',
+              }}
+              onScroll={(e) => {
+                if (iconScrollRef.current) {
+                  iconScrollRef.current.style.transform = `translateY(-${e.currentTarget.scrollTop}px)`;
+                }
+              }}
+            >
               <MovesTextEditor
                 name={`solution`}
                 ref={solutionMethodsRef}
@@ -1455,11 +1509,12 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
                 html={solutionHTML}
                 setHTML={memoizedSetSolutionHTML}
                 suggestionsRef={suggestionsRef}
+                lineHeight={solutionLineHeight}
               />
             </div>
           </div>
         </div>
-        <div id="time-area" className="px-3 flex flex-col w-full">
+        <div id="time-area" className="px-3 pt-12 flex flex-col w-full">
           <div className="text-xl text-dark_accent font-medium w-full">Time</div>
           <div id="time-stats" className="flex flex-row flex-wrap text-nowrap items-center w-full gap-y-2 pb-16">
             <div id="time-field" className="border border-neutral-600 group flex flex-row items-center justify-start">

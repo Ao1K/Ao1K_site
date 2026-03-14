@@ -37,8 +37,9 @@ export async function generateMetadata(
     while (title.endsWith('\n')) title = title.slice(0, -1);
     sp.set('title', customEncodeURL(title));
   }
-  if (searchParams.stm) sp.set('stm', searchParams.stm as string);
-  if (searchParams.tps) sp.set('tps', searchParams.tps as string);
+  if (searchParams.stm && /^\d+(\.\d+)?$/.test(searchParams.stm as string)) sp.set('stm', searchParams.stm as string);
+  if (searchParams.tps && /^\d+(\.\d+)?$/.test(searchParams.tps as string)) sp.set('tps', searchParams.tps as string);
+  if (searchParams.preview !== undefined) sp.set('preview', searchParams.preview as string);
 
   const ogUrl = `/api/og?${sp.toString()}`;
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';

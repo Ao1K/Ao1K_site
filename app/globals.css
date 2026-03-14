@@ -155,3 +155,34 @@ input[type='range']::-moz-range-track {
 .force-inline > * {
   display: inline !important;
 }
+
+.icon-column-clip {
+  clip-path: inset(0 0 0 -100%);
+}
+
+@media (pointer: coarse) {
+  .main-content {
+    overflow-x: hidden;
+  }
+}
+
+/* hover effects gated behind @media (hover: hover) 
+to prevent sticky hover on touch devices for IconStack */
+@media (hover: hover) {
+  .step-icon-hover:hover {
+    height: var(--hover-height) !important;
+    z-index: 20;
+  }
+
+  .step-icon-hover:hover .step-icon-inner {
+    transform: scale(200%);
+  }
+
+  .step-icon-hover:hover .step-icon-svg {
+    border-color: var(--color-primary-100);
+  }
+
+  .icon-column-clip:has(.step-icon-hover:hover) {
+    clip-path: inset(0 0 -4rem -100%);
+  }
+}

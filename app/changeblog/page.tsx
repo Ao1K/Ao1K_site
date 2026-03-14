@@ -8,6 +8,8 @@ import CubeGraphic from "../../components/changeblog/CubeGraphic";
 import type { PNGVisualizerOptions } from "sr-puzzlegen";
 import QuestionIcon from "../../components/icons/info";
 import SettingsIcon from "../../components/icons/settings";
+import Link from "next/link";
+import { StepIconsExample2_1, StepIconsExample2_2, StepIconsExample2_4, StepIconsExample2_6, StepIconsExample2_7 } from "../../components/changeblog/StepIconsExample2";
 
 type PlaceholderMoveHistory = {
   history: string[][];
@@ -51,6 +53,84 @@ export default function Changeblog() {
   return (
     <div className="flex flex-col pt-20 pb-10 px-6 max-w-3xl text-md text-primary-100 leading-relaxed">
       <div className="flex flex-row gap-2 ">
+        <h1 className="text-3xl text-primary-300">Reconstruct v0.7</h1>
+        <div className="h-fit self-end pb-[2px] text-neutral-400">Mar 13th, 2026</div>
+      </div>
+      <div className="bg-primary-100 w-full h-1"></div>
+      
+      <div className="pt-6">
+        There is. And that&apos;s all we know.
+        <ul className="pt-6 space-y-1 list-none text-neutral-400">
+          <li>- Added Roux, ZZ, and Petrus icons</li>
+          <li>- Made F2L and PLL icons better-er</li>
+          <li>- Made icons bigger</li>
+          <li>- Made some other sweet UI changes</li>
+        </ul>
+      </div>
+
+      <h2 className="py-2 text-xl mt-12 mb-3 pl-2 w-full text-dark bg-primary-300">{`>`} Many methods</h2>
+      <div className="flex flex-row gap-6 my-6 md:my-0">
+        <div className="flex md:flex-row flex-col md:gap-6">
+          <div className="w-[80px] h-[80px] my-6">
+            <StepIconsExample2_2 />
+          </div>
+          <div className="w-[80px] h-[80px] md:my-6">
+            <StepIconsExample2_6 />
+          </div>
+        </div>
+          Blocks larger than 1x1x2 are now recognized as a valid step.
+          This means Roux and Petrus solves will be much more visual.
+      </div>
+      <div className="flex flex-row gap-6 pb-6">
+        <div className="py-6">
+          <StepIconsExample2_4 />
+        </div>
+        <div>
+          The LSE (Last Six Edges) step for Roux will show as a complete view
+          of the top and front faces of the cube. The icon format
+          went through a lot of iterations and discussion, and this generally seemed to have a favorable opinion.
+          The number of stickers present is the main reason that icons are now bigger by default.
+        </div>
+      </div>
+      <div className="pb-12 pl-[104px]">
+          This LSE concept was heavily inspired by <Link className="underline underline-offset-1" href="https://enbyne.tech/tools/laser">https://enbyne.tech/tools/laser</Link>,
+          a Roux trainer for LSE.
+          Many thanks to the creator of this site.
+      </div>
+      <div className="flex flex-row gap-6 pb-6">
+        <div className="shrink-0">
+          <StepIconsExample2_7 />
+        </div>
+        <div>
+          EO (Edge Orientation) is now recognized as step.
+          Any line of text in your solution that solves EO will mean there will be a magenta border around the icon,
+          unless that line also solves the whole cube.
+          The EO color is configurable in the settings.
+        </div>
+      </div>
+
+      <h2 className="py-2 text-xl mt-12 mb-3 pl-2 w-full text-dark bg-primary-300">{`>`} Do you believe in CFOP? In a young girl&apos;s heart?</h2>
+      <div className="flex flex-row gap-6">
+        <div className="w-[80px] h-[80px]">
+          <StepIconsExample2_1 />
+        </div>
+        <div className="flex gap-6 pb-6">
+          F2L icons now have a notch taken out of them. 
+          This essentially means that they "point" in the direction of the slot that they solve, when viewing the cube from the top.
+          For this icon, the pair is being solved front right.
+        </div>
+      </div>
+
+      <h2 className="py-2 text-xl mt-12 mb-3 pl-2 w-full text-dark bg-primary-300">{`>`} I&apos;m Tired Boss</h2>
+      <div className="flex gap-6 pb-32">
+        The other changes in this update aren&apos;t worth mentioning as they&apos;re readily apparent or just bug fixes. Enjoy the site!
+      </div>
+
+
+
+
+
+      <div className="flex flex-row gap-2 ">
         <h1 className="text-3xl text-primary-300">Reconstruct v0.6</h1>
         <div className="h-fit self-end pb-[2px] text-neutral-400">Jan 18th, 2026</div>
       </div>
@@ -69,9 +149,9 @@ export default function Changeblog() {
         </ul>
       </div>
 
-      <h2 className="py-2 text-xl mt-24 mb-3 pl-2 w-full text-dark bg-primary-300">{`>`} Auto Text Substitutions</h2>
+      <h2 className="py-2 text-xl mt-12 mb-3 pl-2 w-full text-dark bg-primary-300">{`>`} Auto Text Substitutions</h2>
       <div className="flex flex-col gap-6">
-        This update should be called the Teri update. 
+        This update should be called the Teri Update. 
         As a result of a conversation we had, you can now do the following:
         <ul className="space-y-1 list-none text-neutral-400">
           <li>- Typing "UD" and pressing space creates "(U D) "</li>
@@ -85,16 +165,16 @@ export default function Changeblog() {
         </div>
       </div>
 
-      <h2 className="py-2 text-xl mt-24 mb-3 pl-2 w-full text-dark bg-primary-300">{`>`} More F2L algs</h2>
+      <h2 className="py-2 text-xl mt-12 mb-3 pl-2 w-full text-dark bg-primary-300">{`>`} More F2L algs</h2>
       <div className="flex flex-col gap-6">
         Another Teri talk yielded more algs. 
         She noted how a lot of algs on the site do not have their "y2" form.
         For example, applying "y2" to R U R&apos; gives L U L&apos;.
-        So I updated my scripting to apply y2 to all F2L algs that have just {`<`}RU{`>`} and {`<`}LU{`>`} moves.
+        So I updated my scripting to apply y2 12 all F2L algs that have just {`<`}RU{`>`} and {`<`}LU{`>`} moves.
         This added about 700 new algs, but honestly I lost count and I can&apos;t be asked to check.
       </div>
 
-      <h2 className="py-2 text-xl mt-24 mb-3 pl-2 w-full text-dark bg-primary-300">{`>`} Colorblind Support</h2>
+      <h2 className="py-2 text-xl mt-12 mb-3 pl-2 w-full text-dark bg-primary-300">{`>`} Colorblind Support</h2>
       <div className="flex flex-col gap-6">
         A conversation with someone with colorblindness helped remind me that colorblind people exist.
         <div className="flex flex-row gap-3 items-center"><SettingsIcon className="min-w-8 ml-3 min-h-8 text-primary"/>
@@ -106,18 +186,18 @@ export default function Changeblog() {
         </div>
       </div>
 
-      <h2 className="py-2 text-xl mt-24 mb-3 pl-2 w-full text-dark bg-primary-300">{`>`} Page go zoom</h2>
+      <h2 className="py-2 text-xl mt-12 mb-3 pl-2 w-full text-dark bg-primary-300">{`>`} Page go zoom</h2>
       <div className="flex flex-col gap-6">
         I threw a bunch of optimizations at the wall to see what stuck.
         Mostly this meant trying to make the server (Amazon Web Services) render as much of the site as possible ahead of time, rather than your browser having to do it.
         The end result is that the Recon page loads in about half the time when you first open it.
       </div>
 
-      <h2 className="py-2 text-xl mt-24 mb-3 pl-2 w-full text-dark bg-primary-300">{`>`} Better suggestions</h2>
+      <h2 className="py-2 text-xl mt-12 mb-3 pl-2 w-full text-dark bg-primary-300">{`>`} Better suggestions</h2>
       <div className="flex flex-col gap-6 pb-32">
         As a result of the work done for Reconstruct v0.4, I was able to improve the algorithm suggestion system a bit.
         You now will get less awful suggestions. For example, if get the suggestion "R U R&apos;" now, 
-        you won't also get the suggestion "R U R&apos; L U L&apos;" for no reason.
+        you won&apos;t also get the suggestion "R U R&apos; L U L&apos;" for no reason.
         <div>
           I basically run a check to see if shorter versions of the alg will solve the same pieces.
           The work also loosely supports the possibility of multislot suggestions in the future, which you might see today occasionally if you&apos;re lucky.
@@ -147,7 +227,7 @@ export default function Changeblog() {
         </ul>
       </div>
 
-      <h2 className="py-2 text-xl mt-24 mb-3 pl-2 w-full text-dark bg-primary-300">{`>`} Pretty previews</h2>
+      <h2 className="py-2 text-xl mt-12 mb-3 pl-2 w-full text-dark bg-primary-300">{`>`} Pretty previews</h2>
       <div className="flex flex-col gap-6">
         Posting a link on a messaging service like Discord will now generate a preview of the solve.
         This is a lot like the screenshot tool, just a different format.
@@ -163,7 +243,7 @@ export default function Changeblog() {
       <div className="flex flex-col gap-6 pt-6">
         Pressing Ctrl+S or the Share button is the best way to copy for a preview, but just copying the URL also works.
       </div>
-      <h2 className="py-2 text-xl mt-24 mb-3 pl-2 w-full text-dark bg-primary-300">{`>`} Gas, gas, gas</h2>
+      <h2 className="py-2 text-xl mt-12 mb-3 pl-2 w-full text-dark bg-primary-300">{`>`} Gas, gas, gas</h2>
       <div className="flex flex-col gap-6">
         Autocomplete suggestions and icons now generate basically instantly.
         I did this by removing the bad code and adding the okay code.
@@ -206,7 +286,7 @@ export default function Changeblog() {
 
 
 
-      <h2 className="py-2 text-xl mt-24 mb-3 pl-2 w-full text-dark bg-primary-300">{`>`} No more ugly comments</h2>
+      <h2 className="py-2 text-xl mt-12 mb-3 pl-2 w-full text-dark bg-primary-300">{`>`} No more ugly comments</h2>
       <div className="flex flex-col gap-6">
         If you&apos;re not familiar with comments in this context, consider yourself blessed.
         <MovesTextEditor
@@ -249,7 +329,7 @@ export default function Changeblog() {
 
 
 
-      <h2 className="py-2 text-xl mt-24 pl-2 w-full text-dark bg-primary-300">{`>`} Screenshots, beautiful screenshots</h2>
+      <h2 className="py-2 text-xl mt-12 pl-2 w-full text-dark bg-primary-300">{`>`} Screenshots, beautiful screenshots</h2>
       <p className="pt-6">
         Solves are visual. To efficiently communicate the information, recons should be too. Most people just post the text when they share recons. 
         You could make a video or post to a recon website, but that makes everything take longer.
@@ -281,7 +361,7 @@ export default function Changeblog() {
 
 
 
-      <h2 className="py-2 text-xl mt-24 pl-2 w-full text-dark bg-primary-300">{`>`} Autocomplete</h2>
+      <h2 className="py-2 text-xl mt-12 pl-2 w-full text-dark bg-primary-300">{`>`} Autocomplete</h2>
       <h3 className="w-1/2 pl-4 text-lg bg-neutral-300 text-dark">{`>>`} The feature</h3>
       <p className="pt-6">
         The last major feature in this release is autocomplete. Using it is simple.
@@ -668,7 +748,7 @@ export default function Changeblog() {
 
 
 
-      <h2 className="py-2 text-xl mt-24 pl-2 w-full text-dark bg-primary-300">{`>`} Cat</h2>
+      <h2 className="py-2 text-xl mt-12 pl-2 w-full text-dark bg-primary-300">{`>`} Cat</h2>
       <p className="pt-6">
         Thanks for reading! Say hello to my friend&apos;s cat, Sharknado.
       </p>

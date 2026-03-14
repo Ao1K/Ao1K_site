@@ -1,16 +1,14 @@
 import { highlightClass } from '../../utils/sharedConstants';
 import type { CSSProperties, ReactNode } from 'react';
-import { createStepIcon, type StepIconData } from './StepIconRenderer';
-
-// re-export for convenience
-export type { StepIconData } from './StepIconRenderer';
-export { serializeLineIcons, deserializeLineIcons } from './StepIconRenderer';
+import { createStepIcon } from './StepIconRenderer';
+import { type StepInfo } from './SimpleCubeInterpreter';
 
 // line of solution with optional step icon data
 export interface SolutionLine {
   text: string;
   renderedText?: ReactNode;
-  icon?: StepIconData | null;
+  icon?: StepInfo;
+  hasEO?: boolean;
 }
 
 // pure data input for screenshot generation, usable both client and server-side
@@ -22,6 +20,7 @@ export interface ScreenshotData {
   totalMoves: number;
   tpsString: string;
   title?: string;
+  isScrambleOfTheDay?: boolean;
 }
 
 // legacy interface for DOM-based screenshot
@@ -48,14 +47,20 @@ export const SCREENSHOT_STYLES = {
     large: 24,
     xl: 32,
   },
-  padding: 8,
+  padding: 20,
   lineHeight: 1.6,
 } as const;
 
 // returns inline style objects for use with Satori/ImageResponse
-export function getScreenshotStyles() {
+export function getPreviewStyles(scale = 1) {
   const s = SCREENSHOT_STYLES;
-  
+  const p = (n: number) => Math.round(n * scale);
+
+  const textDecor = {
+    textShadow: '0 1px 0 rgba(0,0,0,.15)',
+    WebkitTextStroke: '1px rgba(0,0,0,0.15)',
+  } as CSSProperties;
+
   return {
     wrapper: {
       height: '100%',
@@ -63,17 +68,18 @@ export function getScreenshotStyles() {
       display: 'flex',
       flexDirection: 'row',
       backgroundColor: s.backgroundColor,
-      padding: s.padding * 2.5,
+      padding: p(s.padding),
       fontFamily: 'system-ui, sans-serif',
       color: s.textColor,
     } as CSSProperties,
-    
+
     allMoves: {
       display: 'flex',
       flexDirection: 'column',
       flex: 1,
+      minWidth: 0,
       height: '100%',
-      marginRight: 32,
+      marginRight: 0,
     } as CSSProperties,
 
     statsBox: {
@@ -83,79 +89,84 @@ export function getScreenshotStyles() {
       alignItems: 'stretch',
       flexShrink: 0,
       height: `110%`,
-      marginRight: -s.padding * 2.5,
-      marginTop: -s.padding * 2.5,
-      marginBottom: -s.padding * 2.5,
+      marginRight: p(-s.padding),
+      marginTop: p(-s.padding),
+      marginBottom: p(-s.padding),
       borderLeft: `1px solid ${s.borderColor}`,
       backgroundColor: s.wrapperBg,
     } as CSSProperties,
 
     title: {
-      fontSize: s.fontSize.xl,
+      fontSize: p(s.fontSize.xl),
       fontWeight: 'bold',
-      marginBottom: 16,
+      marginBottom: p(16),
       color: '#fff',
+      ...textDecor,
     } as CSSProperties,
-    
+
     label: {
-      fontSize: s.fontSize.xl,
+      fontSize: p(s.fontSize.xl),
+      fontWeight: 'bold',
       color: '#ACC8D7',
-      marginBottom: 2,
+      marginBottom: p(2),
+      ...textDecor,
     } as CSSProperties,
-    
+
     textBlock: {
-      fontSize: s.fontSize.large,
+      fontSize: p(s.fontSize.large),
       lineHeight: s.lineHeight,
-      marginBottom: 2,
+      marginBottom: p(2),
       fontFamily: 'monospace',
       display: 'flex',
+      ...textDecor,
     } as CSSProperties,
-    
+
     solutionLine: {
       display: 'flex',
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 10,
+      gap: p(10),
     } as CSSProperties,
-    
+
     solutionText: {
-      fontSize: s.fontSize.large,
+      fontSize: p(s.fontSize.large),
       lineHeight: s.lineHeight,
       fontFamily: 'monospace',
       color: '#d4d4d4',
+      ...textDecor,
     } as CSSProperties,
-    
+
     stats: {
-      fontSize: s.fontSize.xl + 8,
+      fontSize: p(s.fontSize.xl + 8),
       display: 'flex',
-      maxWidth: '140px',
-      fontWeight: 'bold',
+      maxWidth: `${p(140)}px`,
       color: s.textColor,
-      margin: s.padding * 2.5,
+      margin: p(s.padding),
       textAlign: 'right',
+      ...textDecor,
     } as CSSProperties,
 
     statBreak: {
       height: 1,
       backgroundColor: s.borderColor,
       width: '100%',
-      margin: '4px 0',
+      margin: `${p(4)}px 0`,
     } as CSSProperties,
-      
+
     watermark: {
-      fontSize: 36,
+      fontSize: p(36),
       width: '100%',
       color: s.backgroundColor,
       backgroundColor: s.primaryColor,
-      padding: '4px 8px',
-      marginBottom: s.padding * 2.5,
-      fontWeight: 'bold',
+      padding: `${p(4)}px ${p(8)}px`,
+      marginBottom: p(s.padding),
       textAlign: 'right',
+      ...textDecor,
     } as CSSProperties,
   };
 }
 
-const calcMoveTextSize = (lines: SolutionLine[], scramble: string ): number => {
+const calcMoveTextSize = (lines: SolutionLine[], scramble: string, scale = 1): number => {
   lines = [...lines, { text: scramble }];
   // console.log('lines:', lines);
   let maxFromLineCount: number;
@@ -189,7 +200,7 @@ const calcMoveTextSize = (lines: SolutionLine[], scramble: string ): number => {
   let maxFromLineWidth = 24;
   const longestLine = lines.reduce((max, line) => Math.max(max, line.text.length), 0);
   // set maxFromLineWidth based on longestLine, only the largest conditional triggers
-  if (longestLine >= 80) {
+  if (longestLine >= 73) {
     maxFromLineWidth = 24;
   } else if (longestLine >= 60) {
     maxFromLineWidth = 30;
@@ -204,7 +215,7 @@ const calcMoveTextSize = (lines: SolutionLine[], scramble: string ): number => {
   }
   // console.log(`Longest line: ${longestLine}, maxFromLineWidth: ${maxFromLineWidth}`);
   // console.log(`Lines count: ${lines.length}, maxFromLineCount: ${maxFromLineCount}`);
-  return Math.min(maxFromLineCount, maxFromLineWidth)
+  return Math.min(maxFromLineCount, maxFromLineWidth) * scale;
 };
 
 type CreateElement = (type: string, props: Record<string, unknown> | null, ...children: ReactNode[]) => ReactNode;
@@ -215,34 +226,37 @@ export interface ScreenshotContentProps {
   // react createElement function, passed in to avoid importing React in this file
   // for server-side usage where React may not be available in the same way
   createElement: CreateElement;
+  scale?: number;
 }
 
 // generates JSX-compatible content for use with Next.js ImageResponse/Satori.
 // returns a tree of elements created via the passed createElement function.
-export function createScreenshotContent({ data, createElement }: ScreenshotContentProps): ReactNode {
-  const { scramble, renderedScramble, solutionLines, solveTime, totalMoves, tpsString, title } = data;
-  const styles = getScreenshotStyles();
-  
+export function createPreviewContent({ data, createElement, scale = 1 }: ScreenshotContentProps): ReactNode {
+  const { scramble, renderedScramble, solutionLines, solveTime, totalMoves, tpsString, title, isScrambleOfTheDay } = data;
+  const styles = getPreviewStyles(scale);
+
   const h = createElement;
-  
+
   // render solution lines with icons, limit to maxLines lines with ellipsis if more
-  const moveTextSize = calcMoveTextSize(solutionLines, scramble);
+  const moveTextSize = calcMoveTextSize(solutionLines, scramble, scale);
   styles.solutionText.fontSize = moveTextSize;
   styles.textBlock.fontSize = moveTextSize;
-  
-  const iconSize = moveTextSize * 1.6; 
+
+  const iconSize = moveTextSize * 1.6;
 
   const maxLines = 10;
-  const linesToRender = solutionLines.length > maxLines ? solutionLines.slice(0, maxLines) : solutionLines;
+  const linesToRender = solutionLines.slice(0, maxLines);
   const solutionContent = linesToRender.map((line, index) => {
-    const icon = line.icon ? createStepIcon(line.icon, iconSize, h) : null;
-    
+    const icon = line.icon ? createStepIcon(line.icon, iconSize, h, line.hasEO) : null;
+
+    const lineText = line.renderedText || line.text;
+
     // placeholder div to maintain alignment when no icon
     const iconSlot = icon || h('div', { style: { width: iconSize, height: iconSize, flexShrink: 0 } });
-    
+
     return h('div', { key: index, style: styles.solutionLine },
       iconSlot,
-      h('span', { style: { ...styles.solutionText, whiteSpace: 'pre-wrap' } }, line.renderedText || line.text)
+      h('span', { style: { ...styles.solutionText, whiteSpace: 'nowrap' } }, lineText)
     );
   });
 
@@ -250,29 +264,34 @@ export function createScreenshotContent({ data, createElement }: ScreenshotConte
   if (solutionLines.length > maxLines) {
     const iconSlot = h('div', { style: { width: iconSize, height: iconSize, flexShrink: 0 } });
     solutionContent.push(
-      h('div', { key: 'ellipsis', style: { ...styles.solutionLine, marginTop: -12 } },
+      h('div', { key: 'ellipsis', style: { ...styles.solutionLine, marginTop: -12 * scale } },
         iconSlot,
         h('span', { style: styles.solutionText }, '...')
       )
     );
   }
-  
+
   return h('div', { style: styles.wrapper },
     // Left Column: All Moves
-    h('div', { style: styles.allMoves },
+    h('div', { style: { ...styles.allMoves, position: 'relative', overflow: 'hidden' } },
       // title && h('div', { style: styles.title }, title),
-      
+
       h('div', { style: { display: 'flex', flexDirection: 'column' } },
-        h('div', { style: styles.label }, 'Scramble'),
-        h('div', { style: { ...styles.textBlock, whiteSpace: 'pre-wrap' } }, renderedScramble || scramble)
+        h('div', { style: styles.label }, isScrambleOfTheDay ? '🦜 Scramble of the Day' : 'Scramble'),
+        h('div', { style: { display: 'flex', overflow: 'hidden' } },
+          h('div', { style: { ...styles.textBlock, whiteSpace: 'nowrap' } }, renderedScramble || scramble)
+        )
       ),
-      
-      h('div', { style: { display: 'flex', flexDirection: 'column', flex: 1, marginBottom: 8, overflow: 'hidden' } },
-        h('div', { style: styles.label }, 'Solution'),
-        h('div', { style: { display: 'flex', flexDirection: 'column', gap: 1, marginTop: 8 } }, ...solutionContent)
-      )
+
+      h('div', { style: styles.label }, 'Solution'),
+      h('div', { style: { display: 'flex', flexDirection: 'column', flex: 1, marginBottom: 8 * scale, overflow: 'hidden' } },
+        h('div', { style: { display: 'flex', flexDirection: 'column', gap: 1 * scale, marginTop: 8 * scale } }, ...solutionContent)
+      ),
+
+      // fade-out overlay for wide lines
+      h('div', { style: { position: 'absolute', right: -SCREENSHOT_STYLES.padding * scale, top: -SCREENSHOT_STYLES.padding * scale, bottom: -SCREENSHOT_STYLES.padding * scale, width: (48 + SCREENSHOT_STYLES.padding) * scale, background: `linear-gradient(to right, transparent, ${SCREENSHOT_STYLES.backgroundColor})` } })
     ),
-    
+
     // Right Column: Stats
     h('div', { style: styles.statsBox },
       h('div', { style: { display: 'flex', flexDirection: 'column', alignItems: 'flex-end' } },
@@ -380,7 +399,7 @@ export class ScreenshotManager {
       });
       // remove highlight from solution
       solutionClone.innerHTML = solutionClone.innerHTML.replace(
-        new RegExp(`<span class="${highlightClass}">`, 'g'), 
+        new RegExp(`<span class="${highlightClass}">`, 'g'),
         '<span class="text-primary-100">'
       );
 
@@ -388,13 +407,16 @@ export class ScreenshotManager {
       const solutionTextbox = solutionClone.querySelector('#solution') as HTMLElement | null;
       const scrambleEditable = scrambleClone.querySelector('div[contenteditable="true"]') as HTMLElement | null;
       const solutionEditable = solutionClone.querySelector('div[contenteditable="true"]') as HTMLElement | null;
-      const imageStack = solutionClone.querySelector('.flex.flex-col.items-center') as HTMLElement | null;
+      const iconStack = solutionClone.querySelector('.flex.flex-col.items-center') as HTMLElement | null;
 
-      // style solution textbox
+      // style solution textbox — remove max-height/overflow constraints from original DOM
       if (solutionTextbox) {
         Object.assign(solutionTextbox.style, {
           width: 'fit-content',
           minWidth: '0',
+          maxHeight: 'none',
+          overflow: 'visible',
+          height: 'auto',
         });
       }
 
@@ -410,7 +432,8 @@ export class ScreenshotManager {
           borderRadius: '0.125rem',
           boxSizing: 'border-box',
           lineHeight: '1.6',
-          minHeight: editableDiv === scrambleEditable ? '0' : editableDiv!.style.minHeight,
+          minHeight: '0',
+          height: 'auto',
         });
 
         // style child divs within contenteditable
@@ -440,10 +463,10 @@ export class ScreenshotManager {
 
       const statsSpan = document.createElement('span');
       statsSpan.style.whiteSpace = 'pre-line';
-      
+
       const watermarkSpan = document.createElement('span');
       watermarkSpan.textContent = 'Ao1K.com';
-      
+
       infoDiv.appendChild(statsSpan);
       infoDiv.appendChild(watermarkSpan);
 
@@ -455,7 +478,7 @@ export class ScreenshotManager {
 
       // calculate and apply unified width
       const minWidth = Math.max(300, Math.min(scrambleClone.offsetWidth, solutionClone.offsetWidth));
-      
+
       scrambleClone.style.width = `${minWidth}px`;
       solutionClone.style.width = `${minWidth}px`;
       infoDiv.style.width = `${minWidth}px`;
@@ -472,19 +495,25 @@ export class ScreenshotManager {
       statsSpan.textContent = statsText;
 
       // sync icon heights with text line heights after reflow
-      if (solutionEditable && imageStack) {
+      if (solutionEditable && iconStack) {
         const textLineDivs = solutionEditable.querySelectorAll(':scope > div');
-        const iconContainers = imageStack.children;
-        
+        const iconContainers = iconStack.children;
+
+        // measure the actual icon line height from the first icon container
+        const firstIcon = iconContainers[0] as HTMLElement | undefined;
+        let iconLineHeight = firstIcon?.getBoundingClientRect().height || 28;
+
         for (let i = 0; i < Math.min(textLineDivs.length, iconContainers.length); i++) {
           const textDiv = textLineDivs[i] as HTMLElement;
           const iconContainer = iconContainers[i] as HTMLElement;
           const textHeight = textDiv.getBoundingClientRect().height;
-          const lineWraps = Math.round((textHeight + 5) / 28);
-          const calculatedHeight = lineWraps * 28.4;
-          
+          const lineWraps = Math.round((textHeight + 5) / iconLineHeight);
+          const calculatedHeight = lineWraps * iconLineHeight;
+
+          // apply height to both the text line and icon container
+          textDiv.style.height = `${calculatedHeight}px`;
           iconContainer.style.height = `${calculatedHeight}px`;
-          
+
           const stepIconDiv = iconContainer.querySelector('[id^="step-icon-"]') as HTMLElement | null;
           if (stepIconDiv) {
             stepIconDiv.style.height = `${calculatedHeight}px`;

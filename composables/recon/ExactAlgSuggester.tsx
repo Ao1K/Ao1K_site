@@ -187,7 +187,7 @@ export default class AlgSuggester {
 
     results.sort((a, b) => b.score - a.score);
     const limit = q.limit ?? 100;
-    return results.slice(0, limit).map(r => ({ id: r.doc.alg, hash: r.doc.hash, score: r.score, matches: r.matches }));
+    return results.slice(0, limit).map(r => ({ id: r.doc.alg, hash: r.doc.hash, eoValue: r.doc.eoValue as number | undefined, score: r.score, matches: r.matches }));
   }
 
   /**

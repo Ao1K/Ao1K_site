@@ -102,6 +102,7 @@ interface EditorProps {
   ref?: React.Ref<ImperativeRef>;
   suggestionsRef?: React.MutableRefObject<Suggestion[] | undefined>;
   initialContent?: string;
+  lineHeight?: number;
 }
 
 export interface ImperativeRef {
@@ -125,7 +126,8 @@ function MovesTextEditor({
   setHTML,
   ref,
   suggestionsRef,
-  initialContent
+  initialContent,
+  lineHeight,
 }: EditorProps) {
 
   const suggestions = suggestionsRef?.current;
@@ -285,6 +287,10 @@ function MovesTextEditor({
       return `${face}3`;
     } },
     
+    // UD/DU with double/triple moves - just add a space (before the grouping patterns catch them)
+    { pattern: /([UD])([23])('?)([DU])/g, replacement: '$1$2$3 $4' },
+    { pattern: /([UD])('?)([DU][23])/g, replacement: '$1$2 $3' },
+
     // Special UD/DU patterns
     { pattern: /U('?)(?!2)D('?)(?!2)\s/g, replacement: '(U$1 D$2) ' },
     { pattern: /D('?)(?!2)U('?)(?!2)\s/g, replacement: '(U$2 D$1) ' },
@@ -1923,11 +1929,12 @@ function MovesTextEditor({
         contentEditable
         ref={contentEditableRef}
         className={`
-          text-lg text-left ff-space-adjust break-normal p-2
+          text-[1.125rem] text-left ff-space-adjust break-normal p-2
           min-h-[4.7rem]
-          rounded-sm whitespace-pre-wrap 
+          rounded-sm whitespace-pre-wrap
           border border-neutral-600 focus:border-primary-100 hover:border-primary-100
           outline-none resize-none caret-primary-200 bg-primary-800 `}
+        style={{ lineHeight: lineHeight ? `${lineHeight}px` : '1.75rem' }}
         onInput={() => handleInput(true)}
         onCopy={handleCopy}
         onPaste={handlePaste}

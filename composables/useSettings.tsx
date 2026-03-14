@@ -11,13 +11,22 @@ export const DEFAULT_CUBE_COLORS = {
   back: '#003CFF',   // blue
   right: '#FF0000',  // red
   left: '#FF7F00',   // orange
+  eo: '#FF00FF',     // magenta
 };
 
 export type CubeColors = typeof DEFAULT_CUBE_COLORS;
 
+export type IconSize = 'small' | 'medium';
+
+export const ICON_SIZE_CONFIG = {
+  small:  { lineHeight: 28, iconWidth: 28 },
+  medium: { lineHeight: 36, iconWidth: 36 },
+} as const;
+
 export interface AppSettings {
   cubeColors: CubeColors;
   showPlayerControls: boolean;
+  iconSize: IconSize;
 }
 
 const SETTINGS_COOKIE_KEY = 'ao1kSettings';
@@ -32,23 +41,32 @@ function readSettingsFromCookie(): AppSettings {
       const result = {
         cubeColors: { ...DEFAULT_CUBE_COLORS, ...parsed.cubeColors },
         showPlayerControls: parsed.showPlayerControls ?? true,
+        iconSize: (parsed.iconSize === 'small' ? 'small' : 'medium') as IconSize,
       };
       return result;
     } catch (e) {
       // Invalid JSON, return defaults
     }
   }
-  return { 
+  return {
     cubeColors: { ...DEFAULT_CUBE_COLORS },
     showPlayerControls: true,
+    iconSize: 'medium' as IconSize,
   };
 }
 
 // Synced settings hook - manages cube colors with cross-tab synchronization
 export function useSyncedSettings() {
-  const [settings, setSettings] = useState<AppSettings>(() => readSettingsFromCookie());
+  const [settings, setSettings] = useState<AppSettings>({
+    cubeColors: { ...DEFAULT_CUBE_COLORS },
+    showPlayerControls: true,
+    iconSize: 'medium' as IconSize,
+  });
 
   useEffect(() => {
+    // hydrate from cookie on mount
+    setSettings(readSettingsFromCookie());
+
     const channel = new BroadcastChannel(BROADCAST_CHANNEL_NAME);
 
     const syncFromCookie = () => {
@@ -124,5 +142,19 @@ export function useShowControls(): [boolean, (value: boolean) => void] {
   }, [settings, updateSettings]);
   
   return [settings.showPlayerControls, setShowControls] as const;
+}
+
+// Hook for icon size
+export function useIconSize(): [IconSize, (value: IconSize) => void] {
+  const { settings, updateSettings } = useSyncedSettings();
+
+  const setIconSize = useCallback((value: IconSize) => {
+    updateSettings({
+      ...settings,
+      iconSize: value,
+    });
+  }, [settings, updateSettings]);
+
+  return [settings.iconSize, setIconSize] as const;
 }
 
