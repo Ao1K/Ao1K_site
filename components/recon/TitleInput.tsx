@@ -33,7 +33,20 @@ const InputWithPlaceholder: React.FC<InputWithPlaceholderProps> = ({ solveTitle,
       if (context) {
         context.font = font;
         const textWidth = context.measureText(placeholder).width;
-        setPlaceholderText(textWidth + 10 > inputWidth ? '' : placeholder);
+        const fits = textWidth + 10 <= inputWidth;
+        setPlaceholderText(fits ? placeholder : '');
+        if (fits && placeholder === "Remove the title. It's cleaner.") {
+          const label = document.getElementById('title-label');
+          if (label) {
+            label.style.cursor = 'pointer';
+            label.onmouseenter = () => label.style.textDecoration = 'line-through';
+            label.onmouseleave = () => label.style.textDecoration = '';
+            label.onclick = () => {
+              const el = document.getElementById('title-area');
+              if (el) el.style.display = 'none';
+            };
+          }
+        }
       }
     };
 
@@ -50,8 +63,8 @@ const InputWithPlaceholder: React.FC<InputWithPlaceholderProps> = ({ solveTitle,
   }, []);
 
   return (
-    <div className="flex flex-grow flex-nowrap items-center text-center min-w-[200px]">
-      <div className="text-dark_accent text-xl font-medium select-none">Title</div>
+    <div id="title-area" className="flex flex-grow flex-nowrap items-center text-center min-w-[200px]">
+      <div id="title-label" className="text-dark_accent text-xl font-medium select-none">Title</div>
       <input
         id="title-input"
         ref={inputRef}

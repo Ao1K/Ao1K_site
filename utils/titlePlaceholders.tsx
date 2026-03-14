@@ -35,14 +35,14 @@ export const titlePlaceholders = [
   "Move notation is an abstraction. Fingertricks are ground truth.",
   "Learn keyhole!",
   "Learn EO!",
-  "Learn the fingertricks for algorithms from videos!", // remove if/when fingertrick info added
+  "Learn fingertricks from videos!", // remove if/when fingertrick info added
   "Learn dual or full color neutrality!",
   "Learn full PLL, then full OLL, then focus on F2L efficiency",
   "Use untimed solves to fix bad habits and learn new techniques",
-  "A skillful CFOP solve is roughly 60 stm on average",
+  "CFOP tends to be about 60 stm",
   "In general, improve efficiency before turn speed",
   "Prioritize practicing what you're bad at",
-  "Working on lookahead before 15 sec average is a distraction",
+  "Lookahead before 15 sec avg is a distraction",
   "Use spaced repetition to learn algs effectively",
   "Seeing how F2L pairs unsolve and resolve can help you learn algs",
   "Rarer types of moves add risk to your solve",
@@ -52,7 +52,6 @@ export const titlePlaceholders = [
   "yRUL moves are best for lookahead",
   "You're more likely to practice if it's fun",
   "Use rotations to deal with bad edge orientation",
-  "If you want a tutor, you need a friend or money",
   "Study example solves",
   "'Rough' is not a turning style",
   "Use the tips of your fingers to turn the cube",
@@ -69,11 +68,13 @@ export const titlePlaceholders = [
   "Sub-Yiheng?",
   "Don't slide!",
   "I don't know",
+  "Source: vibes",
   "Lisan al-Giab?",
   "That is so qwiii",
   "Worst solve ever",
   "Not a good solve",
   "Oops, misscramble",
+  "3rd pair EO is OO",
   'One of the solves',
   "Roux? What's that?",
   'Get your ass to Mars',
@@ -87,7 +88,6 @@ export const titlePlaceholders = [
   "Ladders! I go up and I go down.",
   "Your mom will never be impressed",
   "Hold cube gently, like a hamburger",
-  "That one's actually just a bug. Sorry.",
   "I am just a ball of mistakes and this is my life",
   
   // meta
@@ -108,7 +108,6 @@ export const titlePlaceholders = [
   "Never code at 2 am",
   "Now 12% messier code!",
   "Spacebar optional!",
-  "Remove the title. It's cleaner."
-
-  
+  "Remove the title. It's cleaner.",
+  "That one's actually just a bug. Sorry.", 
 ]
