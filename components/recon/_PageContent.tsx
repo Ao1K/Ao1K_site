@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef, useEffect, lazy, Suspense, useCallback } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, lazy, Suspense, useCallback } from 'react';
 import MovesTextEditor from "../../components/recon/MovesTextEditor";
 import SpeedDropdown from "../../components/recon/SpeedDropdown";
 
@@ -28,8 +28,8 @@ import TopButton from "../../components/recon/TopButton";
 import CopySolveDropdown from "../../components/recon/CopySolveDropdown";
 import { customDecodeURL, customEncodeURL } from '../../composables/recon/urlEncoding';
 import VideoHelpPrompt from '../../components/recon/VideoHelpPrompt';
-import IconStack from './IconStack';
-import { useIconSize, ICON_SIZE_CONFIG } from '../../composables/useSettings';
+import IconStack, { computeLineIconData } from './IconStack';
+import { useIconSize, ICON_SIZE_CONFIG, useCubeColors } from '../../composables/useSettings';
 import { SimpleCube } from '../../composables/recon/SimpleCube';
 import { SimpleCubeInterpreter } from '../../composables/recon/SimpleCubeInterpreter';
 import type { StepInfo, Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
@@ -66,6 +66,7 @@ let currentSpeed = 30;
 export default function Recon({ dailyScramble = "", videoHelpDismissed = false }: { dailyScramble?: string, videoHelpDismissed?: boolean }) {
   const [iconSize] = useIconSize();
   const solutionLineHeight = ICON_SIZE_CONFIG[iconSize].lineHeight;
+  const [cubeColors] = useCubeColors();
 
   const allMovesRef = useRef<string[][][]>([[[]], [[]]]);
   const moveLocation = useRef<[number, number, number]>([0, 0, 0]);
@@ -113,8 +114,9 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
 
   const totalMoves = allMovesRef.current[1].flat(2).filter(move => move.match(/[^xyz2']/g)).length
 
-  const isRealStep = (s: StepInfo) => s.type !== 'eo' || s.step === '0';
-  const hasIcons = lineSteps.some(entry => entry.stepInfo.some(isRealStep));
+  const solutionLines = allMovesRef.current[1]?.map((move: string[]) => move.join(' ')) || [''];
+  const lineIconData = computeLineIconData(solutionLines, lineSteps.map(item => item.stepInfo), cubeColors);
+  const hasIcons = lineIconData.some(d => !d.isEmptyIcon);
 
   const MAX_EDITOR_HISTORY = 100;
   const moveHistory = useRef<MoveHistory>({ history: [['', '']], index: 0, MAX_HISTORY: MAX_EDITOR_HISTORY, status: 'loading' });
@@ -1479,7 +1481,7 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
                   moves={allMovesRef.current}
                   position={moveLocation.current}
                   editableElement={solutionMethodsRef.current?.getElement() || null}
-                  lineSteps={lineSteps.map(item => item.stepInfo)}
+                  lineIconData={lineIconData}
                 />
                 <div className="h-6 z-10" /> {/* buffer at bottom so last line of icons doesn't get cut off */}
               </div>

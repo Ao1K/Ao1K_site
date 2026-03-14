@@ -1,7 +1,7 @@
-import React, { useRef, useState, useEffect, useMemo } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import debounce from 'lodash.debounce';
 import type { StepInfo } from '../../composables/recon/SimpleCubeInterpreter';
-import { useSyncedSettings, ICON_SIZE_CONFIG } from '../../composables/useSettings';
+import { useSyncedSettings, ICON_SIZE_CONFIG, type CubeColors } from '../../composables/useSettings';
 import { getLineStepInfo } from '../../composables/recon/getLineStepInfo';
 import { getStepIconDescriptor, type ColorConfig, type IconDescriptor, type SvgShape } from '@/composables/recon/stepIconDescriptors';
 
@@ -16,24 +16,61 @@ function isColorDark(hexColor: string): boolean {
   return luminance < 0.5;
 }
 
+export interface LineIconDatum {
+  line: string;
+  isWhitespace: boolean;
+  compiledStepInfo: StepInfo | null;
+  descriptor: IconDescriptor | null;
+  isEmptyIcon: boolean;
+}
+
+export function computeLineIconData(
+  solutionLines: string[],
+  lineSteps: StepInfo[][] | null,
+  cubeColors: CubeColors,
+): LineIconDatum[] {
+  const colorConfig: ColorConfig = {
+    up: cubeColors.up,
+    down: cubeColors.down,
+    front: cubeColors.front,
+    back: cubeColors.back,
+    right: cubeColors.right,
+    left: cubeColors.left,
+    gray: '#888888',
+    darkBg: '#161018',
+  };
+  const getCrossBg = (crossColor: string) =>
+    isColorDark(crossColor) ? '#ECE6EF' : '#161018';
+
+  return solutionLines.map((line, index) => {
+    const isWhitespace = line.trim() === '';
+    const currentSteps = lineSteps?.[index] || [];
+    const prevSteps = lineSteps?.slice(0, index).flat() || [];
+    const { stepInfo: compiledStepInfo, hasEO } = getLineStepInfo(currentSteps, prevSteps);
+    const eoColor = hasEO ? cubeColors.eo : undefined;
+    const descriptor = !isWhitespace && compiledStepInfo
+      ? getStepIconDescriptor(colorConfig, compiledStepInfo, { getCrossBg, eoColor })
+      : null;
+    const isEmptyIcon = !descriptor || (descriptor.shapes.length === 0 && !descriptor.eoBorderColor);
+    return { line, isWhitespace, compiledStepInfo, descriptor, isEmptyIcon };
+  });
+}
+
 interface IconStackProps {
   position: [number, number, number] | null;
   moves: string[][][] | null;
-  lineSteps: StepInfo[][] | null;
+  lineIconData: LineIconDatum[];
   editableElement?: HTMLElement | null;
 }
 
-const IconStack = ({position, moves, lineSteps, editableElement}: IconStackProps) => {
-  // const scramble = moves?.[0]?.map((move) => move.join(' ')).join(' ') || '';
-  const solutionLines = moves?.[1]?.map((move) => move.join(' ')) || [''];
-
+const IconStack = ({position, moves, lineIconData, editableElement}: IconStackProps) => {
   const { settings } = useSyncedSettings();
-  const cubeColors = settings.cubeColors;
   const { lineHeight: iconLineHeight, iconWidth } = ICON_SIZE_CONFIG[settings.iconSize];
   
   const [, forceRender] = useState({});
   const observerRef = useRef<ResizeObserver | null>(null);
   const prevHeightsRef = useRef<string>('');
+
 
   const getCurrentDivHeights = (element: HTMLElement) => {
     const divs = element.querySelectorAll('div');
@@ -97,20 +134,6 @@ const IconStack = ({position, moves, lineSteps, editableElement}: IconStackProps
   }, [editableElement]);
 
   const divHeights = editableElement ? getCurrentDivHeights(editableElement) : [];
-
-  const colorConfig: ColorConfig = useMemo(() => ({
-    up: cubeColors.up,
-    down: cubeColors.down,
-    front: cubeColors.front,
-    back: cubeColors.back,
-    right: cubeColors.right,
-    left: cubeColors.left,
-    gray: '#888888',
-    darkBg: '#161018',
-  }), [cubeColors]);
-
-  const getCrossBg = (crossColor: string) =>
-    isColorDark(crossColor) ? '#ECE6EF' : '#161018';
 
   const renderShape = (shape: SvgShape, i: number) => {
     if (shape.type === 'rect') return <rect key={i} x={shape.x} y={shape.y} width={shape.width} height={shape.height} fill={shape.fill} />;
@@ -184,31 +207,19 @@ const IconStack = ({position, moves, lineSteps, editableElement}: IconStackProps
     );
   };
 
+  const lineData = lineIconData.map((iconDatum, index) => {
+    const rawDivHeight = divHeights[index]?.height || iconLineHeight;
+    const lineWraps = Math.round((rawDivHeight + 5) / iconLineHeight);
+    const calculatedHeight = lineWraps * iconLineHeight;
+    const hoverHeight = Math.max(iconLineHeight * 2, calculatedHeight);
+    return { ...iconDatum, calculatedHeight, hoverHeight };
+  });
+
+
+
   return (
     <div className="flex flex-col items-center justify-start pt-1 border-none" style={{ width: `${iconWidth}px` }}>
-      {solutionLines.map((line, index) => {
-        const isWhitespace = line.trim() === '';
-
-        // Calculate line wraps based on div height (with wiggle room)
-        const rawDivHeight = divHeights[index]?.height || iconLineHeight;
-        const lineWraps = Math.round((rawDivHeight + 5) / iconLineHeight); // +5px wiggle room
-        const calculatedHeight = lineWraps * iconLineHeight;
-
-        // 2x group-hover scale
-        const hoverHeight = Math.max(iconLineHeight * 2, calculatedHeight);
-
-        const currentSteps = lineSteps?.[index] || [];
-        const prevSteps = lineSteps?.slice(0, index).flat() || [];
-        const { stepInfo: compiledStepInfo, hasEO } = getLineStepInfo(currentSteps, prevSteps);
-
-        // compute descriptor once for non-whitespace lines
-        const eoColor = hasEO ? cubeColors.eo : undefined;
-        const descriptor = !isWhitespace && compiledStepInfo
-          ? getStepIconDescriptor(colorConfig, compiledStepInfo, { getCrossBg, eoColor })
-          : null;
-
-        // completely empty icon (no shapes, no EO border) — skip hover
-        const isEmptyIcon = !descriptor || (descriptor.shapes.length === 0 && !descriptor.eoBorderColor);
+      {lineData.map(({ line, isWhitespace, calculatedHeight, hoverHeight, compiledStepInfo, descriptor, isEmptyIcon }, index) => {
         const enableHover = !isWhitespace && !isEmptyIcon;
 
         return (
