@@ -16,10 +16,10 @@ export type Token = {
 
 const validTokenTypes = ["move"]; // add "hashtag" if feature ever implemented
 
-export default function validationToArray(validation: MovesParsing[]): Token[] {
+export default function validationToArray(validation: MovesParsing[], maxMoves?: number): Token[] {
   const newValidation = JSON.parse(JSON.stringify(validation));
 
-  degroup(newValidation);
+  degroup(newValidation, false, maxMoves);
 
   // console.log('newValidation after degrouping: ');
   // console.table(newValidation);
@@ -54,7 +54,7 @@ const addDisplayOrder = (validation: MovesParsing[]): MovesDisplayValidation[] =
   return displayValidation;
 };
 
-export const degroup = (validation: MovesParsing[] | MovesDisplayValidation[], storeDisplayOrder: boolean = false) => {
+export const degroup = (validation: MovesParsing[] | MovesDisplayValidation[], storeDisplayOrder: boolean = false, maxMoves?: number) => {
   if (!validation || validation.length === 0) {
     return;
   }
@@ -70,7 +70,7 @@ export const degroup = (validation: MovesParsing[] | MovesDisplayValidation[], s
       const reps = findReps(closeParenIndex, validation);
 
       //console.log('reps: ' + reps);
-      reps ? expandGroup(startParenIndex, closeParenIndex, reps, validation) : null;
+      reps ? expandGroup(startParenIndex, closeParenIndex, reps, validation, maxMoves) : null;
     }
   }
 
@@ -137,13 +137,22 @@ function findReps(i: number, newValidation: MovesParsing[] | MovesDisplayValidat
   return reps
 }
 
-function expandGroup(start: number, end: number, reps: number, validation: MovesParsing[] | MovesDisplayValidation[]): MovesParsing[] | MovesDisplayValidation[] {
+function expandGroup(start: number, end: number, reps: number, validation: MovesParsing[] | MovesDisplayValidation[], maxMoves?: number): MovesParsing[] | MovesDisplayValidation[] {
 
   const disallowedTypes: string[] = ["hashtag"];
   
   //console.log('Start: ' + start + ' End: ' + end + ' Reps: ' + reps)
   if (start < 0 || end >= validation.length || start > end || reps <= 0) {
     throw new Error('Invalid indices or repetition count provided.');
+  }
+
+  if (maxMoves !== undefined) {
+    const groupLen = end - start; // chars being copied per repetition
+    const expandedCount = groupLen * (reps - 1);
+    const moveCountAfter = validation.filter(item => item[1] === 'move').length + expandedCount;
+    if (moveCountAfter > maxMoves) {
+      throw new Error(`Move limit of ${maxMoves} exceeded`);
+    }
   }
 
   let splicePoint = end + 1 + reps.toString().length;

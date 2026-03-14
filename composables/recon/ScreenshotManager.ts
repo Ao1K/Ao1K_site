@@ -52,8 +52,14 @@ export const SCREENSHOT_STYLES = {
 } as const;
 
 // returns inline style objects for use with Satori/ImageResponse
-export function getScreenshotStyles() {
+export function getPreviewStyles(scale = 1) {
   const s = SCREENSHOT_STYLES;
+  const p = (n: number) => Math.round(n * scale);
+
+  const textDecor = {
+    textShadow: '0 1px 0 rgba(0,0,0,.15)',
+    WebkitTextStroke: '1px rgba(0,0,0,0.15)',
+  } as CSSProperties;
 
   return {
     wrapper: {
@@ -62,7 +68,7 @@ export function getScreenshotStyles() {
       display: 'flex',
       flexDirection: 'row',
       backgroundColor: s.backgroundColor,
-      padding: s.padding,
+      padding: p(s.padding),
       fontFamily: 'system-ui, sans-serif',
       color: s.textColor,
     } as CSSProperties,
@@ -83,78 +89,84 @@ export function getScreenshotStyles() {
       alignItems: 'stretch',
       flexShrink: 0,
       height: `110%`,
-      marginRight: -s.padding,
-      marginTop: -s.padding,
-      marginBottom: -s.padding,
+      marginRight: p(-s.padding),
+      marginTop: p(-s.padding),
+      marginBottom: p(-s.padding),
       borderLeft: `1px solid ${s.borderColor}`,
       backgroundColor: s.wrapperBg,
     } as CSSProperties,
 
     title: {
-      fontSize: s.fontSize.xl,
+      fontSize: p(s.fontSize.xl),
       fontWeight: 'bold',
-      marginBottom: 16,
+      marginBottom: p(16),
       color: '#fff',
+      ...textDecor,
     } as CSSProperties,
 
     label: {
-      fontSize: s.fontSize.xl,
+      fontSize: p(s.fontSize.xl),
       fontWeight: 'bold',
       color: '#ACC8D7',
-      marginBottom: 2,
+      marginBottom: p(2),
+      ...textDecor,
     } as CSSProperties,
 
     textBlock: {
-      fontSize: s.fontSize.large,
+      fontSize: p(s.fontSize.large),
       lineHeight: s.lineHeight,
-      marginBottom: 2,
+      marginBottom: p(2),
       fontFamily: 'monospace',
       display: 'flex',
+      ...textDecor,
     } as CSSProperties,
 
     solutionLine: {
       display: 'flex',
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 10,
+      gap: p(10),
     } as CSSProperties,
 
     solutionText: {
-      fontSize: s.fontSize.large,
+      fontSize: p(s.fontSize.large),
       lineHeight: s.lineHeight,
       fontFamily: 'monospace',
       color: '#d4d4d4',
+      ...textDecor,
     } as CSSProperties,
 
     stats: {
-      fontSize: s.fontSize.xl + 8,
+      fontSize: p(s.fontSize.xl + 8),
       display: 'flex',
-      maxWidth: '140px',
+      maxWidth: `${p(140)}px`,
       color: s.textColor,
-      margin: s.padding,
+      margin: p(s.padding),
       textAlign: 'right',
+      ...textDecor,
     } as CSSProperties,
 
     statBreak: {
       height: 1,
       backgroundColor: s.borderColor,
       width: '100%',
-      margin: '4px 0',
+      margin: `${p(4)}px 0`,
     } as CSSProperties,
 
     watermark: {
-      fontSize: 36,
+      fontSize: p(36),
       width: '100%',
       color: s.backgroundColor,
       backgroundColor: s.primaryColor,
-      padding: '4px 8px',
-      marginBottom: s.padding,
+      padding: `${p(4)}px ${p(8)}px`,
+      marginBottom: p(s.padding),
       textAlign: 'right',
+      ...textDecor,
     } as CSSProperties,
   };
 }
 
-const calcMoveTextSize = (lines: SolutionLine[], scramble: string): number => {
+const calcMoveTextSize = (lines: SolutionLine[], scramble: string, scale = 1): number => {
   lines = [...lines, { text: scramble }];
   // console.log('lines:', lines);
   let maxFromLineCount: number;
@@ -203,7 +215,7 @@ const calcMoveTextSize = (lines: SolutionLine[], scramble: string): number => {
   }
   // console.log(`Longest line: ${longestLine}, maxFromLineWidth: ${maxFromLineWidth}`);
   // console.log(`Lines count: ${lines.length}, maxFromLineCount: ${maxFromLineCount}`);
-  return Math.min(maxFromLineCount, maxFromLineWidth)
+  return Math.min(maxFromLineCount, maxFromLineWidth) * scale;
 };
 
 type CreateElement = (type: string, props: Record<string, unknown> | null, ...children: ReactNode[]) => ReactNode;
@@ -214,18 +226,19 @@ export interface ScreenshotContentProps {
   // react createElement function, passed in to avoid importing React in this file
   // for server-side usage where React may not be available in the same way
   createElement: CreateElement;
+  scale?: number;
 }
 
 // generates JSX-compatible content for use with Next.js ImageResponse/Satori.
 // returns a tree of elements created via the passed createElement function.
-export function createPreviewContent({ data, createElement }: ScreenshotContentProps): ReactNode {
+export function createPreviewContent({ data, createElement, scale = 1 }: ScreenshotContentProps): ReactNode {
   const { scramble, renderedScramble, solutionLines, solveTime, totalMoves, tpsString, title, isScrambleOfTheDay } = data;
-  const styles = getScreenshotStyles();
+  const styles = getPreviewStyles(scale);
 
   const h = createElement;
 
   // render solution lines with icons, limit to maxLines lines with ellipsis if more
-  const moveTextSize = calcMoveTextSize(solutionLines, scramble);
+  const moveTextSize = calcMoveTextSize(solutionLines, scramble, scale);
   styles.solutionText.fontSize = moveTextSize;
   styles.textBlock.fontSize = moveTextSize;
 
@@ -251,7 +264,7 @@ export function createPreviewContent({ data, createElement }: ScreenshotContentP
   if (solutionLines.length > maxLines) {
     const iconSlot = h('div', { style: { width: iconSize, height: iconSize, flexShrink: 0 } });
     solutionContent.push(
-      h('div', { key: 'ellipsis', style: { ...styles.solutionLine, marginTop: -12 } },
+      h('div', { key: 'ellipsis', style: { ...styles.solutionLine, marginTop: -12 * scale } },
         iconSlot,
         h('span', { style: styles.solutionText }, '...')
       )
@@ -271,12 +284,12 @@ export function createPreviewContent({ data, createElement }: ScreenshotContentP
       ),
 
       h('div', { style: styles.label }, 'Solution'),
-      h('div', { style: { display: 'flex', flexDirection: 'column', flex: 1, marginBottom: 8, overflow: 'hidden' } },
-        h('div', { style: { display: 'flex', flexDirection: 'column', gap: 1, marginTop: 8 } }, ...solutionContent)
+      h('div', { style: { display: 'flex', flexDirection: 'column', flex: 1, marginBottom: 8 * scale, overflow: 'hidden' } },
+        h('div', { style: { display: 'flex', flexDirection: 'column', gap: 1 * scale, marginTop: 8 * scale } }, ...solutionContent)
       ),
 
       // fade-out overlay for wide lines
-      h('div', { style: { position: 'absolute', right: -SCREENSHOT_STYLES.padding, top: -SCREENSHOT_STYLES.padding, bottom: -SCREENSHOT_STYLES.padding, width: 48 + SCREENSHOT_STYLES.padding, background: `linear-gradient(to right, transparent, ${SCREENSHOT_STYLES.backgroundColor})` } })
+      h('div', { style: { position: 'absolute', right: -SCREENSHOT_STYLES.padding * scale, top: -SCREENSHOT_STYLES.padding * scale, bottom: -SCREENSHOT_STYLES.padding * scale, width: (48 + SCREENSHOT_STYLES.padding) * scale, background: `linear-gradient(to right, transparent, ${SCREENSHOT_STYLES.backgroundColor})` } })
     ),
 
     // Right Column: Stats

@@ -2,7 +2,7 @@
 
 import { ImageResponse } from 'next/og';
 import { customDecodeURL } from '../../../composables/recon/urlEncoding';
-import { createPreviewContent, type ScreenshotData, type SolutionLine } from '../../../composables/recon/ScreenshotManager';
+import { createPreviewContent, type ScreenshotData as PreviewData, type SolutionLine } from '../../../composables/recon/ScreenshotManager';
 import { SimpleCube } from '../../../composables/recon/SimpleCube';
 import { SimpleCubeInterpreter, type StepInfo } from '../../../composables/recon/SimpleCubeInterpreter';
 import parseText from '../../../composables/recon/validateTextInput';
@@ -12,6 +12,9 @@ import { fetchDailyScramble } from '../../../utils/fetchDailyScramble';
 import React from 'react';
 
 export const runtime = 'nodejs';
+
+const PREVIEW_SCALE = 1; // typical value = 1
+
 
 // cache Rubik font data for Satori rendering
 let rubikRegularData: ArrayBuffer | null = null;
@@ -126,10 +129,19 @@ export async function GET(request: Request) {
     // Decode params
     const scramble = decodeURIComponent(customDecodeURL(searchParams.get('scramble') || ''));
     const solution = decodeURIComponent(customDecodeURL(searchParams.get('solution') || ''));
-    console.log('[OG Route] Decoded solution:', solution);
     const time = searchParams.get('time');
     const title = customDecodeURL(searchParams.get('title') || '');
-    
+
+    // reject payloads that are too large to prevent DoS via expensive parsing/rendering
+    const MAX_MOVES_LEN = 2000;
+    const MAX_TITLE_LEN = 200;
+    if (scramble.length > MAX_MOVES_LEN || solution.length > MAX_MOVES_LEN) {
+      return new Response('Input too large', { status: 400 });
+    }
+    if (title.length > MAX_TITLE_LEN) {
+      return new Response('Title too large', { status: 400 });
+    }
+
     const preview = searchParams.get('preview');
     const showPreview = preview !== '0';
     if (!showPreview) {
@@ -165,8 +177,8 @@ export async function GET(request: Request) {
     }
 
     const imageOptions = {
-      width: 1200,
-      height: 630,
+      width: 1200 * PREVIEW_SCALE,
+      height: 630 * PREVIEW_SCALE,
     };
 
     // Scramble processing
@@ -188,7 +200,7 @@ export async function GET(request: Request) {
     }
 
     const scrambleParsed = parseText(cleanScramble);
-    const scrambleTokens = validationToArray(scrambleParsed);
+    const scrambleTokens = validationToArray(scrambleParsed, 300);
     const scrambleMoves = scrambleTokens.map(t => t.value);
     const renderedScramble = renderColoredText(cleanScramble);
 
@@ -199,9 +211,8 @@ export async function GET(request: Request) {
     const solutionData = solutionLinesText.map(lineText => {
       // Parse for logic (moves)
       const parsed = parseText(lineText);
-      const tokens = validationToArray(parsed);
+      const tokens = validationToArray(parsed, 300);
       const moves = tokens.map(t => t.value);
-      console.log('moves: ', moves);
       
       // Parse for display (colors)
       const rendered = renderColoredText(lineText);
@@ -249,7 +260,7 @@ export async function GET(request: Request) {
       console.error('Failed to fetch daily scramble for comparison:', e);
     }
 
-    const screenshotData: ScreenshotData = {
+    const previewData: PreviewData = {
       scramble: cleanScramble,
       renderedScramble: renderedScramble,
       solutionLines,
@@ -263,7 +274,7 @@ export async function GET(request: Request) {
     const rubikFonts = await getRubikFonts();
 
     return new ImageResponse(
-      createPreviewContent({ data: screenshotData, createElement: React.createElement }) as React.ReactElement,
+      createPreviewContent({ data: previewData, createElement: React.createElement, scale: PREVIEW_SCALE }) as React.ReactElement,
       {
         ...imageOptions,
         fonts: [
@@ -283,6 +294,9 @@ export async function GET(request: Request) {
       }
     );
   } catch (e: any) {
+    if (e.message?.startsWith('Move limit')) {
+      return new Response(e.message, { status: 400 });
+    }
     console.log(`${e.message}`);
     return new Response(`Failed to generate the image`, {
       status: 500,
