@@ -25,8 +25,8 @@ export default function ReconstructV04() {
     undo_redo_done: true,
   });
 
-  const [editorHTML, setEditorHTML] = useState<string>("<div>R U R' U' // this is a comment <br></div><div>R U R' U' / this is not<br></div><div>R U R' U' \\\\ you need to be banned</div>");
-  const [editorHTML2, setEditorHTML2] = useState<string>("R2 M F 🏃‍♂️🛹🤘 S R r B // xcross + a sweet kickflip");
+  const [editorHTML, setEditorHTML] = useState<string>("");
+  const [editorHTML2, setEditorHTML2] = useState<string>("");
 
   const handleTrackMoves = () => {};
   const handleUpdateHistory = () => {};
@@ -81,6 +81,7 @@ export default function ReconstructV04() {
           updateHistoryBtns={handleUpdateHistory}
           html={editorHTML}
           setHTML={setEditorHTML}
+          initialContent={"<div>R U R' U' // this is a comment <span class=\"paste-marker\"></span><br></div><div>R U R' U' / this is not<span class=\"paste-marker\"></span><br></div><div>R U R' U' \\\\ you need to be banned<span class=\"paste-marker\"></span><br></div>"}
         />
       </div>
       <div className="flex flex-col gap-6 pt-6">
@@ -95,6 +96,7 @@ export default function ReconstructV04() {
           updateHistoryBtns={handleUpdateHistory}
           html={editorHTML2}
           setHTML={setEditorHTML2}
+          initialContent={"<div>R2 M F 🏃‍♂️🛹🤘 S R r B // xcross + a sweet kickflip<span class=\"paste-marker\"></span><br></div>"}
         />
       </div>
       <div className="flex flex-row gap-4 min-w-[50px] py-6">

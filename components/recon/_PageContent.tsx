@@ -1438,7 +1438,7 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
         </div>
       </div>
       <div id="player-box" className="px-3 relative flex flex-col mt-6 w-full justify-center items-center">
-        <div id="cube_model" className="flex h-full aspect-video max-h-96 min-h-[200px] bg-primary-900 select-none z-30 w-[100%]">
+        <div id="cube_model" className="flex h-full aspect-video max-h-96 min-h-[200px] bg-primary-900 select-none z-20 w-[100%]">
           <Suspense fallback={<div className="flex text-xl w-full h-full justify-center items-center text-primary-100">Loading cube...</div>}>
             <TwistyPlayer
               speed={speed}

@@ -65,7 +65,7 @@ export default function CopySolveDropdown({ onCopyText, onScreenshot, alert, set
   }, []);
 
   return (
-    <div id="copy-solve-dropdown" className="relative inline-block group z-30">
+    <div id="copy-solve-dropdown" className="relative inline-block group z-20">
       {isLoading && 
         <div className="py-1 px-2 -translate-y-[120%] absolute left-1/2 -translate-x-1/2 rounded-sm pointer-events-none select-none z-50 mb-2 whitespace-nowrap">
           <Image src="/LoadingSpinner.webp" alt="Loading..." width={32} height={32} className="" />

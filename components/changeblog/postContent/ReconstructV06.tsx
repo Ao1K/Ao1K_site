@@ -47,7 +47,7 @@ export default function ReconstructV06() {
         Another Teri talk yielded more algs. 
         She noted how a lot of algs on the site do not have their &quot;y2&quot; form.
         For example, applying &quot;y2&quot; to R U R&apos; gives L U L&apos;.
-        So I updated my scripting to apply y2 12 all F2L algs that have just {`<`}RU{`>`} and {`<`}LU{`>`} moves.
+        So I updated my scripting to apply y2 to all F2L algs that have just {`<`}RU{`>`} and {`<`}LU{`>`} moves.
         This added about 700 new algs, but honestly I lost count and I can&apos;t be asked to check.
       </div>
 
