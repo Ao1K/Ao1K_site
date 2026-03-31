@@ -10,23 +10,24 @@ import validationToArray from '../../../composables/recon/validationToMoves';
 import { getLineStepInfo } from '../../../composables/recon/getLineStepInfo';
 import { fetchDailyScramble } from '../../../utils/fetchDailyScramble';
 import React from 'react';
+import fs from 'fs';
+import path from 'path';
 
 export const runtime = 'nodejs';
 
-const PREVIEW_SCALE = 1; // typical value = 1
+const PREVIEW_SCALE = 0.7; // full size = 1
 
 
-// cache Rubik font data for Satori rendering
-let rubikRegularData: ArrayBuffer | null = null;
-let rubikBoldData: ArrayBuffer | null = null;
-async function getRubikFonts(): Promise<{ regular: ArrayBuffer; bold: ArrayBuffer }> {
+// load Rubik font data from bundled files for Satori rendering
+let rubikRegularData: Buffer | null = null;
+let rubikBoldData: Buffer | null = null;
+let dailyScramble: { date: string; scramble: string } | null = null;
+
+function getRubikFonts(): { regular: Buffer; bold: Buffer } {
   if (rubikRegularData && rubikBoldData) return { regular: rubikRegularData, bold: rubikBoldData };
-  const [regRes, boldRes] = await Promise.all([
-    fetch('https://fonts.gstatic.com/s/rubik/v31/iJWZBXyIfDnIV5PNhY1KTN7Z-Yh-B4i1UA.ttf'),
-    fetch('https://fonts.gstatic.com/s/rubik/v31/iJWZBXyIfDnIV5PNhY1KTN7Z-Yh-2Y-1UA.ttf'),
-  ]);
-  rubikRegularData = await regRes.arrayBuffer();
-  rubikBoldData = await boldRes.arrayBuffer();
+  const fontsDir = path.join(process.cwd(), 'app/api/og/fonts');
+  rubikRegularData = fs.readFileSync(path.join(fontsDir, 'Rubik-Regular.ttf'));
+  rubikBoldData = fs.readFileSync(path.join(fontsDir, 'Rubik-SemiBold.ttf'));
   return { regular: rubikRegularData, bold: rubikBoldData };
 }
 
@@ -116,7 +117,7 @@ function renderColoredText(text: string): React.ReactNode {
   }
 
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+    <div style={{ display: 'flex' }}>
       {elements}
     </div>
   );
@@ -251,10 +252,16 @@ export async function GET(request: Request) {
     // check if scramble matches daily scramble
     let isScrambleOfTheDay = false;
     try {
-      const dailyScramble = await fetchDailyScramble();
+      const today = new Date().toISOString().slice(0, 10);
+      if (!dailyScramble || dailyScramble.date !== today) {
+        const raw = await fetchDailyScramble();
+        if (raw) {
+          const s = raw.split('\n').slice(1).join('');
+          dailyScramble = { date: today, scramble: s };
+        }
+      }
       if (dailyScramble) {
-        const s = dailyScramble.split('\n').slice(1).join('');
-        isScrambleOfTheDay = s === scrambleMoves.join(' ');
+        isScrambleOfTheDay = dailyScramble.scramble === scrambleMoves.join(' ');
       }
     } catch (e) {
       console.error('Failed to fetch daily scramble for comparison:', e);
@@ -271,7 +278,7 @@ export async function GET(request: Request) {
       isScrambleOfTheDay,
     };
 
-    const rubikFonts = await getRubikFonts();
+    const rubikFonts = getRubikFonts();
 
     return new ImageResponse(
       createPreviewContent({ data: previewData, createElement: React.createElement, scale: PREVIEW_SCALE }) as React.ReactElement,
@@ -291,6 +298,9 @@ export async function GET(request: Request) {
             style: 'normal',
           },
         ],
+        headers: {
+          'Cache-Control': 'public, max-age=86400',
+        },
       }
     );
   } catch (e: any) {

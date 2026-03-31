@@ -56,11 +56,6 @@ export function getPreviewStyles(scale = 1) {
   const s = SCREENSHOT_STYLES;
   const p = (n: number) => Math.round(n * scale);
 
-  const textDecor = {
-    textShadow: '0 1px 0 rgba(0,0,0,.15)',
-    WebkitTextStroke: '1px rgba(0,0,0,0.15)',
-  } as CSSProperties;
-
   return {
     wrapper: {
       height: '100%',
@@ -101,7 +96,6 @@ export function getPreviewStyles(scale = 1) {
       fontWeight: 'bold',
       marginBottom: p(16),
       color: '#fff',
-      ...textDecor,
     } as CSSProperties,
 
     label: {
@@ -109,7 +103,6 @@ export function getPreviewStyles(scale = 1) {
       fontWeight: 'bold',
       color: '#ACC8D7',
       marginBottom: p(2),
-      ...textDecor,
     } as CSSProperties,
 
     textBlock: {
@@ -118,7 +111,6 @@ export function getPreviewStyles(scale = 1) {
       marginBottom: p(2),
       fontFamily: 'monospace',
       display: 'flex',
-      ...textDecor,
     } as CSSProperties,
 
     solutionLine: {
@@ -133,7 +125,6 @@ export function getPreviewStyles(scale = 1) {
       lineHeight: s.lineHeight,
       fontFamily: 'monospace',
       color: '#d4d4d4',
-      ...textDecor,
     } as CSSProperties,
 
     stats: {
@@ -143,7 +134,6 @@ export function getPreviewStyles(scale = 1) {
       color: s.textColor,
       margin: p(s.padding),
       textAlign: 'right',
-      ...textDecor,
     } as CSSProperties,
 
     statBreak: {
@@ -161,7 +151,6 @@ export function getPreviewStyles(scale = 1) {
       padding: `${p(4)}px ${p(8)}px`,
       marginBottom: p(s.padding),
       textAlign: 'right',
-      ...textDecor,
     } as CSSProperties,
   };
 }

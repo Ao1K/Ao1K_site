@@ -204,6 +204,8 @@ export function getLineStepInfo(currentSteps: StepInfo[], prevSteps: StepInfo[])
 
   const isLikelyRoux = rouxBlockSteps.length > 0 || cmllSteps.length > 0 || lseSteps.length > 0;
   if (isLikelyRoux) {
+    // console.log('currentSteps:', currentSteps);
+    // console.log('prevSteps:', prevSteps);
     const rouxStep = getRouxStep(currentSteps, prevSteps, prevLSEPattern, prevGridPattern);
     if (rouxStep) return { stepInfo: rouxStep, hasEO };
   }

@@ -817,6 +817,7 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
 
     updateURL('title', null);
     updateURL('time', null);
+    updateURL('preview', null);
     setTopButtonAlert({ id: "trash", message: "Page cleared! Undo with Ctrl+Z", messageType: 'info' });
   }
 
