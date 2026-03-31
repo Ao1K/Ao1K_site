@@ -21,3 +21,6 @@ Fix screenshots
 FMC icons. DR/HTR? What even.
 
 Give percentile rankings for SotD? Honor system?
+
+Rank OLL and PLL suggestions without algorithm, just hard code it. Use reco.nz ranks.
+

@@ -114,6 +114,7 @@ export interface ImperativeRef {
   getElement: () => HTMLDivElement | null;
   showSuggestion: (alg: string) => void;
   dismissSuggestion: () => void;
+  flushURLUpdate: () => void;
 }
 
 function MovesTextEditor({
@@ -1734,6 +1735,14 @@ function MovesTextEditor({
 
     dismissSuggestion: () => {
       handleSuggestionReject();
+    },
+
+    flushURLUpdate: () => {
+      if (updateURLTimeout.current) {
+        clearTimeout(updateURLTimeout.current);
+        updateURLTimeout.current = null;
+      }
+      passURLupdate();
     }
   }), []);
 

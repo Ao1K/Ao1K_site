@@ -938,9 +938,12 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
   }
 
   const handleShare = async () => {
-    await new Promise(resolve => setTimeout(resolve, 200)); // wait for scramble and solution to finish updating:
-    // There's definitely a more clever way of updating it right away.
-    // Tried using useImperativeHandle to force updateURL to run. Didn't appear to cause a timely update.
+
+    updateURL('preview', null); // remove the parameter that might block previews
+
+    // flush any debounced URL updates so window.location.href is current
+    scrambleMethodsRef.current?.flushURLUpdate();
+    solutionMethodsRef.current?.flushURLUpdate();
 
     const canNativeShare =
       typeof navigator.share === "function" &&
