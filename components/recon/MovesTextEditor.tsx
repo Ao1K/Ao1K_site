@@ -2,6 +2,7 @@
 
 import React, { useImperativeHandle, useEffect, Suspense, memo } from 'react';
 import { useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useSearchParams } from 'next/navigation';
 import sanitizeHtml from 'sanitize-html';
 
@@ -1157,10 +1158,10 @@ function MovesTextEditor({
 
   /**
    * Handles when user changes caret position.
-   * Gets moveOffset and lineOffset, validates text, and updates move history.
+   * Gets moveOffset and lineOf
+    console.log('Caret changed');fset, validates text, and updates move history.
    */
   const handleCaretChange = () => {
-    // Parse the current state - returns null if invalid
     const state = parseCaretState();
     if (!state) return;
     setCaretState(state);
@@ -1645,7 +1646,8 @@ function MovesTextEditor({
         remainingMoves[0] = suggestedMove.slice(oldMove.length);
         isMidMove = true;
       } else {
-        console.warn('Should not show move suggestion, moves do not align');
+        // moves do not align, do not show suggestion
+        // this can happen in normal use
         return;
       }
     }
@@ -1675,34 +1677,11 @@ function MovesTextEditor({
     setHTML(newHTML);
   }
 
-  const getSuggestionPosition = (lineIndex: number): { x: number; y: number } => {
-    const solutionElement = contentEditableRef.current;
-
-    if (!solutionElement) {
-      return { x: 0, y: 0 };
-    }
-
-    const lineDivs = Array.from(solutionElement.children).filter(
-      (child): child is HTMLDivElement => child instanceof HTMLDivElement
-    );
-
-    const targetDiv = lineDivs[lineIndex] ?? lineDivs[lineDivs.length - 1];
-
-    if (!targetDiv) {
-      return { x: 0, y: 0 };
-    }
-
-    const { bottom, left } = targetDiv.getBoundingClientRect();
-    const y = bottom + window.scrollY + 9;
-    const x = left + window.scrollX - 9;
-
-    return { x, y };
-  };
-
-
-  const { x: locationX, y: locationY } = suggestionStateRef.current === 'showing' && name === 'solution'
-    ? getSuggestionPosition(lineOffsetRef.current)
-    : { x: 0, y: 0 };
+  // padding-top of the contenteditable (p-2 = 8px) + 1px border
+  const editorPaddingTop = 9;
+  const effectiveLineHeight = lineHeight || 28;
+  const suggestionTopOffset = editorPaddingTop + effectiveLineHeight * (lineOffsetRef.current + 1);
+  const suggestionLeftOffset = contentEditableRef.current?.parentElement?.offsetLeft ?? 0;
 
   useImperativeHandle(ref, () => ({
     undo: () => {
@@ -1917,7 +1896,6 @@ function MovesTextEditor({
       return suggestion.alg.startsWith(completedString) && suggestion.alg !== completedString;
     }) : undefined;
 
-
   useEffect(() => {
     checkNewSuggestions();
     checkCaretRestore();
@@ -1956,15 +1934,19 @@ function MovesTextEditor({
         autoCapitalize="characters" // annoying for comments and rotations. Could implement custom fix.
         tabIndex={idIndex === 0 ? 1 : 3}
       />
-      {name === 'solution' && suggestions?.length && suggestionStateRef.current === 'showing' ? (
-        <SuggestionBox
-          suggestions={filteredSuggestions || []}
-          xLocation={locationX}
-          yLocation={locationY}
-          handleSuggestionRequest={handleSuggestionRequest}
-          handleSuggestionAccept={handleSuggestionAccept}
-          handleSuggestionReject={handleSuggestionReject}
-        />
+      {name === 'solution' && filteredSuggestions?.length && suggestionStateRef.current === 'showing'
+        && typeof document !== 'undefined' && document.getElementById('rich-solution-display') ? (
+        createPortal(
+          <SuggestionBox
+            suggestions={filteredSuggestions || []}
+            topOffset={suggestionTopOffset}
+            leftOffset={suggestionLeftOffset}
+            handleSuggestionRequest={handleSuggestionRequest}
+            handleSuggestionAccept={handleSuggestionAccept}
+            handleSuggestionReject={handleSuggestionReject}
+          />,
+          document.getElementById('rich-solution-display')!
+        )
       ) : null}
     </>
   );
