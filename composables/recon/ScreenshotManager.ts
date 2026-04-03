@@ -382,9 +382,9 @@ export class ScreenshotManager {
         maxWidth: 'none',
         maxHeight: 'none',
         overflow: 'visible',
-        paddingTop: '0.5rem',
+        paddingTop: '0',
         paddingBottom: '0rem',
-        marginBottom: '-1rem',
+        marginBottom: '0rem',
       });
       // remove highlight from solution
       solutionClone.innerHTML = solutionClone.innerHTML.replace(
@@ -392,13 +392,41 @@ export class ScreenshotManager {
         '<span class="text-primary-100">'
       );
 
+      // hardcode medium icon size for the screenshot regardless of user setting
+      const SCREENSHOT_ICON_WIDTH = 36;
+      const SCREENSHOT_LINE_HEIGHT = 36;
+
       // query child elements 
       const solutionTextbox = solutionClone.querySelector('#solution') as HTMLElement | null;
       const scrambleEditable = scrambleClone.querySelector('div[contenteditable="true"]') as HTMLElement | null;
       const solutionEditable = solutionClone.querySelector('div[contenteditable="true"]') as HTMLElement | null;
       const iconStack = solutionClone.querySelector('.flex.flex-col.items-center') as HTMLElement | null;
+      const iconColumnClip = solutionClone.querySelector('.icon-column-clip') as HTMLElement | null;
+
+      // force icon column to medium size and remove height constraint
+      if (iconColumnClip) {
+        iconColumnClip.style.width = `${SCREENSHOT_ICON_WIDTH}px`;
+        iconColumnClip.style.maxHeight = 'none';
+        iconColumnClip.style.overflow = 'visible';
+        // reset scroll-driven translateY on the inner scroll container (cloned from live DOM)
+        const scrollContainer = iconColumnClip.firstElementChild as HTMLElement | null;
+        if (scrollContainer) scrollContainer.style.transform = 'none';
+      }
+
+      // resize the iconStack wrapper and every individual icon container/inner div
+      if (iconStack) {
+        iconStack.style.width = `${SCREENSHOT_ICON_WIDTH}px`;
+        iconStack.style.marginTop = '-2px';
+        Array.from(iconStack.children).forEach((child) => {
+          const el = child as HTMLElement;
+          el.style.width = `${SCREENSHOT_ICON_WIDTH}px`;
+          const inner = el.querySelector('.step-icon-inner') as HTMLElement | null;
+          if (inner) inner.style.width = `${SCREENSHOT_ICON_WIDTH}px`;
+        });
+      }
 
       // style solution textbox — remove max-height/overflow constraints from original DOM
+      // force marginLeft to match hardcoded icon width
       if (solutionTextbox) {
         Object.assign(solutionTextbox.style, {
           width: 'fit-content',
@@ -406,6 +434,7 @@ export class ScreenshotManager {
           maxHeight: 'none',
           overflow: 'visible',
           height: 'auto',
+          marginLeft: `${SCREENSHOT_ICON_WIDTH}px`,
         });
       }
 
@@ -434,6 +463,11 @@ export class ScreenshotManager {
           });
         });
       });
+
+      // override solution line height to match hardcoded icon size
+      if (solutionEditable) {
+        solutionEditable.style.lineHeight = `${SCREENSHOT_LINE_HEIGHT}px`;
+      }
 
       // create info div with stats and watermark
       const infoDiv = document.createElement('div');
@@ -466,13 +500,16 @@ export class ScreenshotManager {
       document.body.appendChild(wrapper);
 
       // calculate and apply unified width
-      const minWidth = Math.max(300, Math.min(scrambleClone.offsetWidth, solutionClone.offsetWidth));
+      // solutionTextbox has a marginLeft equal to the icon column width; subtract it so the
+      // text area doesn't overflow solutionClone to the right
+      const iconColumnWidth = solutionTextbox ? solutionTextbox.offsetLeft : 0;
+      const minWidth = Math.max(300, Math.min(scrambleClone.offsetWidth, solutionClone.offsetWidth) + 5);
 
       scrambleClone.style.width = `${minWidth}px`;
       solutionClone.style.width = `${minWidth}px`;
       infoDiv.style.width = `${minWidth}px`;
       if (solutionTextbox) {
-        solutionTextbox.style.width = `${minWidth}px`;
+        solutionTextbox.style.width = `${minWidth - iconColumnWidth}px`;
       }
 
       // build and set stats text
@@ -488,9 +525,8 @@ export class ScreenshotManager {
         const textLineDivs = solutionEditable.querySelectorAll(':scope > div');
         const iconContainers = iconStack.children;
 
-        // measure the actual icon line height from the first icon container
-        const firstIcon = iconContainers[0] as HTMLElement | undefined;
-        let iconLineHeight = firstIcon?.getBoundingClientRect().height || 28;
+        // use the hardcoded screenshot line height as the base unit, not the DOM-measured value
+        const iconLineHeight = SCREENSHOT_LINE_HEIGHT;
 
         for (let i = 0; i < Math.min(textLineDivs.length, iconContainers.length); i++) {
           const textDiv = textLineDivs[i] as HTMLElement;
@@ -508,6 +544,7 @@ export class ScreenshotManager {
             stepIconDiv.style.height = `${calculatedHeight}px`;
           }
         }
+
       }
 
       // capture and cleanup

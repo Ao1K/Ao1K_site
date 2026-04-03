@@ -16,8 +16,6 @@ Trigger_2 = any RU, LU, or FU
 Use direct detection from block object to see if FB SB are solved.
 They might be part of one block and improperly bounded.
 
-Fix screenshots
-
 FMC icons. DR/HTR? What even.
 
 Give percentile rankings for SotD? Honor system?
