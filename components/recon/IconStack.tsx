@@ -65,7 +65,7 @@ interface IconStackProps {
 
 const IconStack = ({position, moves, lineIconData, editableElement}: IconStackProps) => {
   const { settings } = useSyncedSettings();
-  const { lineHeight: iconLineHeight, iconWidth } = ICON_SIZE_CONFIG[settings.iconSize];
+  const { lineHeight: iconLineHeight, iconWidth } = ICON_SIZE_CONFIG['medium'];
   
   const [, forceRender] = useState({});
   const observerRef = useRef<ResizeObserver | null>(null);

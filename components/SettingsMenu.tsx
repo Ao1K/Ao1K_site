@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { HexColorPicker } from 'react-colorful';
 import PhGear from './icons/settings';
-import { useCubeColors, useShowControls, useIconSize, ICON_SIZE_CONFIG, DEFAULT_CUBE_COLORS, type CubeColors, type IconSize } from '../composables/useSettings';
+import { useCubeColors, useShowControls, useHintFaceletsElevation, DEFAULT_HINT_FACELETS_ELEVATION, DEFAULT_CUBE_COLORS, type CubeColors } from '../composables/useSettings';
 
 function GridIcon({ size }: { size: number }) {
   const edgeSize = 3;
@@ -45,7 +45,7 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
   const [activePicker, setActivePicker] = useState<keyof CubeColors | null>(null);
   const [cubeColors, setCubeColors, resetColors] = useCubeColors();
   const [showControls, setShowControls] = useShowControls();
-  const [iconSize, setIconSize] = useIconSize();
+  const [elevation, setElevation] = useHintFaceletsElevation();
   const menuRef = useRef<HTMLDivElement>(null);
 
   const handleClickOutside = (event: MouseEvent | TouchEvent) => {
@@ -109,27 +109,31 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
             </label>
           </div>
 
-          {/* Icon Size Toggle */}
+          {/* Hint Facelets Elevation Slider */}
           <div className="px-3 py-2 border-b border-primary-200">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold text-light_accent">Step Icon Size</span>
-              <div className="flex gap-1">
-                {(['small', 'medium'] as IconSize[]).map((size) => (
-                  <button
-                    key={size}
-                    onClick={() => setIconSize(size)}
-                    className={`p-1 rounded-sm border-2 transition-all ${
-                      iconSize === size
-                        ? 'border-primary-500 bg-primary-100'
-                        : 'border-primary-300 hover:border-primary-400'
-                    }`}
-                    title={size.charAt(0).toUpperCase() + size.slice(1)}
-                  >
-                    <GridIcon size={ICON_SIZE_CONFIG[size].iconWidth} />
-                  </button>
-                ))}
-              </div>
+              <span className="text-sm font-semibold text-light_accent">Hint Facelet Distance</span>
+              <button
+                onClick={() => setElevation(DEFAULT_HINT_FACELETS_ELEVATION)}
+                disabled={elevation === DEFAULT_HINT_FACELETS_ELEVATION}
+                className={`text-xs px-2 py-0.5 rounded-sm transition-colors ${
+                  elevation === DEFAULT_HINT_FACELETS_ELEVATION
+                    ? 'text-gray-400'
+                    : 'text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                Reset
+              </button>
             </div>
+            <input
+              type="range"
+              min={0}
+              max={6}
+              step={0.1}
+              value={elevation}
+              onChange={(e) => setElevation(parseFloat(e.target.value))}
+              className="w-full h-2 mt-1 accent-primary-500 cursor-pointer"
+            />
           </div>
 
           <div className="flex flex-row items-center mb-2">

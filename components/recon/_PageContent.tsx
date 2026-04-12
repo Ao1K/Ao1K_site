@@ -29,7 +29,7 @@ import CopySolveDropdown from "../../components/recon/CopySolveDropdown";
 import { customDecodeURL, customEncodeURL } from '../../composables/recon/urlEncoding';
 import VideoHelpPrompt from '../../components/recon/VideoHelpPrompt';
 import IconStack, { computeLineIconData } from './IconStack';
-import { useIconSize, ICON_SIZE_CONFIG, useCubeColors } from '../../composables/useSettings';
+import { ICON_SIZE_CONFIG, useCubeColors } from '../../composables/useSettings';
 import { SimpleCube } from '../../composables/recon/SimpleCube';
 import { SimpleCubeInterpreter } from '../../composables/recon/SimpleCubeInterpreter';
 import type { StepInfo, Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
@@ -64,8 +64,7 @@ const TwistyPlayer = lazy(() => import("../../components/recon/TwistyPlayer"));
 let currentSpeed = 30;
 
 export default function Recon({ dailyScramble = "", videoHelpDismissed = false }: { dailyScramble?: string, videoHelpDismissed?: boolean }) {
-  const [iconSize] = useIconSize();
-  const solutionLineHeight = ICON_SIZE_CONFIG[iconSize].lineHeight;
+  const solutionLineHeight = ICON_SIZE_CONFIG['medium'].lineHeight;
   const [cubeColors] = useCubeColors();
 
   const allMovesRef = useRef<string[][][]>([[[]], [[]]]);
@@ -1200,7 +1199,8 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
     const sameStepAndColors = (a: StepInfo, b: StepInfo) =>
       a.step === b.step &&
       a.colors.length === b.colors.length &&
-      a.colors.every((color, index) => color === b.colors[index]);
+      a.colors.every((color, index) => color === b.colors[index]) &&
+      (a.blockVolume ?? 0) === (b.blockVolume ?? 0);
 
     const getNewSteps = (previousSteps: StepInfo[] | undefined, steps: StepInfo[]): StepInfo[] => {
       if (!previousSteps) return steps;
@@ -1478,7 +1478,7 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
           <div id="rich-solution-display" className="relative max-h-[35vh] -mb-20 border-none overflow-visible">
             <div
               className="icon-column-clip max-h-[35vh] absolute left-0 top-0"
-              style={{ width: ICON_SIZE_CONFIG[iconSize].iconWidth }}
+              style={{ width: ICON_SIZE_CONFIG['medium'].iconWidth }}
             >
               <div ref={iconScrollRef}>
                 <IconStack
@@ -1494,7 +1494,7 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
               className="min-w-0 overflow-y-auto max-h-[35vh] relative z-10"
               id="solution"
               style={{
-                marginLeft: hasIcons ? ICON_SIZE_CONFIG[iconSize].iconWidth : 0,
+                marginLeft: hasIcons ? ICON_SIZE_CONFIG['medium'].iconWidth : 0,
                 transition: 'margin-left 200ms linear',
               }}
               onScroll={(e) => {

@@ -83,12 +83,14 @@ export type F2LDirection = 'front' | 'back' | 'left' | 'right';
 
 export interface StepInfo {
   step: string;
-  type: 'cross' | 'f2l' | 'last layer' | 'solved' | 'none' | 'genericEO' | 'block' | 'genericBlock' | 'lse' | 'cmll' | 'eoLine';
+  type: 'cross' | 'f2l' | 'last layer' | 'solved' | 'none' | 'genericEO' | 'block' | 'genericBlock' | 'lse' | 'cmll' | 'eoLine' | 'apbBlock';
   colors: string[];
   caseIndex?: number;
   name?: string; // Optional name for cases (OLL/PLL names)
   nameType?: 'oll' | 'pll';
   blockPattern?: BlockPattern;
+  blockVolume?: number;
+  blockMaxElevation?: number;
   lsePattern?: LSEPattern;
   gridPattern?: Grid;
   f2lSlotList?: Partial<Record<F2LDirection, string>>[];
@@ -855,7 +857,6 @@ export class SimpleCubeInterpreter {
       return undefined;
     };
 
-    // TODO: Delete this
     // Start from the piece at origin (0,0,0) - this is the UFL corner
     const originPiece = getPieceAtPos([0, 0, 0]);
     if (originPiece) {
@@ -1003,17 +1004,15 @@ export class SimpleCubeInterpreter {
       }
     }
 
-    // sort by volume descending, then greedily select non-overlapping rects
-    candidateRects.sort((a, b) => b.volume - a.volume);
-    const selectedRects: Rect[] = [];
-    for (const rect of candidateRects) {
-      const overlaps = selectedRects.some(sel =>
-        sel.minX <= rect.maxX && sel.maxX >= rect.minX &&
-        sel.minY <= rect.maxY && sel.maxY >= rect.minY &&
-        sel.minZ <= rect.maxZ && sel.maxZ >= rect.minZ
-      );
-      if (!overlaps) selectedRects.push(rect);
-    }
+    // keep all rects that are not fully contained by another candidate rect
+    const selectedRects: Rect[] = candidateRects.filter((rect, i) =>
+      !candidateRects.some((other, j) =>
+        i !== j &&
+        other.minX <= rect.minX && other.maxX >= rect.maxX &&
+        other.minY <= rect.minY && other.maxY >= rect.maxY &&
+        other.minZ <= rect.minZ && other.maxZ >= rect.maxZ
+      )
+    );
 
     const results: Block[] = [];
 
@@ -1211,12 +1210,186 @@ export class SimpleCubeInterpreter {
 
   private calcBlockStepsCompleted(): StepInfo[] {
     const blocks = this.blocksSolved;
+    console.log('checking blocks:', blocks);
     const steps: StepInfo[] = [];
     for (const block of blocks) {
       const blockStepName = `${block.dimensions['L'] ? 'L' : ''}${block.dimensions['R'] ? 'R' : ''}${block.dimensions['U'] ? 'U' : ''}${block.dimensions['D'] ? 'D' : ''}${block.dimensions['F'] ? 'F' : ''}${block.dimensions['B'] ? 'B' : ''}-Block`;
-      steps.push({ step: blockStepName, type: 'genericBlock', colors: [], blockPattern: block.blockPattern! });
+      const dx = block.dimensions['L']?.[1] ?? block.dimensions['R']?.[1] ?? 1;
+      const dy = block.dimensions['U']?.[1] ?? block.dimensions['D']?.[1] ?? 1;
+      const dz = block.dimensions['F']?.[1] ?? block.dimensions['B']?.[1] ?? 1;
+      const blockVolume = dx * dy * dz;
+      const blockMaxElevation = 2 - block.origin[1];
+      steps.push({ step: blockStepName, type: 'genericBlock', colors: [], blockPattern: block.blockPattern!, blockVolume, blockMaxElevation });
     }
+    console.log('returning steps:', steps);
     return steps;
+  }
+
+  // F2L pair physical positions: corner [x,y,z] and edge [x,y,z]
+  private readonly apbF2LPairPositions: Record<string, { corner: [number, number, number], edge: [number, number, number] }> = {
+    'front,right': { corner: [2, 2, 0], edge: [2, 1, 0] },  // DFR + FR
+    'back,right':  { corner: [2, 2, 2], edge: [2, 1, 2] },   // DBR + BR
+    'front,left':  { corner: [0, 2, 0], edge: [0, 1, 0] },   // DFL + FL
+    'back,left':   { corner: [0, 2, 2], edge: [0, 1, 2] },    // DBL + BL
+  };
+
+  /**
+   * Detects APB steps: a 2x2x3 block on L or R (not in top layer)
+   * plus exactly one solved F2L pair on the opposite side.
+   */
+  private calcAPBStepsCompleted(): StepInfo[] {
+    const steps: StepInfo[] = [];
+    if (!this.currentState?.hash) return steps;
+
+    const hash = this.currentState.hash;
+    const solvedHash = this.solvedState.hash;
+
+    // F2L pair hash indices (for bottom/yellow cross in effective frame)
+    const rightPairs = [
+      { corner: 16, edge: 8, key: 'front,right', slotColors: ['red', 'green'] as [string, string] },
+      { corner: 19, edge: 10, key: 'back,right', slotColors: ['blue', 'red'] as [string, string] },
+    ];
+    const leftPairs = [
+      { corner: 17, edge: 9, key: 'front,left', slotColors: ['green', 'orange'] as [string, string] },
+      { corner: 18, edge: 11, key: 'back,left', slotColors: ['orange', 'blue'] as [string, string] },
+    ];
+
+    for (const block of this.blocksSolved) {
+      const dim = block.dimensions;
+
+      // must be a 2x2x3 (volume 12)
+      const dx = dim['L']?.[1] ?? dim['R']?.[1] ?? 1;
+      const dy = dim['U']?.[1] ?? dim['D']?.[1] ?? 1;
+      const dz = dim['F']?.[1] ?? dim['B']?.[1] ?? 1;
+      if (dx * dy * dz !== 12) continue;
+
+      // must be on L xor R (dx === 3 means full-width, spanning both sides)
+      const isLeft = !!dim['L'] && dx !== 3;
+      const isRight = !!dim['R'] && dx !== 3;
+      if (!isLeft && !isRight) continue;
+
+      // must include D, must not include U
+      if (dim['U'] || !dim['D']) continue;
+
+      // max elevation must be ≤ 1 (no top layer)
+      const blockMaxElevation = 2 - block.origin[1];
+      if (blockMaxElevation > 1) continue;
+
+      // check opposite-side F2L pairs
+      const oppositePairs = isLeft ? rightPairs : leftPairs;
+      const solvedOppPairs: { key: string, slotColors: [string, string] }[] = [];
+
+      for (const pair of oppositePairs) {
+        const cornerSolved = hash[pair.corner] === solvedHash[pair.corner];
+        const edgeSolved = hash[pair.edge] === solvedHash[pair.edge];
+        if (cornerSolved && edgeSolved) {
+          solvedOppPairs.push({ key: pair.key, slotColors: pair.slotColors });
+        }
+      }
+
+      if (solvedOppPairs.length === 0) continue;
+
+      // use the first solved pair
+      const pair = solvedOppPairs[0];
+      const positions = this.apbF2LPairPositions[pair.key];
+
+      // build f2l direction info
+      const f2lDirections: Partial<Record<F2LDirection, string>> = {};
+      for (const effColor of pair.slotColors) {
+        const dir = this.effectiveColorToDirection(effColor);
+        const actualColor = this.mapEffectiveColorToActual(effColor);
+        if (dir) f2lDirections[dir] = actualColor;
+      }
+
+      const apbPattern = this.generateAPBBlockPattern(block, positions, isLeft);
+      if (!apbPattern) continue;
+
+      steps.push({
+        step: 'APB',
+        type: 'apbBlock',
+        colors: [],
+        blockPattern: apbPattern,
+        blockVolume: 12,
+        blockMaxElevation,
+        f2lSlotList: [f2lDirections],
+      });
+    }
+
+    return steps;
+  }
+
+  /**
+   * Generates a BlockPattern for the APB step showing the opposite perspective
+   * from the block, so the F2L pair is visible on the side face.
+   */
+  private generateAPBBlockPattern(
+    block: Block,
+    f2lPairPositions: { corner: [number, number, number], edge: [number, number, number] },
+    isBlockOnLeft: boolean,
+  ): BlockPattern | undefined {
+    if (!this.cubeState) return undefined;
+
+    const dim = block.dimensions;
+    const [minX, minY, minZ] = block.origin;
+    const dx = dim['L']?.[1] ?? dim['R']?.[1] ?? 1;
+    const dy = dim['U']?.[1] ?? dim['D']?.[1] ?? 1;
+    const dz = dim['F']?.[1] ?? dim['B']?.[1] ?? 1;
+    const maxX = minX + dx - 1;
+    const maxY = minY + dy - 1;
+    const maxZ = minZ + dz - 1;
+
+    const isInBlock = (x: number, y: number, z: number): boolean => {
+      return x >= minX && x <= maxX && y >= minY && y <= maxY && z >= minZ && z <= maxZ;
+    };
+
+    const [cx, cy, cz] = f2lPairPositions.corner;
+    const [ex, ey, ez] = f2lPairPositions.edge;
+    const isF2LPairPos = (x: number, y: number, z: number): boolean => {
+      return (x === cx && y === cy && z === cz) || (x === ex && y === ey && z === ez);
+    };
+
+    const getStickerAt = (faceIdx: number, row: number, col: number): string => {
+      return this.cubeState![faceIdx][row][col] || '';
+    };
+
+    const generateFace = (faceIdx: 0 | 1 | 2 | 3 | 4 | 5, faceDir: DirectionChar): Face => {
+      const stickers: Face = ['', '', '', '', '', '', '', '', ''];
+      let idx = 0;
+
+      for (let row = 0; row < 3; row++) {
+        for (let col = 0; col < 3; col++) {
+          let x: number, y: number, z: number;
+          switch (faceDir) {
+            case 'U': x = col; y = 0; z = 2 - row; break;
+            case 'D': x = col; y = 2; z = row; break;
+            case 'F': x = col; y = row; z = 0; break;
+            case 'B': x = 2 - col; y = row; z = 2; break;
+            case 'L': x = 0; y = row; z = 2 - col; break;
+            case 'R': x = 2; y = row; z = col; break;
+            default: x = y = z = -1;
+          }
+
+          if (isInBlock(x, y, z) || isF2LPairPos(x, y, z)) {
+            stickers[idx] = getStickerAt(faceIdx, row, col);
+          }
+          idx++;
+        }
+      }
+      return stickers;
+    };
+
+    const apbOrigin: BlockOrigin = isBlockOnLeft ? 'DFR' : 'DFL';
+    const pattern: BlockPattern = { origin: apbOrigin };
+
+    pattern.D = generateFace(1, 'D');
+    pattern.F = generateFace(2, 'F');
+    if (isBlockOnLeft) {
+      pattern.R = generateFace(3, 'R');
+    } else {
+      pattern.L = generateFace(5, 'L');
+    }
+
+    return pattern;
   }
 
   /**
@@ -1316,12 +1489,20 @@ export class SimpleCubeInterpreter {
   }
 
   private calcRouxStepsCompleted(): StepInfo[] {
-    const steps: StepInfo[] = [];
+    let steps: StepInfo[] = [];
 
     const blockSteps = this.calcRouxBlockSteps();
     steps.push(...blockSteps);
 
-    if (blockSteps.length !== 2) return steps;
+    // filter out redundant square steps
+    const completeBlockSteps = blockSteps.filter(s => s.step === 'L-Block' || s.step === 'R-Block');
+    for (const completeStep of completeBlockSteps) {
+      const direction = completeStep.step[0]; // 'L' or 'R'
+      steps = steps.filter(s => s.step !== `${direction}-Square`)
+    }
+
+
+    if (completeBlockSteps.length !== 2) return steps;
 
     // both blocks solved — attach grid pattern to both block steps,
     // since getNewSteps filters by name/colors and we don't know which block is "new"
@@ -1389,7 +1570,6 @@ export class SimpleCubeInterpreter {
     }
 
     // 4c already checked as solved step
-
     return steps;
   }
 
@@ -1433,6 +1613,10 @@ export class SimpleCubeInterpreter {
 
     if (['Roux', 'Petrus', 'All'].includes(method)) {
       this.blocksSolved = this.calcBlocksSolved();
+    }
+    console.log('Blocks solved:', this.blocksSolved);
+    if (method === 'All') {
+      steps.push(...this.calcAPBStepsCompleted());
     }
     if (method === 'Roux' || method === 'All') {
       steps.push(...this.calcRouxStepsCompleted());
@@ -1817,6 +2001,16 @@ export class SimpleCubeInterpreter {
 
     // crossColorsSolved is updated in setCurrentState
     return this.crossColorsSolved.length > 0;
+  }
+
+  // maps an actual cross color to the face direction it occupies
+  private getCrossFaceDir(actualColor: string): DirectionChar {
+    const effectiveColor = this.mapActualColorToEffective(actualColor);
+    const faceDirMap: Record<string, DirectionChar> = {
+      'white': 'U', 'yellow': 'D', 'green': 'F',
+      'red': 'R', 'blue': 'B', 'orange': 'L'
+    };
+    return faceDirMap[effectiveColor] || 'D';
   }
 
   private getOppositeColor(color: ColorName | string): ColorName {
@@ -2442,13 +2636,14 @@ export class SimpleCubeInterpreter {
     if (this.crossColorsSolved.length > 1) {
       const topColor = this.topInfo.actualColor;
       const bottomColor = this.getOppositeColor(topColor);
-      this.crossColorsSolved.forEach(color => {
-        if (color.toLowerCase() === bottomColor) {
-          steps.push({ step: 'cross', type: 'cross', colors: [bottomColor] });
-        }
-      });
+      const bottomCross = this.crossColorsSolved.find(c => c.toLowerCase() === bottomColor);
+      const color = bottomCross ?? this.crossColorsSolved[0];
+      const faceDir = this.getCrossFaceDir(color);
+      steps.push({ step: `${faceDir}-Cross`, type: 'cross', colors: [color] });
     } else {
-      steps.push({ step: 'cross', type: 'cross', colors: [this.crossColorsSolved[0]] });
+      const color = this.crossColorsSolved[0];
+      const faceDir = this.getCrossFaceDir(color);
+      steps.push({ step: `${faceDir}-Cross`, type: 'cross', colors: [color] });
     }
     return steps;
   }

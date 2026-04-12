@@ -659,7 +659,7 @@ export function getStepIconDescriptor(
     return withEO(eoLineIcon(step, primaryColors, bg));
   }
 
-  if (step === 'cross') {
+  if (step.endsWith('-Cross')) {
     const bg = options?.getCrossBg?.(primaryColors[0]) ?? config.darkBg;
     return withEO(crossIcon(primaryColors[0], bg));
   }
@@ -692,7 +692,13 @@ export function getStepIconDescriptor(
   }
 
   // block - isometric 3-face view
-  if (data.type === 'block' && data.blockPattern) {
+  if ((data.type === 'block' || data.type === 'genericBlock') && data.blockPattern) {
+    return withEO(blockIcon(data.blockPattern, config));
+  }
+
+  // APB block+pair - uses the same isometric renderer as regular blocks,
+  // but the pattern already has the opposite perspective with F2L pair stickers
+  if (data.type === 'apbBlock' && data.blockPattern) {
     return withEO(blockIcon(data.blockPattern, config));
   }
 

@@ -19,7 +19,7 @@ import PlayerControls from './PlayerControls';
 import { reverseMove } from '../../composables/recon/transformHTML'
 import type { ControllerRequestOptions } from './_PageContent';
 import type { PlayerParams as RenderRefProps } from './_PageContent';
-import { useSyncedSettings, useShowControls, type CubeColors } from '../../composables/useSettings';
+import { useSyncedSettings, useShowControls, useHintFaceletsElevation, DEFAULT_HINT_FACELETS_ELEVATION, type CubeColors } from '../../composables/useSettings';
 
 interface PlayerProps {
   scrambleRequest: string;
@@ -69,9 +69,14 @@ const Player = React.memo(({
   const { settings } = useSyncedSettings();
   const cubeColors = settings.cubeColors;
   const [showControls] = useShowControls();
-  
+  const [elevation] = useHintFaceletsElevation();
+  const elevationRef = useRef(elevation);
+  elevationRef.current = elevation;
+
   const playerRef = useRef<TwistyPlayer | null>(null);
   const cubeRef = useRef<Object3D<Object3DEventMap> | null>(null);
+  const cameraRef = useRef<PerspectiveCamera | null>(null);
+  const rendererRef = useRef<WebGLRenderer | null>(null);
   const divRef = useRef<HTMLDivElement>(null);
 
   const lastSolution = useRef<string>('');
@@ -81,7 +86,7 @@ const Player = React.memo(({
 
   const animatingRef = useRef<boolean>(false);
   const pendingParamsRef = useRef<RenderRefProps>(null);
-  
+
   // Store initial hint sticker colors to identify them later
   const initialHintStickerColors = useRef<{ r: number, g: number, b: number }[]>([]);
 
@@ -170,7 +175,7 @@ const Player = React.memo(({
     playerRef.current.alg = solution;
 
     if (lastAnimationTimes.current !== animationTimes) {
-      playerRef.current.timestamp = animationTimes.reduce((acc, val) => acc + val, 0);
+      playerRef.current.timestamp = animationTimes.reduce((acc, val) => acc + val, 0) as any;
     }
 
   }
@@ -435,7 +440,7 @@ const Player = React.memo(({
     if (!playerRef.current) return;
 
     playerRef.current.alg = algBeforeSingle;
-    playerRef.current.timestamp = timeBeforeSingle;
+    playerRef.current.timestamp = timeBeforeSingle as any;
 
     updateLastPlayerProps(scramble, solution, timeArrayAfterSingle);
 
@@ -670,6 +675,14 @@ const Player = React.memo(({
   let controls: OrbitControls;
   let cube: Object3D;
 
+  const updateCameraZoom = (cam: PerspectiveCamera, containerHeight: number) => {
+    const elev = elevationRef.current;
+    const scaleFactor = (containerHeight * 0.0024) + 0.92;
+    const zoomFactor = 1 + (elev - DEFAULT_HINT_FACELETS_ELEVATION) * 0.1;
+    cam.position.z = (Math.sqrt(3) / 2) * scaleFactor * zoomFactor;
+    cam.position.y = (1 / 2) * scaleFactor * zoomFactor;
+  };
+
   const animate = () => {
     requestAnimationFrame(animate);
     controls.update();
@@ -685,7 +698,7 @@ const Player = React.memo(({
     while (!cube && attempts < maxAttempts) {
       await new Promise(resolve => setTimeout(resolve, waitTime));
       cube = await playerRef.current!.experimentalCurrentThreeJSPuzzleObject() as unknown as Object3D;
-      playerRef.current ? playerRef.current.timestamp = findTimestamp(animationTimesRequest, solutionRequest) : null;
+      playerRef.current ? playerRef.current.timestamp = findTimestamp(animationTimesRequest, solutionRequest) as any : null;
       attempts++;
     }
 
@@ -797,15 +810,14 @@ const Player = React.memo(({
       const aspectRatio = (divRef.current.clientWidth - 1) / (divRef.current.clientHeight - 1);
       camera = new PerspectiveCamera(75, aspectRatio, 0.1, 5);
 
-      const scaleFactor = (divRef.current.clientHeight * 0.0024) + 0.92; // found through experimentation w/linear system
+      updateCameraZoom(camera, divRef.current.clientHeight);
 
-      //zoom level
-      camera.position.z = (Math.sqrt(3) / 2) * scaleFactor;
-      camera.position.y = (1 / 2) * scaleFactor;
+      cameraRef.current = camera;
 
       renderer = new WebGLRenderer({ antialias: true });
       renderer.setSize(divRef.current.clientWidth - 1, divRef.current.clientHeight - 1);
       divRef.current.appendChild(renderer.domElement);
+      rendererRef.current = renderer;
 
       const light = new AmbientLight(0xffffff, 0.5); // soft white light
       scene.add(light);
@@ -821,10 +833,13 @@ const Player = React.memo(({
   }
 
   const handleResize = () => {
-    if (renderer && camera && divRef.current) {
-      camera.aspect = (divRef.current.clientWidth - 1) / (divRef.current.clientHeight - 1);
-      camera.updateProjectionMatrix();
-      renderer.setSize(divRef.current.clientWidth - 1, divRef.current.clientHeight - 1);
+    const cam = cameraRef.current;
+    const rend = rendererRef.current;
+    if (rend && cam && divRef.current) {
+      cam.aspect = (divRef.current.clientWidth - 1) / (divRef.current.clientHeight - 1);
+      cam.updateProjectionMatrix();
+      rend.setSize(divRef.current.clientWidth - 1, divRef.current.clientHeight - 1);
+      updateCameraZoom(cam, divRef.current.clientHeight);
     }
 
     // console.log('cube: ', playerRef.current?.experimentalCurrentThreeJSPuzzleObject());
@@ -915,7 +930,7 @@ const Player = React.memo(({
       if (initialHintStickerColors.current[index]) {
         const initialColor = initialHintStickerColors.current[index];
         const standardColor = identifyStandardColor(initialColor.r, initialColor.g, initialColor.b);
-        
+
         if (standardColor) {
           const newColor = colorMapping[standardColor];
           mesh.material.color.setRGB(...newColor.map(val => val / 255));
@@ -931,6 +946,7 @@ const Player = React.memo(({
       puzzle: '3x3x3',
       hintFacelets: 'floating',
       experimentalInitialHintFaceletsAnimation: "always",
+      experimentalHintFaceletsElevation: elevation,
       backView: 'none',
       background: 'none',
       controlPanel: 'none',
@@ -939,9 +955,9 @@ const Player = React.memo(({
       tempoScale: cubeSpeed,
     });
 
-    playerRef.current!.style.width = '100%';
+    playerRef.current!.style.width = '90%';
     playerRef.current!.style.marginRight = '1px';
-    playerRef.current!.style.height = '100%';
+    playerRef.current!.style.height = '90%';
     playerRef.current!.experimentalFaceletScale = .95;
 
     // console.log('creating scene');
@@ -967,6 +983,16 @@ const Player = React.memo(({
       setStickerColors(cubeRef.current);
     }
   }, [cubeColors]);
+
+  // Update hint facelets elevation and camera zoom when elevation changes
+  useEffect(() => {
+    if (playerRef.current) {
+      playerRef.current.experimentalHintFaceletsElevation = elevation;
+    }
+    if (cameraRef.current && divRef.current) {
+      updateCameraZoom(cameraRef.current, divRef.current.clientHeight);
+    }
+  }, [elevation]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     // Handle if this div has focus OR if focus is on any element within this container

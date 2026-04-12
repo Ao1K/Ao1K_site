@@ -23,10 +23,12 @@ export const ICON_SIZE_CONFIG = {
   medium: { lineHeight: 36, iconWidth: 36 },
 } as const;
 
+export const DEFAULT_HINT_FACELETS_ELEVATION = 1.5;
+
 export interface AppSettings {
   cubeColors: CubeColors;
   showPlayerControls: boolean;
-  iconSize: IconSize;
+  hintFaceletsElevation: number;
 }
 
 const SETTINGS_COOKIE_KEY = 'ao1kSettings';
@@ -41,7 +43,7 @@ function readSettingsFromCookie(): AppSettings {
       const result = {
         cubeColors: { ...DEFAULT_CUBE_COLORS, ...parsed.cubeColors },
         showPlayerControls: parsed.showPlayerControls ?? true,
-        iconSize: (parsed.iconSize === 'small' ? 'small' : 'medium') as IconSize,
+        hintFaceletsElevation: typeof parsed.hintFaceletsElevation === 'number' ? parsed.hintFaceletsElevation : DEFAULT_HINT_FACELETS_ELEVATION,
       };
       return result;
     } catch (e) {
@@ -51,7 +53,7 @@ function readSettingsFromCookie(): AppSettings {
   return {
     cubeColors: { ...DEFAULT_CUBE_COLORS },
     showPlayerControls: true,
-    iconSize: 'medium' as IconSize,
+    hintFaceletsElevation: DEFAULT_HINT_FACELETS_ELEVATION,
   };
 }
 
@@ -60,7 +62,7 @@ export function useSyncedSettings() {
   const [settings, setSettings] = useState<AppSettings>({
     cubeColors: { ...DEFAULT_CUBE_COLORS },
     showPlayerControls: true,
-    iconSize: 'medium' as IconSize,
+    hintFaceletsElevation: DEFAULT_HINT_FACELETS_ELEVATION,
   });
 
   useEffect(() => {
@@ -144,17 +146,17 @@ export function useShowControls(): [boolean, (value: boolean) => void] {
   return [settings.showPlayerControls, setShowControls] as const;
 }
 
-// Hook for icon size
-export function useIconSize(): [IconSize, (value: IconSize) => void] {
+// Hook for hint facelets elevation
+export function useHintFaceletsElevation(): [number, (value: number) => void] {
   const { settings, updateSettings } = useSyncedSettings();
 
-  const setIconSize = useCallback((value: IconSize) => {
+  const setElevation = useCallback((value: number) => {
     updateSettings({
       ...settings,
-      iconSize: value,
+      hintFaceletsElevation: value,
     });
   }, [settings, updateSettings]);
 
-  return [settings.iconSize, setIconSize] as const;
+  return [settings.hintFaceletsElevation, setElevation] as const;
 }
 

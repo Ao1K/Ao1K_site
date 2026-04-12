@@ -422,6 +422,24 @@ export class ScreenshotManager {
           el.style.width = `${SCREENSHOT_ICON_WIDTH}px`;
           const inner = el.querySelector('.step-icon-inner') as HTMLElement | null;
           if (inner) inner.style.width = `${SCREENSHOT_ICON_WIDTH}px`;
+
+          // move border from SVG to its parent div to avoid html2canvas
+          // rendering the border twice (once as CSS, once baked into the SVG image).
+          // can't use getComputedStyle here because the clone isn't in the document yet,
+          // so check inline style and class names directly.
+          const svg = el.querySelector('.step-icon-svg') as SVGElement | null;
+          if (svg && inner) {
+            const inlineBorderColor = (svg as unknown as HTMLElement).style.borderColor;
+            const hasEoBorder = svg.classList.contains('border-2') && inlineBorderColor;
+            if (hasEoBorder) {
+              inner.style.border = `2px solid ${inlineBorderColor}`;
+            } else if (svg.classList.contains('border')) {
+              inner.style.border = '1px solid #525252';
+            }
+            inner.style.boxSizing = 'border-box';
+            svg.style.border = 'none';
+            svg.classList.remove('border', 'border-1', 'border-2');
+          }
         });
       }
 

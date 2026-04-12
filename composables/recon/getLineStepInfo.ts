@@ -117,6 +117,10 @@ const getRouxStep = (currentSteps: StepInfo[], prevSteps: StepInfo[], prevLSEPat
 
   // check solved case
   if (currentSteps.some(step => step.type === 'solved')) {
+    const hasPrevCMLL = prevCmllSteps.includes('co') && prevCmllSteps.includes('cp');
+    if (!hasPrevCMLL) {
+      return { step: 'owl', type: 'solved', colors: currentSteps[0].colors, lsePattern: prevLSEPattern };
+    }
     return { step: 'solved', type: 'lse', colors: currentSteps[0].colors, lsePattern: prevLSEPattern };
   }
 
@@ -151,6 +155,84 @@ const getRouxStep = (currentSteps: StepInfo[], prevSteps: StepInfo[], prevLSEPat
   return null;
 }
 
+const getAPBStep = (currentSteps: StepInfo[], prevSteps: StepInfo[], prevGridPattern?: Grid): StepInfo | null => {
+  const apbSteps = currentSteps.filter(step => step.type === 'apbBlock');
+  if (apbSteps.length > 0) return apbSteps[0];
+
+  // after the APB block+pair step, delegate to CFOP for remaining F2L and LL
+  return getCFOPStep(currentSteps, prevSteps, prevGridPattern);
+}
+
+type SolveMethod = 'CFOP' | 'Roux' | 'ZZ' | 'Blocks' | 'APB' | null;
+
+/**
+ * Determines which solving method is most likely being used based on
+ * the combination of all detected steps (history + current line).
+ */
+function determineMethod(allSteps: StepInfo[], prevSteps: StepInfo[], currentSteps: StepInfo[]): SolveMethod {
+  
+  const crossSteps = allSteps.filter(step => step.type === 'cross');
+  const hasDCross = crossSteps.some(s => s.step.startsWith('D-'));
+  const blockSteps = currentSteps.filter(step => step.type === 'genericBlock' || step.type === 'block');
+  const eoLineSteps = allSteps.filter(step => step.type === 'eoLine');
+  const rouxBlocks = ['L-Square', 'R-Square', 'L-Block', 'R-Block'];
+  const rouxBlockSteps = allSteps.filter(step => step.type === 'block' && rouxBlocks.includes(step.step));
+  const isSolved = currentSteps.some(step => step.type === 'solved');
+  
+  // APB takes precedence over all other methods due to its simplicity: 
+  // Only has one step to consider adding.
+  const apbSteps = currentSteps.filter(step => step.type === 'apbBlock');
+  const isRouxBlocksSolved = rouxBlockSteps.filter(step => ['L-Block','R-Block'].includes(step.step)).length === 2;
+  if (apbSteps.length > 0 && !isRouxBlocksSolved && !isSolved && !hasDCross) return 'APB';
+  
+  // non-D cross with blocks → prefer blocks (incidental cross during block building)
+  const hasNonDCrossOnly = crossSteps.length > 0 && !hasDCross;
+  if (hasNonDCrossOnly && blockSteps.length > 0 && !isRouxBlocksSolved && !isSolved) return 'Blocks';
+
+  // CFOP
+  const isFirstStepCross = prevSteps.length === 0 && crossSteps.length >= 1;
+  const isLikelyCFOP = isFirstStepCross || allSteps.some(step => step.type === 'f2l');
+  if (isLikelyCFOP) return 'CFOP';
+
+  // Roux
+  const cmllSteps = allSteps.filter(step => step.type === 'cmll');
+  const lseSteps = allSteps.filter(step => step.type === 'lse');
+  const isLikelyRoux = rouxBlockSteps.length > 0 || cmllSteps.length > 0 || lseSteps.length > 0;
+  console.log('isLikelyRoux:', isLikelyRoux);
+  if (isLikelyRoux) return 'Roux';
+
+  // ZZ
+  if (eoLineSteps.length > 0 && prevSteps.length === 0) return 'ZZ';
+
+  // Blocks (Petrus-style) — only when no other method signals are present
+  const wasOtherMethodUsed = allSteps.some(step => {
+    return !['block', 'genericBlock', 'eo', 'genericEO', 'eoLine', 'none', 'apbBlock'].includes(step.type);
+  });
+  if (blockSteps.length > 0 && !isRouxBlocksSolved && !wasOtherMethodUsed && !isSolved) return 'Blocks';
+
+  return null;
+}
+
+/**
+ * Selects the best block step from a list: largest volume wins,
+ * tie-broken by smallest maximum elevation (closest to bottom).
+ */
+function selectBestBlock(steps: StepInfo[]): StepInfo | null {
+  const blockSteps = steps.filter(step => step.type === 'genericBlock' || step.type === 'block');
+  if (blockSteps.length === 0) return null;
+
+  return blockSteps.reduce((best, current) => {
+    const bestVol = best.blockVolume ?? 0;
+    const curVol = current.blockVolume ?? 0;
+    if (curVol > bestVol) return current;
+    if (curVol < bestVol) return best;
+    // tie-break: smallest max elevation (= closest to bottom)
+    const bestElev = best.blockMaxElevation ?? Infinity;
+    const curElev = current.blockMaxElevation ?? Infinity;
+    return curElev < bestElev ? current : best;
+  });
+}
+
 /**
  * Uses a variety of heuristics to determine the step most likely to have been solved.
  * Works for CFOP, Roux, Petrus, and ZZ.
@@ -181,57 +263,50 @@ export function getLineStepInfo(currentSteps: StepInfo[], prevSteps: StepInfo[])
   const hasEO = eoValue === 0 && prevEOvalue !== eoValue;
   
   if (currentSteps.length === 0) return { stepInfo: null, hasEO };
-
+  
   const allSteps = [...prevSteps, ...currentSteps];
 
-  // CFOP
-  const crossSteps = allSteps.filter(step => step.type === 'cross');  
-  const isLikelyCFOP =
-    crossSteps.length > 0 &&
-    allSteps.some(step => step.type === 'f2l' || (step.type === 'cross' &&
-      !['eoLine', 'eo', 'genericEO', 'genericBlock'].includes(step.type)));
-  
-  if (isLikelyCFOP) {
-    const cfopStep = getCFOPStep(currentSteps, prevSteps, prevGridPattern);
-    if (cfopStep) return { stepInfo: cfopStep, hasEO };
-  }
-  
-  // Roux
-  const rouxBlocks = ['L-Square', 'R-Square', 'L-Block', 'R-Block'];
-  const rouxBlockSteps = allSteps.filter(step => step.type === 'block' && rouxBlocks.includes(step.step));
-  const cmllSteps = allSteps.filter(step => step.type === 'cmll');
-  const lseSteps = allSteps.filter(step => step.type === 'lse');
+  console.log('prevSteps:', prevSteps);
+  console.log('currentSteps:', currentSteps);
 
-  const isLikelyRoux = rouxBlockSteps.length > 0 || cmllSteps.length > 0 || lseSteps.length > 0;
-  if (isLikelyRoux) {
-    // console.log('currentSteps:', currentSteps);
-    // console.log('prevSteps:', prevSteps);
-    const rouxStep = getRouxStep(currentSteps, prevSteps, prevLSEPattern, prevGridPattern);
-    if (rouxStep) return { stepInfo: rouxStep, hasEO };
-  }
-  
-  // ZZ/EOLine
-  const eoLineSteps = allSteps.filter(step => step.type === 'eoLine');
-  const isLikelyEOLine = eoLineSteps.length > 0 && prevSteps.length === 0;
+  const method = determineMethod(allSteps, prevSteps, currentSteps);
+  console.log('determined method:', method);
 
-  if (isLikelyEOLine) {
-    return { stepInfo: eoLineSteps[eoLineSteps.length - 1], hasEO };
-  } else {
-    // remove eoLine steps from consideration, as they might otherwise be the most recent step
+  // handle ZZ first since it needs eoLine steps before they're filtered
+  if (method === 'ZZ') {
+    const eoLineSteps = currentSteps.filter(step => step.type === 'eoLine');
+    if (eoLineSteps.length > 0) {
+      return { stepInfo: eoLineSteps[eoLineSteps.length - 1], hasEO };
+    }
+  }
+
+  // remove eoLine steps from consideration for non-ZZ methods
+  if (method !== 'ZZ') {
     currentSteps = currentSteps.filter(step => step.type !== 'eoLine');
   }
 
-  // Petrus/Blocks
-  const blockSteps = currentSteps.filter(step => step.type === 'block');
-  const wasOtherMethodUsed = allSteps.some(step => {
-    return !['block', 'genericBlock', 'eo', 'genericEO', 'eoLine'].includes(step.type);
-  });
-  const isLikelyBlocks = blockSteps.length > 0 && !isLikelyRoux; // if it's Roux, we should have already returned above
-
-  if (isLikelyBlocks && !wasOtherMethodUsed) {
-    return { stepInfo: blockSteps[blockSteps.length - 1], hasEO };
+  if (method === 'CFOP') {
+    const cfopStep = getCFOPStep(currentSteps, prevSteps, prevGridPattern);
+    if (cfopStep) return { stepInfo: cfopStep, hasEO };
   }
 
-  // Return the last step if no special handling
+  if (method === 'APB') {
+    const apbStep = getAPBStep(currentSteps, prevSteps, prevGridPattern);
+    if (apbStep) return { stepInfo: apbStep, hasEO };
+  }
+
+  if (method === 'Roux') {
+    const rouxStep = getRouxStep(currentSteps, prevSteps, prevLSEPattern, prevGridPattern);
+    if (rouxStep) return { stepInfo: rouxStep, hasEO };
+  }
+
+  if (method === 'Blocks') {
+    const bestBlock = selectBestBlock(currentSteps);
+    if (bestBlock) return { stepInfo: bestBlock, hasEO };
+  }
+
+  // Return solved step if present, otherwise the last step
+  const solvedStep = currentSteps.find(step => step.type === 'solved');
+  if (solvedStep) return { stepInfo: solvedStep, hasEO };
   return { stepInfo: currentSteps[currentSteps.length - 1], hasEO };
 }
