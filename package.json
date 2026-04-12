@@ -11,6 +11,8 @@
     "trigger-combos": "npx tsx scripts/generateTriggerCombos.ts"
   },
   "dependencies": {
+    "@aws-amplify/backend": "^1.22.0",
+    "@aws-amplify/backend-cli": "^1.8.2",
     "@aws-sdk/client-s3": "^3.1024.0",
     "@babel/plugin-transform-class-properties": "^7.25.9",
     "@babel/plugin-transform-object-rest-spread": "^7.25.9",
