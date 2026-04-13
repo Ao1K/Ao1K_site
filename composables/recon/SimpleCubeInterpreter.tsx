@@ -1210,7 +1210,6 @@ export class SimpleCubeInterpreter {
 
   private calcBlockStepsCompleted(): StepInfo[] {
     const blocks = this.blocksSolved;
-    console.log('checking blocks:', blocks);
     const steps: StepInfo[] = [];
     for (const block of blocks) {
       const blockStepName = `${block.dimensions['L'] ? 'L' : ''}${block.dimensions['R'] ? 'R' : ''}${block.dimensions['U'] ? 'U' : ''}${block.dimensions['D'] ? 'D' : ''}${block.dimensions['F'] ? 'F' : ''}${block.dimensions['B'] ? 'B' : ''}-Block`;
@@ -1221,7 +1220,6 @@ export class SimpleCubeInterpreter {
       const blockMaxElevation = 2 - block.origin[1];
       steps.push({ step: blockStepName, type: 'genericBlock', colors: [], blockPattern: block.blockPattern!, blockVolume, blockMaxElevation });
     }
-    console.log('returning steps:', steps);
     return steps;
   }
 
@@ -1263,10 +1261,10 @@ export class SimpleCubeInterpreter {
       const dz = dim['F']?.[1] ?? dim['B']?.[1] ?? 1;
       if (dx * dy * dz !== 12) continue;
 
-      // must be on L xor R (dx === 3 means full-width, spanning both sides)
       const isLeft = !!dim['L'] && dx !== 3;
-      const isRight = !!dim['R'] && dx !== 3;
-      if (!isLeft && !isRight) continue;
+      // const isRight = !!dim['R'] && dx !== 3;
+      // if (!isLeft && !isRight) continue; // originally added so 223 had to be L or R,
+      // but it's nice to see blocks F or B too.
 
       // must include D, must not include U
       if (dim['U'] || !dim['D']) continue;
@@ -1614,7 +1612,6 @@ export class SimpleCubeInterpreter {
     if (['Roux', 'Petrus', 'All'].includes(method)) {
       this.blocksSolved = this.calcBlocksSolved();
     }
-    console.log('Blocks solved:', this.blocksSolved);
     if (method === 'All') {
       steps.push(...this.calcAPBStepsCompleted());
     }

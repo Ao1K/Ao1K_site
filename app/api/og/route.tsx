@@ -7,7 +7,7 @@ import { SimpleCube } from '../../../composables/recon/SimpleCube';
 import { SimpleCubeInterpreter, type StepInfo } from '../../../composables/recon/SimpleCubeInterpreter';
 import parseText from '../../../composables/recon/validateTextInput';
 import validationToArray from '../../../composables/recon/validationToMoves';
-import { getLineStepInfo } from '../../../composables/recon/getLineStepInfo';
+import { getLineStepInfo, getNewSteps } from '../../../composables/recon/getLineStepInfo';
 import { fetchDailyScramble } from '../../../utils/fetchDailyScramble';
 import React from 'react';
 import fs from 'fs';
@@ -58,13 +58,7 @@ function computeLineIcons(
 
     // get only new steps on this line (subtract previous steps)
     const prevSteps = allLineSteps.flat();
-    const newSteps = steps.filter(step =>
-      !prevSteps.some(prevStep =>
-        prevStep.step === step.step &&
-        prevStep.colors.length === step.colors.length &&
-        prevStep.colors.every((color, index) => color === step.colors[index])
-      )
-    );
+    const newSteps = getNewSteps(prevSteps, steps);
 
     allLineSteps.push(newSteps);
   }

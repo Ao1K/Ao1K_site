@@ -33,6 +33,7 @@ import { ICON_SIZE_CONFIG, useCubeColors } from '../../composables/useSettings';
 import { SimpleCube } from '../../composables/recon/SimpleCube';
 import { SimpleCubeInterpreter } from '../../composables/recon/SimpleCubeInterpreter';
 import type { StepInfo, Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
+import { getNewSteps } from '../../composables/recon/getLineStepInfo';
 import { AlgCompiler } from '../../utils/AlgCompiler';
 import ManualAlgVerifier from './ManualAlgVerifier';
 import LLpatternBuilder from '../../utils/LLpatternBuilder';
@@ -1196,40 +1197,7 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
       return steps;
     };
 
-    const sameStepAndColors = (a: StepInfo, b: StepInfo) =>
-      a.step === b.step &&
-      a.colors.length === b.colors.length &&
-      a.colors.every((color, index) => color === b.colors[index]) &&
-      (a.blockVolume ?? 0) === (b.blockVolume ?? 0);
 
-    const getNewSteps = (previousSteps: StepInfo[] | undefined, steps: StepInfo[]): StepInfo[] => {
-      if (!previousSteps) return steps;
-
-      // collect annotations from filtered-out steps so they aren't lost
-      let carriedName: string | undefined;
-      let carriedNameType: StepInfo['nameType'];
-
-      const newSteps = steps.filter(step => {
-        if (previousSteps.some(prev => sameStepAndColors(prev, step))) {
-          if (step.name) { carriedName = step.name; carriedNameType = step.nameType; }
-          return false;
-        }
-        return true;
-      });
-
-      // transfer carried annotation to the last new F2L pair
-      if (carriedName) {
-        for (let i = newSteps.length - 1; i >= 0; i--) {
-          if (newSteps[i].type === 'f2l' && newSteps[i].step === 'pair') {
-            newSteps[i].name = carriedName;
-            newSteps[i].nameType = carriedNameType;
-            break;
-          }
-        }
-      }
-
-      return newSteps;
-    };
 
     const buildMoveLine = (line: string[], lineIdx: number, hasAddedScramble: boolean): string => {
       const lineAndScram = hasAddedScramble ? line : [...allMovesRef.current[0].flat(), ...line];

@@ -173,10 +173,11 @@ function determineMethod(allSteps: StepInfo[], prevSteps: StepInfo[], currentSte
   
   const crossSteps = allSteps.filter(step => step.type === 'cross');
   const hasDCross = crossSteps.some(s => s.step.startsWith('D-'));
-  const blockSteps = currentSteps.filter(step => step.type === 'genericBlock' || step.type === 'block');
+  const currentBlockSteps = currentSteps.filter(step => step.type === 'genericBlock' || step.type === 'block');
   const eoLineSteps = allSteps.filter(step => step.type === 'eoLine');
   const rouxBlocks = ['L-Square', 'R-Square', 'L-Block', 'R-Block'];
   const rouxBlockSteps = allSteps.filter(step => step.type === 'block' && rouxBlocks.includes(step.step));
+  const currentRouxBlockSteps = currentSteps.filter(step => step.type === 'block' && rouxBlocks.includes(step.step));
   const isSolved = currentSteps.some(step => step.type === 'solved');
   
   // APB takes precedence over all other methods due to its simplicity: 
@@ -187,7 +188,7 @@ function determineMethod(allSteps: StepInfo[], prevSteps: StepInfo[], currentSte
   
   // non-D cross with blocks → prefer blocks (incidental cross during block building)
   const hasNonDCrossOnly = crossSteps.length > 0 && !hasDCross;
-  if (hasNonDCrossOnly && blockSteps.length > 0 && !isRouxBlocksSolved && !isSolved) return 'Blocks';
+  if (hasNonDCrossOnly && currentBlockSteps.length > 0 && !isRouxBlocksSolved && !isSolved) return 'Blocks';
 
   // CFOP
   const isFirstStepCross = prevSteps.length === 0 && crossSteps.length >= 1;
@@ -197,8 +198,7 @@ function determineMethod(allSteps: StepInfo[], prevSteps: StepInfo[], currentSte
   // Roux
   const cmllSteps = allSteps.filter(step => step.type === 'cmll');
   const lseSteps = allSteps.filter(step => step.type === 'lse');
-  const isLikelyRoux = rouxBlockSteps.length > 0 || cmllSteps.length > 0 || lseSteps.length > 0;
-  console.log('isLikelyRoux:', isLikelyRoux);
+  const isLikelyRoux = currentRouxBlockSteps.length > 0 || cmllSteps.length > 0 || lseSteps.length > 0;
   if (isLikelyRoux) return 'Roux';
 
   // ZZ
@@ -208,7 +208,7 @@ function determineMethod(allSteps: StepInfo[], prevSteps: StepInfo[], currentSte
   const wasOtherMethodUsed = allSteps.some(step => {
     return !['block', 'genericBlock', 'eo', 'genericEO', 'eoLine', 'none', 'apbBlock'].includes(step.type);
   });
-  if (blockSteps.length > 0 && !isRouxBlocksSolved && !wasOtherMethodUsed && !isSolved) return 'Blocks';
+  if (currentBlockSteps.length > 0 && !isRouxBlocksSolved && !wasOtherMethodUsed && !isSolved) return 'Blocks';
 
   return null;
 }
@@ -266,11 +266,7 @@ export function getLineStepInfo(currentSteps: StepInfo[], prevSteps: StepInfo[])
   
   const allSteps = [...prevSteps, ...currentSteps];
 
-  console.log('prevSteps:', prevSteps);
-  console.log('currentSteps:', currentSteps);
-
   const method = determineMethod(allSteps, prevSteps, currentSteps);
-  console.log('determined method:', method);
 
   // handle ZZ first since it needs eoLine steps before they're filtered
   if (method === 'ZZ') {
@@ -307,6 +303,45 @@ export function getLineStepInfo(currentSteps: StepInfo[], prevSteps: StepInfo[])
 
   // Return solved step if present, otherwise the last step
   const solvedStep = currentSteps.find(step => step.type === 'solved');
-  if (solvedStep) return { stepInfo: solvedStep, hasEO };
-  return { stepInfo: currentSteps[currentSteps.length - 1], hasEO };
+  if (solvedStep) return { stepInfo: solvedStep, hasEO: false };
+
+  // couldn't determine method, show nothing except possibly EO
+  // this is done to prevent erronous step icons from displaying, like cross mid-solve
+  const nullStep = { step: 'unknown', type: 'none', colors: [] } as StepInfo;
+  return { stepInfo: nullStep, hasEO };
+}
+
+const sameStepAndColors = (a: StepInfo, b: StepInfo) =>
+  a.step === b.step &&
+  a.colors.length === b.colors.length &&
+  a.colors.every((color, index) => color === b.colors[index]) &&
+  (a.blockVolume ?? 0) === (b.blockVolume ?? 0);
+
+export function getNewSteps(previousSteps: StepInfo[] | undefined, steps: StepInfo[]): StepInfo[] {
+  if (!previousSteps) return steps;
+
+  // collect annotations from filtered-out steps so they aren't lost
+  let carriedName: string | undefined;
+  let carriedNameType: StepInfo['nameType'];
+
+  const newSteps = steps.filter(step => {
+    if (previousSteps.some(prev => sameStepAndColors(prev, step))) {
+      if (step.name) { carriedName = step.name; carriedNameType = step.nameType; }
+      return false;
+    }
+    return true;
+  });
+
+  // transfer carried annotation to the last new F2L pair
+  if (carriedName) {
+    for (let i = newSteps.length - 1; i >= 0; i--) {
+      if (newSteps[i].type === 'f2l' && newSteps[i].step === 'pair') {
+        newSteps[i].name = carriedName;
+        newSteps[i].nameType = carriedNameType;
+        break;
+      }
+    }
+  }
+
+  return newSteps;
 }
