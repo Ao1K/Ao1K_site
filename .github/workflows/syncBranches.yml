@@ -1,4 +1,4 @@
-name: Sync dev with main
+name: Sync development with main
 
 on:
   push:
@@ -14,9 +14,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Sync dev branch to main
+      - name: Sync development branch to main
         run: |
           git fetch origin
-          git checkout dev
+          git checkout development
           git reset --hard origin/main
-          git push origin dev --force-with-lease
+          git push origin development --force-with-lease
