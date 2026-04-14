@@ -3,8 +3,7 @@
 // order cards first by steps, then colors, then speed
 import type { Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
 import SuggestionCard from './SuggestionCard';
-import { useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useEffect, useRef } from 'react';
 
 interface SuggestionBoxSuggestion {
   suggestion: Suggestion;
@@ -13,8 +12,8 @@ interface SuggestionBoxSuggestion {
 
 interface SuggestionBoxProps {
   suggestions: SuggestionBoxSuggestion[];
-  xLocation: number;
-  yLocation: number;
+  topOffset: number;
+  leftOffset: number;
   handleSuggestionRequest: (index: number) => void;
   handleSuggestionAccept: () => void;
   handleSuggestionReject: () => void;
@@ -43,10 +42,9 @@ const sortSuggestions = (items: SuggestionBoxSuggestion[]) => {
   return sortedGroups.flat()
 };
 
-export const SuggestionBox = ({suggestions, xLocation, yLocation, handleSuggestionRequest, handleSuggestionAccept, handleSuggestionReject }: SuggestionBoxProps) => {
+export const SuggestionBox = ({suggestions, topOffset, leftOffset, handleSuggestionRequest, handleSuggestionAccept, handleSuggestionReject }: SuggestionBoxProps) => {
   const sortedSuggestions = sortSuggestions(suggestions);
   const selectedCardRef = useRef<number | null>(null);
-  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
   
   const selectCard = (index: number) => {
     const cardElement = document.getElementById(`suggestion-card-${index}`);
@@ -92,7 +90,6 @@ export const SuggestionBox = ({suggestions, xLocation, yLocation, handleSuggesti
   }
 
   useEffect(() => {
-    setPortalTarget(document.body);
     document.addEventListener('keydown', handleKeyDown);
     if (sortedSuggestions.length > 0) {
       handleSuggestionRequest(sortedSuggestions[0].originalIndex);
@@ -106,14 +103,12 @@ export const SuggestionBox = ({suggestions, xLocation, yLocation, handleSuggesti
     };
   }, []);
 
-  if (!portalTarget) return null;
   if (selectedCardRef.current === null) selectedCardRef.current = 0;
 
   const isTouchScreen = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0;
 
-  // render inside body so parent overflow settings never clip the menu
-  return createPortal(
-    <div className="flex flex-col absolute" style={{ left: xLocation, top: yLocation, zIndex: 1000 }}>
+  return (
+    <div className="flex flex-col absolute" style={{ top: topOffset, left: leftOffset, zIndex: 1000 }}>
     {
       sortedSuggestions.map((item, index) => (
         <SuggestionCard
@@ -142,7 +137,6 @@ export const SuggestionBox = ({suggestions, xLocation, yLocation, handleSuggesti
         ) : null}
       </div>
     }
-    </div>,
-    portalTarget
+    </div>
   );
 };

@@ -29,10 +29,11 @@ import CopySolveDropdown from "../../components/recon/CopySolveDropdown";
 import { customDecodeURL, customEncodeURL } from '../../composables/recon/urlEncoding';
 import VideoHelpPrompt from '../../components/recon/VideoHelpPrompt';
 import IconStack, { computeLineIconData } from './IconStack';
-import { useIconSize, ICON_SIZE_CONFIG, useCubeColors } from '../../composables/useSettings';
+import { ICON_SIZE_CONFIG, useCubeColors } from '../../composables/useSettings';
 import { SimpleCube } from '../../composables/recon/SimpleCube';
 import { SimpleCubeInterpreter } from '../../composables/recon/SimpleCubeInterpreter';
 import type { StepInfo, Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
+import { getNewSteps } from '../../composables/recon/getLineStepInfo';
 import { AlgCompiler } from '../../utils/AlgCompiler';
 import ManualAlgVerifier from './ManualAlgVerifier';
 import LLpatternBuilder from '../../utils/LLpatternBuilder';
@@ -64,8 +65,7 @@ const TwistyPlayer = lazy(() => import("../../components/recon/TwistyPlayer"));
 let currentSpeed = 30;
 
 export default function Recon({ dailyScramble = "", videoHelpDismissed = false }: { dailyScramble?: string, videoHelpDismissed?: boolean }) {
-  const [iconSize] = useIconSize();
-  const solutionLineHeight = ICON_SIZE_CONFIG[iconSize].lineHeight;
+  const solutionLineHeight = ICON_SIZE_CONFIG['medium'].lineHeight;
   const [cubeColors] = useCubeColors();
 
   const allMovesRef = useRef<string[][][]>([[[]], [[]]]);
@@ -817,6 +817,7 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
 
     updateURL('title', null);
     updateURL('time', null);
+    updateURL('preview', null);
     setTopButtonAlert({ id: "trash", message: "Page cleared! Undo with Ctrl+Z", messageType: 'info' });
   }
 
@@ -937,9 +938,12 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
   }
 
   const handleShare = async () => {
-    await new Promise(resolve => setTimeout(resolve, 200)); // wait for scramble and solution to finish updating:
-    // There's definitely a more clever way of updating it right away.
-    // Tried using useImperativeHandle to force updateURL to run. Didn't appear to cause a timely update.
+
+    updateURL('preview', null); // remove the parameter that might block previews
+
+    // flush any debounced URL updates so window.location.href is current
+    scrambleMethodsRef.current?.flushURLUpdate();
+    solutionMethodsRef.current?.flushURLUpdate();
 
     const canNativeShare =
       typeof navigator.share === "function" &&
@@ -1193,39 +1197,7 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
       return steps;
     };
 
-    const sameStepAndColors = (a: StepInfo, b: StepInfo) =>
-      a.step === b.step &&
-      a.colors.length === b.colors.length &&
-      a.colors.every((color, index) => color === b.colors[index]);
 
-    const getNewSteps = (previousSteps: StepInfo[] | undefined, steps: StepInfo[]): StepInfo[] => {
-      if (!previousSteps) return steps;
-
-      // collect annotations from filtered-out steps so they aren't lost
-      let carriedName: string | undefined;
-      let carriedNameType: StepInfo['nameType'];
-
-      const newSteps = steps.filter(step => {
-        if (previousSteps.some(prev => sameStepAndColors(prev, step))) {
-          if (step.name) { carriedName = step.name; carriedNameType = step.nameType; }
-          return false;
-        }
-        return true;
-      });
-
-      // transfer carried annotation to the last new F2L pair
-      if (carriedName) {
-        for (let i = newSteps.length - 1; i >= 0; i--) {
-          if (newSteps[i].type === 'f2l' && newSteps[i].step === 'pair') {
-            newSteps[i].name = carriedName;
-            newSteps[i].nameType = carriedNameType;
-            break;
-          }
-        }
-      }
-
-      return newSteps;
-    };
 
     const buildMoveLine = (line: string[], lineIdx: number, hasAddedScramble: boolean): string => {
       const lineAndScram = hasAddedScramble ? line : [...allMovesRef.current[0].flat(), ...line];
@@ -1434,7 +1406,7 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
         </div>
       </div>
       <div id="player-box" className="px-3 relative flex flex-col mt-6 w-full justify-center items-center">
-        <div id="cube_model" className="flex h-full aspect-video max-h-96 min-h-[200px] bg-primary-900 select-none z-30 w-[100%]">
+        <div id="cube_model" className="flex h-full aspect-video max-h-96 min-h-[200px] bg-primary-900 select-none z-20 w-[100%]">
           <Suspense fallback={<div className="flex text-xl w-full h-full justify-center items-center text-primary-100">Loading cube...</div>}>
             <TwistyPlayer
               speed={speed}
@@ -1474,7 +1446,7 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
           <div id="rich-solution-display" className="relative max-h-[35vh] -mb-20 border-none overflow-visible">
             <div
               className="icon-column-clip max-h-[35vh] absolute left-0 top-0"
-              style={{ width: ICON_SIZE_CONFIG[iconSize].iconWidth }}
+              style={{ width: ICON_SIZE_CONFIG['medium'].iconWidth }}
             >
               <div ref={iconScrollRef}>
                 <IconStack
@@ -1490,7 +1462,7 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
               className="min-w-0 overflow-y-auto max-h-[35vh] relative z-10"
               id="solution"
               style={{
-                marginLeft: hasIcons ? ICON_SIZE_CONFIG[iconSize].iconWidth : 0,
+                marginLeft: hasIcons ? ICON_SIZE_CONFIG['medium'].iconWidth : 0,
                 transition: 'margin-left 200ms linear',
               }}
               onScroll={(e) => {

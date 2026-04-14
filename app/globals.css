@@ -166,9 +166,9 @@ input[type='range']::-moz-range-track {
   }
 }
 
-/* hover effects gated behind @media (hover: hover) 
-to prevent sticky hover on touch devices for IconStack */
-@media (hover: hover) {
+/* hover effects gated behind @media (hover: hover) and min-width
+to prevent sticky hover on touch devices and enlargement on small screens */
+@media (hover: hover) and (min-width: 768px) {
   .step-icon-hover:hover {
     height: var(--hover-height) !important;
     z-index: 20;
