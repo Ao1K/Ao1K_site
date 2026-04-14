@@ -1,0 +1,22 @@
+name: Sync dev with main
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  sync-dev:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Sync dev branch to main
+        run: |
+          git fetch origin
+          git checkout dev
+          git reset --hard origin/main
+          git push origin dev --force-with-lease
