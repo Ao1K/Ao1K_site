@@ -13,10 +13,6 @@ So like AUF + trigger_1 + y + AUF + trigger_2?
 Trigger_1 = any RU or LU
 Trigger_2 = any RU, LU, or FU
 
-FMC icons. DR/HTR? What even.
-
-Rank OLL and PLL suggestions without algorithm, just hard code it. Use reco.nz ranks.
-
 A completely intuitive f2l guide
 
 Comments in previews, such as // OCLS break (writes: // OCL S)

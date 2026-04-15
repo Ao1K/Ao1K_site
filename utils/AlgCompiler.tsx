@@ -6,6 +6,7 @@ import { SimpleCube } from '../composables/recon/SimpleCube';
 import { reverseMove, replacementTable_Y } from '../composables/recon/transformHTML';
 import AlgSpeedEstimator from '../composables/recon/AlgSpeedEstimator';
 import type { CompiledLLAlg } from '../composables/recon/LLsuggester';
+import { ollFrequencies, pllFrequencies } from './algFrequencies';
 
 interface CompiledExactAlg {
   alg: string;
@@ -775,9 +776,87 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
     return moves.join(' ').trim();
   };
 
+  const normalizeAlgForMatching = (alg: string): string => {
+    const validBases = new Set(['U', 'D', 'R', 'L', 'F', 'B', 'u', 'd', 'r', 'l', 'f', 'b', 'M', 'E', 'S', 'x', 'y', 'z']);
+
+    const getAxis = (move: string): string | null => {
+      const base = move[0];
+      if (!base) return null;
+      if ('UDudE'.includes(base)) return 'UD';
+      if ('RLrlM'.includes(base)) return 'RL';
+      if ('FBfbS'.includes(base)) return 'FB';
+      return null; // x, y, z rotations — not commutative
+    };
+
+    // convert move to canonical form: M2' → M2, R3 → R', etc.
+    const canonicalizeMove = (move: string): string => {
+      if (!move) return move;
+      const base = move.charAt(0);
+      if (!validBases.has(base)) return move;
+      let index = 1;
+      let amount = 1;
+      const digit = move.charAt(index);
+      if (digit === '2') {
+        amount = 2;
+        index += 1;
+      } else if (digit === '3') {
+        // keep R3 as-is (distinct from R')
+        return move;
+      }
+      if (move.charAt(index) === "'") {
+        amount = (4 - amount) % 4;
+        index += 1;
+      }
+      if (index !== move.length) return move; // unparseable, keep as-is
+      const normalized = amount % 4;
+      if (normalized === 0) return ''; // identity
+      if (normalized === 1) return base;
+      if (normalized === 2) return `${base}2`;
+      return `${base}'`;
+    };
+
+    const moves = alg.trim().split(/\s+/).filter(m => m.length > 0);
+    const canonicalized = moves.map(canonicalizeMove).filter(m => m.length > 0);
+
+    // sort consecutive same-axis (commuting) groups alphabetically
+    const result: string[] = [];
+    let i = 0;
+    while (i < canonicalized.length) {
+      const axis = getAxis(canonicalized[i]);
+      if (!axis) {
+        result.push(canonicalized[i]);
+        i++;
+        continue;
+      }
+      const group: string[] = [];
+      while (i < canonicalized.length && getAxis(canonicalized[i]) === axis) {
+        group.push(canonicalized[i]);
+        i++;
+      }
+      group.sort();
+      result.push(...group);
+    }
+    return result.join(' ');
+  };
+
   const compileLLalgorithms = (algs: LastLayerAlg[]) => {
 
+    const step = algs[0]!.step;
     const cubeInterpreter = new SimpleCubeInterpreter();
+
+    // build normalized frequency lookup for this step only
+    const stepFrequencies = step === 'oll' ? ollFrequencies : pllFrequencies;
+    type FreqEntry = { frequency: number; originalValue: string; matchCount: number };
+    const normalizedFreqMap = new Map<string, FreqEntry>();
+    stepFrequencies.forEach(f => {
+      const key = normalizeAlgForMatching(f.value);
+      if (normalizedFreqMap.has(key)) {
+        const existing = normalizedFreqMap.get(key)!;
+        console.error(`algFrequencies has duplicate normalized entries: "${f.value}" and "${existing.originalValue}" both normalize to "${key}"`);
+        throw new Error('Duplicate normalized algFrequency entries');
+      }
+      normalizedFreqMap.set(key, { frequency: f.frequency, originalValue: f.value, matchCount: 0 });
+    });
 
     // Array to store compiled algorithm data
     const compiledData: CompiledLLAlg[] = [];
@@ -801,14 +880,36 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
       cubeInterpreter.getStepsCompleted(cube);
       console.log('Identifying alg:', alg.value);
       const { index: caseIndex, refPieceMovement, minMovements } = cubeInterpreter.identifyLLcase(alg.step, alg.value);
+
+      const normalizedKey = normalizeAlgForMatching(alg.value);
+      const freqEntry = normalizedFreqMap.get(normalizedKey);
+      if (freqEntry) {
+        freqEntry.matchCount++;
+        if (freqEntry.matchCount > 1) {
+          console.error(`algFrequency entry "${freqEntry.originalValue}" matched more than one compiled alg (also matched: "${alg.value}")`);
+          throw new Error('algFrequency entry matched more than one compiled alg');
+        }
+      }
+      const frequency = freqEntry?.frequency ?? 0;
+
       compiledData.push({
         alg: alg.value,
         caseIndex,
         refPieceMovement,
-        minMovements
+        minMovements,
+        frequency
       });
     }
-    const step = algs[0]!.step;
+
+    // validate all frequency entries were matched exactly once
+    const unmatchedEntries = [...normalizedFreqMap.values()].filter(e => e.matchCount === 0);
+    // unmatchedEntries.forEach(e => {
+    //   console.error(`algFrequency entry "${e.originalValue}" was not matched by any compiled alg`);
+    // });
+    if (unmatchedEntries.length > 0) {
+      console.warn(`${unmatchedEntries.length} ignored! These algFrequency entries were not matched with any compiled alg. This is usually happens due to algFrequencies containing alg variants that represent mistakes, such as "R U U' R'"`);
+    }
+
     downloadCompiledAlgs(compiledData, step);
 
   }

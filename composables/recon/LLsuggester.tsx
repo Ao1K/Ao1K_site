@@ -6,6 +6,7 @@ export interface CompiledLLAlg {
   alg: string;
   refPieceMovement: number; // the number of clockwise 90 degree turns of effective green-white piece to go from front-right to starting position of alg
   minMovements: number[]; // the number of clockwise 90 degree turns to go from starting position to the minimum key position
+  frequency?: number; // how often this alg is used in competition solves
 }
 
 export default class LLsuggester {
@@ -58,8 +59,8 @@ export default class LLsuggester {
     return (4 - refPieceOrigin) % 4;
   }
 
-  private getValidOllAlgs(caseIndex: number, minMovements: number[], refPieceOrigins: number[]): string[] {
-    const validAlgs: string[] = [];
+  private getValidOllAlgs(caseIndex: number, minMovements: number[], refPieceOrigins: number[]): { alg: string, frequency: number }[] {
+    const validAlgs: { alg: string, frequency: number }[] = [];
     this.ollAlgs.forEach(alg => {
       if (alg.caseIndex !== caseIndex) {
         return;
@@ -75,7 +76,7 @@ export default class LLsuggester {
         case 3: preAUF = "U' "; break;
       }
       
-      validAlgs.push(preAUF + alg.alg);
+      validAlgs.push({ alg: preAUF + alg.alg, frequency: alg.frequency ?? 0 });
     });
     return validAlgs;
   }
@@ -98,8 +99,8 @@ export default class LLsuggester {
     return alg;
   }
 
-  private getValidPllAlgs(caseIndex: number, minMovements: number[], refPieceOrigins: number[]): string[] {
-    const validAlgs: string[] = [];
+  private getValidPllAlgs(caseIndex: number, minMovements: number[], refPieceOrigins: number[]): { alg: string, frequency: number }[] {
+    const validAlgs: { alg: string, frequency: number }[] = [];
     const aufCost = [0, 1, 2, 1]; // none, U, U2, U'
     const aufPreference = [0, 1, 3, 2]; // tiebreaker: prefer no AUF, then U, U', U2
 
@@ -148,12 +149,12 @@ export default class LLsuggester {
       }
       const fullAlg = preAUF + alg.alg + postAUF;
       const finalAUFadjustedAlg = this.fixPostAUFrotation(fullAlg);
-      validAlgs.push(finalAUFadjustedAlg);
+      validAlgs.push({ alg: finalAUFadjustedAlg, frequency: alg.frequency ?? 0 });
     });
     return validAlgs;
   }
 
-  public getAlgsForStep(step: 'oll' | 'pll' | 'auf', caseIndex: number, minMovements: number[], refPieceOrigins: number[] ): string[] {
+  public getAlgsForStep(step: 'oll' | 'pll' | 'auf', caseIndex: number, minMovements: number[], refPieceOrigins: number[] ): { alg: string, frequency: number }[] {
     switch (step) {
       case 'oll':
         return this.getValidOllAlgs(caseIndex, minMovements, refPieceOrigins);
@@ -161,7 +162,7 @@ export default class LLsuggester {
         return this.getValidPllAlgs(caseIndex, minMovements, refPieceOrigins);
       case 'auf':
         const aufAlgs = ["", "U'", "U2", "U"];
-        return [aufAlgs[caseIndex]];
+        return [{ alg: aufAlgs[caseIndex], frequency: 0 }];
       default:
         throw new Error(`Unsupported step type: ${step}`);
     }

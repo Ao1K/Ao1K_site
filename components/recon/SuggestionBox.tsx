@@ -31,13 +31,13 @@ const sortSuggestions = (items: SuggestionBoxSuggestion[]) => {
     groups.get(key)!.push(item)
   }
 
-  // 2. sort each group by time (smallest first)
+  // 2. sort each group by originalIndex to preserve logic-layer ordering (frequency for LL, time for F2L)
   const sortedGroups = Array.from(groups.values()).map(group =>
-    group.sort((a, b) => a.suggestion.time - b.suggestion.time)
+    group.sort((a, b) => a.originalIndex - b.originalIndex)
   )
 
-  // 3. sort the groups by the time of the first element
-  sortedGroups.sort((a, b) => a[0].suggestion.time - b[0].suggestion.time)
+  // 3. sort the groups by the originalIndex of their first element
+  sortedGroups.sort((a, b) => a[0].originalIndex - b[0].originalIndex)
 
   return sortedGroups.flat()
 };
