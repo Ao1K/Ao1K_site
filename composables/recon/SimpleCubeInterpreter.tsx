@@ -12,6 +12,7 @@ export interface Suggestion {
   steps: string[];
   name?: string;
   hasEOsolved?: boolean;
+  frequency?: number;
 }
 
 type ColorName = 'white' | 'yellow' | 'red' | 'orange' | 'green' | 'blue';
@@ -3483,16 +3484,16 @@ export class SimpleCubeInterpreter {
     ];
 
     const llIndices = this.getLLindices(steps, stepTypes);
-    const algs: { alg: string, name: string, steps: string[] }[] = [];
+    const algs: { alg: string, name: string, steps: string[], frequency: number }[] = [];
 
     llIndices.forEach(index => {
       if (index.step !== 'oll' && index.step !== 'pll' && index.step !== 'auf') {
         console.warn(`LL suggestion for step ${index.step} not yet implemented.`);
         return;
       }
-      const stepAlgs: string[] = this.LLsuggester!.getAlgsForStep(index.step, index.index, index.minMovements, refPieceOrigins);
-      stepAlgs.forEach(alg => {
-        algs.push({ alg, name: index.name, steps: [index.step] });
+      const stepAlgs = this.LLsuggester!.getAlgsForStep(index.step, index.index, index.minMovements, refPieceOrigins);
+      stepAlgs.forEach(({ alg, frequency }) => {
+        algs.push({ alg, name: index.name, steps: [index.step], frequency });
       });
     });
 
@@ -3501,9 +3502,14 @@ export class SimpleCubeInterpreter {
       alg: alg.alg,
       time: speedEstimator.calcScore(alg.alg),
       steps: alg.steps,
-      name: alg.name
+      name: alg.name,
+      frequency: alg.frequency
     }));
 
-    return suggestions.sort((a, b) => a.time - b.time); // sort by time (low is better)
+    // sort by frequency (high is better), then by speed estimation as tiebreaker (low is better)
+    console.log('LL suggestions before sorting:', suggestions);
+    const sortedSuggestions = suggestions.sort((a, b) => (b.frequency ?? 0) - (a.frequency ?? 0) || a.time - b.time);
+    console.log('LL suggestions after sorting:', sortedSuggestions);
+    return sortedSuggestions;
   }
 }
