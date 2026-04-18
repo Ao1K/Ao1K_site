@@ -17,3 +17,9 @@ A completely intuitive f2l guide
 
 Comments in previews, such as // OCLS break (writes: // OCL S)
 Possibly just an issue where moving text around force adds break between them
+
+Icons break if you edit and earlier line and then undo the edit
+
+F R' U' R F' not added?
+
+Think about function of solve review carefully. Form will follow.

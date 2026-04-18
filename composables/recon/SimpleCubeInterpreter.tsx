@@ -3507,9 +3507,7 @@ export class SimpleCubeInterpreter {
     }));
 
     // sort by frequency (high is better), then by speed estimation as tiebreaker (low is better)
-    console.log('LL suggestions before sorting:', suggestions);
     const sortedSuggestions = suggestions.sort((a, b) => (b.frequency ?? 0) - (a.frequency ?? 0) || a.time - b.time);
-    console.log('LL suggestions after sorting:', sortedSuggestions);
     return sortedSuggestions;
   }
 }

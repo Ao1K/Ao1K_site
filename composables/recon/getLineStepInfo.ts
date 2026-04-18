@@ -191,7 +191,8 @@ function determineMethod(allSteps: StepInfo[], prevSteps: StepInfo[], currentSte
   if (hasNonDCrossOnly && currentBlockSteps.length > 0 && !isRouxBlocksSolved && !isSolved) return 'Blocks';
 
   // CFOP
-  const isFirstStepCross = prevSteps.length === 0 && crossSteps.length >= 1;
+  const invalidStepsBeforeCross = prevSteps.filter(step => step.type !== 'none' && step.type !== 'genericEO' && step.type !== 'eoLine');
+  const isFirstStepCross = invalidStepsBeforeCross.length === 0 && crossSteps.length >= 1;
   const isLikelyCFOP = isFirstStepCross || allSteps.some(step => step.type === 'f2l');
   if (isLikelyCFOP) return 'CFOP';
 
@@ -202,7 +203,7 @@ function determineMethod(allSteps: StepInfo[], prevSteps: StepInfo[], currentSte
   if (isLikelyRoux) return 'Roux';
 
   // ZZ
-  if (eoLineSteps.length > 0 && prevSteps.length === 0) return 'ZZ';
+  if (eoLineSteps.length > 0 && invalidStepsBeforeCross.length === 0) return 'ZZ';
 
   // Blocks (Petrus-style) — only when no other method signals are present
   const wasOtherMethodUsed = allSteps.some(step => {
