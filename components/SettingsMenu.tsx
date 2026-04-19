@@ -116,10 +116,10 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
               <button
                 onClick={() => setElevation(DEFAULT_HINT_FACELETS_ELEVATION)}
                 disabled={elevation === DEFAULT_HINT_FACELETS_ELEVATION}
-                className={`text-xs px-2 py-0.5 rounded-sm transition-colors ${
+                className={`text-sm px-2 py-1 rounded-sm w-auto transition-colors ${
                   elevation === DEFAULT_HINT_FACELETS_ELEVATION
-                    ? 'text-gray-400'
-                    : 'text-gray-600 hover:bg-gray-200'
+                    ? 'bg-gray-100 text-gray-400'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
               >
                 Reset
@@ -136,19 +136,19 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
             />
           </div>
 
-          <div className="flex flex-row items-center mb-2">
+          <div className="flex flex-row items-center justify-between mb-2">
             <div className="text-sm font-semibold text-light_accent p-3 w-auto">Cube Colors</div>
-            {/* Restore Defaults button */}
+            {/* Reset button */}
             <button
               onClick={handleResetColors}
               disabled={isDefault}
-              className={`py-2 px-3 text-sm rounded-sm w-auto transition-colors ${
+              className={`py-1 px-2 mr-3 text-sm rounded-sm w-auto transition-colors ${
                 isDefault
                   ? 'bg-gray-100 text-gray-400'
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
             >
-              Restore Defaults
+              Reset
             </button>
           </div>
           {/* 2x3 grid of color swatches - opposite colors next to each other */}
