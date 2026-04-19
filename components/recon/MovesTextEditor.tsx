@@ -323,9 +323,8 @@ function MovesTextEditor({
   /**
    * Applies automatic text substitutions to the input text.
    * Skips text inside comment spans to preserve comments as-is.
-   * Works on plain text to handle patterns that span across HTML elements.
    */
-  const applyAutoSubstitutions = (text: string, html: string): [string, string] => {
+  const applyAutoSubstitutions = (html: string): [string, string] => {
     const commentClass = colorDict['comment'];
     const caretMarker = '___CARET___';
     
@@ -333,15 +332,7 @@ function MovesTextEditor({
     let workingHtml = html.replace(/<span id="caretNode"[^>]*>.*?<\/span>/i, caretMarker);
     let plainText = workingHtml.replace(/<[^>]+>/g, '');
     
-    // Find comment regions in the plain text
-    // We need to preserve comments by identifying them in the HTML structure
-    const commentRegex = new RegExp(
-      `<span[^>]*class=["']${commentClass}["'][^>]*>([^<]*(?:<[^>]+>[^<]*)*?)<\/span>`,
-      'gi'
-    );
-    
     const commentRanges: Array<{start: number, end: number, text: string}> = [];
-    let commentMatch;
     let position = 0;
     
     // Build a mapping of comment positions in plain text
@@ -375,12 +366,8 @@ function MovesTextEditor({
     // Apply substitutions to non-comment portions
     let processedText = plainText;
     
-    // Protect caret marker from substitution patterns by temporarily replacing it
-    // Use only control characters that won't match any cube notation patterns
-    const caretPlaceholder = '\u0000\u0001\u0002\u0003';
-    processedText = processedText.replace(caretMarker, caretPlaceholder);
-    
-    // For each comment range, replace with a unique placeholder
+    // Replace comment ranges with placeholders first, while positions
+    // (computed against plainText) are still valid
     const commentPlaceholders: string[] = [];
     for (let i = commentRanges.length - 1; i >= 0; i--) {
       const range = commentRanges[i];
@@ -390,6 +377,11 @@ function MovesTextEditor({
         processedText = processedText.substring(0, range.start) + placeholder + processedText.substring(range.end);
       }
     }
+    
+    // Protect caret marker from substitution patterns by temporarily replacing it
+    // (done after comment placeholders since those use position-based indexing)
+    const caretPlaceholder = '\u0000\u0001\u0002\u0003';
+    processedText = processedText.replace(caretMarker, caretPlaceholder);
     
     // Apply all substitutions to the text (outside of comments)
     for (const sub of autoSubstitutions) {
@@ -431,7 +423,7 @@ function MovesTextEditor({
     let text = line.replace(/<[^>]+>/g, '');
 
     // Apply auto-substitutions if not a paste action
-    if (!isPaste) [text, line] = applyAutoSubstitutions(text, line);
+    if (!isPaste) [text, line] = applyAutoSubstitutions(line);
 
     const parsed = parseTextInput(text);
 

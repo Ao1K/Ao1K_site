@@ -819,7 +819,7 @@ const Player = React.memo(({
       divRef.current.appendChild(renderer.domElement);
       rendererRef.current = renderer;
 
-      const light = new AmbientLight(0xffffff, 0.5); // soft white light
+      const light = new AmbientLight(0xffffff, 1);
       scene.add(light);
 
       controls = new OrbitControls(camera, renderer.domElement);
@@ -845,14 +845,6 @@ const Player = React.memo(({
     // console.log('cube: ', playerRef.current?.experimentalCurrentThreeJSPuzzleObject());
   }
 
-  const hexToRgb = (hex: string) => {
-    const bigint = parseInt(hex.replace('#', ''), 16);
-    const r = (bigint >> 16) & 255;
-    const g = (bigint >> 8) & 255;
-    const b = bigint & 255;
-    return [r, g, b];
-  };
-
   const setStickerColors = (cube: any, isInitialLoad = false) => {
     if (!playerRef.current) return;
     const stickerColors = cube.kpuzzleFaceletInfo;
@@ -861,21 +853,14 @@ const Player = React.memo(({
     // Get colors from settings
     const colors = cubeColors;
 
-    const up = hexToRgb(colors.up);
-    const down = hexToRgb(colors.down);
-    const front = hexToRgb(colors.front);
-    const back = hexToRgb(colors.back);
-    const right = hexToRgb(colors.right);
-    const left = hexToRgb(colors.left);
-
-    // not sure why I can just set the centers, but I'm not complaining
+    // use color.set(hex) for proper sRGB→linear conversion with Three.js color management
     // CENTERS mapping: [0]=up(white), [1]=left(orange), [2]=front(green), [3]=right(red), [4]=back(blue), [5]=down(yellow)
-    cube.kpuzzleFaceletInfo.CENTERS[0][0].facelet.material.color.setRGB(...up.map(val => val / 255));
-    cube.kpuzzleFaceletInfo.CENTERS[1][0].facelet.material.color.setRGB(...left.map(val => val / 255));
-    cube.kpuzzleFaceletInfo.CENTERS[2][0].facelet.material.color.setRGB(...front.map(val => val / 255));
-    cube.kpuzzleFaceletInfo.CENTERS[3][0].facelet.material.color.setRGB(...right.map(val => val / 255));
-    cube.kpuzzleFaceletInfo.CENTERS[4][0].facelet.material.color.setRGB(...back.map(val => val / 255));
-    cube.kpuzzleFaceletInfo.CENTERS[5][0].facelet.material.color.setRGB(...down.map(val => val / 255));
+    cube.kpuzzleFaceletInfo.CENTERS[0][0].facelet.material.color.set(colors.up);
+    cube.kpuzzleFaceletInfo.CENTERS[1][0].facelet.material.color.set(colors.left);
+    cube.kpuzzleFaceletInfo.CENTERS[2][0].facelet.material.color.set(colors.front);
+    cube.kpuzzleFaceletInfo.CENTERS[3][0].facelet.material.color.set(colors.right);
+    cube.kpuzzleFaceletInfo.CENTERS[4][0].facelet.material.color.set(colors.back);
+    cube.kpuzzleFaceletInfo.CENTERS[5][0].facelet.material.color.set(colors.down);
 
     // On initial load, capture the default colors
     if (isInitialLoad) {
@@ -888,13 +873,13 @@ const Player = React.memo(({
 
     // Map standard colors to custom colors
     // Standard cube colors: white=up, yellow=down, green=front, blue=back, red=right, orange=left
-    const colorMapping: { [key: string]: number[] } = {
-      'white': up,
-      'yellow': down,
-      'green': front,
-      'blue': back,
-      'red': right,
-      'orange': left
+    const colorMapping: { [key: string]: string } = {
+      'white': colors.up,
+      'yellow': colors.down,
+      'green': colors.front,
+      'blue': colors.back,
+      'red': colors.right,
+      'orange': colors.left
     };
 
     // Helper to determine which standard color a given RGB is close to
@@ -932,8 +917,7 @@ const Player = React.memo(({
         const standardColor = identifyStandardColor(initialColor.r, initialColor.g, initialColor.b);
 
         if (standardColor) {
-          const newColor = colorMapping[standardColor];
-          mesh.material.color.setRGB(...newColor.map(val => val / 255));
+          mesh.material.color.set(colorMapping[standardColor]);
         }
       }
     });

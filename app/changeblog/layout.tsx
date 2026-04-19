@@ -1,4 +1,4 @@
-import ChangelogSidebar from "../../components/changeblog/ChangelogSidebar";
+import ChangeblogSidebar from "../../components/changeblog/ChangeblogSidebar";
 import Footer from "../../components/Footer";
 
 export default function ChangelogLayout({
@@ -9,7 +9,7 @@ export default function ChangelogLayout({
   return (
     <div className="flex justify-center w-full min-h-[calc(100vh-4rem)]">
       <div className="flex flex-row w-full max-w-5xl">
-        <ChangelogSidebar />
+        <ChangeblogSidebar />
         <div className="flex-1 min-w-0 flex flex-col">
           <div className="flex-1">{children}</div>
           <Footer />

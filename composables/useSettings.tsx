@@ -7,10 +7,10 @@ import { useState, useEffect, useCallback } from 'react';
 export const DEFAULT_CUBE_COLORS = {
   up: '#FFFFFF',     // white
   down: '#EEFF00',   // yellow
-  front: '#0CEC00',  // green
-  back: '#003CFF',   // blue
+  front: '#3EF600',  // green
+  back: '#2870FF',   // blue
   right: '#FF0000',  // red
-  left: '#FF7F00',   // orange
+  left: '#FFA914',   // orange
   eo: '#FF00FF',     // magenta
 };
 
