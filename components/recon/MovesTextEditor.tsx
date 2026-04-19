@@ -337,7 +337,6 @@ function MovesTextEditor({
     
     // Build a mapping of comment positions in plain text
     const tempHtml = workingHtml;
-    console.log('tempHtml:', tempHtml);
     const segmentRegex = /(<[^>]+>)|([^<]+)/g;
     let segMatch;
     let inCommentSpan = false;
@@ -356,7 +355,6 @@ function MovesTextEditor({
         }
       } else if (segMatch[2]) { // Text
         const textContent = segMatch[2];
-        console.log('text content:', textContent, 'position:', position, 'inCommentSpan:', inCommentSpan);
         if (inCommentSpan && commentRanges.length > 0) {
           const lastComment = commentRanges[commentRanges.length - 1];
           lastComment.text += textContent;
@@ -384,8 +382,6 @@ function MovesTextEditor({
     // (done after comment placeholders since those use position-based indexing)
     const caretPlaceholder = '\u0000\u0001\u0002\u0003';
     processedText = processedText.replace(caretMarker, caretPlaceholder);
-
-    console.log('Processed text after protecting comments and caret:', processedText);
     
     // Apply all substitutions to the text (outside of comments)
     for (const sub of autoSubstitutions) {
