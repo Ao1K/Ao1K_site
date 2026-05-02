@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { TwistyPlayer } from 'cubing/twisty';
+import { initialize as initializeCubeSolver, solve as solveCube } from 'cube-solver';
 import {
   Scene,
   PerspectiveCamera,
@@ -16,18 +17,19 @@ import {
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { Object3DEventMap } from 'three/src/core/Object3D.js';
 import PlayerControls from './PlayerControls';
+import CubeImageDialog from './CubeImageDialog';
 import { reverseMove } from '../../composables/recon/transformHTML'
 import type { ControllerRequestOptions } from './_PageContent';
 import type { PlayerParams as RenderRefProps } from './_PageContent';
-import { useSyncedSettings, useShowControls, useHintFaceletsElevation, DEFAULT_HINT_FACELETS_ELEVATION, type CubeColors } from '../../composables/useSettings';
+import { createCubeScreenshotGenerator, type ScreenshotSetupStatus } from '../../composables/recon/CubeScreenshotGenerator';
+import { useSyncedSettings, useShowControls, useHintFaceletsElevation, DEFAULT_HINT_FACELETS_ELEVATION } from '../../composables/useSettings';
+import CameraIcon from '../icons/camera';
 
 interface PlayerProps {
   scrambleRequest: string;
   solutionRequest: string;
   speed: number;
   animationTimesRequest: number[]; // all times of animations up to but not including the current move
-  onCubeStateUpdate: () => void;
-  handleCubeLoaded: () => void;
   handleControllerRequest: (request: ControllerRequestOptions) => void;
   controllerButtonsStatus: {
     fullLeft: string;
@@ -36,13 +38,6 @@ interface PlayerProps {
     stepRight: string;
     fullRight: string;
   };
-  setControllerButtonsStatus: React.Dispatch<React.SetStateAction<{
-    fullLeft: string;
-    stepLeft: string;
-    playPause: string;
-    stepRight: string;
-    fullRight: string;
-  }>>;
 }
 
 // Default cube colors - kept for backwards compatibility with imports
@@ -55,16 +50,78 @@ export const CUBE_COLORS = {
   white: '#FFFFFF',
 };
 
+const splitAlgMoves = (alg: string) => alg.split(' ').filter((move) => move !== '');
+
+const joinAlgMoves = (...algs: string[]) => algs.flatMap(splitAlgMoves).join(' ');
+
+const normalizeMoveForCubeSolver = (move: string) => {
+  if (!move) {
+    return '';
+  }
+
+  const rootMove = move[0];
+  const suffix = move.slice(1);
+
+  switch (suffix) {
+    case "2'":
+      return `${rootMove}2`;
+    case '3':
+      return `${rootMove}'`;
+    case "3'":
+      return rootMove;
+    default:
+      return move;
+  }
+};
+
+const invertAlgMoves = (alg: string) => splitAlgMoves(alg)
+  .reverse()
+  .map(reverseMove)
+  .map(normalizeMoveForCubeSolver)
+  .join(' ');
+
+const simplifySetupMoves = (setupMoves: string) => {
+  if (!setupMoves) {
+    return '';
+  }
+
+  if (splitAlgMoves(setupMoves).length < 10) {
+    return setupMoves;
+  }
+
+  try {
+    return solveCube(invertAlgMoves(setupMoves), 'kociemba');
+  } catch (error) {
+    console.error('Failed to simplify setup moves:', error);
+    return setupMoves;
+  }
+};
+
+const AVAILABLE_SCREENSHOT_SETUP_STATUS: ScreenshotSetupStatus = {
+  status: 'available',
+  message: '',
+};
+
+const getDisplayedSolutionAlg = (solution: string, animationTimes: number[]) => {
+  if (animationTimes.length === 0) {
+    return '';
+  }
+
+  if (animationTimes.length === 1 && (animationTimes[0] === 0 || animationTimes[0] === 1)) {
+    return '';
+  }
+
+  const appliedMoveCount = animationTimes.filter((time) => time > 0).length;
+  return splitAlgMoves(solution).slice(0, appliedMoveCount).join(' ');
+};
+
 const Player = React.memo(({
   scrambleRequest,
   solutionRequest,
   speed,
   animationTimesRequest,
-  onCubeStateUpdate,
-  handleCubeLoaded,
   handleControllerRequest,
   controllerButtonsStatus,
-  setControllerButtonsStatus,
 }: PlayerProps) => {
   const { settings } = useSyncedSettings();
   const cubeColors = settings.cubeColors;
@@ -75,8 +132,10 @@ const Player = React.memo(({
 
   const playerRef = useRef<TwistyPlayer | null>(null);
   const cubeRef = useRef<Object3D<Object3DEventMap> | null>(null);
+  const sceneRef = useRef<Scene | null>(null);
   const cameraRef = useRef<PerspectiveCamera | null>(null);
   const rendererRef = useRef<WebGLRenderer | null>(null);
+  const faceLabelMeshesRef = useRef<Mesh[]>([]);
   const divRef = useRef<HTMLDivElement>(null);
 
   const lastSolution = useRef<string>('');
@@ -91,6 +150,23 @@ const Player = React.memo(({
   const initialHintStickerColors = useRef<{ r: number, g: number, b: number }[]>([]);
 
   const [flashingButtons, setFlashingButtons] = useState<Set<string>>(new Set());
+  const [isScreenshotDialogOpen, setIsScreenshotDialogOpen] = useState(false);
+  const [displayedSetupMoves, setDisplayedSetupMoves] = useState('');
+  const displayedSetupMovesRef = useRef('');
+  const setupMoveSimplificationCacheRef = useRef({ unsimplified: '', simplified: '' });
+  const screenshotSetupStatus = AVAILABLE_SCREENSHOT_SETUP_STATUS;
+
+  const [screenshotGenerator] = useState(() => {
+    return createCubeScreenshotGenerator(() => ({
+      scene: sceneRef.current,
+      camera: cameraRef.current,
+      viewerElement: divRef.current,
+      renderer: rendererRef.current,
+      faceLabelMeshes: faceLabelMeshesRef.current,
+      setupMoves: displayedSetupMovesRef.current,
+      setupStatus: screenshotSetupStatus,
+    }));
+  });
 
   const calcCubeSpeed = (speed: number) => {
     if (speed === 100) {
@@ -103,9 +179,41 @@ const Player = React.memo(({
   const cubeSpeed = calcCubeSpeed(speed);
   const isInstant = cubeSpeed === 1000;
 
+  const syncDisplayedSetupMoves = (scramble: string, displayedSolutionAlg: string) => {
+    const nextUnsimplifiedSetupMoves = joinAlgMoves(scramble, displayedSolutionAlg);
+    const nextSetupMoves = setupMoveSimplificationCacheRef.current.unsimplified === nextUnsimplifiedSetupMoves
+      ? setupMoveSimplificationCacheRef.current.simplified
+      : simplifySetupMoves(nextUnsimplifiedSetupMoves);
+    
+    if (setupMoveSimplificationCacheRef.current.unsimplified !== nextUnsimplifiedSetupMoves) {
+      setupMoveSimplificationCacheRef.current = {
+        unsimplified: nextUnsimplifiedSetupMoves,
+        simplified: nextSetupMoves,
+      };
+    }
+
+    if (displayedSetupMovesRef.current === nextSetupMoves) {
+      return;
+    }
+
+    displayedSetupMovesRef.current = nextSetupMoves;
+    setDisplayedSetupMoves(nextSetupMoves);
+  };
+
   if (lastSpeed.current !== speed && playerRef.current) {
     playerRef.current.tempoScale = cubeSpeed;
     lastSpeed.current = speed;
+  }
+
+  const handleTakePicture = () => {
+    if (!sceneRef.current || !cameraRef.current) return;
+
+    syncDisplayedSetupMoves(
+      lastScramble.current,
+      getDisplayedSolutionAlg(lastSolution.current, lastAnimationTimes.current),
+    );
+
+    setIsScreenshotDialogOpen(true);
   }
 
   const handleFlash = (buttonId: string) => {
@@ -447,7 +555,7 @@ const Player = React.memo(({
     // perform the animated move
     try {
       playerRef.current.experimentalAddMove(singleMoveChange);
-    } catch (e) {
+    } catch {
       console.error('Failed to add move:', singleMoveChange);
       setInstantPlayerProps(scramble, solution, animationTimes);
     }
@@ -683,6 +791,24 @@ const Player = React.memo(({
     cam.position.y = (1 / 2) * scaleFactor * zoomFactor;
   };
 
+  const waitForPlayerIntersection = (player: TwistyPlayer) => new Promise<void>((resolve) => {
+    if (typeof IntersectionObserver === 'undefined') {
+      requestAnimationFrame(() => resolve());
+      return;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.target === player && entry.isIntersecting && entry.intersectionRect.height > 0) {
+          observer.disconnect();
+          resolve();
+        }
+      }
+    });
+
+    observer.observe(player);
+  });
+
   const animate = () => {
     requestAnimationFrame(animate);
     controls.update();
@@ -712,6 +838,7 @@ const Player = React.memo(({
 
   const addFaceLabels = () => {
     const loader = new TextureLoader();
+    faceLabelMeshesRef.current = [];
     const labels: { file: string, position: { x: number, y: number, z: number }, rotation: { x: number, y: number, z: number } }[] = [
       {
         file: '/U.svg',
@@ -751,7 +878,7 @@ const Player = React.memo(({
         texture.generateMipmaps = true;
         texture.minFilter = LinearMipmapLinearFilter;
         texture.magFilter = LinearFilter;
-        const maxAnisotropy = renderer.capabilities.getMaxAnisotropy()
+        const maxAnisotropy = rendererRef.current?.capabilities.getMaxAnisotropy() ?? 1;
         // texture.anisotropy = Math.min(16, maxAnisotropy);
         texture.anisotropy = maxAnisotropy;
 
@@ -763,11 +890,13 @@ const Player = React.memo(({
 
         const geometry = new PlaneGeometry(1.1, 1.6);
         const mesh = new Mesh(geometry, material);
+        mesh.name = `face-label-${label.file}`;
 
         mesh.position.set(label.position.x, label.position.y, label.position.z);
         mesh.rotation.set(label.rotation.x, label.rotation.y, label.rotation.z);
 
         cube.add(mesh);
+        faceLabelMeshesRef.current.push(mesh);
 
       });
 
@@ -778,7 +907,8 @@ const Player = React.memo(({
   const createCustomScene = async () => {
     divRef.current!.appendChild(playerRef.current!);
 
-    await playerRef.current!.connectedCallback();
+    // cubing defers 3D setup until the player is actually intersecting the viewport
+    await waitForPlayerIntersection(playerRef.current!);
 
     let possibleCube = await loadCubeObject();
     possibleCube ? cube = possibleCube : null;
@@ -796,6 +926,7 @@ const Player = React.memo(({
       divRef.current.style.height = '100%';
 
       scene = new Scene();
+      sceneRef.current = scene;
 
       addFaceLabels();
       setStickerColors(cube, true); // Pass true for initial load
@@ -924,6 +1055,10 @@ const Player = React.memo(({
   };
 
   useEffect(() => {
+    initializeCubeSolver('kociemba');
+  }, []);
+
+  useEffect(() => {
 
     playerRef.current = new TwistyPlayer({
       viewerLink: 'none',
@@ -958,6 +1093,7 @@ const Player = React.memo(({
 
     return () => {
       window.removeEventListener('resize', handleResize);
+      screenshotGenerator.dispose();
     };
   }, []);
 
@@ -1021,20 +1157,41 @@ const Player = React.memo(({
         onKeyDown={handleKeyDown}
         tabIndex={2}
       >
-        <PlayerControls
-          isVisible={showControls}
-          onFullLeft={handleFullLeft}
-          onStepLeft={handleStepLeft}
-          onPause={handlePause}
-          onPlay={handlePlay}
-          onReplay={handleReplay}
-          onStepRight={handleStepRight}
-          onFullRight={handleFullRight}
-          controllerButtonsStatus={controllerButtonsStatus}
-          flashingButtons={flashingButtons}
-          handleFlash={handleFlash}
-        />
+        {showControls && (
+          <>
+          <button 
+            className="absolute bottom-2 right-2 origin-bottom-right p-1 w-8 h-8 border border-neutral-600 bg-dark text-dark_accent hover:text-primary-100 rounded"
+            aria-label="Take picture"
+            onClick={() => {
+              handleTakePicture();
+            }}
+          >
+            <CameraIcon/>
+          </button>
+          <PlayerControls
+            onFullLeft={handleFullLeft}
+            onStepLeft={handleStepLeft}
+            onPause={handlePause}
+            onPlay={handlePlay}
+            onReplay={handleReplay}
+            onStepRight={handleStepRight}
+            onFullRight={handleFullRight}
+            controllerButtonsStatus={controllerButtonsStatus}
+            flashingButtons={flashingButtons}
+            handleFlash={handleFlash}
+          />
+          </>
+        )}
       </div>
+      {isScreenshotDialogOpen ? (
+        <CubeImageDialog
+          onClose={() => setIsScreenshotDialogOpen(false)}
+          onGeneratePreview={screenshotGenerator.capture}
+          setupStatus={screenshotSetupStatus}
+          viewerAspectRatio={screenshotGenerator.getViewerAspectRatio()}
+          setupMovesForFilename={displayedSetupMoves}
+        />
+      ) : null}
     </>
   );
 });

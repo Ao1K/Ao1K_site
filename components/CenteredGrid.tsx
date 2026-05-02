@@ -9,23 +9,15 @@ export default function CenteredGrid({
   fallback?: React.ReactNode;
 }) {
   return (
-    <div
-      className={`min-h-[calc(100vh-4rem)] grid
-        grid-cols-[0,minmax(0,8fr),0]
-        md:grid-cols-[1fr,minmax(0,5fr),1fr]
-        lg:grid-cols-[1fr,minmax(0,4fr),1fr]
-        xl:grid-cols-[4fr,minmax(0,5fr),4fr]`}
-    >
-      <div className="block bg-primary-900 h-full grid-lines-50-l -z-10" />
-
-      <main className="col-start-2 flex flex-col mx-0 sm:mx-10 bg-primary-900 main-content">
+    <div className="min-h-[calc(100vh-4rem)] flex flex-row bg-primary-900">
+      <div className="mr-5 flex-1 grid-lines-50-l" />
+      <main className="w-full max-w-xl flex flex-col bg-primary-900 main-content">
         <React.Suspense fallback={fallback ?? null}>
           {children}
           <Footer />
         </React.Suspense>
       </main>
-
-      <div className="block bg-primary-900 h-full grid-lines-50-r -z-10" />
+      <div className="ml-5 flex-1 grid-lines-50-r" />
     </div>
   );
 }

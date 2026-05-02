@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef, useEffect, useLayoutEffect, lazy, Suspense, useCallback } from 'react';
+import { useState, useRef, useEffect, lazy, Suspense, useCallback } from 'react';
 import MovesTextEditor from "../../components/recon/MovesTextEditor";
 import SpeedDropdown from "../../components/recon/SpeedDropdown";
 
@@ -1366,7 +1366,7 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
   const toolbarButtons = ctrlKey === '⌘' ? macToolbarButtons : windowsToolbarButtons;
 
   return (
-    <main id="main_page" className="col-start-2 col-span-1 flex flex-col bg-primary-900 mt-[52px]">
+    <main id="main_page" className="flex flex-col bg-primary-900 mt-13">
       <VideoHelpPrompt videoId="iIipycBl0iY" initiallyDismissed={videoHelpDismissed} />
 
       {/* utility for compiling list of alg hashes */}
@@ -1391,7 +1391,7 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
       </div>
       <div id="scramble-area" className="px-3 mt-3 flex flex-col">
         <div className="text-xl text-dark_accent font-medium">Scramble</div>
-        <div className="lg:max-h-[15.1rem] max-h-[10rem] overflow-y-auto" id="scramble">
+        <div className="lg:max-h-[15.1rem] max-h-40 overflow-y-auto" id="scramble">
           <MovesTextEditor
             name={`scramble`}
             ref={scrambleMethodsRef}
@@ -1406,29 +1406,26 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
         </div>
       </div>
       <div id="player-box" className="px-3 relative flex flex-col mt-6 w-full justify-center items-center">
-        <div id="cube_model" className="flex h-full aspect-video max-h-96 min-h-[200px] bg-primary-900 select-none z-20 w-[100%]">
+        <div id="cube_model" className="flex h-full aspect-video max-h-96 min-h-50 bg-primary-900 select-none z-20 w-full">
           <Suspense fallback={<div className="flex text-xl w-full h-full justify-center items-center text-primary-100">Loading cube...</div>}>
             <TwistyPlayer
               speed={speed}
               scrambleRequest={playerParams.scramble}
               solutionRequest={playerParams.solution}
               animationTimesRequest={playerParams.animationTimes}
-              onCubeStateUpdate={() => { }}
-              handleCubeLoaded={() => { }}
               handleControllerRequest={handleControllerRequest}
               controllerButtonsStatus={controllerButtonsStatus}
-              setControllerButtonsStatus={setControllerButtonsStatus}
             />
           </Suspense>
         </div>
       </div>
       <div id="bottom-box" className="mx-3 relative flex flex-col justify-center items-center">
-        <div id="bottom-box-borders" className={`border-x w-[100%] border-neutral-600 h-14 absolute top-0 z-0 pointer-events-none ${isShowingToolbar ? 'block' : 'hidden'}`}></div>
+        <div id="bottom-box-borders" className={`border-x w-full border-neutral-600 h-14 absolute top-0 z-0 pointer-events-none ${isShowingToolbar ? 'block' : 'hidden'}`}></div>
         <div
           id="bottom-bar"
           ref={bottomBarRef}
           className={`w-full px-3 space-x-1 static flex flex-row items-center place-content-end justify-start transform z-20
-              ${isShowingToolbar ? 'translate-y-0 opacity-100 h-14' : '-translate-y-[100%] opacity-0 pointer-events-none h-0'}`}
+              ${isShowingToolbar ? 'translate-y-0 opacity-100 h-14' : '-translate-y-full opacity-0 pointer-events-none h-0'}`}
           style={{
             visibility: isShowingToolbar ? 'visible' : 'hidden',
             transition: isShowingToolbar
@@ -1438,7 +1435,7 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
           <SpeedDropdown speed={speed} setSpeed={setSpeed} />
           <Toolbar buttons={toolbarButtons} containerRef={bottomBarRef} />
         </div>
-        <div className="border border-neutral-600 hover:border-primary-100 h-[6px] rounded-b-sm w-full z-0 bg-primary-700 mb-2" onClick={() => toggleShowBottomBar()}></div>
+        <div className="border border-neutral-600 hover:border-primary-100 h-1.5 rounded-b-sm w-full z-0 bg-primary-700 mb-2" onClick={() => toggleShowBottomBar()}></div>
       </div>
       <div id="datafields" className="w-full items-start transition-width duration-500 ease-linear">
         <div id="solution-area" className="px-3 mt-1 mb-14 flex flex-col w-full">
@@ -1494,7 +1491,7 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
                 id="time-input"
                 type="number"
                 placeholder="00.000"
-                className="pt-2 pb-2 px-2 text-xl text-primary-100 bg-primary-900 group-focus:border-primary-100 hover:bg-primary-800 rounded-sm box-content no-spinner w-[4.25rem]"
+                className="pt-2 pb-2 px-2 text-xl text-primary-100 bg-primary-900 group-focus:border-primary-100 hover:bg-primary-800 rounded-sm box-content no-spinner w-17"
                 value={solveTime}
                 onChange={handleSolveTimeChange}
                 onWheel={(e) => e.currentTarget.blur()}

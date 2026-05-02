@@ -23,5 +23,4 @@ Add L U L2 U' L2 U L'
 Think about function of solve review carefully. Form will follow.
 
 Solve gif button in the copy dropdown
-Camera Button bottom right of cube visualizer
 A help button, replacing the info button. Place above title. Hidable in settings

@@ -1,5 +1,5 @@
 import CopyIcon from '../icons/copy';
-import CameraIcon from '../icons/camera';
+import CameraIcon from '../icons/image';
 import DropdownIcon from '../icons/dropdown';
 import TextTIcon from "../icons/text-T";
 
@@ -67,12 +67,12 @@ export default function CopySolveDropdown({ onCopyText, onScreenshot, alert, set
   return (
     <div id="copy-solve-dropdown" className="relative inline-block group z-20">
       {isLoading && 
-        <div className="py-1 px-2 -translate-y-[120%] absolute left-1/2 -translate-x-1/2 rounded-sm pointer-events-none select-none z-50 mb-2 whitespace-nowrap">
+        <div className="py-1 px-2 translate-y-[-120%] absolute left-1/2 -translate-x-1/2 rounded-sm pointer-events-none select-none z-50 mb-2 whitespace-nowrap">
           <Image src="/LoadingSpinner.webp" alt="Loading..." width={32} height={32} className="" />
         </div>
       }
       {alert.id === 'copy-solve' && !isLoading &&
-        <div className={`py-1 px-2 font-semibold -translate-y-[120%] absolute left-1/2 -translate-x-1/2 text-dark rounded-sm text-sm pointer-events-none select-none z-50 mb-2 whitespace-nowrap ${
+        <div className={`py-1 px-2 font-semibold translate-y-[-120%] absolute left-1/2 -translate-x-1/2 text-dark rounded-sm text-sm pointer-events-none select-none z-50 mb-2 whitespace-nowrap ${
           alert.messageType === 'warn' ? 'bg-orange-500' : 'bg-primary-100'
         }`}>
           {alert.message}
@@ -93,7 +93,7 @@ export default function CopySolveDropdown({ onCopyText, onScreenshot, alert, set
       </div>
 
       {isRotated ? 
-        <div className="flex flex-col bg-primary-900 absolute -translate-x-[4px] place-items-start text-dark_accent px-1 pb-1 text-sm">
+        <div className="flex flex-col bg-primary-900 absolute -translate-x-1 place-items-start text-dark_accent px-1 pb-1 text-sm">
           <button 
             className="hover:bg-neutral-600 py-2 px-2 border border-neutral-600 w-full text-left flex items-center space-x-2" 
             onClick={handleScreenshot}

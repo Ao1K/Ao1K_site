@@ -8,7 +8,6 @@ import StepRightIcon from '../icons/stepRight';
 import FullRightIcon from '../icons/fullRight';
 
 interface ControlsPlaceholderProps {
-  isVisible: boolean;
   onFullLeft: () => void;
   onStepLeft: () => void;
   onPause: () => void;
@@ -28,7 +27,6 @@ interface ControlsPlaceholderProps {
 }
 
 const ControlsPlaceholder: React.FC<ControlsPlaceholderProps> = ({
-  isVisible,
   onFullLeft,
   onStepLeft,
   onPause,
@@ -72,7 +70,6 @@ const ControlsPlaceholder: React.FC<ControlsPlaceholderProps> = ({
     };
   }, [debouncedResize]);
 
-  if (!isVisible) return null;
 
   const handleButtonClick = (buttonId: string, action: () => void) => {
     handleFlash(buttonId);

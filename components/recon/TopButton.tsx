@@ -27,7 +27,7 @@ export default function TopButton({ id, text, onClick, buttonRef, shortcutHint, 
   return (
     <div id={id} className="flex flex-col items-center group relative">
       {alert.id === id && 
-        <div className={`py-1 px-2 font-semibold -translate-y-[120%] absolute text-dark rounded-sm text-sm pointer-events-none select-none z-50 mb-2 whitespace-nowrap ${
+        <div className={`py-1 px-2 font-semibold translate-y-[-120%] absolute text-dark rounded-sm text-sm pointer-events-none select-none z-50 mb-2 whitespace-nowrap ${
           alert.messageType === 'warn' ? 'bg-orange-500' : 'bg-primary-100'
         }`}>
           {alert.message}

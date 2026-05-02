@@ -108,7 +108,7 @@ export const SuggestionBox = ({suggestions, topOffset, leftOffset, handleSuggest
   const isTouchScreen = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0;
 
   return (
-    <div className="flex flex-col absolute" style={{ top: topOffset, left: leftOffset, zIndex: 1000 }}>
+    <div className="absolute z-40 flex flex-col" style={{ top: topOffset, left: leftOffset }}>
     {
       sortedSuggestions.map((item, index) => (
         <SuggestionCard
@@ -129,11 +129,11 @@ export const SuggestionBox = ({suggestions, topOffset, leftOffset, handleSuggest
         hover:bg-primary-200 hover:shadow-md
         flex flex-row items-center gap-3 w-fit border-t-dark
         border border-neutral-400 bg-primary-300 text-dark text-md p-1
-        ${isTouchScreen ? 'min-w-[100px] justify-center' : 'w-fit'}`}
+        ${isTouchScreen ? 'min-w-25 justify-center' : 'w-fit'}`}
         onClick={handleSuggestionReject}>
           Cancel
         { !isTouchScreen ? (
-        <img src="/esc.svg" alt="Esc" className='border border-dark mb-[2px]'/>
+        <img src="/esc.svg" alt="Esc" className='mb-0.5 border border-dark'/>
         ) : null}
       </div>
     }

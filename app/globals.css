@@ -1,6 +1,27 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-Rubik);
+  --font-modern: var(--font-Glory);
+
+  --background-image-gradient-radial: radial-gradient(var(--tw-gradient-stops));
+  --background-image-gradient-conic: conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops));
+
+  --color-primary-100: #ECE6EF;
+  --color-primary-200: #DACEDE;
+  --color-primary-300: #BFA9C6;
+  --color-primary-400: #A385AD;
+  --color-primary-500: #7B5A87;
+  --color-primary-600: #5A4162;
+  --color-primary-700: #433149;
+  --color-primary-800: #221825;
+  --color-primary-900: #161018;
+  --color-dark: #161018;
+  --color-light_accent: #1D2F66;
+  --color-dark_accent: #ACC8D7;
+  --color-paren: #2979A4;
+  --color-rep: #6229A4;
+}
 
 :root {
   --foreground-rgb: 0, 0, 0;

@@ -4,7 +4,7 @@
  */
 export default function ReconSkeleton() {
   return (
-    <main className="col-start-2 col-span-1 flex flex-col bg-primary-900 mt-[52px]">
+    <main className="flex flex-col bg-primary-900 mt-[52px]">
       {/* top bar */}
       <div className="px-3 flex flex-row flex-wrap items-center place-content-end gap-2 mt-8 mb-3">
         {/* title input skeleton - matches TitleInput layout */}
