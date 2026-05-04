@@ -265,24 +265,11 @@ export default function CubeImageDialog({
               <div className="mb-3 text-sm font-semibold text-primary-100">Help</div>
               <div className="space-y-3 text-sm text-neutral-400">
                 <p>
-                  Close this preview to adjust the cube&apos;s colors or the camera angle.
+                  Use this tool to create a PNG image of the cube in its current position.
                 </p>
-
-                <div className="flex items-start gap-3">
-                  <span>The camera angle is best when you can see three faces clearly:</span>
-                  <svg
-                    viewBox="0 0 30 30"
-                    className="h-10 w-10 shrink-0"
-                    style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' }}
-                  >
-                    {/* top face */}
-                    <polygon points="12,12 2,6 12,0 22,6" fill="#cccccc" stroke="#888888" strokeWidth="0.5" />
-                    {/* left face */}
-                    <polygon points="12,12 2,6 2,16 12,22" fill="#aaaaaa" stroke="#888888" strokeWidth="0.5" />
-                    {/* right face */}
-                    <polygon points="12,12 22,6 22,16 12,22" fill="#666666" stroke="#555555" strokeWidth="0.5" />
-                  </svg>
-                </div>
+                <p>
+                  <span className="underline">Close this window</span>{' '}to adjust the cube&apos;s colors or the camera angle.
+                </p>
               </div>
             </div>
           </section>

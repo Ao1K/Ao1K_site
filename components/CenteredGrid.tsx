@@ -11,7 +11,7 @@ export default function CenteredGrid({
   return (
     <div className="min-h-[calc(100vh-4rem)] flex flex-row bg-primary-900">
       <div className="mr-5 flex-1 grid-lines-50-l" />
-      <main className="w-full max-w-xl flex flex-col bg-primary-900 main-content">
+      <main className="w-full max-w-[590px] flex flex-col bg-primary-900 main-content">
         <React.Suspense fallback={fallback ?? null}>
           {children}
           <Footer />

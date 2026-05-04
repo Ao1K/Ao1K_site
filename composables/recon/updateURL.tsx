@@ -20,7 +20,7 @@ export default function updateURL(queryName: string, textToEncode: string | null
   if (!textToEncode) {
       if (currentParams.has(queryName)) {
           currentParams.delete(queryName);
-          const newQueryString = currentParams.toString();
+          const newQueryString = currentParams.toString().replace(/%2C/gi, ',');
           window.history.pushState({}, '', `${window.location.pathname}?${newQueryString}`);
       }
       return;
@@ -29,6 +29,6 @@ export default function updateURL(queryName: string, textToEncode: string | null
   const text = replaceText(textToEncode);
 
   currentParams.set(queryName, text);
-  const newQueryString = currentParams.toString();
+  const newQueryString = currentParams.toString().replace(/%2C/gi, ',');
   window.history.pushState({}, '', `${window.location.pathname}?${newQueryString}`); // used to use useRouter, but it was reloading the page
 }

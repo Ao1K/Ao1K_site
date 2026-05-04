@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { HexColorPicker } from 'react-colorful';
 import PhGear from './icons/settings';
-import { useCubeColors, useShowControls, useHintFaceletsElevation, DEFAULT_HINT_FACELETS_ELEVATION, DEFAULT_CUBE_COLORS, type CubeColors } from '../composables/useSettings';
+import { useCubeColors, useShowControls, useShowSplits, useHintFaceletsElevation, DEFAULT_HINT_FACELETS_ELEVATION, DEFAULT_CUBE_COLORS, type CubeColors } from '../composables/useSettings';
 
 function GridIcon({ size }: { size: number }) {
   const edgeSize = 3;
@@ -45,6 +45,7 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
   const [activePicker, setActivePicker] = useState<keyof CubeColors | null>(null);
   const [cubeColors, setCubeColors, resetColors] = useCubeColors();
   const [showControls, setShowControls] = useShowControls();
+  const [showSplits, setShowSplits] = useShowSplits();
   const [elevation, setElevation] = useHintFaceletsElevation();
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -104,6 +105,19 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
                 type="checkbox"
                 checked={showControls}
                 onChange={handleToggleControls}
+                className="ml-2 w-4 h-4 cursor-pointer"
+              />
+            </label>
+          </div>
+
+          {/* Show Splits Toggle */}
+          <div className="px-3 py-2 border-b border-primary-200">
+            <label className="flex items-center justify-between cursor-pointer">
+              <span className="text-sm font-semibold text-light_accent">Show Splits</span>
+              <input
+                type="checkbox"
+                checked={showSplits}
+                onChange={() => setShowSplits(!showSplits)}
                 className="ml-2 w-4 h-4 cursor-pointer"
               />
             </label>
