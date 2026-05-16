@@ -63,7 +63,7 @@ const InputWithPlaceholder: React.FC<InputWithPlaceholderProps> = ({ solveTitle,
   }, []);
 
   return (
-    <div id="title-area" className="flex flex-grow flex-nowrap items-center text-center min-w-[200px]">
+    <div id="title-area" className="flex w-full flex-nowrap items-center text-center pointer-events-auto">
       <div id="title-label" className="text-dark_accent text-xl font-medium select-none">Title</div>
       <input
         id="title-input"

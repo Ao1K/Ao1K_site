@@ -8,11 +8,12 @@ export interface ButtonProps {
   shortcutHint?: string;
   icon?: React.ReactNode;
   iconText?: string; // icon or iconText should be used, but not both
+  innerText?: string; // when present, renders label text then icon inside the button
   alert: {id: string; message: string; messageType: 'info' | 'warn'};
   setAlert: React.Dispatch<React.SetStateAction<{id: string; message: string; messageType: 'info' | 'warn'}>>;
 }
 
-export default function TopButton({ id, text, onClick, buttonRef, shortcutHint, icon, iconText, alert, setAlert}: ButtonProps) {
+export default function TopButton({ id, text, onClick, buttonRef, shortcutHint, icon, iconText, innerText, alert, setAlert}: ButtonProps) {
 
   useEffect(() => {
     if (alert && alert.id === id && alert.message && setAlert) {
@@ -35,10 +36,11 @@ export default function TopButton({ id, text, onClick, buttonRef, shortcutHint, 
       }
       <button
         ref={buttonRef}
-        className="flex items-center justify-center w-10 h-8 rounded-sm hover:bg-neutral-600 border border-neutral-600 hover:border-primary-100 text-dark_accent select-none"
+        className={`flex items-center justify-center h-8 rounded-sm hover:bg-neutral-600 border border-neutral-600 hover:border-primary-100 text-dark_accent select-none ${innerText ? 'px-2 gap-1' : 'w-10'}`}
         onClick={onClick}
       >
         {icon || iconText}
+        {innerText && <span className="text-sm">{innerText}</span>}
       </button>
       <div className={`mt-2 px-1 flex flex-col absolute items-center ${shortcutHint ? 'translate-y-[75%]' : 'translate-y-[140%]' } text-primary-100 bg-primary-900 rounded-md text-sm opacity-0 group-hover:opacity-100 pointer-events-none select-none whitespace-nowrap z-30`}>
         <div>{text}</div>

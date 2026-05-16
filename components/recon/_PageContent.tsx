@@ -4,7 +4,6 @@ import MovesTextEditor from "../../components/recon/MovesTextEditor";
 import SpeedDropdown from "../../components/recon/SpeedDropdown";
 
 import Toolbar from "../../components/Toolbar";
-import ReconTimeHelpInfo from "../../components/recon/ReconTimeHelpInfo";
 import TPSInfo from "../../components/recon/TPSInfo";
 import updateURL from "../../composables/recon/updateURL";
 
@@ -26,8 +25,8 @@ import { TransformHTMLprops } from "../../composables/recon/transformHTML";
 import TitleWithPlaceholder from "../../components/recon/TitleInput";
 import TopButton from "../../components/recon/TopButton";
 import CopySolveDropdown from "../../components/recon/CopySolveDropdown";
-import { customDecodeURL, customEncodeURL } from '../../composables/recon/urlEncoding';
-import VideoHelpPrompt from '../../components/recon/VideoHelpPrompt';
+import { customDecodeURL } from '../../composables/recon/urlEncoding';
+import InfoPanel from '../../components/recon/InfoPanel';
 import IconStack, { computeLineIconData } from './IconStack';
 import SplitsStack, { SPLITS_WIDTH, splitsToURLParam } from './SplitsStack';
 import { ICON_SIZE_CONFIG, useCubeColors, useShowSplits } from '../../composables/useSettings';
@@ -1518,8 +1517,12 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
   const toolbarButtons = ctrlKey === '⌘' ? macToolbarButtons : windowsToolbarButtons;
 
   return (
-    <main id="main_page" className="flex flex-col bg-primary-900 mt-13">
-      <VideoHelpPrompt videoId="iIipycBl0iY" initiallyDismissed={videoHelpDismissed} />
+    <main id="main_page" className="relative flex flex-col bg-primary-900 mt-10">
+
+      {/* For aligning the skeleton perfectly */}
+      {/* <div className="absolute inset-0 z-50 pointer-events-none opacity-50 [&>main]:mt-0">
+        <ReconSkeleton />
+      </div> */}
 
       {/* utility for compiling list of alg hashes */}
       {/* <AlgCompiler /> */}
@@ -1533,13 +1536,29 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
       {/* utility for building case patterns */}
       {/* <LLpatternBuilder /> */}
 
-      <div id="top-bar" className="px-3 flex flex-row flex-wrap items-center place-content-end gap-2 mt-8 mb-3">
-        <TitleWithPlaceholder solveTitle={solveTitle} handleTitleChange={handleTitleChange} />
-        <div className="flex-none flex flex-row space-x-1 pr-2 text-dark_accent">
+      <InfoPanel initiallyDismissed={infoPanelSlot == null}>{infoPanelSlot}</InfoPanel>
+      {isGifDialogOpen ? (
+        <CubeGifDialog
+          onClose={() => setIsGifDialogOpen(false)}
+          scramble={allMovesRef.current[0].flat().join(' ')}
+          solutionLines={allMovesRef.current[1].map((moves, i) => ({
+            moves,
+            isWhitespace: !!isWhitespaceLine[i],
+          }))}
+          lineIconData={lineIconData}
+          splits={splits}
+          committedSplits={committedSplits}
+          onSplitsChange={setSplits}
+          onSplitsCommit={handleSplitsCommit}
+        />
+      ) : null}
+      <div id="top-bar" className="px-3 flex flex-col w-full items-end gap-5 mb-2 -mt-11 pointer-events-none">
+        <div className="flex-none flex flex-row space-x-1 text-dark_accent pointer-events-auto">
           <TopButton id="trash" text="Clear Page" shortcutHint={`${ctrlKey}+Del`} onClick={handleClearPage} icon={<TrashIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert} />
           <CopySolveDropdown onCopyText={handleCopySolve} onScreenshot={handleScreenshot} alert={topButtonAlert} setAlert={setTopButtonAlert} />
-          <TopButton id="share" text="Share Preview" shortcutHint={`${ctrlKey}+S`} onClick={handleShare} icon={<ShareIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert} />
+          <TopButton id="share" innerText="Share" text="Share Preview" shortcutHint={`${ctrlKey}+S`} onClick={handleShare} icon={<ShareIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert} />
         </div>
+        <TitleWithPlaceholder solveTitle={solveTitle} handleTitleChange={handleTitleChange} />
       </div>
       <div id="scramble-area" className="px-3 mt-3 flex flex-col">
         <div className="text-xl text-dark_accent font-medium">Scramble</div>
@@ -1634,7 +1653,7 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
                 name={`solution`}
                 ref={solutionMethodsRef}
                 trackMoves={trackMoves}
-                autofocus={true}
+                autofocus={infoPanelSlot == null}
                 moveHistory={moveHistory}
                 updateHistoryBtns={memoizedUpdateHistoryBtns}
                 html={solutionHTML}
@@ -1682,7 +1701,6 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
             <div className="text-primary-100 ml-2 text-xl">{totalMoves} stm </div>
             <div className="flex-nowrap text-nowrap items-center flex flex-row">
               <TPSInfo moveCount={totalMoves} solveTime={solveTime} tpsRef={tpsRef} />
-              <ReconTimeHelpInfo />
             </div>
           </div>
           {showSplitsWarning && (
