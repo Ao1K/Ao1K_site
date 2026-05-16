@@ -5,7 +5,8 @@ import { useEffect } from 'react';
 export default function SidebarAutoClose() {
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if ((e.target as HTMLElement).closest('a')) {
+      const target = e.target as HTMLElement;
+      if (target.closest('a') || target.closest('#settings-menu-container')) {
         const checkbox = document.getElementById('sidebar-toggle') as HTMLInputElement;
         if (checkbox) checkbox.checked = false;
       }

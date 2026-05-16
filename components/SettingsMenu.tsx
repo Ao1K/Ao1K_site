@@ -86,7 +86,7 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
   };
 
   return (
-    <div ref={menuRef} className="relative inline-block">
+    <div ref={menuRef} id="settings-menu-container" className="relative inline-block">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center justify-center p-1 rounded group w-12 h-12 transition-colors"
@@ -96,7 +96,7 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-14 bg-white border border-primary-300 rounded-sm shadow-lg z-50 min-w-[250px]">
+        <div className="absolute right-0 top-14 bg-primary-100 border border-primary-300 rounded-sm shadow-lg z-50 min-w-62.5">
           {/* Show Controls Toggle */}
           <div className="px-3 py-2 border-b border-primary-200">
             <label className="flex items-center justify-between cursor-pointer">
@@ -132,8 +132,8 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
                 disabled={elevation === DEFAULT_HINT_FACELETS_ELEVATION}
                 className={`text-sm px-2 py-1 rounded-sm w-auto transition-colors ${
                   elevation === DEFAULT_HINT_FACELETS_ELEVATION
-                    ? 'bg-gray-100 text-gray-400'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    ? 'bg-primary-100 text-neutral-400'
+                    : 'bg-primary-200 text-neutral-700 hover:bg-primary-300'
                 }`}
               >
                 Reset
@@ -158,8 +158,8 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
               disabled={isDefault}
               className={`py-1 px-2 mr-3 text-sm rounded-sm w-auto transition-colors ${
                 isDefault
-                  ? 'bg-gray-100 text-gray-400'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  ? 'bg-primary-100 text-neutral-400'
+                  : 'bg-primary-200 text-neutral-700 hover:bg-primary-300'
               }`}
             >
               Reset

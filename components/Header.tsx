@@ -5,15 +5,11 @@ import WriteIcon from './icons/write';
 import BulletListIcon from './icons/bulletList';
 import HeaderSidebar from './HeaderSidebar';
 import SettingsMenuWrapper from './SettingsMenuWrapper';
-
-const versionList = {
-  "recon": "v0.7",
-  "changeblog": "",
-}
+import { versionList } from '../utils/sharedConstants';
 
 export default function Header() {
   return (
-    <div className="absolute bg-white flex flex-row text-light_accent w-full z-40 h-16 top-0">
+    <div className="absolute bg-primary-200 flex flex-row text-light_accent w-full z-40 h-16 top-0">
       <img
         src="/Ao1K-Logo-v2.svg"
         className="h-16 w-auto overflow-visible"
@@ -27,11 +23,11 @@ export default function Header() {
         </div>
 
 
-        <HeaderSidebar />
       </nav>
       <div className="flex items-center">
         {/* <Link href="https://login-ao1k.auth.us-east-1.amazoncognito.com">Profile</Link> */}
         <SettingsMenuWrapper />
+        <HeaderSidebar />
       </div>
     </div>
   );

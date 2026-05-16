@@ -11,15 +11,15 @@ interface HeaderProps {
   icon: React.ReactNode;
 }
 
-const Header = ({ href, title, version, icon }: HeaderProps) => {
-  const pathname = usePathname();
-  const isPath = pathname === href;
-
+const HeaderNavLink = ({ href, title, version, icon }: HeaderProps) => {
+  const pathname = usePathname().split('/')[1].replace(/\//g, '');
+  const basePath = href.replace(/\//g, '');
+  const isPath = basePath === pathname;
   return (
     <div className={`${isPath ? 'pointer-events-none' : ''}`}>
       <Link href={href}>
-        <div className={`flex flex-row items-center font-[450] border-b-2 border-transparent
-                        ${isPath ? 'border-b-2 border-primary-800' : 'hover:border-b-2 hover:border-dark_accent'}`}>
+        <div className={`flex flex-row items-center font-[450] border-b-2 hover:border-neutral-400
+                        ${isPath ? 'border-neutral-400' : 'border-transparent'}`}>
           {icon}
           <p className="pl-1">{title} <span className="text-neutral-500 font-regular">{version}</span></p>
         </div>
@@ -28,4 +28,4 @@ const Header = ({ href, title, version, icon }: HeaderProps) => {
   );
 }
 
-export default Header;
+export default HeaderNavLink;
