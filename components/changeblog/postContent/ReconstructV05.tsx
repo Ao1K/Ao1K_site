@@ -1,5 +1,3 @@
-"use client";
-
 import Image from "next/image";
 
 export default function ReconstructV05() {
@@ -7,7 +5,7 @@ export default function ReconstructV05() {
     <>
       <div className="flex flex-row gap-2 ">
         <h1 className="text-3xl text-primary-300">Reconstruct v0.5</h1>
-        <div className="h-fit self-end pb-[2px] text-neutral-400">Dec 31st, 2025</div>
+        <div className="h-fit self-end pb-0.5 text-neutral-400">Dec 31st, 2025</div>
       </div>
       <div className="bg-primary-100 w-full h-1"></div>
       

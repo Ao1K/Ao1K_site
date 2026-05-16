@@ -58,7 +58,7 @@ export default function ToolbarButton({speed, setSpeed}: SpeedSliderProps) {
       >
         <div className="flex justify-center items-center w-full select-none space-x-2">
           <SpeedIcon className="text-primary-100" />
-          <DropdownIcon className={`align-middle h-full transition-transform duration-300 ${isRotated ? 'rotate-180' : ''}`}/>
+          <DropdownIcon className={`align-middle h-full transition-transform duration-300 ${isRotated ? '' : 'rotate-180'}`}/>
         </div>
       </button>
 
@@ -67,7 +67,7 @@ export default function ToolbarButton({speed, setSpeed}: SpeedSliderProps) {
       </div>
 
       {isRotated ? 
-        <div className="flex flex-col bg-primary-900 absolute -translate-x-[4px] place-items-start text-primary-100 px-1 pb-1 text-sm">
+        <div className="flex flex-col bg-primary-900 absolute -translate-x-1 place-items-start text-primary-100 px-1 pb-1 text-sm">
           <button className={`hover:bg-neutral-600 py-1 border border-neutral-600 ${speed === slow ? 'bg-neutral-600 pointer-events-none' : null } w-16`} onClick={() => handleSpeedChange(slow)}>Slow</button>
           <button className={`hover:bg-neutral-600 py-1 border border-neutral-600 ${speed === medium ? 'bg-neutral-600 pointer-events-none' : null } w-16`} onClick={() => handleSpeedChange(medium)}>Medium</button>
           <button className={`hover:bg-neutral-600 py-1 border border-neutral-600 ${speed === fast ? 'bg-neutral-600 pointer-events-none' : null } w-16`} onClick={() => handleSpeedChange(fast)}>Fast</button>
