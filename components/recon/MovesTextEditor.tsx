@@ -43,13 +43,25 @@ const EditorLoader = ({
   // useSearchParams is a hook. Storing searchParams here prevents it from being called again and causing reloads.
   const searchParams = useSearchParams();
 
+  const editorAliases: Record<string, string[]> = {
+    solution: ['alg'],
+    scramble: ['setup'],
+  };
+
   const handleStartupProcess = () => {
-    const editorText = searchParams.get(name);
+    const aliases = editorAliases[name] ?? [];
+    const editorText = searchParams.get(name)
+      ?? aliases.reduce<string | null>((found, alias) => found ?? searchParams.get(alias), null);
     const otherID = name === 'scramble' ? 'solution' : 'scramble';
     const otherEditorText = searchParams.get(otherID);
 
     if (editorText) {
-      let decodedText = decodeURIComponent(customDecodeURL(editorText));
+      let decodedText: string;
+      try {
+        decodedText = decodeURIComponent(customDecodeURL(editorText));
+      } catch {
+        decodedText = customDecodeURL(editorText);
+      }
       // ensure substitutions do not occur on initial load from URL
       const lines = decodedText.replace(/\n+/g, '\n').split('\n');
       const formattedHTML = lines.map(line => `<div>${line}<span class="paste-marker"></span><br></div>`).join('');

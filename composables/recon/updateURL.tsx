@@ -1,16 +1,10 @@
-import { urlEncodeKey } from './urlEncoding';
+import { customEncodeURL } from './urlEncoding';
 
 const replaceText = (text: string) => {
     while (text.endsWith('\n')) {
         text = text.slice(0, -1);
     }
-    urlEncodeKey.forEach((replacement, i) => {
-        //console.log('replacement:', replacement, JSON.stringify(text));
-        text = text.replace(new RegExp(replacement[0], 'g'), replacement[1]);
-        //console.log('text:', JSON.stringify(text));
-    });
-
-    return text;
+    return customEncodeURL(text);
   };
 
 export default function updateURL(queryName: string, textToEncode: string | null) {
