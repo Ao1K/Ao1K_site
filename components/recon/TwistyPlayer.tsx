@@ -105,7 +105,12 @@ const simplifySetupMoves = (setupMoves: string) => {
   }
 
   try {
-    return solveCube(invertAlgMoves(setupMoves), 'kociemba');
+    const kociembaSolution = solveCube(invertAlgMoves(setupMoves), 'kociemba');
+    if (splitAlgMoves(kociembaSolution).length < splitAlgMoves(setupMoves).length) {
+      return kociembaSolution;
+    } else {
+      return setupMoves;
+    }
   } catch (error) {
     console.error('Failed to simplify setup moves:', error);
     return setupMoves;
@@ -151,6 +156,7 @@ const Player = React.memo(React.forwardRef<TwistyPlayerImperativeRef, PlayerProp
   const cameraRef = useRef<PerspectiveCamera | null>(null);
   const rendererRef = useRef<WebGLRenderer | null>(null);
   const faceLabelMeshesRef = useRef<Mesh[]>([]);
+  const hintStickerMeshesRef = useRef<any[]>([]);
   const divRef = useRef<HTMLDivElement>(null);
 
   const lastSolution = useRef<string>('');
@@ -181,6 +187,7 @@ const Player = React.memo(React.forwardRef<TwistyPlayerImperativeRef, PlayerProp
       viewerElement: divRef.current,
       renderer: rendererRef.current,
       faceLabelMeshes: faceLabelMeshesRef.current,
+      hintStickerMeshes: hintStickerMeshesRef.current,
       setupMoves: displayedSetupMovesRef.current,
       setupStatus: screenshotSetupStatus,
     }));
@@ -799,8 +806,15 @@ const Player = React.memo(React.forwardRef<TwistyPlayerImperativeRef, PlayerProp
     const elev = elevationRef.current;
     const scaleFactor = (containerHeight * 0.0024) + 0.92;
     const zoomFactor = 1 + (elev - DEFAULT_HINT_FACELETS_ELEVATION) * 0.1;
-    cam.position.z = (Math.sqrt(3) / 2) * scaleFactor * zoomFactor;
-    cam.position.y = (1 / 2) * scaleFactor * zoomFactor;
+    const newRadius = scaleFactor * zoomFactor;
+    const currentDist = cam.position.length();
+    if (currentDist < 0.001) {
+      // camera is at origin (initial setup), use default direction
+      cam.position.set(0, newRadius * 0.5, newRadius * (Math.sqrt(3) / 2));
+    } else {
+      // preserve current orbit angle, only change distance from origin
+      cam.position.multiplyScalar(newRadius / currentDist);
+    }
   };
 
   const waitForPlayerIntersection = (player: TwistyPlayer) => new Promise<void>((resolve) => {
@@ -891,7 +905,6 @@ const Player = React.memo(React.forwardRef<TwistyPlayerImperativeRef, PlayerProp
         texture.minFilter = LinearMipmapLinearFilter;
         texture.magFilter = LinearFilter;
         const maxAnisotropy = rendererRef.current?.capabilities.getMaxAnisotropy() ?? 1;
-        // texture.anisotropy = Math.min(16, maxAnisotropy);
         texture.anisotropy = maxAnisotropy;
 
 
@@ -942,6 +955,7 @@ const Player = React.memo(React.forwardRef<TwistyPlayerImperativeRef, PlayerProp
 
       addFaceLabels();
       setStickerColors(cube, true); // Pass true for initial load
+      hintStickerMeshesRef.current = (cube as any).experimentalHintStickerMeshes || [];
 
       scene.add(cube);
 
@@ -1075,7 +1089,7 @@ const Player = React.memo(React.forwardRef<TwistyPlayerImperativeRef, PlayerProp
     playerRef.current = new TwistyPlayer({
       viewerLink: 'none',
       puzzle: '3x3x3',
-      hintFacelets: 'floating',
+      hintFacelets: elevation === 0 ? 'none' : 'floating',
       experimentalInitialHintFaceletsAnimation: "always",
       experimentalHintFaceletsElevation: elevation,
       backView: 'none',
@@ -1119,7 +1133,12 @@ const Player = React.memo(React.forwardRef<TwistyPlayerImperativeRef, PlayerProp
   // Update hint facelets elevation and camera zoom when elevation changes
   useEffect(() => {
     if (playerRef.current) {
-      playerRef.current.experimentalHintFaceletsElevation = elevation;
+      if (elevation === 0) {
+        playerRef.current.hintFacelets = 'none';
+      } else {
+        playerRef.current.hintFacelets = 'floating';
+        playerRef.current.experimentalHintFaceletsElevation = elevation;
+      }
     }
     if (cameraRef.current && divRef.current) {
       updateCameraZoom(cameraRef.current, divRef.current.clientHeight);

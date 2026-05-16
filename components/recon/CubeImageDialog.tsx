@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import CropIcon from '../icons/crop';
 import { createPortal } from 'react-dom';
 import { HexAlphaColorPicker } from 'react-colorful';
 import { RemoveScroll } from 'react-remove-scroll';
 import type { CubeScreenshotOptions, ScreenshotSetupStatus } from '../../composables/recon/CubeScreenshotGenerator';
+import { useHintFaceletsElevation } from '../../composables/useSettings';
 
 // note: this cube image dialog is separate from composables/recon/ScreenshotManager,
 // which renders solve reconstructions and is unrelated
@@ -25,6 +27,7 @@ const DEFAULT_OPTIONS: CubeScreenshotOptions = {
   backgroundColor: '#161018ff',
   includeFaceLabels: true,
   includeSetupMoves: false,
+  hintFacelets: true,
   size: 1200,
 };
 
@@ -44,6 +47,30 @@ const CHECKERBOARD_STYLE = {
 
 const EMPTY_ALERT: CopyAlert = { id: '', message: '', messageType: 'info' };
 
+type CropRect = { x: number; y: number; w: number; h: number };
+type CropHandle = 'tl' | 'tr' | 'bl' | 'br' | 'move';
+
+const cropDataUrl = (dataUrl: string, rect: CropRect): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const { naturalWidth: iw, naturalHeight: ih } = img;
+      const sx = Math.round(rect.x * iw);
+      const sy = Math.round(rect.y * ih);
+      const sw = Math.max(1, Math.round(rect.w * iw));
+      const sh = Math.max(1, Math.round(rect.h * ih));
+      const canvas = document.createElement('canvas');
+      canvas.width = sw;
+      canvas.height = sh;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { reject(new Error('Canvas not available')); return; }
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+      resolve(canvas.toDataURL('image/png'));
+    };
+    img.onerror = () => reject(new Error('Failed to load image for cropping'));
+    img.src = dataUrl;
+  });
+
 export default function CubeImageDialog({
   onClose,
   onGeneratePreview,
@@ -54,12 +81,25 @@ export default function CubeImageDialog({
   const [backgroundColor, setBackgroundColor] = useState(DEFAULT_OPTIONS.backgroundColor);
   const [backgroundInput, setBackgroundInput] = useState(DEFAULT_OPTIONS.backgroundColor);
   const [includeFaceLabels, setIncludeFaceLabels] = useState(DEFAULT_OPTIONS.includeFaceLabels);
+  const [includeFacelets, setIncludeFacelets] = useState(DEFAULT_OPTIONS.hintFacelets ?? true);
   const [includeSetupMovesPreference, setIncludeSetupMovesPreference] = useState(DEFAULT_OPTIONS.includeSetupMoves);
+  const [elevation] = useHintFaceletsElevation();
+  const faceletsDisabledGlobally = elevation === 0;
   const [size, setSize] = useState(DEFAULT_OPTIONS.size);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isCopying, setIsCopying] = useState(false);
   const [copyAlert, setCopyAlert] = useState(EMPTY_ALERT);
   const [error, setError] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(1.0);
+  const [cropEnabled, setCropEnabled] = useState(false);
+  const [cropRect, setCropRect] = useState<CropRect>({ x: 0, y: 0, w: 1, h: 1 });
+  const cropDragRef = useRef<{
+    target: CropHandle;
+    startPointer: { x: number; y: number };
+    startRect: CropRect;
+  } | null>(null);
+  const savedCropRectRef = useRef<CropRect | null>(null);
+  const previewContainerRef = useRef<HTMLDivElement | null>(null);
 
   const isSetupMovesUnavailable = setupStatus.status !== 'available';
   const includeSetupMoves = includeSetupMovesPreference && !isSetupMovesUnavailable;
@@ -68,20 +108,17 @@ export default function CubeImageDialog({
     && typeof navigator.clipboard?.write === 'function'
     && typeof ClipboardItem !== 'undefined';
 
-  const options = { backgroundColor, includeFaceLabels, includeSetupMoves, size };
-
   const safeSize = Math.max(1, Math.round(size));
   const safeAspect = Number.isFinite(viewerAspectRatio) && viewerAspectRatio > 0 ? viewerAspectRatio : 1;
 
   const outputDimensions = safeAspect >= 1
-    ? {
-      width: safeSize,
-      height: Math.max(1, Math.round(safeSize / safeAspect)),
-    }
-    : {
-      width: Math.max(1, Math.round(safeSize * safeAspect)),
-      height: safeSize,
-    };
+    ? { width: safeSize, height: Math.max(1, Math.round(safeSize / safeAspect)) }
+    : { width: Math.max(1, Math.round(safeSize * safeAspect)), height: safeSize };
+
+  const cropOutputWidth = Math.max(1, Math.round(outputDimensions.width * cropRect.w));
+  const cropOutputHeight = Math.max(1, Math.round(outputDimensions.height * cropRect.h));
+
+  const options = { backgroundColor, includeFaceLabels, includeSetupMoves, hintFacelets: includeFacelets, size: safeSize, zoom };
 
   let previewUrl = '';
   let previewError: string | null = null;
@@ -107,19 +144,13 @@ export default function CubeImageDialog({
       window.clearTimeout(timeoutId);
     };
   }, [copyAlert]);
-
   const handleEscape = (event: KeyboardEvent) => {
-    if (event.key === 'Escape') {
-      onClose();
-    }
+    if (event.key === 'Escape') onClose();
   };
-
+  
   useEffect(() => {
-
     window.addEventListener('keydown', handleEscape);
-    return () => {
-      window.removeEventListener('keydown', handleEscape);
-    };
+    return () => window.removeEventListener('keydown', handleEscape);
   }, []);
 
   const handleBackgroundInputChange = (value: string) => {
@@ -134,27 +165,46 @@ export default function CubeImageDialog({
     }
   };
 
-  const handlePresetClick = (value: string) => {
+  const applyBackground = (value: string) => {
     setBackgroundColor(value);
     setBackgroundInput(value);
   };
 
-  const handleDownload = () => {
+  const toggleCrop = () => {
+    if (!cropEnabled) {
+      if (savedCropRectRef.current) {
+        setCropRect(savedCropRectRef.current);
+      } else {
+        const squareW = Math.min(1, outputDimensions.height / outputDimensions.width);
+        // make slightly unsquare. Wider than it is tall.
+        const unsquareW = squareW * 1.2;
+        setCropRect({ x: (1 - unsquareW) / 2, y: 0, w: unsquareW, h: 1 });
+      }
+    } else {
+      savedCropRectRef.current = cropRect;
+    }
+    setCropEnabled(prev => !prev);
+  };
+
+  const shouldApplyCrop = cropEnabled && !(cropRect.x === 0 && cropRect.y === 0 && cropRect.w === 1 && cropRect.h === 1);
+
+  const handleDownload = async () => {
     setIsDownloading(true);
     setError(null);
 
     try {
       const imageUrl = previewUrl || onGeneratePreview(options);
+      const finalUrl = shouldApplyCrop ? await cropDataUrl(imageUrl, cropRect) : imageUrl;
 
       const anchor = document.createElement('a');
-      anchor.href = imageUrl;
+      anchor.href = finalUrl;
 
       const sanitizedSetupMoves = setupMovesForFilename
         .trim()
         .replace(/\s+/g, '_')
         .replace(/[']/g, 'pr')
         .replace(/[^A-Za-z0-9_]/g, '');
-      const setupMovesSuffix = includeSetupMoves && sanitizedSetupMoves
+      const setupMovesSuffix = sanitizedSetupMoves
         ? `-${sanitizedSetupMoves}`
         : '';
 
@@ -179,8 +229,9 @@ export default function CubeImageDialog({
 
     try {
       const imageUrl = previewUrl || onGeneratePreview(options);
+      const finalUrl = shouldApplyCrop ? await cropDataUrl(imageUrl, cropRect) : imageUrl;
 
-      const response = await fetch(imageUrl);
+      const response = await fetch(finalUrl);
       const blob = await response.blob();
 
       await navigator.clipboard.write([
@@ -194,6 +245,59 @@ export default function CubeImageDialog({
       setIsCopying(false);
     }
   };
+
+  const startCropDrag = (e: React.PointerEvent, target: CropHandle) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!previewContainerRef.current) return;
+    const r = previewContainerRef.current.getBoundingClientRect();
+    cropDragRef.current = {
+      target,
+      startPointer: { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height },
+      startRect: { ...cropRect },
+    };
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const onCropDragMove = (e: React.PointerEvent) => {
+    if (!cropDragRef.current || !previewContainerRef.current) return;
+    const r = previewContainerRef.current.getBoundingClientRect();
+    const cx = (e.clientX - r.left) / r.width;
+    const cy = (e.clientY - r.top) / r.height;
+    const dx = cx - cropDragRef.current.startPointer.x;
+    const dy = cy - cropDragRef.current.startPointer.y;
+    const sr = cropDragRef.current.startRect;
+    const MIN = 0.05;
+    let nx = sr.x, ny = sr.y, nw = sr.w, nh = sr.h;
+    switch (cropDragRef.current.target) {
+      case 'move':
+        nx = Math.max(0, Math.min(1 - sr.w, sr.x + dx));
+        ny = Math.max(0, Math.min(1 - sr.h, sr.y + dy));
+        break;
+      case 'tl':
+        nx = Math.max(0, Math.min(sr.x + sr.w - MIN, sr.x + dx));
+        ny = Math.max(0, Math.min(sr.y + sr.h - MIN, sr.y + dy));
+        nw = sr.x + sr.w - nx; nh = sr.y + sr.h - ny;
+        break;
+      case 'tr':
+        ny = Math.max(0, Math.min(sr.y + sr.h - MIN, sr.y + dy));
+        nw = Math.max(MIN, Math.min(1 - sr.x, sr.w + dx));
+        nh = sr.y + sr.h - ny;
+        break;
+      case 'bl':
+        nx = Math.max(0, Math.min(sr.x + sr.w - MIN, sr.x + dx));
+        nw = sr.x + sr.w - nx;
+        nh = Math.max(MIN, Math.min(1 - sr.y, sr.h + dy));
+        break;
+      case 'br':
+        nw = Math.max(MIN, Math.min(1 - sr.x, sr.w + dx));
+        nh = Math.max(MIN, Math.min(1 - sr.y, sr.h + dy));
+        break;
+    }
+    setCropRect({ x: nx, y: ny, w: nw, h: nh });
+  };
+
+  const onCropDragEnd = () => { cropDragRef.current = null; };
 
   if (typeof document === 'undefined') {
     return null;
@@ -215,29 +319,41 @@ export default function CubeImageDialog({
           aria-label="Cube image preview"
           className="max-h-[92vh] w-full max-w-5xl overflow-auto rounded-sm border border-neutral-700 bg-dark text-primary-100 shadow-2xl"
         >
-        <div className="flex items-center justify-between border-b border-neutral-700 px-4 py-3 sm:px-6">
-          <div>
-            <h2 className="text-lg font-semibold text-primary-100">Create Cube Image</h2>
-          </div>
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-neutral-700 bg-primary-400 px-4 py-3 sm:px-6">
+          <h2 className="text-lg font-semibold text-dark">Create Cube Image</h2>
           <button
             type="button"
             onClick={onClose}
-            className="rounded border border-neutral-600 px-3 py-2 text-sm text-neutral-200 transition-colors hover:border-primary-100 hover:text-primary-100"
+            className="rounded border border-neutral-600 px-3 py-2 text-sm text-neutral-300 bg-primary-900 hover:bg-primary-800 transition-colors hover:text-primary-100"
           >
             Close
           </button>
         </div>
 
-        <div className="grid gap-4 p-4 sm:px-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="grid gap-4 p-4 sm:px-6 lg:grid-cols-[minmax(0,1fr)_280px]">
           <section className="space-y-4">
             <div className="rounded-sm border h-fit border-neutral-700 bg-primary-800 p-4">
               <div className="mb-3 flex items-center justify-between text-sm">
                 <span className="font-semibold text-primary-100">Image Preview</span>
-                {/* <span className="text-neutral-300">{outputDimensions.width} x {outputDimensions.height}px</span> */}
+                <button
+                  type="button"
+                  onClick={toggleCrop}
+                  title={cropEnabled ? 'Disable crop' : 'Enable crop'}
+                  aria-label={cropEnabled ? 'Disable crop' : 'Enable crop'}
+                  className={`flex items-center gap-1.5 rounded border px-2 py-1 text-xs transition-colors ${
+                    cropEnabled
+                      ? 'border-primary-100 text-primary-100'
+                      : 'border-neutral-600 text-neutral-400 hover:border-primary-100 hover:text-primary-100'
+                  }`}
+                >
+                  <CropIcon />
+                  Crop
+                </button>
               </div>
 
               <div
-                className="relative mx-auto w-full max-w-140 overflow-hidden border border-neutral-700"
+                ref={previewContainerRef}
+                className="relative mx-auto w-full overflow-hidden border border-neutral-700 select-none"
                 style={{
                   ...CHECKERBOARD_STYLE,
                   aspectRatio: `${outputDimensions.width} / ${outputDimensions.height}`,
@@ -248,12 +364,66 @@ export default function CubeImageDialog({
                     src={previewUrl}
                     alt="Cube image preview"
                     className="absolute inset-0 block h-full w-full object-fill"
+                    draggable={false}
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-sm text-neutral-300">
                     Preview unavailable.
                   </div>
                 )}
+
+                {cropEnabled && previewUrl && (
+                  <>
+                    {cropRect.y > 0.001 && (
+                      <div className="pointer-events-none absolute bg-black/50" style={{ left: 0, top: 0, right: 0, height: `${cropRect.y * 100}%` }} />
+                    )}
+                    {(cropRect.y + cropRect.h) < 0.999 && (
+                      <div className="pointer-events-none absolute bg-black/50" style={{ left: 0, bottom: 0, right: 0, height: `${(1 - cropRect.y - cropRect.h) * 100}%` }} />
+                    )}
+                    {cropRect.x > 0.001 && (
+                      <div className="pointer-events-none absolute bg-black/50" style={{ left: 0, top: `${cropRect.y * 100}%`, width: `${cropRect.x * 100}%`, height: `${cropRect.h * 100}%` }} />
+                    )}
+                    {(cropRect.x + cropRect.w) < 0.999 && (
+                      <div className="pointer-events-none absolute bg-black/50" style={{ right: 0, top: `${cropRect.y * 100}%`, width: `${(1 - cropRect.x - cropRect.w) * 100}%`, height: `${cropRect.h * 100}%` }} />
+                    )}
+                    <div
+                      className="absolute touch-none"
+                      style={{ left: `${cropRect.x * 100}%`, top: `${cropRect.y * 100}%`, width: `${cropRect.w * 100}%`, height: `${cropRect.h * 100}%`, cursor: 'move' }}
+                      onPointerDown={(e) => startCropDrag(e, 'move')}
+                      onPointerMove={onCropDragMove}
+                      onPointerUp={onCropDragEnd}
+                    >
+                      <div className="absolute" style={{ top: -2, left: -2, width: 16, height: 16, borderTop: '3px solid white', borderLeft: '3px solid white', cursor: 'nw-resize', filter: 'drop-shadow(0 0 2px rgba(0,0,0,0.85))' }} onPointerDown={(e) => startCropDrag(e, 'tl')} onPointerMove={onCropDragMove} onPointerUp={onCropDragEnd} />
+                      <div className="absolute" style={{ top: -2, right: -2, width: 16, height: 16, borderTop: '3px solid white', borderRight: '3px solid white', cursor: 'ne-resize', filter: 'drop-shadow(0 0 2px rgba(0,0,0,0.85))' }} onPointerDown={(e) => startCropDrag(e, 'tr')} onPointerMove={onCropDragMove} onPointerUp={onCropDragEnd} />
+                      <div className="absolute" style={{ bottom: -2, left: -2, width: 16, height: 16, borderBottom: '3px solid white', borderLeft: '3px solid white', cursor: 'sw-resize', filter: 'drop-shadow(0 0 2px rgba(0,0,0,0.85))' }} onPointerDown={(e) => startCropDrag(e, 'bl')} onPointerMove={onCropDragMove} onPointerUp={onCropDragEnd} />
+                      <div className="absolute" style={{ bottom: -2, right: -2, width: 16, height: 16, borderBottom: '3px solid white', borderRight: '3px solid white', cursor: 'se-resize', filter: 'drop-shadow(0 0 2px rgba(0,0,0,0.85))' }} onPointerDown={(e) => startCropDrag(e, 'br')} onPointerMove={onCropDragMove} onPointerUp={onCropDragEnd} />
+                    </div>
+                  </>
+                )}
+
+                <div
+                  className="absolute right-2 top-2 flex flex-col gap-1"
+                  onPointerDown={(e) => e.stopPropagation()}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setZoom(prev => Math.max(0.4, prev * 0.9))}
+                    className="flex h-7 w-7 items-center justify-center rounded-sm border border-neutral-600 bg-dark/70 text-base font-bold text-primary-100 transition-colors hover:border-primary-100"
+                    aria-label="Zoom out"
+                    title="Zoom out"
+                  >
+                    −
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setZoom(prev => Math.min(2.5, prev * 1.1))}
+                    className="flex h-7 w-7 items-center justify-center rounded-sm border border-neutral-600 bg-dark/70 text-base font-bold text-primary-100 transition-colors hover:border-primary-100"
+                    aria-label="Zoom in"
+                    title="Zoom in"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
 
               {displayedError ? (
@@ -282,7 +452,7 @@ export default function CubeImageDialog({
                   <button
                     key={preset.value}
                     type="button"
-                    onClick={() => handlePresetClick(preset.value)}
+                    onClick={() => applyBackground(preset.value)}
                     className={`flex items-center gap-2 rounded border px-3 py-2 text-sm transition-colors ${
                       backgroundColor.toLowerCase() === preset.value.toLowerCase()
                         ? 'border-primary-100 text-primary-100'
@@ -305,7 +475,7 @@ export default function CubeImageDialog({
 
               <HexAlphaColorPicker
                 color={backgroundColor}
-                onChange={(nextColor) => handlePresetClick(nextColor)}
+                onChange={(nextColor) => applyBackground(nextColor)}
                 style={{ width: '100%', height: '180px' }}
               />
 
@@ -331,6 +501,25 @@ export default function CubeImageDialog({
                 />
               </label>
 
+              <div className="mt-4 flex items-center justify-between text-sm">
+                <span className="text-neutral-100">Include facelets</span>
+                <div className="flex items-center gap-3">
+                  {faceletsDisabledGlobally ? (
+                    <span className="text-xs text-neutral-500">Disabled in settings</span>
+                  ) : null}
+                  <input
+                    type="checkbox"
+                    checked={faceletsDisabledGlobally ? false : includeFacelets}
+                    onChange={(event) => {
+                      if (faceletsDisabledGlobally) return;
+                      setIncludeFacelets(event.target.checked);
+                    }}
+                    disabled={faceletsDisabledGlobally}
+                    className="h-4 w-4 cursor-pointer disabled:cursor-not-allowed"
+                  />
+                </div>
+              </div>
+
               <div className="mt-4 flex items-center justify-between gap-3 text-sm text-neutral-100">
                 <span>Include setup moves</span>
                 <div className="flex items-center gap-3">
@@ -353,8 +542,8 @@ export default function CubeImageDialog({
               </div>
               <div className="mt-5">
                 <div className="mb-2 flex items-center justify-between text-sm text-neutral-100">
-                  <span>Image size</span>
-                  <span className="font-mono text-neutral-300">{outputDimensions.width}x{outputDimensions.height}px</span>
+                  <span>Output size</span>
+                  <span className="font-mono text-neutral-300">{cropEnabled ? `${cropOutputWidth}×${cropOutputHeight}` : `${outputDimensions.width}×${outputDimensions.height}`}px</span>
                 </div>
                 <input
                   type="range"

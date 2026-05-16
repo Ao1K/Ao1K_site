@@ -5,6 +5,8 @@ export interface CubeScreenshotOptions {
   includeFaceLabels: boolean;
   includeSetupMoves: boolean;
   size: number;
+  zoom?: number;
+  hintFacelets?: boolean;
 }
 
 export interface ScreenshotSetupStatus {
@@ -18,6 +20,7 @@ interface CubeScreenshotContext {
   viewerElement: HTMLDivElement | null;
   renderer: WebGLRenderer | null;
   faceLabelMeshes: Mesh[];
+  hintStickerMeshes: any[];
   setupMoves: string;
   setupStatus: ScreenshotSetupStatus;
 }
@@ -327,7 +330,7 @@ export const createCubeScreenshotGenerator = (
   };
 
   const capture = (options: CubeScreenshotOptions) => {
-    const { scene, camera, viewerElement, renderer, faceLabelMeshes, setupMoves, setupStatus } = getContext();
+    const { scene, camera, viewerElement, renderer, faceLabelMeshes, hintStickerMeshes, setupMoves, setupStatus } = getContext();
     const isSetupMovesUnavailable = setupStatus.status !== 'available';
 
     if (!scene || !camera) {
@@ -350,6 +353,11 @@ export const createCubeScreenshotGenerator = (
     screenshotCamera.updateProjectionMatrix();
     screenshotCamera.updateMatrixWorld(true);
 
+    if (options.zoom && options.zoom !== 1) {
+      screenshotCamera.position.multiplyScalar(1 / options.zoom);
+      screenshotCamera.updateMatrixWorld(true);
+    }
+
     const nextRenderer = getOrCreateRenderer();
     nextRenderer.setPixelRatio(1);
     nextRenderer.setSize(screenshotWidth, screenshotHeight, false);
@@ -359,11 +367,18 @@ export const createCubeScreenshotGenerator = (
     nextRenderer.setClearColor(parsedBackground.colorValue, parsedBackground.alpha);
 
     const previousFaceLabelVisibility = faceLabelMeshes.map((mesh) => mesh.visible);
+    const previousHintStickerVisibility = hintStickerMeshes.map((mesh) => mesh.visible);
 
     try {
       faceLabelMeshes.forEach((mesh) => {
         mesh.visible = options.includeFaceLabels;
       });
+
+      if (options.hintFacelets === false) {
+        hintStickerMeshes.forEach((mesh) => {
+          mesh.visible = false;
+        });
+      }
 
       nextRenderer.render(scene, screenshotCamera);
 
@@ -381,6 +396,9 @@ export const createCubeScreenshotGenerator = (
     } finally {
       faceLabelMeshes.forEach((mesh, index) => {
         mesh.visible = previousFaceLabelVisibility[index] ?? true;
+      });
+      hintStickerMeshes.forEach((mesh, index) => {
+        mesh.visible = previousHintStickerVisibility[index] ?? true;
       });
     }
   };
