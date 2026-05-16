@@ -73,7 +73,9 @@ const calcCubeSpeedLocal = (speed: number) =>
 const isRotationOnlyLine = (moves: string[]) =>
   moves.length > 0 && moves.every(move => !/[^xyz2'3]/.test(move));
 
-export default function Recon({ dailyScramble = "", videoHelpDismissed = false }: { dailyScramble?: string, videoHelpDismissed?: boolean }) {
+const MAX_EDITOR_HISTORY = 100;
+
+export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScramble?: string, infoPanelSlot?: React.ReactNode }) {
   const solutionLineHeight = ICON_SIZE_CONFIG['medium'].lineHeight;
   const [cubeColors] = useCubeColors();
   const [showSplitsSetting] = useShowSplits();
@@ -107,6 +109,7 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
   const [splits, setSplits] = useState<string[]>([]);
   const splitsRef = useRef<string[]>([]);
   const [committedSplits, setCommittedSplits] = useState<string[]>([]);
+  const committedSplitsRef = useRef<string[]>([]);
 
   const tpsRef = useRef<HTMLDivElement>(null!);
   const scrambleMethodsRef = useRef<ImperativeRef>(null);
@@ -120,7 +123,6 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
   const isLoopingRef = useRef<boolean>(false);
   const loopTimeoutRef = useRef<number | null>(null);
   const screenshotManagerRef = useRef<ScreenshotManager | null>(null);
-  const committedSplitsRef = useRef<string[]>([]);
   const isWhiteSpaceLineRef = useRef<boolean[]>([]);
   const twistyPlayerRef = useRef<TwistyPlayerImperativeRef>(null);
   const clearLoopTimeout = useCallback(() => {
@@ -164,7 +166,15 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
     && allRequiredSplitsFilled
     && Math.abs(splitsSum - solveTime) > 0.1;
 
-  const MAX_EDITOR_HISTORY = 100;
+  const lastContentfulLineStep = (() => {
+    for (let i = lineSteps.length - 1; i >= 0; i--) {
+      if (lineSteps[i].stepInfo.length > 0) {
+        return lineSteps[i];
+      }
+    }
+  })();
+  const isSolveComplete = lastContentfulLineStep?.stepInfo.some(step => step.type?.toLowerCase() === 'solved');
+
   const moveHistory = useRef<MoveHistory>({ history: [['', '']], index: 0, MAX_HISTORY: MAX_EDITOR_HISTORY, status: 'loading' });
 
   const [controllerButtonsStatus, setControllerButtonsStatus] = useState<{ fullLeft: string, stepLeft: string, stepRight: string, fullRight: string, playPause: string }>({
@@ -799,7 +809,7 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
       const controllerButtonsEnabled = getControllerButtonsStatus(idIndex, lineIndex, moveIndex, allMovesRef.current[idIndex], playPauseStatus);
       setControllerButtonsStatus(controllerButtonsEnabled)
 
-    }, [controllerButtonsStatus, suggestions]);
+  }, [controllerButtonsStatus, suggestions]);
 
   const memoizedSetScrambleHTML = useCallback((html: string) => {
     setScrambleHTML(html);
@@ -831,7 +841,7 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
     if (required.length === 0) return;
     if (!required.every(i => newSplits[i] != null && newSplits[i] !== '')) return;
 
-    setSolveTime(newSum);
+    setSolveTime(Math.round(newSum * 1000) / 1000);
     updateURL('time', newSum.toFixed(3));
   };
 
@@ -845,7 +855,7 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
 
     if (value === '') {
       setSolveTime('');
-      updateURL('time', 'undefined');
+      updateURL('time', '');
       return;
     }
 
@@ -1004,10 +1014,6 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
         messageType: 'warn'
       };
     }
-
-    const isSolveComplete = lineStepsRef.current.some(stepEntry =>
-      stepEntry.stepInfo.some(step => step.type?.toLowerCase() === 'solved')
-    );
 
     if (!isSolveComplete) {
       return {
@@ -1389,6 +1395,10 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
       const line = solutionMoves[lineIdx];
 
       if (!line || line.length === 0) {
+        // if this line previously had moves, it's a change that affects subsequent lines
+        if (!isChangeFound && previousLineSteps[lineIdx]?.moveLine) {
+          isChangeFound = true;
+        }
         updatedSteps.push({ moveLine: '', stepInfo: [] });
         continue;
       }
@@ -1469,15 +1479,13 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
   }, []);
 
 
+  const handleCommandRef = useRef(handleCommand);
+  handleCommandRef.current = handleCommand;
+
   useEffect(() => {
-
-    document.addEventListener('keydown', handleCommand);
-
-    return () => {
-
-      document.removeEventListener('keydown', handleCommand);
-
-    };
+    const handler = (e: KeyboardEvent) => handleCommandRef.current(e);
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
   }, []);
 
   useEffect(() => {
