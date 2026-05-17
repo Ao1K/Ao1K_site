@@ -46,6 +46,7 @@ export default function NoTimeSolveBox(props: NoTimeSolveBoxProps) {
 
   const sanitizeConf = {
     allowedTags: ["b", "i", "u", "br", "div"],
+    nonTextTags: ['script', 'style', 'textarea', 'option', 'xmp'],
   };
   
 

@@ -12,7 +12,6 @@ export const fetchDailyScramble = async (): Promise<string> => {
   }
   
   const key = "scramble3x3.txt";
-  console.log("Fetching daily scramble from S3 bucket:", bucketName);
 
   try {
     const res = await s3.send(

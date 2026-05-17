@@ -1,5 +1,10 @@
 // for avoiding circular dependencies
 
+export const versionList = {
+  "recon": "v0.8",
+  "changeblog": "",
+}
+
 export const highlightClass = 'text-dark bg-primary-100 backdrop-blur-xs caret-dark';
 
 export const colorDict = {

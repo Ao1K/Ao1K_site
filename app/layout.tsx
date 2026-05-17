@@ -3,6 +3,7 @@ import React from "react";
 import "./globals.css";
 
 import Header from "../components/Header";
+import { versionList } from "../utils/sharedConstants";
 import SidebarAutoClose from "../components/SidebarAutoClose";
 import HeaderNavLink from "../components/HeaderNavLink";
 import WriteIcon from "../components/icons/write";
@@ -60,16 +61,16 @@ export default async function RootLayout({
         {/* Overlay backdrop - sibling of checkbox so z-index is not trapped by header's stacking context */}
         <label
           htmlFor="sidebar-toggle"
-          className="hidden peer-checked:block fixed inset-0 bg-black bg-opacity-50 z-30 cursor-default"
+          className="hidden peer-checked:block fixed inset-0 bg-black/50 z-30 cursor-default"
           aria-label="Close sidebar"
         />
         {/* Sidebar dropdown - also a sibling of checkbox */}
-        <div className="hidden peer-checked:flex sm:hidden flex-col text-dark bg-white space-y-4 absolute top-[60px] right-0 p-4 z-50 border border-primary-300 mt-1">
+        <div className="hidden peer-checked:flex sm:hidden flex-col text-dark bg-primary-100 space-y-4 absolute top-15 right-0 p-4 z-50 border border-primary-300 mt-1">
           <label htmlFor="sidebar-toggle" className="whitespace-nowrap cursor-pointer">
-            <HeaderNavLink href="/recon" title="Reconstruct" icon={<WriteIcon />} version="v0.7" />
+            <HeaderNavLink href="/recon" title="Reconstruct" icon={<WriteIcon />} version={versionList["recon"]} />
           </label>
           <label htmlFor="sidebar-toggle" className="whitespace-nowrap cursor-pointer">
-            <HeaderNavLink href="/changeblog/" title="Changeblog" icon={<BulletListIcon />} version="" />
+            <HeaderNavLink href="/changeblog/" title="Changeblog" icon={<BulletListIcon />} version={versionList["changeblog"]} />
           </label>
         </div>
         {children}

@@ -16,7 +16,7 @@ export default function Footer() {
   return (
     <footer className="col-span-full my-[52px]">
       <div className="mx-auto flex max-w-lg flex-col items-center gap-[18px] text-gray-300">
-      <div className={`text-2xl font-bold ${glory.variable} font-modern`}>
+      <div className={`text-2xl font-bold ${glory.variable} text-center font-modern`}>
         AVERAGE OF ONE THOUSAND
       </div>
       <div className="text-center my-[4px]">

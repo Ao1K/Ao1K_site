@@ -26,7 +26,8 @@ const getCFOPStep = (currentSteps: StepInfo[], prevSteps: StepInfo[], prevGridPa
   if (crossSteps.length === 1 && f2lSteps.length > 0) {
     const colors = [...crossSteps[0].colors]; // first color is always cross
     colors.push(...f2lSteps.flatMap(step => step.colors));
-    return { step: "x".repeat(f2lSteps.length) + 'cross', type: 'cross', colors: colors };
+    const f2lSlotList = f2lSteps.flatMap(step => step.f2lSlotList || []);
+    return { step: "x".repeat(f2lSteps.length) + 'cross', type: 'cross', colors, f2lSlotList };
   }
 
   // F2L pairs

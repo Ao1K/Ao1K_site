@@ -14,7 +14,7 @@ export default class AlgSpeedEstimator {
     "F": 1.5,
     "B": 1.3,
     "M": 1.3,
-    "E": 1.5,
+    "E": 3.0, // banished to the shadow realm
     "S": 1.4,
     "u": 1.3,
     "d": 1.3,

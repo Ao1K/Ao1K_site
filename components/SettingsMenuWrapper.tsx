@@ -19,7 +19,7 @@ export default function SettingsMenuWrapper() {
   const currentPageSettings = PAGE_SETTINGS[pathname || ''];
   
   if (!currentPageSettings) {
-    return null;
+    return <div id="settings-placeholder" className="w-12 h-12" />; 
   }
   
   return <SettingsMenu page={currentPageSettings} />;

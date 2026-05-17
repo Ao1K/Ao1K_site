@@ -1,7 +1,4 @@
-"use client";
-
 import Image from "next/image";
-import Link from "next/link";
 import SettingsIcon from "../../icons/settings";
 
 export default function ReconstructV06() {
@@ -9,7 +6,7 @@ export default function ReconstructV06() {
     <>
       <div className="flex flex-row gap-2 ">
         <h1 className="text-3xl text-primary-300">Reconstruct v0.6</h1>
-        <div className="h-fit self-end pb-[2px] text-neutral-400">Jan 18th, 2026</div>
+        <div className="h-fit self-end pb-0.5 text-neutral-400">Jan 18th, 2026</div>
       </div>
       <div className="bg-primary-100 w-full h-1"></div>
       

@@ -1,10 +1,9 @@
 'use client';
-import { useState, useRef, useEffect, useLayoutEffect, lazy, Suspense, useCallback } from 'react';
+import { useState, useRef, useEffect, lazy, Suspense, useCallback } from 'react';
 import MovesTextEditor from "../../components/recon/MovesTextEditor";
 import SpeedDropdown from "../../components/recon/SpeedDropdown";
 
 import Toolbar from "../../components/Toolbar";
-import ReconTimeHelpInfo from "../../components/recon/ReconTimeHelpInfo";
 import TPSInfo from "../../components/recon/TPSInfo";
 import updateURL from "../../composables/recon/updateURL";
 
@@ -26,19 +25,25 @@ import { TransformHTMLprops } from "../../composables/recon/transformHTML";
 import TitleWithPlaceholder from "../../components/recon/TitleInput";
 import TopButton from "../../components/recon/TopButton";
 import CopySolveDropdown from "../../components/recon/CopySolveDropdown";
-import { customDecodeURL, customEncodeURL } from '../../composables/recon/urlEncoding';
-import VideoHelpPrompt from '../../components/recon/VideoHelpPrompt';
+import CubeGifDialog from "../../components/recon/CubeGifDialog";
+import { customDecodeURL } from '../../composables/recon/urlEncoding';
+import InfoPanel from '../../components/recon/InfoPanel';
 import IconStack, { computeLineIconData } from './IconStack';
-import { ICON_SIZE_CONFIG, useCubeColors } from '../../composables/useSettings';
+import SplitsStack, { SPLITS_WIDTH, splitsToURLParam } from './SplitsStack';
+import { ICON_SIZE_CONFIG, useCubeColors, useShowSplits } from '../../composables/useSettings';
 import { SimpleCube } from '../../composables/recon/SimpleCube';
 import { SimpleCubeInterpreter } from '../../composables/recon/SimpleCubeInterpreter';
 import type { StepInfo, Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
 import { getNewSteps } from '../../composables/recon/getLineStepInfo';
+import { ScreenshotManager } from '../../composables/recon/ScreenshotManager';
+import type { TwistyPlayerImperativeRef } from '../../components/recon/TwistyPlayer';
+
+// utility imports
 import { AlgCompiler } from '../../utils/AlgCompiler';
 import ManualAlgVerifier from './ManualAlgVerifier';
 import LLpatternBuilder from '../../utils/LLpatternBuilder';
 import { highlightClass } from '../../utils/sharedConstants';
-import { ScreenshotManager } from '../../composables/recon/ScreenshotManager';
+import ReconSkeleton from './ReconSkeleton';
 
 export interface MoveHistory {
   history: string[][];
@@ -63,10 +68,18 @@ export interface ControllerRequestOptions {
 const TwistyPlayer = lazy(() => import("../../components/recon/TwistyPlayer"));
 
 let currentSpeed = 30;
+const calcCubeSpeedLocal = (speed: number) =>
+  speed === 100 ? 1000 : 1.5 ** (speed / 15) - 0.6;
 
-export default function Recon({ dailyScramble = "", videoHelpDismissed = false }: { dailyScramble?: string, videoHelpDismissed?: boolean }) {
+const isRotationOnlyLine = (moves: string[]) =>
+  moves.length > 0 && moves.every(move => !/[^xyz2'3]/.test(move));
+
+const MAX_EDITOR_HISTORY = 100;
+
+export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScramble?: string, infoPanelSlot?: React.ReactNode }) {
   const solutionLineHeight = ICON_SIZE_CONFIG['medium'].lineHeight;
   const [cubeColors] = useCubeColors();
+  const [showSplitsSetting] = useShowSplits();
 
   const allMovesRef = useRef<string[][][]>([[[]], [[]]]);
   const moveLocation = useRef<[number, number, number]>([0, 0, 0]);
@@ -83,6 +96,7 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
 
   const [scrambleHTML, setScrambleHTML] = useState<string>('');
   const [solutionHTML, setSolutionHTML] = useState<string>('');
+  const [isGifDialogOpen, setIsGifDialogOpen] = useState<boolean>(false);
 
   const [playerParams, setPlayerParams] = useState<PlayerParams>({ animationTimes: [], solution: '', scramble: '' });
   const suggestionsRef = useRef<Suggestion[]>([]);
@@ -94,17 +108,25 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
     setSuggestions(next);
   }, []);
 
+  const [splits, setSplits] = useState<string[]>([]);
+  const splitsRef = useRef<string[]>([]);
+  const [committedSplits, setCommittedSplits] = useState<string[]>([]);
+  const committedSplitsRef = useRef<string[]>([]);
+
   const tpsRef = useRef<HTMLDivElement>(null!);
   const scrambleMethodsRef = useRef<ImperativeRef>(null);
   const solutionMethodsRef = useRef<ImperativeRef>(null);
   const undoRef = useRef<HTMLButtonElement>(null!);
   const redoRef = useRef<HTMLButtonElement>(null!);
   const iconScrollRef = useRef<HTMLDivElement>(null);
+  const splitsScrollRef = useRef<HTMLDivElement>(null);
   const oldSelectionRef = useRef<OldSelectionRef>({ range: null, textbox: null, status: "init" });
   const bottomBarRef = useRef<HTMLDivElement>(null!);
   const isLoopingRef = useRef<boolean>(false);
   const loopTimeoutRef = useRef<number | null>(null);
   const screenshotManagerRef = useRef<ScreenshotManager | null>(null);
+  const isWhiteSpaceLineRef = useRef<boolean[]>([]);
+  const twistyPlayerRef = useRef<TwistyPlayerImperativeRef>(null);
   const clearLoopTimeout = useCallback(() => {
     if (loopTimeoutRef.current !== null) {
       clearTimeout(loopTimeoutRef.current);
@@ -112,13 +134,49 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
     }
   }, []);
 
+  splitsRef.current = splits;
+  committedSplitsRef.current = committedSplits;
+
   const totalMoves = allMovesRef.current[1].flat(2).filter(move => move.match(/[^xyz2']/g)).length
 
   const solutionLines = allMovesRef.current[1]?.map((move: string[]) => move.join(' ')) || [''];
   const lineIconData = computeLineIconData(solutionLines, lineSteps.map(item => item.stepInfo), cubeColors);
   const hasIcons = lineIconData.some(d => !d.isEmptyIcon);
 
-  const MAX_EDITOR_HISTORY = 100;
+  const showSplitsColumn = showSplitsSetting;
+
+  const isWhitespaceLine = lineIconData.map(d => d.isWhitespace);
+  isWhiteSpaceLineRef.current = isWhitespaceLine;
+  const splitsSum = committedSplits
+    .filter(s => s !== '')
+    .reduce((acc, s) => acc + parseFloat(s), 0);
+
+  let splitIdxCounter = 0;
+  const requiredSplitIndices: number[] = [];
+  for (let lineIdx = 0; lineIdx < allMovesRef.current[1].length; lineIdx++) {
+    if (isWhitespaceLine[lineIdx]) continue;
+    const line = allMovesRef.current[1][lineIdx];
+    if (line.length > 0 && !isRotationOnlyLine(line)) requiredSplitIndices.push(splitIdxCounter);
+    splitIdxCounter++;
+  }
+
+  const allRequiredSplitsFilled = requiredSplitIndices.length > 0 &&
+    requiredSplitIndices.every(i => committedSplits[i] != null && committedSplits[i] !== '');
+
+  const showSplitsWarning = showSplitsColumn
+    && typeof solveTime === 'number'
+    && allRequiredSplitsFilled
+    && Math.abs(splitsSum - solveTime) > 0.1;
+
+  const lastContentfulLineStep = (() => {
+    for (let i = lineSteps.length - 1; i >= 0; i--) {
+      if (lineSteps[i].stepInfo.length > 0) {
+        return lineSteps[i];
+      }
+    }
+  })();
+  const isSolveComplete = lastContentfulLineStep?.stepInfo.some(step => step.type?.toLowerCase() === 'solved');
+
   const moveHistory = useRef<MoveHistory>({ history: [['', '']], index: 0, MAX_HISTORY: MAX_EDITOR_HISTORY, status: 'loading' });
 
   const [controllerButtonsStatus, setControllerButtonsStatus] = useState<{ fullLeft: string, stepLeft: string, stepRight: string, fullRight: string, playPause: string }>({
@@ -341,7 +399,7 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
       if (nextLineIndex === -1) {
         return [-1, -1]; // no next move, stay in place
       } else {
-        return [nextLineIndex, 0]; // go to first move in next line
+        return [nextLineIndex, 1]; // go to first move in next line
       }
     }
 
@@ -385,6 +443,51 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
     ));
   }
 
+  const computeLinePlaybackTiming = (lineIndex: number): { pause: number; moveTimes: number[]; tempoScale: number } | null => {
+    const isWs = isWhiteSpaceLineRef.current;
+    const committed = committedSplitsRef.current;
+    const moves = allMovesRef.current[1];
+
+    if (isWs[lineIndex]) return null;
+
+    let splitIdx = 0;
+    for (let i = 0; i < lineIndex; i++) {
+      if (!isWs[i]) splitIdx++;
+    }
+
+    const splitStr = committed[splitIdx];
+    if (!splitStr || splitStr === '') return null;
+
+    const splitTime = parseFloat(splitStr);
+    if (isNaN(splitTime) || splitTime <= 0) return null;
+
+    const lineMoves = moves[lineIndex] || [];
+    if (lineMoves.length === 0) return null;
+
+    const stmCount = lineMoves.filter(move => move.match(/[^xyz2']/)).length;
+    if (stmCount === 0) return null;
+
+    const tps = stmCount / splitTime;
+    const pauseFraction = Math.max(0, 1 - tps / 10);
+    // pause is an absolute recognition time capped at 800ms, not a fraction of the split
+    const pauseMs = Math.min(pauseFraction * 800, splitTime * 1000 * 0.5);
+    const moveTimeMs = splitTime * 1000 - pauseMs;
+
+    const weights = lineMoves.map(move => {
+      if (move.includes('3')) return 2.0;
+      if (move.includes('2')) return 1.5;
+      return 1.0;
+    });
+    const weightedTotal = weights.reduce((sum, w) => sum + w, 0);
+    if (weightedTotal === 0) return null;
+
+    const baseTime = moveTimeMs / weightedTotal;
+    const moveTimes = weights.map(w => Math.max(50, baseTime * w));
+    const tempoScale = 1000 / Math.max(50, baseTime);
+
+    return { pause: pauseMs, moveTimes, tempoScale };
+  };
+
   const loopStepRight = (location: [number, number, number] | null) => {
     if (!isLoopingRef.current) {
       stopLoopStepRight();
@@ -412,16 +515,26 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
 
     trackMoves(1, lineIndex, moveIndex, allMovesRef.current[1], 'play');
 
-    // const animationTimes = playerParams.animationTimes;
-    // const solutionMovesBefore = countMovesBeforeIndex(1);
-    // const timeToWait = animationTimes[solutionMovesBefore] || 1000;
+    let timeoutMs = 1000 - (10 * currentSpeed);
+    const splitTiming = computeLinePlaybackTiming(lineIndex);
+    if (splitTiming) {
+      // above 10 TPS, animations look instant anyway — use actual instant mode
+      const useInstant = splitTiming.tempoScale > 10;
+      twistyPlayerRef.current?.setInstantOverride(useInstant);
+      if (!useInstant && moveIndex !== 0) {
+        twistyPlayerRef.current?.setTempoScale(splitTiming.tempoScale);
+      }
+      timeoutMs = moveIndex === 0
+        ? splitTiming.pause
+        : (splitTiming.moveTimes[moveIndex - 1] ?? timeoutMs);
+    } else {
+      twistyPlayerRef.current?.setInstantOverride(false);
+      twistyPlayerRef.current?.setTempoScale(calcCubeSpeedLocal(currentSpeed));
+    }
 
     loopTimeoutRef.current = window.setTimeout(() => {
       loopStepRight([1, lineIndex, moveIndex]);
-      // }, timeToWait); 
-      // moves with large animation times don't actually take longer. 
-      // Re-implement timeToWait if this changes
-    }, 1000 - (10 * currentSpeed));
+    }, timeoutMs);
   }
 
 
@@ -650,6 +763,25 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
         return;
       }
 
+      if (idIndex === 1) {
+        const nonEmptyCount = moves.filter(line => line.length > 0).length;
+        const prev = splitsRef.current;
+        if (prev.length !== nonEmptyCount) {
+          if (prev.length < nonEmptyCount) {
+            const padded = [...prev, ...Array(nonEmptyCount - prev.length).fill('')];
+            splitsRef.current = padded;
+            setSplits(padded);
+            setCommittedSplits(c => [...c, ...Array(nonEmptyCount - c.length).fill('')]);
+          } else {
+            const trimmed = prev.slice(0, nonEmptyCount);
+            splitsRef.current = trimmed;
+            setSplits(trimmed);
+            setCommittedSplits(c => c.slice(0, nonEmptyCount));
+            updateURL('splits', splitsToURLParam(trimmed));
+          }
+        }
+      }
+
       allMovesRef.current[idIndex] = [...moves];
       const sol = allMovesRef.current[1].flat().join(' ');
       const scram = allMovesRef.current[0].flat().join(' ');
@@ -679,7 +811,7 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
       const controllerButtonsEnabled = getControllerButtonsStatus(idIndex, lineIndex, moveIndex, allMovesRef.current[idIndex], playPauseStatus);
       setControllerButtonsStatus(controllerButtonsEnabled)
 
-    }, [controllerButtonsStatus, suggestions]);
+  }, [controllerButtonsStatus, suggestions]);
 
   const memoizedSetScrambleHTML = useCallback((html: string) => {
     setScrambleHTML(html);
@@ -692,6 +824,29 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
     handleHistoryBtnUpdate();
   }, []);
 
+  const handleSplitsCommit = (newSplits: string[]) => {
+    setCommittedSplits(newSplits);
+    if (solveTime) return;
+
+    const newSum = newSplits.filter(s => s !== '').reduce((acc, s) => acc + parseFloat(s), 0);
+    if (newSum <= 0) return;
+
+    let idx = 0;
+    const required: number[] = [];
+    for (let lineIdx = 0; lineIdx < allMovesRef.current[1].length; lineIdx++) {
+      if (isWhitespaceLine[lineIdx]) continue;
+      const line = allMovesRef.current[1][lineIdx];
+      if (line.length > 0 && !isRotationOnlyLine(line)) required.push(idx);
+      idx++;
+    }
+
+    if (required.length === 0) return;
+    if (!required.every(i => newSplits[i] != null && newSplits[i] !== '')) return;
+
+    setSolveTime(Math.round(newSum * 1000) / 1000);
+    updateURL('time', newSum.toFixed(3));
+  };
+
   const handleSolveTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     const regex = /^\d{0,5}(\.\d{1,3})?$/;
@@ -702,7 +857,7 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
 
     if (value === '') {
       setSolveTime('');
-      updateURL('time', 'undefined');
+      updateURL('time', '');
       return;
     }
 
@@ -811,12 +966,15 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
     solutionMethodsRef.current?.transform('');
     setSolveTime('');
     setSolveTitle('');
+    setSplits([]);
+    setCommittedSplits([]);
     setLineSteps([]);
 
     // don't clear moveHistory
 
     updateURL('title', null);
     updateURL('time', null);
+    updateURL('splits', null);
     updateURL('preview', null);
     setTopButtonAlert({ id: "trash", message: "Page cleared! Undo with Ctrl+Z", messageType: 'info' });
   }
@@ -858,10 +1016,6 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
         messageType: 'warn'
       };
     }
-
-    const isSolveComplete = lineStepsRef.current.some(stepEntry =>
-      stepEntry.stepInfo.some(step => step.type?.toLowerCase() === 'solved')
-    );
 
     if (!isSolveComplete) {
       return {
@@ -1243,6 +1397,10 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
       const line = solutionMoves[lineIdx];
 
       if (!line || line.length === 0) {
+        // if this line previously had moves, it's a change that affects subsequent lines
+        if (!isChangeFound && previousLineSteps[lineIdx]?.moveLine) {
+          isChangeFound = true;
+        }
         updatedSteps.push({ moveLine: '', stepInfo: [] });
         continue;
       }
@@ -1302,6 +1460,13 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
       setSolveTitle(decodeURIComponent(customDecodeURL(title)));
     }
 
+    const splitsParam = urlParams.get('splits');
+    if (splitsParam !== null) {
+      const parsed = splitsParam === '' ? [''] : splitsParam.split(',');
+      setSplits(parsed);
+      setCommittedSplits(parsed);
+    }
+
     const solution = allMovesRef.current[1].flat().join(' ');
     if (solution) {
       setPlayerParams(prev => ({ ...prev, solution }));
@@ -1315,15 +1480,14 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
     Cookies.get('isShowingBottomBar') === 'false' ? setIsShowingToolbar(false) : setIsShowingToolbar(true);
   }, []);
 
+
+  const handleCommandRef = useRef(handleCommand);
+  handleCommandRef.current = handleCommand;
+
   useEffect(() => {
-
-    document.addEventListener('keydown', handleCommand);
-
-    return () => {
-
-      document.removeEventListener('keydown', handleCommand);
-
-    };
+    const handler = (e: KeyboardEvent) => handleCommandRef.current(e);
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
   }, []);
 
   useEffect(() => {
@@ -1366,8 +1530,12 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
   const toolbarButtons = ctrlKey === '⌘' ? macToolbarButtons : windowsToolbarButtons;
 
   return (
-    <main id="main_page" className="col-start-2 col-span-1 flex flex-col bg-primary-900 mt-[52px]">
-      <VideoHelpPrompt videoId="iIipycBl0iY" initiallyDismissed={videoHelpDismissed} />
+    <main id="main_page" className="relative flex flex-col bg-primary-900 mt-10">
+
+      {/* For aligning the skeleton perfectly */}
+      {/* <div className="absolute inset-0 z-50 pointer-events-none opacity-50 [&>main]:mt-0">
+        <ReconSkeleton />
+      </div> */}
 
       {/* utility for compiling list of alg hashes */}
       {/* <AlgCompiler /> */}
@@ -1381,17 +1549,39 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
       {/* utility for building case patterns */}
       {/* <LLpatternBuilder /> */}
 
-      <div id="top-bar" className="px-3 flex flex-row flex-wrap items-center place-content-end gap-2 mt-8 mb-3">
-        <TitleWithPlaceholder solveTitle={solveTitle} handleTitleChange={handleTitleChange} />
-        <div className="flex-none flex flex-row space-x-1 pr-2 text-dark_accent">
+      <InfoPanel initiallyDismissed={infoPanelSlot == null}>{infoPanelSlot}</InfoPanel>
+      {isGifDialogOpen ? (
+        <CubeGifDialog
+          onClose={() => setIsGifDialogOpen(false)}
+          scramble={allMovesRef.current[0].flat().join(' ')}
+          solutionLines={allMovesRef.current[1].map((moves, i) => ({
+            moves,
+            isWhitespace: !!isWhitespaceLine[i],
+          }))}
+          lineIconData={lineIconData}
+          splits={splits}
+          committedSplits={committedSplits}
+          onSplitsChange={setSplits}
+          onSplitsCommit={handleSplitsCommit}
+        />
+      ) : null}
+      <div id="top-bar" className="px-3 flex flex-col w-full items-end gap-5 mb-2 -mt-11 pointer-events-none">
+        <div className="flex-none flex flex-row space-x-1 text-dark_accent pointer-events-auto">
           <TopButton id="trash" text="Clear Page" shortcutHint={`${ctrlKey}+Del`} onClick={handleClearPage} icon={<TrashIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert} />
-          <CopySolveDropdown onCopyText={handleCopySolve} onScreenshot={handleScreenshot} alert={topButtonAlert} setAlert={setTopButtonAlert} />
-          <TopButton id="share" text="Share Preview" shortcutHint={`${ctrlKey}+S`} onClick={handleShare} icon={<ShareIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert} />
+          <CopySolveDropdown 
+            onCopyText={handleCopySolve} 
+            onScreenshot={handleScreenshot} 
+            onOpenGif={() => setIsGifDialogOpen(true)} 
+            alert={topButtonAlert} 
+            setAlert={setTopButtonAlert} 
+          />
+          <TopButton id="share" innerText="Share" text="Share Preview" shortcutHint={`${ctrlKey}+S`} onClick={handleShare} icon={<ShareIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert} />
         </div>
+        <TitleWithPlaceholder solveTitle={solveTitle} handleTitleChange={handleTitleChange} />
       </div>
       <div id="scramble-area" className="px-3 mt-3 flex flex-col">
         <div className="text-xl text-dark_accent font-medium">Scramble</div>
-        <div className="lg:max-h-[15.1rem] max-h-[10rem] overflow-y-auto" id="scramble">
+        <div className="lg:max-h-[15.1rem] max-h-40 overflow-y-auto" id="scramble">
           <MovesTextEditor
             name={`scramble`}
             ref={scrambleMethodsRef}
@@ -1406,29 +1596,27 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
         </div>
       </div>
       <div id="player-box" className="px-3 relative flex flex-col mt-6 w-full justify-center items-center">
-        <div id="cube_model" className="flex h-full aspect-video max-h-96 min-h-[200px] bg-primary-900 select-none z-20 w-[100%]">
+        <div id="cube_model" className="flex h-full aspect-video max-h-96 min-h-50 bg-primary-900 select-none z-20 w-full">
           <Suspense fallback={<div className="flex text-xl w-full h-full justify-center items-center text-primary-100">Loading cube...</div>}>
             <TwistyPlayer
+              ref={twistyPlayerRef}
               speed={speed}
               scrambleRequest={playerParams.scramble}
               solutionRequest={playerParams.solution}
               animationTimesRequest={playerParams.animationTimes}
-              onCubeStateUpdate={() => { }}
-              handleCubeLoaded={() => { }}
               handleControllerRequest={handleControllerRequest}
               controllerButtonsStatus={controllerButtonsStatus}
-              setControllerButtonsStatus={setControllerButtonsStatus}
             />
           </Suspense>
         </div>
       </div>
       <div id="bottom-box" className="mx-3 relative flex flex-col justify-center items-center">
-        <div id="bottom-box-borders" className={`border-x w-[100%] border-neutral-600 h-14 absolute top-0 z-0 pointer-events-none ${isShowingToolbar ? 'block' : 'hidden'}`}></div>
+        <div id="bottom-box-borders" className={`border-x w-full border-neutral-600 h-14 absolute top-0 z-0 pointer-events-none ${isShowingToolbar ? 'block' : 'hidden'}`}></div>
         <div
           id="bottom-bar"
           ref={bottomBarRef}
           className={`w-full px-3 space-x-1 static flex flex-row items-center place-content-end justify-start transform z-20
-              ${isShowingToolbar ? 'translate-y-0 opacity-100 h-14' : '-translate-y-[100%] opacity-0 pointer-events-none h-0'}`}
+              ${isShowingToolbar ? 'translate-y-0 opacity-100 h-14' : '-translate-y-full opacity-0 pointer-events-none h-0'}`}
           style={{
             visibility: isShowingToolbar ? 'visible' : 'hidden',
             transition: isShowingToolbar
@@ -1438,11 +1626,16 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
           <SpeedDropdown speed={speed} setSpeed={setSpeed} />
           <Toolbar buttons={toolbarButtons} containerRef={bottomBarRef} />
         </div>
-        <div className="border border-neutral-600 hover:border-primary-100 h-[6px] rounded-b-sm w-full z-0 bg-primary-700 mb-2" onClick={() => toggleShowBottomBar()}></div>
+        <div className="border border-neutral-600 hover:border-primary-100 h-1.5 rounded-b-sm w-full z-0 bg-primary-700 mb-2" onClick={() => toggleShowBottomBar()}></div>
       </div>
       <div id="datafields" className="w-full items-start transition-width duration-500 ease-linear">
         <div id="solution-area" className="px-3 mt-1 mb-14 flex flex-col w-full">
-          <div className="text-xl text-dark_accent font-medium w-full z-10">Solution</div>
+          <div className="flex flex-row items-baseline w-full z-10">
+            <div className="text-xl text-dark_accent font-medium flex-1">Solution</div>
+            {showSplitsColumn && (
+              <div className="text-xl text-dark_accent font-medium" style={{ width: SPLITS_WIDTH, textAlign: 'center' }}>Splits</div>
+            )}
+          </div>
           <div id="rich-solution-display" className="relative max-h-[35vh] -mb-20 border-none overflow-visible">
             <div
               className="icon-column-clip max-h-[35vh] absolute left-0 top-0"
@@ -1463,11 +1656,15 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
               id="solution"
               style={{
                 marginLeft: hasIcons ? ICON_SIZE_CONFIG['medium'].iconWidth : 0,
-                transition: 'margin-left 200ms linear',
+                marginRight: showSplitsColumn ? SPLITS_WIDTH : 0,
+                transition: 'margin-left 200ms linear, margin-right 200ms linear',
               }}
               onScroll={(e) => {
                 if (iconScrollRef.current) {
                   iconScrollRef.current.style.transform = `translateY(-${e.currentTarget.scrollTop}px)`;
+                }
+                if (splitsScrollRef.current) {
+                  splitsScrollRef.current.style.transform = `translateY(-${e.currentTarget.scrollTop}px)`;
                 }
               }}
             >
@@ -1475,7 +1672,7 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
                 name={`solution`}
                 ref={solutionMethodsRef}
                 trackMoves={trackMoves}
-                autofocus={true}
+                autofocus={infoPanelSlot == null}
                 moveHistory={moveHistory}
                 updateHistoryBtns={memoizedUpdateHistoryBtns}
                 html={solutionHTML}
@@ -1484,17 +1681,34 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
                 lineHeight={solutionLineHeight}
               />
             </div>
+            {showSplitsColumn && (
+              <div
+                className="max-h-[35vh] absolute right-0 top-0 overflow-hidden"
+                style={{ width: SPLITS_WIDTH }}
+              >
+                <div ref={splitsScrollRef}>
+                  <SplitsStack
+                    editableElement={solutionMethodsRef.current?.getElement() || null}
+                    splits={splits}
+                    onSplitsChange={setSplits}
+                    onSplitsCommit={handleSplitsCommit}
+                    isWhitespaceLine={isWhitespaceLine}
+                  />
+                  <div className="h-6" />
+                </div>
+              </div>
+            )}
           </div>
         </div>
-        <div id="time-area" className="px-3 pt-12 flex flex-col w-full">
+        <div id="time-area" className="px-3 pt-12 flex flex-col w-full pb-16">
           <div className="text-xl text-dark_accent font-medium w-full">Time</div>
-          <div id="time-stats" className="flex flex-row flex-wrap text-nowrap items-center w-full gap-y-2 pb-16">
+          <div id="time-stats" className="flex flex-row flex-wrap text-nowrap items-center w-full gap-y-2 pb-2">
             <div id="time-field" className="border border-neutral-600 group flex flex-row items-center justify-start">
               <input
                 id="time-input"
                 type="number"
                 placeholder="00.000"
-                className="pt-2 pb-2 px-2 text-xl text-primary-100 bg-primary-900 group-focus:border-primary-100 hover:bg-primary-800 rounded-sm box-content no-spinner w-[4.25rem]"
+                className="pt-2 pb-2 px-2 text-xl text-primary-100 bg-primary-900 group-focus:border-primary-100 hover:bg-primary-800 rounded-sm box-content no-spinner w-17"
                 value={solveTime}
                 onChange={handleSolveTimeChange}
                 onWheel={(e) => e.currentTarget.blur()}
@@ -1506,9 +1720,11 @@ export default function Recon({ dailyScramble = "", videoHelpDismissed = false }
             <div className="text-primary-100 ml-2 text-xl">{totalMoves} stm </div>
             <div className="flex-nowrap text-nowrap items-center flex flex-row">
               <TPSInfo moveCount={totalMoves} solveTime={solveTime} tpsRef={tpsRef} />
-              <ReconTimeHelpInfo />
             </div>
           </div>
+          {showSplitsWarning && (
+            <div className="text-orange-500 text-sm">Time doesn&apos;t match sum of splits ({splitsSum.toFixed(3)} sec)</div>
+          )}
         </div>
       </div>
     </main>
