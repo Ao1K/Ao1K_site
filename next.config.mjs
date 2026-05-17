@@ -3,7 +3,14 @@
 
 const nextConfig = {
   typescript: {
-    ignoreBuildErrors: true, // potential typescript OOM error in prod build image 
+    ignoreBuildErrors: true, // potential OOM error in prod build image
+  },
+  eslint: {
+    ignoreDuringBuilds: true, // potential OOM error in prod build image
+  },
+  experimental: {
+    webpackMemoryOptimizations: true,
+    memoryBasedWorkersCount: true,
   },
   reactStrictMode: true, // Optional but recommended
   // output: 'standalone', // Ensures it builds correctly for deployment
