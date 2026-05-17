@@ -39,11 +39,11 @@ import { ScreenshotManager } from '../../composables/recon/ScreenshotManager';
 import type { TwistyPlayerImperativeRef } from '../../components/recon/TwistyPlayer';
 
 // utility imports
-import { AlgCompiler } from '../../utils/AlgCompiler';
-import ManualAlgVerifier from './ManualAlgVerifier';
-import LLpatternBuilder from '../../utils/LLpatternBuilder';
-import { highlightClass } from '../../utils/sharedConstants';
-import ReconSkeleton from './ReconSkeleton';
+// import { AlgCompiler } from '../../utils/AlgCompiler';
+// import ManualAlgVerifier from './ManualAlgVerifier';
+// import LLpatternBuilder from '../../utils/LLpatternBuilder';
+// import { highlightClass } from '../../utils/sharedConstants';
+// import ReconSkeleton from './ReconSkeleton';
 
 export interface MoveHistory {
   history: string[][];
