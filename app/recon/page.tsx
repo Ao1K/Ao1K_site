@@ -1,6 +1,7 @@
 import { lazy } from 'react';
 import { Metadata, ResolvingMetadata } from 'next';
 import { cookies } from 'next/headers';
+import InfoPanelContent from '../../components/recon/InfoPanelContent';
 
 const PageContent = lazy(() => import('../../components/recon/_PageContent'));
 import { customEncodeURL } from '../../composables/recon/urlEncoding';
@@ -73,7 +74,7 @@ export default async function Page() {
   dailyScramble = `<div><span class="text-gray-500">// Scramble of the day</span><br></div><div><span class="text-gray-500">// ${comment}</span><br></div><div><span class="text-primary-100">${scramble}</span><br></div>`;
 
   const cookieStore = await cookies();
-  const videoHelpDismissed = cookieStore.get('videoHelpDismissed')?.value === 'true';
+  const infoPanelDismissed = cookieStore.get('infoPanelDismissed_v1')?.value === 'true';
 
-  return <PageContent dailyScramble={dailyScramble} videoHelpDismissed={videoHelpDismissed} />;
+  return <PageContent dailyScramble={dailyScramble} infoPanelSlot={infoPanelDismissed ? null : <InfoPanelContent />} />;
 }

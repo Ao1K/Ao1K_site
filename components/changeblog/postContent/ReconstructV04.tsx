@@ -48,7 +48,7 @@ export default function ReconstructV04() {
     <>
       <div className="flex flex-row gap-2 ">
         <h1 className="text-3xl text-primary-300">Reconstruct v0.4</h1>
-        <div className="h-fit self-end pb-[2px] text-neutral-400">Nov 25th, 2025</div>
+        <div className="h-fit self-end pb-0.5 text-neutral-400">Nov 25th, 2025</div>
       </div>
       <div className="bg-primary-100 w-full h-1"></div>
       
@@ -99,7 +99,7 @@ export default function ReconstructV04() {
           initialContent={"<div>R2 M F 🏃‍♂️🛹🤘 S R r B // xcross + a sweet kickflip<span class=\"paste-marker\"></span><br></div>"}
         />
       </div>
-      <div className="flex flex-row gap-4 min-w-[50px] py-6">
+      <div className="flex flex-row gap-4 min-w-12.5 py-6">
         <StepIcons />
         <div className="flex flex-col h-full align-middle">
           <p className="pt-1">
@@ -123,7 +123,7 @@ export default function ReconstructV04() {
       <p className="pt-6">
         Introducing Screenshots. They&apos;re not actually screenshots. But they are pretty!
       </p>
-      <div className="py-6 max-w-[400px]">
+      <div className="py-6 max-w-100">
         <Image
           src="/changeblog/screenshotExample.png"
           alt="Screenshot example"
@@ -135,7 +135,7 @@ export default function ReconstructV04() {
       <div className="flex flex-col gap-6 pt-6">
         You can take a screenshot by going to the top of the Reconstruct page and clicking here:
       </div>
-      <div className="py-6 max-w-[200px]">
+      <div className="py-6 max-w-50">
         <Image
           src="/changeblog/screenshotHowTo.png"
           alt="How to screenshot"
@@ -154,7 +154,7 @@ export default function ReconstructV04() {
         Type in a solution to cross, press enter, and suggestions will start to generate.
         Currently, there&apos;s algorithm suggestions for F2L, OLL, and PLL.
       </p>
-      <div className="py-6 max-w-[400px]">
+      <div className="py-6 max-w-100">
         <Image
           src="/changeblog/autocompleteExample.png"
           alt="Autocomplete example"
@@ -538,7 +538,7 @@ export default function ReconstructV04() {
       <p className="pt-6">
         Thanks for reading! Say hello to my friend&apos;s cat, Sharknado.
       </p>
-      <div className="py-6 max-w-[400px]">
+      <div className="py-6 max-w-100">
         <Image
           src="/cats/sharkie.jpg"
           alt="Autocomplete example"

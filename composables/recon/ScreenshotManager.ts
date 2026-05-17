@@ -296,6 +296,40 @@ export function createPreviewContent({ data, createElement, scale = 1 }: Screens
   );
 }
 
+// html2canvas can't parse modern CSS color functions (lab, oklch, lch, oklab, color()).
+// this converts any such computed values to rgba() by drawing them onto a 1×1 canvas.
+function fixModernColors(root: HTMLElement): void {
+  const isModernColor = (v: string) => /\b(lab|oklch|lch|oklab|color)\s*\(/.test(v);
+  const colorCanvas = document.createElement('canvas');
+  colorCanvas.width = colorCanvas.height = 1;
+  const ctx = colorCanvas.getContext('2d')!;
+
+  const toRgba = (color: string): string => {
+    ctx.clearRect(0, 0, 1, 1);
+    ctx.fillStyle = color;
+    ctx.fillRect(0, 0, 1, 1);
+    const d = ctx.getImageData(0, 0, 1, 1).data;
+    return `rgba(${d[0]},${d[1]},${d[2]},${(d[3] / 255).toFixed(3)})`;
+  };
+
+  const propsToFix = ['color', 'background-color', 'border-top-color', 'border-right-color', 'border-bottom-color', 'border-left-color'];
+
+  const walk = (el: HTMLElement) => {
+    const cs = window.getComputedStyle(el);
+    for (const prop of propsToFix) {
+      const val = cs.getPropertyValue(prop);
+      if (val && isModernColor(val)) {
+        el.style.setProperty(prop, toRgba(val));
+      }
+    }
+    for (const child of Array.from(el.children)) {
+      walk(child as HTMLElement);
+    }
+  };
+
+  walk(root);
+}
+
 export class ScreenshotManager {
   private cache: { blob: Blob; state: ScreenshotState } | null = null;
 
@@ -564,6 +598,8 @@ export class ScreenshotManager {
         }
 
       }
+
+      fixModernColors(wrapper);
 
       // capture and cleanup
       const canvas = await html2canvas(wrapper, {

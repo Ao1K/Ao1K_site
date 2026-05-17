@@ -1,7 +1,8 @@
 import CopyIcon from '../icons/copy';
-import CameraIcon from '../icons/camera';
+import CameraIcon from '../icons/image';
 import DropdownIcon from '../icons/dropdown';
 import TextTIcon from "../icons/text-T";
+import PlayIcon from '../icons/play';
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
@@ -9,11 +10,12 @@ import Image from 'next/image';
 interface CopySolveDropdownProps {
   onCopyText: () => void;
   onScreenshot: () => void;
+  onOpenGif: () => void;
   alert: {id: string; message: string; messageType: 'info' | 'warn'};
   setAlert: React.Dispatch<React.SetStateAction<{id: string; message: string; messageType: 'info' | 'warn'}>>;
 }
 
-export default function CopySolveDropdown({ onCopyText, onScreenshot, alert, setAlert }: CopySolveDropdownProps) {
+export default function CopySolveDropdown({ onCopyText, onScreenshot, onOpenGif, alert, setAlert }: CopySolveDropdownProps) {
   const [isRotated, setIsRotated] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -32,6 +34,11 @@ export default function CopySolveDropdown({ onCopyText, onScreenshot, alert, set
     setIsRotated(false);
   }
 
+  const handleGif = () => {
+    onOpenGif();
+    setIsRotated(false);
+  }
+
   const handleClickOutside = (event: MouseEvent | TouchEvent) => {
     const popup = document.getElementById('copy-solve-dropdown');
     if (popup && !popup.contains(event.target as Node)) {
@@ -43,7 +50,7 @@ export default function CopySolveDropdown({ onCopyText, onScreenshot, alert, set
     if (alert && alert.id === 'copy-solve' && alert.message && setAlert) {
       // When alert appears, screenshot is done, so stop loading
       setIsLoading(false);
-      
+
       const timeoutId = setTimeout(() => {
         setAlert({id: '', message: '', messageType: 'info'}); // do not ever set to a truthy value
       }, 2000);
@@ -66,13 +73,13 @@ export default function CopySolveDropdown({ onCopyText, onScreenshot, alert, set
 
   return (
     <div id="copy-solve-dropdown" className="relative inline-block group z-20">
-      {isLoading && 
-        <div className="py-1 px-2 -translate-y-[120%] absolute left-1/2 -translate-x-1/2 rounded-sm pointer-events-none select-none z-50 mb-2 whitespace-nowrap">
+      {isLoading &&
+        <div className="py-1 px-2 translate-y-[-120%] absolute left-1/2 -translate-x-1/2 rounded-sm pointer-events-none select-none z-50 mb-2 whitespace-nowrap">
           <Image src="/LoadingSpinner.webp" alt="Loading..." width={32} height={32} className="" />
         </div>
       }
       {alert.id === 'copy-solve' && !isLoading &&
-        <div className={`py-1 px-2 font-semibold -translate-y-[120%] absolute left-1/2 -translate-x-1/2 text-dark rounded-sm text-sm pointer-events-none select-none z-50 mb-2 whitespace-nowrap ${
+        <div className={`py-1 px-2 font-semibold translate-y-[-120%] absolute left-1/2 -translate-x-1/2 text-dark rounded-sm text-sm pointer-events-none select-none z-50 mb-2 whitespace-nowrap ${
           alert.messageType === 'warn' ? 'bg-orange-500' : 'bg-primary-100'
         }`}>
           {alert.message}
@@ -84,7 +91,7 @@ export default function CopySolveDropdown({ onCopyText, onScreenshot, alert, set
       >
         <div className="flex justify-center items-center w-full select-none space-x-2">
           <CopyIcon className="text-dark_accent" />
-          <DropdownIcon className={`align-middle h-full transition-transform duration-300 ${isRotated ? 'rotate-180' : ''}`}/>
+          <DropdownIcon className={`align-middle h-full transition-transform duration-300 ${isRotated ? '' : 'rotate-180'}`}/>
         </div>
       </button>
 
@@ -92,21 +99,28 @@ export default function CopySolveDropdown({ onCopyText, onScreenshot, alert, set
         <div>Copy Solve</div>
       </div>
 
-      {isRotated ? 
-        <div className="flex flex-col bg-primary-900 absolute -translate-x-[4px] place-items-start text-dark_accent px-1 pb-1 text-sm">
-          <button 
-            className="hover:bg-neutral-600 py-2 px-2 border border-neutral-600 w-full text-left flex items-center space-x-2" 
+      {isRotated ?
+        <div className="flex flex-col bg-primary-900 absolute -translate-x-1 place-items-start text-dark_accent px-1 pb-1 text-sm">
+          <button
+            className="hover:bg-neutral-600 py-2 px-2 border border-neutral-600 w-full text-left flex items-center space-x-2"
+            onClick={handleCopyText}
+            >
+            <TextTIcon className="w-4 h-4" />
+            <span>Copy Text</span>
+          </button>
+          <button
+            className="hover:bg-neutral-600 py-2 px-2 border border-neutral-600 w-full text-left flex items-center space-x-2"
             onClick={handleScreenshot}
           >
             <CameraIcon className="w-4 h-4" />
             <span>Screenshot</span>
           </button>
-          <button 
-            className="hover:bg-neutral-600 py-2 px-2 border border-neutral-600 w-full text-left flex items-center space-x-2" 
-            onClick={handleCopyText}
-          >
-            <TextTIcon className="w-4 h-4" />
-            <span>Copy Text</span>
+          <button
+            className="hover:bg-neutral-600 py-2 px-2 border border-neutral-600 w-full text-left flex items-center space-x-2"
+            onClick={handleGif}
+            >
+            <PlayIcon className="w-4 h-4" />
+            <span>Create GIF</span>
           </button>
         </div>
       : null }

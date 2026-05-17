@@ -9,3 +9,9 @@ export async function dismissVideoHelp() {
   const tenYears = 10 * 365 * 24 * 60 * 60 * 1000
   cookieStore.set('videoHelpDismissed', 'true', { expires: Date.now() + tenYears })
 }
+
+export async function dismissInfoPanel() {
+  const cookieStore = await cookies()
+  const tenYears = 10 * 365 * 24 * 60 * 60 * 1000
+  cookieStore.set('infoPanelDismissed_v1', 'true', { expires: Date.now() + tenYears })
+}

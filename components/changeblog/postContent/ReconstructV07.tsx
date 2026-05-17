@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import { StepIconsExample2_1, StepIconsExample2_2, StepIconsExample2_4, StepIconsExample2_6, StepIconsExample2_7 } from "../StepIconsExample2";
 
@@ -8,7 +6,7 @@ export default function ReconstructV07() {
     <>
       <div className="flex flex-row gap-2 ">
         <h1 className="text-3xl text-primary-300">Reconstruct v0.7</h1>
-        <div className="h-fit self-end pb-[2px] text-neutral-400">Mar 13th, 2026</div>
+        <div className="h-fit self-end pb-0.5 text-neutral-400">Mar 13th, 2026</div>
       </div>
       <div className="bg-primary-100 w-full h-1"></div>
       
@@ -25,10 +23,10 @@ export default function ReconstructV07() {
       <h2 className="py-2 text-xl mt-12 mb-3 pl-2 w-full text-dark bg-primary-300">{`>`} Many methods</h2>
       <div className="flex flex-row gap-6 my-6 md:my-0">
         <div className="flex md:flex-row flex-col md:gap-6">
-          <div className="w-[80px] h-[80px] my-6">
+          <div className="w-20 h-20 my-6">
             <StepIconsExample2_2 />
           </div>
-          <div className="w-[80px] h-[80px] md:my-6">
+          <div className="w-20 h-20 md:my-6">
             <StepIconsExample2_6 />
           </div>
         </div>
@@ -46,7 +44,7 @@ export default function ReconstructV07() {
           The number of stickers present is the main reason that icons are now bigger by default.
         </div>
       </div>
-      <div className="pb-12 pl-[104px]">
+      <div className="pb-12 pl-26">
           This LSE concept was heavily inspired by <Link className="underline underline-offset-1" href="https://enbyne.tech/tools/laser">https://enbyne.tech/tools/laser</Link>,
           a Roux trainer for LSE.
           Many thanks to the creator of this site.
@@ -65,7 +63,7 @@ export default function ReconstructV07() {
 
       <h2 className="py-2 text-xl mt-12 mb-3 pl-2 w-full text-dark bg-primary-300">{`>`} Do you believe in CFOP? In a young girl&apos;s heart?</h2>
       <div className="flex flex-row gap-6">
-        <div className="w-[80px] h-[80px]">
+        <div className="w-20 h-20">
           <StepIconsExample2_1 />
         </div>
         <div className="flex gap-6 pb-6">

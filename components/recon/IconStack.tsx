@@ -147,7 +147,7 @@ const IconStack = ({position, moves, lineIconData, editableElement}: IconStackPr
     return (
       <svg
         viewBox={desc.viewBox}
-        className={`step-icon-svg w-full border ${desc.eoBorderColor ? 'border-2' : 'border border-1 border-neutral-600'}`}
+        className={`step-icon-svg w-full border ${desc.eoBorderColor ? 'border-2' : 'border border-neutral-600'}`}
         style={desc.eoBorderColor ? { borderColor: desc.eoBorderColor } : undefined}
         stroke="#52525b"
         strokeWidth="1"
@@ -227,7 +227,7 @@ const IconStack = ({position, moves, lineIconData, editableElement}: IconStackPr
             key={index}
             className={`
               ${enableHover ? 'step-icon-hover' : ''} transition-[height] duration-300 ease-in-out border-none
-              ${index > 0 ? '' : 'mt-[4px]'}
+              ${index > 0 ? '' : 'mt-1'}
             `}
             style={{
               width: `${iconWidth}px`,

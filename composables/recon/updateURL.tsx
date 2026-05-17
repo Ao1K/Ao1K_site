@@ -1,16 +1,10 @@
-import { urlEncodeKey } from './urlEncoding';
+import { customEncodeURL } from './urlEncoding';
 
 const replaceText = (text: string) => {
     while (text.endsWith('\n')) {
         text = text.slice(0, -1);
     }
-    urlEncodeKey.forEach((replacement, i) => {
-        //console.log('replacement:', replacement, JSON.stringify(text));
-        text = text.replace(new RegExp(replacement[0], 'g'), replacement[1]);
-        //console.log('text:', JSON.stringify(text));
-    });
-
-    return text;
+    return customEncodeURL(text);
   };
 
 export default function updateURL(queryName: string, textToEncode: string | null) {
@@ -20,7 +14,7 @@ export default function updateURL(queryName: string, textToEncode: string | null
   if (!textToEncode) {
       if (currentParams.has(queryName)) {
           currentParams.delete(queryName);
-          const newQueryString = currentParams.toString();
+          const newQueryString = currentParams.toString().replace(/%2C/gi, ',');
           window.history.pushState({}, '', `${window.location.pathname}?${newQueryString}`);
       }
       return;
@@ -29,6 +23,6 @@ export default function updateURL(queryName: string, textToEncode: string | null
   const text = replaceText(textToEncode);
 
   currentParams.set(queryName, text);
-  const newQueryString = currentParams.toString();
+  const newQueryString = currentParams.toString().replace(/%2C/gi, ',');
   window.history.pushState({}, '', `${window.location.pathname}?${newQueryString}`); // used to use useRouter, but it was reloading the page
 }

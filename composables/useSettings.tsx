@@ -29,6 +29,7 @@ export interface AppSettings {
   cubeColors: CubeColors;
   showPlayerControls: boolean;
   hintFaceletsElevation: number;
+  showSplits: boolean;
 }
 
 const SETTINGS_COOKIE_KEY = 'ao1kSettings';
@@ -44,6 +45,7 @@ function readSettingsFromCookie(): AppSettings {
         cubeColors: { ...DEFAULT_CUBE_COLORS, ...parsed.cubeColors },
         showPlayerControls: parsed.showPlayerControls ?? true,
         hintFaceletsElevation: typeof parsed.hintFaceletsElevation === 'number' ? parsed.hintFaceletsElevation : DEFAULT_HINT_FACELETS_ELEVATION,
+        showSplits: parsed.showSplits ?? false,
       };
       return result;
     } catch (e) {
@@ -54,6 +56,7 @@ function readSettingsFromCookie(): AppSettings {
     cubeColors: { ...DEFAULT_CUBE_COLORS },
     showPlayerControls: true,
     hintFaceletsElevation: DEFAULT_HINT_FACELETS_ELEVATION,
+    showSplits: false,
   };
 }
 
@@ -63,6 +66,7 @@ export function useSyncedSettings() {
     cubeColors: { ...DEFAULT_CUBE_COLORS },
     showPlayerControls: true,
     hintFaceletsElevation: DEFAULT_HINT_FACELETS_ELEVATION,
+    showSplits: false,
   });
 
   useEffect(() => {
@@ -144,6 +148,20 @@ export function useShowControls(): [boolean, (value: boolean) => void] {
   }, [settings, updateSettings]);
   
   return [settings.showPlayerControls, setShowControls] as const;
+}
+
+// Hook for show splits column
+export function useShowSplits(): [boolean, (value: boolean) => void] {
+  const { settings, updateSettings } = useSyncedSettings();
+
+  const setShowSplits = useCallback((value: boolean) => {
+    updateSettings({
+      ...settings,
+      showSplits: value,
+    });
+  }, [settings, updateSettings]);
+
+  return [settings.showSplits, setShowSplits] as const;
 }
 
 // Hook for hint facelets elevation

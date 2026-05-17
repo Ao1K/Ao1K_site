@@ -11,7 +11,7 @@ const ResponsiveButtonRow = ({ buttons, containerRef }: ButtonRowProps) => {
   const [overflowButtons, setOverflowButtons] = useState<ButtonProps[]>([]);
   const [overflowBtnVisibility, setOverflowBtnVisibility] = useState<boolean>(false);
 
-  const MIN_MORE_TOOLS_WIDTH = 100; // pixels
+  const MIN_MORE_TOOLS_WIDTH = 80; // pixels
 
   const adjustButtons = () => {
     const container = containerRef.current;
