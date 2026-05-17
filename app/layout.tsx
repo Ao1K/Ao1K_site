@@ -52,7 +52,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`min-h-full flex flex-col ${rubik.variable} font-san`}>
+    <html lang="en" className={`min-h-full flex flex-col ${rubik.variable} font-san bg-primary-900`}>
       <body className="min-h-screen pt-16 overflow-auto bg-primary-900">
         {/* Checkbox state for mobile sidebar - must be first sibling for peer-checked to work */}
         <input type="checkbox" id="sidebar-toggle" className="peer sr-only" />

@@ -15,10 +15,8 @@ export default function ReconstructV08() {
       </div>
       <div className="bg-primary-100 w-full h-1"></div>
       <div className="pt-6 gap-1 flex flex-col">
-        <p>In much the way that</p>
-        <p>I cannot explain my own thoughts</p>
-        <p>I cannot explain beauty</p>
-        <p className="pt-8">
+        <p>In much the way that I cannot explain my own thoughts, I cannot explain beauty.</p>
+        <p>
           This is version 0.8 of the Reconstruct tool.
         </p>
         <ul className="pt-6 space-y-1 list-none text-neutral-400">
@@ -90,9 +88,9 @@ export default function ReconstructV08() {
         </p>
         <p>
           These splits optionally connect to the GIF creation as well as the solve speed when you click
-          {" "}<span className="inline-flex shrink-0 p-1 w-8 h-8 align-middle border border-neutral-600 bg-dark text-dark_accent rounded items-center justify-center">
+          {" "}<span className="whitespace-nowrap"><span className="inline-flex shrink-0 p-1 w-8 h-8 align-middle border border-neutral-600 bg-dark text-dark_accent rounded items-center justify-center">
             <PlayIcon />
-          </span>.
+          </span>.</span>
         </p>
       </div>
       <h2 className="py-2 text-xl mt-12 mb-3 pl-2 w-full text-dark bg-primary-300">{`>`} How do I solve this case?</h2>
