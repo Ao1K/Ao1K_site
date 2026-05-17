@@ -3,31 +3,15 @@ import { rawGeneric, rawOLLalgs, rawPLLalgs } from '../utils/rawAlgs';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const formatAlg = (alg: any): string => {
-  // Stringify the object to JSON, then remove quotes around keys to make it look like TS object literal
-  // Also ensure it's on one line and add spaces after commas
-  return '  ' + JSON.stringify(alg)
-    .replace(/"(\w+)":/g, '$1: ')
-    .replace(/,/g, ', ') + ',';
-};
-
-const sortAndFormat = (algs: any[], varName: string, typeName: string): string => {
-  const sorted = [...algs].sort((a, b) => a.value.localeCompare(b.value));
-  const lines = sorted.map(formatAlg);
-  return `export const ${varName}: ${typeName}[] = [\n${lines.join('\n')}\n];`;
-};
+const sort = (algs: any[]): any[] => [...algs].sort((a, b) => a.value.localeCompare(b.value));
 
 async function main() {
   try {
-    const generic = sortAndFormat(rawGeneric, 'rawGeneric', 'ExactAlg');
-    const oll = sortAndFormat(rawOLLalgs, 'rawOLLalgs', 'LastLayerAlg');
-    const pll = sortAndFormat(rawPLLalgs, 'rawPLLalgs', 'LastLayerAlg');
-
-    const content = `import { ExactAlg, LastLayerAlg } from './rawAlgs';\n\n${generic}\n\n${oll}\n\n${pll}\n`;
-    
-    const outputPath = path.join(process.cwd(), 'utils', 'sortedRawAlgs.tsx');
-    fs.writeFileSync(outputPath, content);
-    console.log(`Sorted algs written to ${outputPath}`);
+    const utilsPath = path.join(process.cwd(), 'utils');
+    fs.writeFileSync(path.join(utilsPath, 'rawGenericData.json'), JSON.stringify(sort(rawGeneric), null, 2));
+    fs.writeFileSync(path.join(utilsPath, 'rawOLLdata.json'), JSON.stringify(sort(rawOLLalgs), null, 2));
+    fs.writeFileSync(path.join(utilsPath, 'rawPLLdata.json'), JSON.stringify(sort(rawPLLalgs), null, 2));
+    console.log('Sorted algs written to utils/rawGenericData.json, rawOLLdata.json, rawPLLdata.json');
   } catch (error) {
     console.error('Error sorting algs:', error);
     process.exit(1);
