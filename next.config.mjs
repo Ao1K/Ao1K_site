@@ -5,9 +5,6 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true, // potential OOM error in prod build image
   },
-  eslint: {
-    ignoreDuringBuilds: true, // potential OOM error in prod build image
-  },
   experimental: {
     webpackMemoryOptimizations: true,
     memoryBasedWorkersCount: true,
