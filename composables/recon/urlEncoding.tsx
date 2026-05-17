@@ -24,9 +24,13 @@ export const customEncodeURL = (key: string): string => {
 
 export const customDecodeURL = (key: string): string => {
   let decodedKey = key;
-  [...urlEncodeKey].reverse().forEach(([from, to]) => {
-    decodedKey = decodedKey.replace(new RegExp(to, 'g'), from);
-  });
+  // decode ~- before decoding - to avoid ~- being partially consumed as ~'
+  // use a null-byte placeholder since it cannot appear in valid URL strings
+  decodedKey = decodedKey.replace(/_/g, ' ');
+  decodedKey = decodedKey.replace(/~-/g, '\x00');
+  decodedKey = decodedKey.replace(/-/g, "'");
+  decodedKey = decodedKey.replace(/\x00/g, '-');
+  decodedKey = decodedKey.replace(/~S/g, '// Scramble of the day\n');
 
   // legacy compat. Old URLs had raw date dashes which decode as apostrophes; fix them back
   decodedKey = decodedKey.replace(/(\d{4})'(\d{2})'(\d{2})/g, '$1-$2-$3');

@@ -4,7 +4,6 @@ import { cookies } from 'next/headers';
 import InfoPanelContent from '../../components/recon/InfoPanelContent';
 
 const PageContent = lazy(() => import('../../components/recon/_PageContent'));
-import { customEncodeURL } from '../../composables/recon/urlEncoding';
 import { fetchDailyScramble } from '../../utils/fetchDailyScramble';
 
 type Props = {
@@ -19,25 +18,11 @@ export async function generateMetadata(
   const searchParams = await props.searchParams;
   const sp = new URLSearchParams();
   
-  // apply custom encoding (spaces -> underscores) before setting params
-  // URLSearchParams.set() will then handle standard encoding (newlines, etc.)
-  // this matches the encoding used by updateURL
-  if (searchParams.scramble) {
-    let scramble = searchParams.scramble as string;
-    while (scramble.endsWith('\n')) scramble = scramble.slice(0, -1);
-    sp.set('scramble', customEncodeURL(scramble));
-  }
-  if (searchParams.solution) {
-    let solution = searchParams.solution as string;
-    while (solution.endsWith('\n')) solution = solution.slice(0, -1);
-    sp.set('solution', customEncodeURL(solution));
-  }
+  // searchParams are already custom-encoded by the client (updateURL calls customEncodeURL)
+  if (searchParams.scramble) sp.set('scramble', searchParams.scramble as string);
+  if (searchParams.solution) sp.set('solution', searchParams.solution as string);
   if (searchParams.time) sp.set('time', searchParams.time as string);
-  if (searchParams.title) {
-    let title = searchParams.title as string;
-    while (title.endsWith('\n')) title = title.slice(0, -1);
-    sp.set('title', customEncodeURL(title));
-  }
+  if (searchParams.title) sp.set('title', searchParams.title as string);
   if (searchParams.stm && /^\d+(\.\d+)?$/.test(searchParams.stm as string)) sp.set('stm', searchParams.stm as string);
   if (searchParams.tps && /^\d+(\.\d+)?$/.test(searchParams.tps as string)) sp.set('tps', searchParams.tps as string);
   if (searchParams.preview !== undefined) sp.set('preview', searchParams.preview as string);
