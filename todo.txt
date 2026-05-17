@@ -15,12 +15,9 @@ Trigger_2 = any RU, LU, or FU
 
 A completely intuitive f2l guide
 
-Icons break if you edit and earlier line and then undo the edit
-
-Add F R' U' R F'
-Add L U L2 U' L2 U L'
+Add 
+F R' U' R F' and variants manually
+L U L2 U' L2 U L'
+R' U R U R' U R U' R' U' R
 
 Think about function of solve review carefully. Form will follow.
-
-Solve gif button in the copy dropdown
-A help button, replacing the info button. Place above title. Hidable in settings

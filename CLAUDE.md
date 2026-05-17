@@ -28,6 +28,14 @@ npm run sort-algs    # Sort algorithm database (rawAlgs.tsx)
 
 Typically only add comments for code that appears unintuitive. Start comments with lowercase text, example: `// correctly formatted comment`.
 
+## State management style
+
+Code that does not heavily use useState and useEffect is preferrable for longterm maintainability and readability. useState is often unavoidable. useEffect can and often should be avoided, with the exception of useEffects with an empty dependency array. Avoid useEffect by doing one or more of the following:
+
+1. Trigger stateful changes through events
+2. Pass state in as props to a component
+3. Simply recalculating values every render
+
 ## Architecture
 
 ### Directory Structure
@@ -48,10 +56,10 @@ Typically only add comments for code that appears unintuitive. Start comments wi
 
 ### State Management
 
-- **URL-driven state**: Scramble, solution, time, title stored in URL query params
+- **URL-driven state**: Scramble, solution, time, title, splits stored in URL query params
 - **Custom URL encoding**: Spaces encoded as underscores for readability
 - **Cookie settings**: Cube colors and preferences with cross-tab sync via BroadcastChannel
-- **Settings hooks**: `useSyncedSettings()`, `useCubeColors()`, `useShowControls()`
+- **Settings hooks**: `useSyncedSettings()`, `useCubeColors()`, `useShowControls()`, etc.
 
 ### Algorithm Suggestion Pipeline
 
