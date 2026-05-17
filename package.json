@@ -1,6 +1,6 @@
 {
   "name": "ao1k",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "private": true,
   "packageManager": "pnpm@10.33.2",
   "scripts": {
@@ -30,7 +30,7 @@
     "html2canvas": "^1.4.1",
     "js-cookie": "^3.0.5",
     "lodash.debounce": "4.0.8",
-    "next": "^16.2.4",
+    "next": "^16.2.6",
     "nopt": "^9.0.0",
     "npm": "^11.13.0",
     "npm-bundled": "^5.0.0",

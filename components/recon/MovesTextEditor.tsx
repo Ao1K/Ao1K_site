@@ -163,7 +163,8 @@ function MovesTextEditor({
 
   const sanitizeConf = {
     allowedTags: ["b", "i", "br", "div"],
-    allowedAttributes: { span: ["className", "class"] }
+    allowedAttributes: { span: ["className", "class"] },
+    nonTextTags: ['script', 'style', 'textarea', 'option', 'xmp'],
   };
 
   const localColorDict = useRef(JSON.parse(JSON.stringify(colorDict)));
