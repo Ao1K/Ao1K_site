@@ -59,6 +59,9 @@ importers:
       dexie-react-hooks:
         specifier: 4.4.0
         version: 4.4.0(dexie@4.4.2)(react@19.2.5)
+      gif.js:
+        specifier: ^0.2.0
+        version: 0.2.0
       glob:
         specifier: ^13.0.6
         version: 13.0.6
@@ -4289,6 +4292,9 @@ packages:
 
   getopts@2.3.0:
     resolution: {integrity: sha512-5eDf9fuSXwxBL6q5HX+dhDj+dslFGWzU5thZ9kNKUkcPtaPdatmUFKwHFrLb/uf/WpA4BHET+AX3Scl56cAjpA==}
+
+  gif.js@0.2.0:
+    resolution: {integrity: sha512-bYxCoT8OZKmbxY8RN4qDiYuj4nrQDTzgLRcFVovyona1PTWNePzI4nzOmotnlOFIzTk/ZxAHtv+TfVLiBWj/hw==}
 
   glob-parent@5.1.2:
     resolution: {integrity: sha512-AOIgSQCepiJYwP3ARnGx+5VnTu2HBYdzbGP45eLw1vr3zB3vZLeyed1sC9hnbcOc9/SrMyM5RPQrkGz4aS9Zow==}
@@ -12358,6 +12364,8 @@ snapshots:
       resolve-pkg-maps: 1.0.0
 
   getopts@2.3.0: {}
+
+  gif.js@0.2.0: {}
 
   glob-parent@5.1.2:
     dependencies:

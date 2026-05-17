@@ -25,6 +25,7 @@ import { TransformHTMLprops } from "../../composables/recon/transformHTML";
 import TitleWithPlaceholder from "../../components/recon/TitleInput";
 import TopButton from "../../components/recon/TopButton";
 import CopySolveDropdown from "../../components/recon/CopySolveDropdown";
+import CubeGifDialog from "../../components/recon/CubeGifDialog";
 import { customDecodeURL } from '../../composables/recon/urlEncoding';
 import InfoPanel from '../../components/recon/InfoPanel';
 import IconStack, { computeLineIconData } from './IconStack';
@@ -95,6 +96,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
 
   const [scrambleHTML, setScrambleHTML] = useState<string>('');
   const [solutionHTML, setSolutionHTML] = useState<string>('');
+  const [isGifDialogOpen, setIsGifDialogOpen] = useState<boolean>(false);
 
   const [playerParams, setPlayerParams] = useState<PlayerParams>({ animationTimes: [], solution: '', scramble: '' });
   const suggestionsRef = useRef<Suggestion[]>([]);
@@ -1566,7 +1568,13 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       <div id="top-bar" className="px-3 flex flex-col w-full items-end gap-5 mb-2 -mt-11 pointer-events-none">
         <div className="flex-none flex flex-row space-x-1 text-dark_accent pointer-events-auto">
           <TopButton id="trash" text="Clear Page" shortcutHint={`${ctrlKey}+Del`} onClick={handleClearPage} icon={<TrashIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert} />
-          <CopySolveDropdown onCopyText={handleCopySolve} onScreenshot={handleScreenshot} alert={topButtonAlert} setAlert={setTopButtonAlert} />
+          <CopySolveDropdown 
+            onCopyText={handleCopySolve} 
+            onScreenshot={handleScreenshot} 
+            onOpenGif={() => setIsGifDialogOpen(true)} 
+            alert={topButtonAlert} 
+            setAlert={setTopButtonAlert} 
+          />
           <TopButton id="share" innerText="Share" text="Share Preview" shortcutHint={`${ctrlKey}+S`} onClick={handleShare} icon={<ShareIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert} />
         </div>
         <TitleWithPlaceholder solveTitle={solveTitle} handleTitleChange={handleTitleChange} />

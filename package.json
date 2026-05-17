@@ -25,6 +25,7 @@
     "cubing": "^0.63.3",
     "dexie": "4.4.2",
     "dexie-react-hooks": "4.4.0",
+    "gif.js": "^0.2.0",
     "glob": "^13.0.6",
     "html2canvas": "^1.4.1",
     "js-cookie": "^3.0.5",
