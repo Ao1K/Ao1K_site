@@ -767,7 +767,12 @@ export default function CubeGifDialog({
       renderer.setPixelRatio(window.devicePixelRatio || 1);
       renderer.setSize(div.clientWidth || 360, div.clientHeight || 360, false);
       renderer.setClearColor(0x000000, 0);
-      div.appendChild(renderer.domElement);
+      const canvas = renderer.domElement;
+      canvas.style.position = 'absolute';
+      canvas.style.inset = '0';
+      canvas.style.width = '100%';
+      canvas.style.height = '100%';
+      div.appendChild(canvas);
       rendererRef.current = renderer;
 
       const light = new AmbientLight(0xffffff, 1);

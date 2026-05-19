@@ -9,6 +9,7 @@ import parseText from '../../../composables/recon/validateTextInput';
 import validationToArray from '../../../composables/recon/validationToMoves';
 import { getLineStepInfo, getNewSteps } from '../../../composables/recon/getLineStepInfo';
 import { fetchDailyScramble } from '../../../utils/fetchDailyScramble';
+import { editorAliases } from '../../../utils/sharedConstants';
 import React from 'react';
 import fs from 'fs';
 import path from 'path';
@@ -121,9 +122,14 @@ export async function GET(request: Request) {
   try {
     const { searchParams, origin } = new URL(request.url);
     
-    // Decode params
-    const scramble = decodeURIComponent(customDecodeURL(searchParams.get('scramble') || ''));
-    const solution = decodeURIComponent(customDecodeURL(searchParams.get('solution') || ''));
+    // Decode params (support aliases: 'setup' for scramble, 'alg' for solution)
+    const getRawParam = (name: string) => {
+      const aliases = editorAliases[name] ?? [];
+      return searchParams.get(name) ?? aliases.reduce<string | null>((found, alias) => found ?? searchParams.get(alias), null) ?? '';
+    };
+    console.log('Raw scramble param:', getRawParam('scramble'));
+    const scramble = decodeURIComponent(customDecodeURL(getRawParam('scramble')));
+    const solution = decodeURIComponent(customDecodeURL(getRawParam('solution')));
     const time = searchParams.get('time');
     const title = customDecodeURL(searchParams.get('title') || '');
 

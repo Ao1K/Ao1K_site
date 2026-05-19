@@ -5,6 +5,7 @@ import InfoPanelContent from '../../components/recon/InfoPanelContent';
 
 const PageContent = lazy(() => import('../../components/recon/_PageContent'));
 import { fetchDailyScramble } from '../../utils/fetchDailyScramble';
+import { editorAliases } from '../../utils/sharedConstants';
 
 type Props = {
   params: Promise<{ id: string }>
@@ -19,8 +20,12 @@ export async function generateMetadata(
   const sp = new URLSearchParams();
   
   // searchParams are already custom-encoded by the client (updateURL calls customEncodeURL)
-  if (searchParams.scramble) sp.set('scramble', searchParams.scramble as string);
-  if (searchParams.solution) sp.set('solution', searchParams.solution as string);
+  const getParam = (name: string) => {
+    const aliases = editorAliases[name] ?? [];
+    return (searchParams[name] ?? aliases.reduce<string | string[] | undefined>((found, alias) => found ?? searchParams[alias], undefined)) as string | undefined;
+  };
+  if (getParam('scramble')) sp.set('scramble', getParam('scramble')!);
+  if (getParam('solution')) sp.set('solution', getParam('solution')!);
   if (searchParams.time) sp.set('time', searchParams.time as string);
   if (searchParams.title) sp.set('title', searchParams.title as string);
   if (searchParams.stm && /^\d+(\.\d+)?$/.test(searchParams.stm as string)) sp.set('stm', searchParams.stm as string);

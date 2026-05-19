@@ -1567,7 +1567,15 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       ) : null}
       <div id="top-bar" className="px-3 flex flex-col w-full items-end gap-5 mb-2 -mt-11 pointer-events-none">
         <div className="flex-none flex flex-row space-x-1 text-dark_accent pointer-events-auto">
-          <TopButton id="trash" text="Clear Page" shortcutHint={`${ctrlKey}+Del`} onClick={handleClearPage} icon={<TrashIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert} />
+          <TopButton 
+            id="trash" 
+            text="Clear Page" 
+            shortcutHint={`${ctrlKey}+Del`} 
+            onClick={handleClearPage}
+            icon={<TrashIcon />} 
+            alert={topButtonAlert} 
+            setAlert={setTopButtonAlert} 
+            alertAlign='center' />
           <CopySolveDropdown 
             onCopyText={handleCopySolve} 
             onScreenshot={handleScreenshot} 
@@ -1575,7 +1583,15 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
             alert={topButtonAlert} 
             setAlert={setTopButtonAlert} 
           />
-          <TopButton id="share" innerText="Share" text="Share Preview" shortcutHint={`${ctrlKey}+S`} onClick={handleShare} icon={<ShareIcon />} alert={topButtonAlert} setAlert={setTopButtonAlert} />
+          <TopButton id="share" 
+            innerText="Share" 
+            text="Share Preview" 
+            shortcutHint={`${ctrlKey}+S`} 
+            onClick={handleShare} 
+            icon={<ShareIcon />} 
+            alert={topButtonAlert} 
+            setAlert={setTopButtonAlert} 
+            alertAlign='right' />
         </div>
         <TitleWithPlaceholder solveTitle={solveTitle} handleTitleChange={handleTitleChange} />
       </div>
