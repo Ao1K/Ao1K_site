@@ -17,11 +17,11 @@ import { customDecodeURL } from '../../composables/recon/urlEncoding';
 import type { Token } from "../../composables/recon/validationToMoves";
 import { SuggestionBox } from './SuggestionBox';
 import type { Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
-import { colorDict, highlightClass } from '../../utils/sharedConstants';
+import { colorDict, highlightClass, editorAliases } from '../../utils/sharedConstants';
 
 interface HTMLUpdateItem {
   html?: string;
-  change: 'modified' | 'none' | 'suggestion' | 'pasted';
+  change: 'modified' | 'none' | 'suggestion';
 }
 
 const supportsHardwareKeyboard =
@@ -43,11 +43,6 @@ const EditorLoader = ({
   // useSearchParams is a hook. Storing searchParams here prevents it from being called again and causing reloads.
   const searchParams = useSearchParams();
 
-  const editorAliases: Record<string, string[]> = {
-    solution: ['alg'],
-    scramble: ['setup'],
-  };
-
   const handleStartupProcess = () => {
     const aliases = editorAliases[name] ?? [];
     const editorText = searchParams.get(name)
@@ -62,9 +57,8 @@ const EditorLoader = ({
       } catch {
         decodedText = customDecodeURL(editorText);
       }
-      // ensure substitutions do not occur on initial load from URL
       const lines = decodedText.replace(/\n+/g, '\n').split('\n');
-      const formattedHTML = lines.map(line => `<div>${line}<span class="paste-marker"></span><br></div>`).join('');
+      const formattedHTML = lines.map(line => `<div>${line}<br></div>`).join('');
       contentEditableRef.current.innerHTML = formattedHTML;
 
     } else if (initialContent && !otherEditorText) {
@@ -226,16 +220,8 @@ function MovesTextEditor({
     newHTML.forEach((line, index) => {
       const oldLine = oldHTML[index];
 
-      // prioritize handling paste
-      if (line.includes('<span class="paste-marker"></span>')) {
-        line = line.replace('<span class="paste-marker"></span>', '');
-        htmlUpdateMatrix.push({
-          html: line,
-          change: 'pasted'
-        });
-
       // Check if line contains suggestions and is active line
-      } else if (line.includes(`class="${suggestionClass}"`) && selectedSuggestionRef.current?.lineIndex === index) {
+      if (line.includes(`class="${suggestionClass}"`) && selectedSuggestionRef.current?.lineIndex === index) {
         htmlUpdateMatrix.push({
           html: line,
           change: 'suggestion'
@@ -338,42 +324,18 @@ function MovesTextEditor({
    * Skips text inside comment spans to preserve comments as-is.
    */
   const applyAutoSubstitutions = (html: string): [string, string] => {
-    const commentClass = colorDict['comment'];
     const caretMarker = '___CARET___';
     
     // Extract plain text from HTML, tracking caret position
     let workingHtml = html.replace(/<span id="caretNode"[^>]*>.*?<\/span>/i, caretMarker);
     let plainText = workingHtml.replace(/<[^>]+>/g, '');
     
-    const commentRanges: Array<{start: number, end: number, text: string}> = [];
-    let position = 0;
-    
-    // Build a mapping of comment positions in plain text
-    const tempHtml = workingHtml;
-    const segmentRegex = /(<[^>]+>)|([^<]+)/g;
-    let segMatch;
-    let inCommentSpan = false;
-    const commentStartRegex = new RegExp(`<span[^>]*class=["']${commentClass}["'][^>]*>`, 'i');
-    
-    while ((segMatch = segmentRegex.exec(tempHtml)) !== null) {
-      if (segMatch[1]) { // Tag
-        if (commentStartRegex.test(segMatch[1])) {
-          inCommentSpan = true;
-          commentRanges.push({ start: position, end: -1, text: '' });
-        } else if (segMatch[1] === '</span>' && inCommentSpan) {
-          inCommentSpan = false;
-          if (commentRanges.length > 0) {
-            commentRanges[commentRanges.length - 1].end = position;
-          }
-        }
-      } else if (segMatch[2]) { // Text
-        const textContent = segMatch[2];
-        if (inCommentSpan && commentRanges.length > 0) {
-          const lastComment = commentRanges[commentRanges.length - 1];
-          lastComment.text += textContent;
-        }
-        position += textContent.length;
-      }
+    // detect comment ranges from plain text — works regardless of span attributes (class= or style=)
+    const commentRanges: Array<{start: number, end: number}> = [];
+    const commentPattern = /\/\/[^\n]*/g;
+    let commentMatch;
+    while ((commentMatch = commentPattern.exec(plainText)) !== null) {
+      commentRanges.push({ start: commentMatch.index, end: commentMatch.index + commentMatch[0].length });
     }
     
     // Apply substitutions to non-comment portions
@@ -429,14 +391,13 @@ function MovesTextEditor({
       .map((token) => token.value);
   }
 
-  const handleLineModified = (updateItem: HTMLUpdateItem, i: number, lineMoveCounts: number[], isPaste: boolean): string => {
+  const handleLineModified = (updateItem: HTMLUpdateItem, i: number, lineMoveCounts: number[]): string => {
     let line = updateItem.html || '';
 
     // get html
     let text = line.replace(/<[^>]+>/g, '');
 
-    // Apply auto-substitutions if not a paste action
-    if (!isPaste) [text, line] = applyAutoSubstitutions(line);
+    [text, line] = applyAutoSubstitutions(line);
 
     const parsed = parseTextInput(text);
 
@@ -500,7 +461,7 @@ function MovesTextEditor({
 
     // get html without suggestion or image
     const htmlWithoutSuggestion = line.replace(selectedSuggestionRef.current.remaining, '').replace(/<img[^>]*>/g, '');
-    const validatedHTML = handleLineModified({ html: htmlWithoutSuggestion, change: 'modified' }, index, lineMoveCounts, false);
+    const validatedHTML = handleLineModified({ html: htmlWithoutSuggestion, change: 'modified' }, index, lineMoveCounts);
     const suggestionClass = colorDict['suggestion'];
     const tabImageHTML = supportsHardwareKeyboard
       ? `<img src="/tab.svg" alt="Press Tab" style="display: inline; pointer-events-none; width: 51px; height: 20px; margin-left: 8px; margin-bottom: 4px; vertical-align: middle;" />`
@@ -533,12 +494,9 @@ function MovesTextEditor({
         lineMoveCounts.push(0);
       }
 
-      const isPaste = updateItem.change === 'pasted';
-
       switch (updateItem.change) {
-        case 'pasted':
         case 'modified':
-          return handleLineModified(updateItem, i, lineMoveCounts, isPaste);
+          return handleLineModified(updateItem, i, lineMoveCounts);
         case 'suggestion':
           return handleLineSuggestion(updateItem, i, lineMoveCounts);
         case 'none':
@@ -712,7 +670,8 @@ function MovesTextEditor({
   const removeSpansExceptCaret = (line: string): string => {
     let line2 = '';
     while (line2 !== line) {
-      line2 = line.replace(/<span class[^>]+>|<\/span>/g, '');
+      // strip any span except caretNode (including browser-injected style= spans)
+      line2 = line.replace(/<span(?! id="caretNode")[^>]*>|<\/span>/g, '');
       line = line2;
     }
     line = line.replace(/<span id="caret.*?>/, '<span id="caretNode"></span>');
@@ -983,13 +942,7 @@ function MovesTextEditor({
       const lines = sanitizedText.split("\n").reverse();
       lines.forEach((line, index) => {
         const tempElement = document.createElement("div");
-        
-        // add paste marker for processing.
-        // allows for disabling auto-substitutions on pasted text.
         tempElement.innerHTML = line;
-        const pasteMarker = document.createElement('span');
-        pasteMarker.className = 'paste-marker';
-        tempElement.appendChild(pasteMarker);
 
         // Add caret node to the last line
         if (index === 0) { // First element in reversed array is the last line
@@ -1006,7 +959,7 @@ function MovesTextEditor({
       setCaretToCaretSpan();
     }
 
-    setHTML(contentEditableRef.current!.innerHTML);
+    // setHTML(contentEditableRef.current!.innerHTML);
     onInputChange();
   };
 

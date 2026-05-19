@@ -7,6 +7,11 @@ export const versionList = {
 
 export const highlightClass = 'text-dark bg-primary-100 backdrop-blur-xs caret-dark';
 
+export const editorAliases: Record<string, string[]> = {
+  solution: ['alg'],
+  scramble: ['setup'],
+};
+
 export const colorDict = {
   move: 'text-primary-100',
   comment: 'text-gray-500',

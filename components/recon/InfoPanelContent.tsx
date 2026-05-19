@@ -54,7 +54,7 @@ export default function InfoPanelContent() {
           height={320}
           unoptimized
           loading="lazy"
-          className="min-w-0 w-1/2 -m-6 object-contain"
+          className="min-w-0 w-1/2 -m-2 object-contain"
         />
       </div>
 
