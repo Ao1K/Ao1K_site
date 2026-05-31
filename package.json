@@ -48,6 +48,7 @@
   "devDependencies": {
     "@next/bundle-analyzer": "^16.2.4",
     "@tailwindcss/postcss": "^4.2.4",
+    "@types/html-minifier-terser": "^7.0.2",
     "@types/js-cookie": "^3.0.6",
     "@types/json-schema": "^7.0.15",
     "@types/lodash.debounce": "^4.0.9",
@@ -63,6 +64,7 @@
     "esbuild": "^0.28.0",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.2.4",
+    "html-minifier-terser": "^7.2.0",
     "postcss": "^8",
     "tailwindcss": "^4.2.4",
     "tsx": "^4.21.0",

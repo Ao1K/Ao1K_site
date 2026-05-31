@@ -26,12 +26,14 @@ import TitleWithPlaceholder from "../../components/recon/TitleInput";
 import TopButton from "../../components/recon/TopButton";
 import CopySolveDropdown from "../../components/recon/CopySolveDropdown";
 import CubeGifDialog from "../../components/recon/CubeGifDialog";
+import HtmlSceneDialog from "../../components/recon/HtmlSceneDialog";
+import HtmlImageDialog from "../../components/recon/HtmlImageDialog";
 import { customDecodeURL } from '../../composables/recon/urlEncoding';
 import InfoPanel from '../../components/recon/InfoPanel';
 import IconStack, { computeLineIconData } from './IconStack';
 import SplitsStack, { SPLITS_WIDTH, splitsToURLParam } from './SplitsStack';
 import { ICON_SIZE_CONFIG, useCubeColors, useShowSplits } from '../../composables/useSettings';
-import { SimpleCube } from '../../composables/recon/SimpleCube';
+import { SimpleCube, type CubeState } from '../../composables/recon/SimpleCube';
 import { SimpleCubeInterpreter } from '../../composables/recon/SimpleCubeInterpreter';
 import type { StepInfo, Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
 import { getNewSteps } from '../../composables/recon/getLineStepInfo';
@@ -97,6 +99,8 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   const [scrambleHTML, setScrambleHTML] = useState<string>('');
   const [solutionHTML, setSolutionHTML] = useState<string>('');
   const [isGifDialogOpen, setIsGifDialogOpen] = useState<boolean>(false);
+  const [isHtmlSceneDialogOpen, setIsHtmlSceneDialogOpen] = useState<boolean>(false);
+  const [htmlImageData, setHtmlImageData] = useState<{ cubeState: CubeState; setupMovesForFilename: string } | null>(null);
 
   const [playerParams, setPlayerParams] = useState<PlayerParams>({ animationTimes: [], solution: '', scramble: '' });
   const suggestionsRef = useRef<Suggestion[]>([]);
@@ -1549,6 +1553,48 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       {/* utility for building case patterns */}
       {/* <LLpatternBuilder /> */}
 
+      {/* utility for HTML video of solve */}
+      <button className="w-40 h-10 flex items-center justify-center z-50 bg-neutral-700 text-primary-100 px-3 py-1 text-sm rounded" onClick={() => setIsHtmlSceneDialogOpen(true)}>Create HTML Video</button>
+      {isHtmlSceneDialogOpen ? (
+        <HtmlSceneDialog
+          onClose={() => setIsHtmlSceneDialogOpen(false)}
+          scramble={allMovesRef.current[0].flat().join(' ')}
+          solutionLines={allMovesRef.current[1].map((moves, i) => ({
+            moves,
+            isWhitespace: !!isWhitespaceLine[i],
+          }))}
+          lineIconData={lineIconData}
+          splits={splits}
+          committedSplits={committedSplits}
+          onSplitsChange={setSplits}
+          onSplitsCommit={handleSplitsCommit}
+        />
+      ) : null}
+
+      {/* utility for static HTML image of the cube */}
+      <button
+        className="w-40 h-10 flex items-center justify-center z-50 bg-neutral-700 text-primary-100 px-3 py-1 text-sm rounded"
+        onClick={() => {
+          const [, lineIdx, moveIdx] = moveLocation.current;
+          const scrambleMoves = allMovesRef.current[0].flat();
+          const solutionMovesUpToPoint = allMovesRef.current[1].flatMap((line, i) => {
+            if (i < lineIdx) return line;
+            if (i === lineIdx) return line.slice(0, moveIdx);
+            return [];
+          });
+          const setupMoves = [...scrambleMoves, ...solutionMovesUpToPoint];
+          const cubeState = new SimpleCube().getCubeState(setupMoves);
+          setHtmlImageData({ cubeState, setupMovesForFilename: setupMoves.join(' ') });
+        }}
+      >Create HTML Image</button>
+      {htmlImageData ? (
+        <HtmlImageDialog
+          onClose={() => setHtmlImageData(null)}
+          cubeState={htmlImageData.cubeState}
+          setupMovesForFilename={htmlImageData.setupMovesForFilename}
+        />
+      ) : null}
+
       <InfoPanel initiallyDismissed={infoPanelSlot == null}>{infoPanelSlot}</InfoPanel>
       {isGifDialogOpen ? (
         <CubeGifDialog
@@ -1576,12 +1622,12 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
             alert={topButtonAlert} 
             setAlert={setTopButtonAlert} 
             alertAlign='center' />
-          <CopySolveDropdown 
-            onCopyText={handleCopySolve} 
-            onScreenshot={handleScreenshot} 
-            onOpenGif={() => setIsGifDialogOpen(true)} 
-            alert={topButtonAlert} 
-            setAlert={setTopButtonAlert} 
+          <CopySolveDropdown
+            onCopyText={handleCopySolve}
+            onScreenshot={handleScreenshot}
+            onOpenGif={() => setIsGifDialogOpen(true)}
+            alert={topButtonAlert}
+            setAlert={setTopButtonAlert}
           />
           <TopButton id="share" 
             innerText="Share" 

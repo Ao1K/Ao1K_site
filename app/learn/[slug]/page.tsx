@@ -21,7 +21,10 @@ export default async function LearnLesson({
   if (!Component) notFound();
 
   return (
-    <div className="flex flex-col pt-20 pb-10 px-6 max-w-3xl text-md text-primary-100 leading-relaxed">
+    <div
+      data-lesson-content
+      className="flex w-full max-w-3xl flex-col pt-20 pb-10 px-6 text-md text-primary-100 leading-relaxed"
+    >
       <Component />
     </div>
   );

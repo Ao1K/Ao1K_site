@@ -54,7 +54,7 @@ export default function LessonSidebar() {
 
           <div
             className={`overflow-hidden transition-[max-height] duration-200 ${
-              collapsed[category] ? "max-h-0" : "max-h-[1000px]"
+              collapsed[category] ? "max-h-0" : "max-h-250"
             }`}
           >
             <ul className="flex flex-col gap-0.5 pl-4 pb-2">
