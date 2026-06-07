@@ -1,6 +1,7 @@
 // for avoiding circular dependencies
 
 export const versionList = {
+  "learn": "",
   "recon": "v0.8",
   "changeblog": "",
 }

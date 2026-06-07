@@ -22,7 +22,7 @@ import { reverseMove } from '../../composables/recon/transformHTML'
 import type { ControllerRequestOptions } from './_PageContent';
 import type { PlayerParams as RenderRefProps } from './_PageContent';
 import { createCubeScreenshotGenerator, type ScreenshotSetupStatus } from '../../composables/recon/CubeScreenshotGenerator';
-import { useSyncedSettings, useShowControls, useHintFaceletsElevation, DEFAULT_HINT_FACELETS_ELEVATION } from '../../composables/useSettings';
+import { useSyncedSettings, useShowControls, useHintFaceletsElevation, DEFAULT_HINT_FACELETS_ELEVATION, type CubeColors } from '../../composables/useSettings';
 import CameraIcon from '../icons/camera';
 
 export interface TwistyPlayerImperativeRef {
@@ -147,6 +147,8 @@ const Player = React.memo(React.forwardRef<TwistyPlayerImperativeRef, PlayerProp
   const cubeColors = settings.cubeColors;
   const [showControls] = useShowControls();
   const [elevation] = useHintFaceletsElevation();
+  const cubeColorsRef = useRef<CubeColors>(cubeColors);
+  cubeColorsRef.current = cubeColors; // to avoid issue with colors not syncing with settings
   const elevationRef = useRef(elevation);
   elevationRef.current = elevation;
 
@@ -1008,7 +1010,7 @@ const Player = React.memo(React.forwardRef<TwistyPlayerImperativeRef, PlayerProp
     if (!stickerColors) return;
 
     // Get colors from settings
-    const colors = cubeColors;
+    const colors = cubeColorsRef.current;
 
     // use color.set(hex) for proper sRGB→linear conversion with Three.js color management
     // CENTERS mapping: [0]=up(white), [1]=left(orange), [2]=front(green), [3]=right(red), [4]=back(blue), [5]=down(yellow)

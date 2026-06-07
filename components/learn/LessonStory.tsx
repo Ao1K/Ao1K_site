@@ -1,13 +1,12 @@
-import LessonParagraph from "./LessonParagraph";
 import PhInfo from "../icons/info";
 
 export default function LessonStory({
   storyParagraphs,
 }: {
-  storyParagraphs: string[];
+  storyParagraphs: React.ReactNode[];
 }) {
   return (
-    <div className="space-y-4 bg-green-900 pt-4 px-6 text-dark text-sm text-justify italic mb-4 rounded-sm">
+    <div className="space-y-4 bg-green-900 py-4 px-6 text-dark text-sm text-justify italic mb-4 rounded-sm">
       <div className="flex items-center gap-1 not-italic">
         <details className="flex items-center gap-1">
           <summary className="flex items-center gap-1 text-green-200 hover:text-green-100 transition-colors cursor-pointer list-none">
@@ -20,7 +19,7 @@ export default function LessonStory({
         </details>
       </div>
       {storyParagraphs.map((paragraph, index) => (
-        <LessonParagraph key={index} paragraph={paragraph} />
+        <p key={index}>{paragraph}</p>
       ))}
     </div>
   );

@@ -9,6 +9,7 @@ import QuestionIcon from '../icons/info';
 import DropdownIcon from '../icons/dropdown';
 import Image from 'next/image';
 import InfoPanelSection from './InfoPanelSection';
+import LessonLink from '../learn/LessonLink';
 
 const dummyButtons = [
   { label: 'M', title: 'Mirror M' },
@@ -272,7 +273,7 @@ export default function InfoPanelContent() {
         <div className="text-dark flex flex-row gap-3 py-1 pr-3 mt-6 w-2/3 items-center bg-neutral-300">
           <QuestionIcon className="min-w-8 ml-3 min-h-8 text-light_accent"/>
           <div>
-            Icons with a magenta border indicate the alg solves <a className="underline underline-offset-2" href="https://www.zzmethod.com/tutorial/eo" target="_blank">Edge Orientation</a> (EO).
+            Icons with a magenta border indicate the alg solves <a className="underline underline-offset-2" target="_blank" href="/learn/eo">Edge Orientation</a> (EO).
           </div>
         </div>
         <p>

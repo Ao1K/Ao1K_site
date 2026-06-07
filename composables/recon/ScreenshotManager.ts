@@ -260,6 +260,9 @@ export function createPreviewContent({ data, createElement, scale = 1 }: Screens
     );
   }
 
+  const lastLine = solutionLines[solutionLines.length - 1];
+  const isSolved = lastLine && lastLine.icon && lastLine.icon.type === 'solved';
+
   return h('div', { style: styles.wrapper },
     // Left Column: All Moves
     h('div', { style: { ...styles.allMoves, position: 'relative', overflow: 'hidden' } },
@@ -272,7 +275,7 @@ export function createPreviewContent({ data, createElement, scale = 1 }: Screens
         )
       ),
 
-      h('div', { style: styles.label }, 'Solution'),
+      h('div', { style: styles.label }, isSolved ? 'Solution' : 'Partial Solution'),
       h('div', { style: { display: 'flex', flexDirection: 'column', flex: 1, marginBottom: 8 * scale, overflow: 'hidden' } },
         h('div', { style: { display: 'flex', flexDirection: 'column', gap: 1 * scale, marginTop: 8 * scale } }, ...solutionContent)
       ),

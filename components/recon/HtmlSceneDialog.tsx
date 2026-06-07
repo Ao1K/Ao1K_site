@@ -39,6 +39,13 @@ const BACKGROUND_PRESETS = [
   { label: 'Grey', value: '#73737380' },
 ];
 
+const SHADE_PRESETS = [
+  { label: 'Dark', value: '#000000b3' },
+  { label: 'Grey', value: '#73737399' },
+  { label: 'Faint', value: '#0000002e' },
+  { label: 'None', value: '#00000000' },
+];
+
 const MIN_TOTAL_DURATION = 0.5;
 const MAX_TOTAL_DURATION = 60;
 const CAMERA_RADIUS = 3.5;
@@ -169,11 +176,14 @@ export default function HtmlSceneDialog({
   // settings mirrored from CubeGifDialog
   const [backgroundColor, setBackgroundColor] = useState('#00000000');
   const [backgroundInput, setBackgroundInput] = useState('#00000000');
+  const [shadeColor, setShadeColor] = useState('#000000b3');
+  const [shadeInput, setShadeInput] = useState('#000000b3');
   const [includeFacelets, setIncludeFacelets] = useState(true);
   const [includeFaceLabels, setIncludeFaceLabels] = useState(false);
   const [showProgressBar, setShowProgressBar] = useState(true);
   const [standalone, setStandalone] = useState(true);
   const [loopPlayback, setLoopPlayback] = useState(true);
+  const [startHighlighted, setStartHighlighted] = useState(false);
   const [isCompiling, setIsCompiling] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewLoaded, setPreviewLoaded] = useState(false);
@@ -441,6 +451,19 @@ export default function HtmlSceneDialog({
     setBackgroundInput(value);
   };
 
+  const handleShadeInputChange = (value: string) => {
+    if (!/^#[0-9A-Fa-f]{0,8}$/.test(value)) return;
+    setShadeInput(value);
+    if (/^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$/.test(value)) {
+      setShadeColor(value);
+    }
+  };
+
+  const handleShadePresetClick = (value: string) => {
+    setShadeColor(value);
+    setShadeInput(value);
+  };
+
   const adjustPercentageRef = useRef(adjustPercentage);
   adjustPercentageRef.current = adjustPercentage;
   const setSplitSecondsRef = useRef(setSplitSeconds);
@@ -606,6 +629,8 @@ export default function HtmlSceneDialog({
         showFaceLabels: includeFaceLabels,
         loopPlayback,
         backgroundColor,
+        shadeColor,
+        startHighlighted,
         standalone,
       });
       const blob = new Blob([html], { type: 'text/html' });
@@ -753,6 +778,46 @@ export default function HtmlSceneDialog({
                     onChange={e => handleBackgroundInputChange(e.target.value)}
                     className="w-full rounded-sm border border-neutral-600 bg-dark/40 px-3 py-2 font-mono text-sm text-primary-100 outline-none focus:border-primary-100"
                     placeholder="#1a1a2eff"
+                  />
+                </div>
+              </div>
+
+              <div className="rounded-sm border border-neutral-700 bg-primary-800 p-4">
+                <div className="mb-3 text-sm font-semibold text-primary-100">Unhighlighted piece shade</div>
+                <span className="text-xs text-neutral-400 mb-3 block">
+                  Pieces that aren&apos;t highlighted are shaded with this color. Adjust the alpha to control transparency.
+                </span>
+                <div className="mb-3 flex flex-wrap gap-2">
+                  {SHADE_PRESETS.map(preset => (
+                    <button
+                      key={preset.value}
+                      type="button"
+                      onClick={() => handleShadePresetClick(preset.value)}
+                      className={`flex items-center gap-2 rounded border px-3 py-2 text-sm transition-colors ${
+                        shadeColor.toLowerCase() === preset.value.toLowerCase()
+                          ? 'border-primary-100 text-primary-100'
+                          : 'border-neutral-600 text-neutral-200 hover:border-primary-100 hover:text-primary-100'
+                      }`}
+                    >
+                      <span className="relative h-4 w-4 overflow-hidden rounded-sm border border-black/20" style={CHECKERBOARD_STYLE}>
+                        <span className="absolute inset-0" style={{ backgroundColor: preset.value }} />
+                      </span>
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+                <HexAlphaColorPicker
+                  color={shadeColor}
+                  onChange={n => handleShadePresetClick(n)}
+                  style={{ width: '100%', maxWidth: '300px', height: '140px' }}
+                />
+                <div className="mt-2 max-w-75 flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={shadeInput}
+                    onChange={e => handleShadeInputChange(e.target.value)}
+                    className="w-full rounded-sm border border-neutral-600 bg-dark/40 px-3 py-2 font-mono text-sm text-primary-100 outline-none focus:border-primary-100"
+                    placeholder="#000000b3"
                   />
                 </div>
               </div>
@@ -916,6 +981,15 @@ export default function HtmlSceneDialog({
                     type="checkbox"
                     checked={loopPlayback}
                     onChange={e => setLoopPlayback(e.target.checked)}
+                    className="h-4 w-4 cursor-pointer"
+                  />
+                </div>
+                <div className="mt-4 flex items-center justify-between text-sm">
+                  <span className="text-neutral-100">Start in highlighted state</span>
+                  <input
+                    type="checkbox"
+                    checked={startHighlighted}
+                    onChange={e => setStartHighlighted(e.target.checked)}
                     className="h-4 w-4 cursor-pointer"
                   />
                 </div>

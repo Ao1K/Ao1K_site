@@ -68,7 +68,7 @@ function svgDataUrl(svg: string): string {
 }
 
 function buildSceneHtml(opts: CompileSceneOptions): string {
-  const { initialState, lines, angles, cubeColors, showProgressBar, showFacelets, showFaceLabels, loopPlayback, backgroundColor, standalone } = opts
+  const { initialState, lines, angles, cubeColors, showProgressBar, showFacelets, showFaceLabels, loopPlayback, backgroundColor, shadeColor, startHighlighted, standalone } = opts
   const HALF = CUBIE_PX / 2
   const CUBE = CUBIE_PX * 3
   const SCENE = 640
@@ -138,8 +138,12 @@ function buildSceneHtml(opts: CompileSceneOptions): string {
 .hint.right{transform:rotateY(-90deg) translateZ(${-HALF - HINT_OFFSET}px)}
 .hint.left{transform:rotateY(90deg) translateZ(${-HALF - HINT_OFFSET}px)}`
     : ''
+  // shade unhighlighted pieces by overlaying the chosen color (its alpha controls transparency).
+  // a transition-able overlay keeps the .3s fade when the highlight set changes between lines.
+  // the hint overlay uses -2px inset to cover its semi-transparent border, otherwise the original
+  // sticker color bleeds through the border ring.
   const dimCss = useHighlight
-    ? `.cubie.dim .face,.cubie.dim .hint{opacity:0.18}`
+    ? `.cubie .face::after,.cubie .hint::after{content:"";position:absolute;background:${shadeColor};opacity:0;transition:opacity .3s;pointer-events:none}.cubie .face::after{inset:0}.cubie .hint::after{inset:-2px}.cubie.dim .face::after,.cubie.dim .hint::after{opacity:1}`
     : ''
 
   const sharedCss = `.scene{perspective:1000px;width:${SCENE}px;height:${SCENE}px;position:relative;cursor:pointer}
@@ -233,6 +237,10 @@ const cubies=[];
 ${progressInit}
 function rotatePos(pos,axis,angle){var x=pos[0],y=pos[1],z=pos[2],c=Math.round(Math.cos(angle*Math.PI/180)),s=Math.round(Math.sin(angle*Math.PI/180));if(axis==='x')return[x,c*y-s*z,s*y+c*z];if(axis==='y')return[c*x+s*z,y,-s*x+c*z];return[c*x-s*y,s*x+c*y,z];}
 function setHighlight(set){cubies.forEach(function(c){if(set&&set.indexOf(c.piece)===-1){c.el.classList.add('dim');}else{c.el.classList.remove('dim');}});}
+var startHighlighted=${startHighlighted};
+// highlight shown while idle / between loops; first line's highlight when "start highlighted" is on
+function restHighlight(){return startHighlighted&&lines.length?lines[0].highlight:null;}
+setHighlight(restHighlight());
 var paused=true,animating=false,timeoutId=null,lineIdx=0,moveIdx=0,movesPlayed=0;
 function updateOverlay(){if(paused){overlayEl.style.background='rgba(0,0,0,0.45)';iconPlay.style.opacity='0.85';}else{overlayEl.style.background='transparent';iconPlay.style.opacity='0';}}
 function clearPending(){if(timeoutId){clearTimeout(timeoutId);timeoutId=null;}}
@@ -288,7 +296,7 @@ function applyMove(m,turnMs,done){
 function reset(){
   ${progressReset}
   cubies.forEach(function(c){c.pos=c.initialPos.slice();c.transform=c.initialTransform;c.el.style.transform=c.transform;});
-  setHighlight(null);
+  setHighlight(restHighlight());
   lineIdx=0;moveIdx=0;movesPlayed=0;
   if(paused){updateOverlay();return;}
   timeoutId=setTimeout(function(){playLine(0);},CYCLE_PAUSE_START_MS);
@@ -336,7 +344,7 @@ export async function compileCubeScene(opts: CompileSceneOptions): Promise<strin
 }
 
 function buildStaticImageHtml(opts: CompileStaticImageOptions): string {
-  const { initialState, angles, cubeColors, showFacelets, showFaceLabels, backgroundColor, standalone, highlight } = opts
+  const { initialState, angles, cubeColors, showFacelets, showFaceLabels, backgroundColor, shadeColor, standalone, highlight } = opts
   const HALF = CUBIE_PX / 2
   const CUBE = CUBIE_PX * 3
   const SCENE = 640
@@ -419,7 +427,12 @@ function buildStaticImageHtml(opts: CompileStaticImageOptions): string {
 .hint.left{transform:rotateY(90deg) translateZ(${-HALF - HINT_OFFSET}px)}`
     : ''
 
-  const dimCss = highlightSet ? `.cubie.dim .face,.cubie.dim .hint{opacity:0.18}` : ''
+  // shade unhighlighted pieces by overlaying the chosen color (its alpha controls transparency).
+  // the hint overlay uses -2px inset to cover its semi-transparent border, otherwise the original
+  // sticker color bleeds through the border ring.
+  const dimCss = highlightSet
+    ? `.cubie.dim .face::after,.cubie.dim .hint::after{content:"";position:absolute;background:${shadeColor};pointer-events:none}.cubie.dim .face::after{inset:0}.cubie.dim .hint::after{inset:-2px}`
+    : ''
 
   const sharedCss = `.scene{perspective:1000px;width:${SCENE}px;height:${SCENE}px;position:relative}
 .cube{position:absolute;width:${CUBE}px;height:${CUBE}px;left:${offset}px;top:${offset}px;transform-style:preserve-3d;transform:scale(0.85) rotateX(${-angles.x}deg) rotateY(${-angles.y}deg)}

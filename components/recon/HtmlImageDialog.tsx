@@ -34,6 +34,13 @@ const BACKGROUND_PRESETS = [
   { label: 'Grey', value: '#73737380' },
 ];
 
+const SHADE_PRESETS = [
+  { label: 'Dark', value: '#000000b3' },
+  { label: 'Grey', value: '#73737399' },
+  { label: 'Faint', value: '#0000002e' },
+  { label: 'None', value: '#00000000' },
+];
+
 const CAMERA_RADIUS = 3.5;
 
 function contrastText(hex: string): string {
@@ -114,6 +121,8 @@ export default function HtmlImageDialog({
   const [angles, setAngles] = useState({ x: 30, y: 30 });
   const [backgroundColor, setBackgroundColor] = useState('#00000000');
   const [backgroundInput, setBackgroundInput] = useState('#00000000');
+  const [shadeColor, setShadeColor] = useState('#000000b3');
+  const [shadeInput, setShadeInput] = useState('#000000b3');
   const [includeFacelets, setIncludeFacelets] = useState(true);
   const [includeFaceLabels, setIncludeFaceLabels] = useState(true);
   const [standalone, setStandalone] = useState(false);
@@ -253,6 +262,19 @@ export default function HtmlImageDialog({
     setBackgroundInput(value);
   };
 
+  const handleShadeInputChange = (value: string) => {
+    if (!/^#[0-9A-Fa-f]{0,8}$/.test(value)) return;
+    setShadeInput(value);
+    if (/^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$/.test(value)) {
+      setShadeColor(value);
+    }
+  };
+
+  const handleShadePresetClick = (value: string) => {
+    setShadeColor(value);
+    setShadeInput(value);
+  };
+
   const handleDownload = async () => {
     if (isCompiling) return;
     setError(null);
@@ -269,6 +291,7 @@ export default function HtmlImageDialog({
         showFacelets: includeFacelets,
         showFaceLabels: includeFaceLabels,
         backgroundColor,
+        shadeColor,
         standalone,
         highlight,
       });
@@ -420,6 +443,46 @@ export default function HtmlImageDialog({
                   onSetSelection={setHighlightSelection}
                   cubeColors={cubeColors}
                 />
+
+                <div className="mt-4 border-t border-neutral-600 pt-4">
+                  <div className="mb-3 text-sm font-semibold text-primary-100">Unhighlighted piece shade</div>
+                  <span className="mb-3 block text-xs text-neutral-400">
+                    Unselected pieces are shaded with this color. Adjust the alpha to control transparency.
+                  </span>
+                  <div className="mb-3 flex flex-wrap gap-2">
+                    {SHADE_PRESETS.map(preset => (
+                      <button
+                        key={preset.value}
+                        type="button"
+                        onClick={() => handleShadePresetClick(preset.value)}
+                        className={`flex items-center gap-2 rounded border px-3 py-2 text-sm transition-colors ${
+                          shadeColor.toLowerCase() === preset.value.toLowerCase()
+                            ? 'border-primary-100 text-primary-100'
+                            : 'border-neutral-600 text-neutral-200 hover:border-primary-100 hover:text-primary-100'
+                        }`}
+                      >
+                        <span className="relative h-4 w-4 overflow-hidden rounded-sm border border-black/20" style={CHECKERBOARD_STYLE}>
+                          <span className="absolute inset-0" style={{ backgroundColor: preset.value }} />
+                        </span>
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                  <HexAlphaColorPicker
+                    color={shadeColor}
+                    onChange={n => handleShadePresetClick(n)}
+                    style={{ width: '100%', maxWidth: '300px', height: '140px' }}
+                  />
+                  <div className="mt-2 max-w-75 flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={shadeInput}
+                      onChange={e => handleShadeInputChange(e.target.value)}
+                      className="w-full rounded-sm border border-neutral-600 bg-dark/40 px-3 py-2 font-mono text-sm text-primary-100 outline-none focus:border-primary-100"
+                      placeholder="#000000b3"
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="rounded-sm border border-neutral-700 bg-primary-800 p-4">

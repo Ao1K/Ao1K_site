@@ -24,6 +24,10 @@ export type CompileSceneOptions = {
   showFaceLabels: boolean
   loopPlayback: boolean
   backgroundColor: string
+  // color (with alpha) used to shade unhighlighted pieces
+  shadeColor: string
+  // start the cube already showing the first line's highlight instead of all-bright
+  startHighlighted: boolean
   standalone: boolean
 }
 
@@ -34,6 +38,8 @@ export type CompileStaticImageOptions = {
   showFacelets: boolean
   showFaceLabels: boolean
   backgroundColor: string
+  // color (with alpha) used to shade unhighlighted pieces
+  shadeColor: string
   standalone: boolean
   // piece names to keep highlighted; null = no highlight (all bright)
   highlight: string[] | null

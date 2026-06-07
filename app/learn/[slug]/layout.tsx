@@ -9,7 +9,9 @@ export default function LearnLessonLayout({
   return (
     <div className="flex flex-1 min-w-0 justify-center gap-8 xl:gap-10">
       <div className="flex flex-1 min-w-0 justify-center">{children}</div>
-      <LessonNavigator />
+      <div className="hidden xl:block w-64 shrink-0">
+        <LessonNavigator />
+      </div>
     </div>
   );
 }

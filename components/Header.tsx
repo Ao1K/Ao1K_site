@@ -1,6 +1,6 @@
 import HeaderNavLink from './HeaderNavLink';
 import WriteIcon from './icons/write';
-// import DatabaseIcon from './icons/database';
+import GlassesIcon from './icons/glasses';
 // import TimerIcon from './icons/timer';
 import BulletListIcon from './icons/bulletList';
 import HeaderSidebar from './HeaderSidebar';
@@ -17,8 +17,8 @@ export default function Header() {
       <nav className="w-full flex sm:justify-center relative justify-start">
        <div className="hidden sm:flex sm:flex-row items-center space-x-10">
           {/* <HeaderNavLink href="/" title="Practice" icon={<TimerIcon />} /> */}
+          <HeaderNavLink href="/learn" title="Learn" icon={<GlassesIcon />} version={versionList['learn']}/>
           <HeaderNavLink href="/recon/" title="Reconstruct" icon={<WriteIcon />} version={versionList['recon']}/>
-          {/* <HeaderNavLink href="/algs" title="Learn" icon={<DatabaseIcon />} /> */}
           <HeaderNavLink href="/changeblog/" title="Changeblog" icon={<BulletListIcon />} version={versionList['changeblog']} />
         </div>
 
