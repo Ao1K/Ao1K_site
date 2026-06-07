@@ -12,7 +12,7 @@ export default function EO() {
       <TitleBar title="Edge Orientation" subtitle="A hidden lens for good cubing" seconds={30} />
       <LessonBody>
         <Story storyParagraphs={[
-          "There is danger. A young adventurer, Peaku, is trying to rescue their sister. In the heart of a labyrinth filled with monsters, he's found a clue to her whereabouts, and now he needs to escape before the whole place collapses.",
+          "There is danger. A young adventurer, Peaku, is trying to rescue his sister. In the heart of a labyrinth filled with monsters, he's found a clue to her whereabouts, and now he needs to escape before the whole place collapses.",
           "Peaku chances upon a speed potion. It's tightly sealed with a cork. With the labyrinth crawling with monsters, it's dangerous to slow down to open a bottle. A monster might find him and slow him down even more. But the sooner he uncorks the potion, the sooner he can use it to escape.",
           <strong key="story-question">So. When is the right time to drink the potion?</strong>
         ]} />
