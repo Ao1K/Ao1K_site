@@ -27,8 +27,5 @@ Fix movestexteditor and suggestions:
 If line wraps, suggestions get put too high
 Ghost text treated as actual text
 Escape doesn't always work
-A slight click and drag, which does not actually select multiple characters, does not get DOM caret
 Selection border around suggestions gets hidden by items below items
 Correct line should be selected for suggestion to be at-all visible
-Deleting multiple lines resets caret to start rather than 
-to the end of the div that comes before the deletion.

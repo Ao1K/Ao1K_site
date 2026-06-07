@@ -171,7 +171,6 @@ function MovesTextEditor({
     const ONLY_LOG_SOLUTION = true;
 
     if (ONLY_LOG_SOLUTION && idIndex === 0) return;
-    console.log(idIndex, "[MovesTextEditor]", ...args);
   }
 
   const handleInput = (shouldUpdateURL = true) => {
@@ -1022,7 +1021,8 @@ function MovesTextEditor({
     if (!selection || selection.rangeCount === 0) return false;
 
     const range = selection.getRangeAt(0);
-    return !range.collapsed && (range.startContainer !== range.endContainer || range.startOffset !== range.endOffset);
+    const isMulti = !range.collapsed && (range.startContainer !== range.endContainer || range.startOffset !== range.endOffset);
+    return isMulti
   };
 
   /**
@@ -1123,6 +1123,55 @@ function MovesTextEditor({
     const state = parseCaretState();
     if (!state) return;
     setCaretState(state);
+  };
+
+  const restoreCaretAfterMouseUp = () => {
+    const root = contentEditableRef.current;
+    if (!root || document.activeElement !== root) return;
+
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+
+    const range = selection.getRangeAt(0);
+    const touchesRoot = (node: Node | null) => !!node && (node === root || root.contains(node));
+    if (range.collapsed || !(touchesRoot(selection.anchorNode) || touchesRoot(selection.focusNode) || touchesRoot(range.commonAncestorContainer))) {
+      return;
+    }
+
+    // Firefox can leave a transient drag range after mouseup even when no content was selected.
+    const selectionText = (selection.toString() || range.cloneContents().textContent || '').replace(/\u200B/g, '');
+    if (selectionText.length > 0) return;
+
+    const isCaretNode = (node: Node | null) => !!node && (
+      (node.nodeType === Node.ELEMENT_NODE && (node as Element).id === 'caretNode')
+      || node.parentElement?.id === 'caretNode'
+    );
+    const collapseNode = !isCaretNode(selection.focusNode)
+      ? selection.focusNode
+      : !isCaretNode(selection.anchorNode)
+        ? selection.anchorNode
+        : null;
+    const collapseOffset = !isCaretNode(selection.focusNode)
+      ? selection.focusOffset
+      : selection.anchorOffset;
+
+    if (!collapseNode) return;
+
+    selection.collapse(collapseNode, collapseOffset);
+    handleCaretChange();
+  };
+
+  const handleMouseUp = (event: MouseEvent) => {
+    if (event.button !== 0) return;
+
+    if (restoreFrameRef.current !== null) {
+      cancelAnimationFrame(restoreFrameRef.current);
+    }
+
+    restoreFrameRef.current = requestAnimationFrame(() => {
+      restoreFrameRef.current = null;
+      restoreCaretAfterMouseUp();
+    });
   };
 
   const handleSuggestionRequest = (suggestionIndex: number) => {
@@ -1686,11 +1735,13 @@ function MovesTextEditor({
   useEffect(() => {
 
     document.addEventListener('selectionchange', handleCaretChange);
+    document.addEventListener('mouseup', handleMouseUp);
     document.addEventListener('keydown', handleCommand);
 
     return () => {
 
       document.removeEventListener('selectionchange', handleCaretChange);
+      document.removeEventListener('mouseup', handleMouseUp);
       document.removeEventListener('keydown', handleCommand);
 
       removeAllSuggestions();
