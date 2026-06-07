@@ -235,9 +235,9 @@ export default function EO() {
         <p>{"EO is one of only a few tools you can use to help tell if you are being efficient. It may give you many things to fix. Fixing them will slow you down at first, but as you get familiar with the solutions, you will eventually get faster as well."}</p>
 
         <h2>Improving Pair Choice</h2>
-        <p>{"Pairs with good edges are typically faster to solve than bad edge pairs, so when there's multiple pairs to solve, it's nice to solve good-edge pairs first."}</p>
-        <p>{"Doing x, y, and z rotations in a solve is essentially time spent doing nothing. In a perfect world only one y rotation would be needed in a solve. You can solve cross and all good edge pairs, rotate to turn all the bad edges into good edges, and finally solve the remaining pairs. And indeed, EO is a powerful tool for you to see how to reduce unnecessary rotations and F moves."}</p>
-        <p>{"But reality is more complicated. What if a very fast pair would require a rotation before all good edge pairs are solved? What if you have multiple bad edges in the middle layer? The choice is yours."}</p>
+        <p>{"Pairs with good edges are typically faster to solve than bad-edge pairs, so when there's multiple pairs to solve, it's nice to solve good-edge pairs first."}</p>
+        <p>{"Doing x, y, and z rotations in a solve is essentially time spent doing nothing. In a perfect world only one y rotation would be needed in a solve. You can solve cross and all good-edge pairs, rotate to turn all the bad edges into good edges, and finally solve the remaining pairs. And indeed, EO is a powerful tool for you to see how to reduce unnecessary rotations and F moves."}</p>
+        <p>{"But reality is more complicated. What if a very fast pair would require a rotation before all good-edge pairs are solved? What if you have multiple bad edges in the middle layer? The choice is yours."}</p>
 
         <p>{"Here's a hard example. Which pair is better to solve here, orange-blue or orange-green?"}</p>
         <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">

@@ -83,7 +83,7 @@ export default function InfoPanelContent() {
             className="w-fit object-contain"
           />
           <li>
-            Finish writing the solve.
+            Finish writing the solve. Each step should go in its own line of text.
           </li>
           <li>
             Add the solve time. Beside it, you&apos;ll see &quot;stm&quot; and &quot;tps&quot;. What do they mean?

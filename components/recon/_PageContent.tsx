@@ -35,7 +35,7 @@ import { SimpleCube, type CubeState } from '../../composables/recon/SimpleCube';
 import { SimpleCubeInterpreter } from '../../composables/recon/SimpleCubeInterpreter';
 import type { StepInfo, Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
 import { getNewSteps } from '../../composables/recon/getLineStepInfo';
-import { ScreenshotManager } from '../../composables/recon/ScreenshotManager';
+import { ScreenshotManager, isSolveComplete } from '../../composables/recon/ScreenshotManager';
 import type { TwistyPlayerImperativeRef } from '../../components/recon/TwistyPlayer';
 
 // utility imports
@@ -172,14 +172,8 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     && allRequiredSplitsFilled
     && Math.abs(splitsSum - solveTime) > 0.1;
 
-  const lastContentfulLineStep = (() => {
-    for (let i = lineSteps.length - 1; i >= 0; i--) {
-      if (lineSteps[i].stepInfo.length > 0) {
-        return lineSteps[i];
-      }
-    }
-  })();
-  const isSolveComplete = lastContentfulLineStep?.stepInfo.some(step => step.type?.toLowerCase() === 'solved');
+  const isCompletedSolve = isSolveComplete(lineSteps.map((line) => line.stepInfo));
+  const solutionSectionLabel = isCompletedSolve ? 'Solution' : 'Partial Solution';
 
   const moveHistory = useRef<MoveHistory>({ history: [['', '']], index: 0, MAX_HISTORY: MAX_EDITOR_HISTORY, status: 'loading' });
 
@@ -1021,7 +1015,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       };
     }
 
-    if (!isSolveComplete) {
+    if (!isCompletedSolve) {
       return {
         message: 'Copied, Solve Incomplete',
         messageType: 'warn'
@@ -1056,7 +1050,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
 
     title ? printout += `${title}\n\n` : '';
     scramble ? printout += `${scramble}\n\n` : '';
-    solution ? printout += `Solution:\n${solution}\n\n` : '';
+    solution ? printout += `${solutionSectionLabel}:\n${solution}\n\n` : '';
 
     time ? printout += `${time} sec` : '';
     time && stm ? printout += `, ` : ' ';
@@ -1077,7 +1071,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
 
     const tpsString = (tpsRef.current && tpsRef.current.innerHTML !== '(-- tps)') ? tpsRef.current.innerHTML : '';
     const blob = await screenshotManagerRef.current.getBlob(
-      { scrambleHTML, solutionHTML, solveTime },
+      { scrambleHTML, solutionHTML, solveTime, solutionLabel: solutionSectionLabel },
       { totalMoves, tpsString }
     );
 
@@ -1187,13 +1181,10 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     storeLastSelection();
 
     if (lastSelection === 'solution' && oldSelectionRef.current.textbox !== 'solution') {
-      const isCubeSolved = lineStepsRef.current.some(stepEntry =>
-        stepEntry.stepInfo.some(step => step.type?.toLowerCase() === 'solved')
-      );
-      if (isCubeSolved) {
+      if (isCompletedSolve) {
         const tpsString = (tpsRef.current && tpsRef.current.innerHTML !== '(-- tps)') ? tpsRef.current.innerHTML : '';
         void screenshotManagerRef.current?.getBlob(
-          { scrambleHTML, solutionHTML, solveTime },
+          { scrambleHTML, solutionHTML, solveTime, solutionLabel: solutionSectionLabel },
           { totalMoves, tpsString }
         );
       }
@@ -1434,7 +1425,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       screenshotManagerRef.current = new ScreenshotManager();
     }
     void screenshotManagerRef.current.getBlob(
-      { scrambleHTML: '', solutionHTML: '', solveTime: '' },
+      { scrambleHTML: '', solutionHTML: '', solveTime: '', solutionLabel: 'Solution' },
       { totalMoves: 0, tpsString: '' }
     );
   };
