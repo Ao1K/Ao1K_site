@@ -55,6 +55,12 @@ Depending on the intended audience, more or less jargon may be acceptable.
 
 Avoid describing something as "easy" or "simple". What is easy to you might not be easy to the reader.
 
+# Capitalization
+
+Algset names are usually fully capitalized (ex: OLL)
+
+Only the lesson title gets Each Word Capitalized. Headers and subheaders only get the first word capitalized.
+
 
 
 

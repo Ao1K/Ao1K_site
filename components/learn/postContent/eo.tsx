@@ -158,7 +158,7 @@ export default function EO() {
           .
         </span>
 
-        <h2>Aside: The ZZ method</h2>
+        <h2>Aside: the ZZ method</h2>
         <p>{"EO is useful for CFOP, but it is an integral part of the ZZ method. It also provides great intuition for what EO really works."}</p>
         <span>
           You can find an excellent{' '}
@@ -200,7 +200,7 @@ export default function EO() {
 
 
 
-        <h1>The Hidden Magic of EO</h1>
+        <h1>The hidden magic of EO</h1>
         <Story storyParagraphs={[
           <>
             {"Peaku runs through the labyrinth's "}
@@ -211,7 +211,7 @@ export default function EO() {
           "A shard of the glass glimmers in the torchlight. Peaku picks it out and holds it in front of his eye. The world appears to open up. The glass has some property that makes the hedges look almost invisible! He has no more need to rush. He heads for the exit, navigating without any more wrong turns or guesses.",
         ]} />
 
-        <h2>Improving Efficiency</h2>
+        <h2>Improving efficiency</h2>
         <p>
           {"Recognizing the orientation of the edge gives information on how to solve that edge. This might not help you solve the cube faster, but it can make you more "}
           <strong>efficient</strong>
@@ -234,7 +234,7 @@ export default function EO() {
         <p>{"From there, you can experiment to try to find a better solution, or look up an alg or tutorial."}</p>
         <p>{"EO is one of only a few tools you can use to help tell if you are being efficient. It may give you many things to fix. Fixing them will slow you down at first, but as you get familiar with the solutions, you will eventually get faster as well."}</p>
 
-        <h2>Improving Pair Choice</h2>
+        <h2>Improving pair choice</h2>
         <p>{"Pairs with good edges are typically faster to solve than bad-edge pairs, so when there's multiple pairs to solve, it's nice to solve good-edge pairs first."}</p>
         <p>{"Doing x, y, and z rotations in a solve is essentially time spent doing nothing. In a perfect world, only one y rotation would be needed in a solve. You can solve cross and all good-edge pairs, rotate to turn all the bad edges into good edges, and finally solve the remaining pairs. And indeed, EO is a powerful tool for you to see how to reduce unnecessary rotations and F moves."}</p>
         <p>{"But reality is more complicated. What if a very fast pair would require a rotation before all good-edge pairs are solved? What if you have multiple bad edges in the middle layer? The choice is yours."}</p>
