@@ -90,15 +90,15 @@ export default function EO() {
         <p>{`In CFOP, this is useful for OLL, but especially F2L, for reasons we'll look at later.`}</p>
 
         <h2>F2L and EO recognition</h2>
-        <p>{`Using this new orbit knowledge, we can make some statements about F2L edges and EO:`}</p>
+        <p>{`Using this new orbit knowledge, we can make some statements about F2L edges and recognizing EO:`}</p>
         <LessonList
           items={[
-            "**If using white orbit, match L or R**: If a sticker in the white orbit matches the left or right center color, it will connect to that center, and it's a good F2L edge.",
-            "**If using magenta orbit, match F or B**: If a sticker in the magenta orbit matches the front or back center color, it will connect to the left or right center, and it's a good F2L edge."
+            "**If using white orbit, match L or R**: If a sticker in the white orbit matches the left or right center color, it will connect to that center, so it's a good F2L edge.",
+            "**If using magenta orbit, match F or B**: If a sticker in the magenta orbit matches the front or back center color, it will connect to the left or right center, so it's a good F2L edge."
           ]}
         />
         <p>{`With the magenta orbit, we're basically making the opposite statement compared to the white orbit. This makes sense, since if one sticker connects to the left or right center, the other must not.`}</p>
-        <p>{"So which orbit do you use? It's up to you. From the image above, you can see that the magenta orbit is more visible for top edges. For edges in between the top and bottom layers, the white orbit is more visible."}</p>
+        <p>{"So which orbit do you use to recognize orientation? It's up to you. From the image above, you can see that the magenta orbit is more visible for top edges. For edges in between the top and bottom layers, the white orbit is more visible."}</p>
         <p>{`Let's see all this theory in action.`}</p>
 
         <h2>F2L EO examples</h2>
@@ -236,7 +236,7 @@ export default function EO() {
 
         <h2>Improving Pair Choice</h2>
         <p>{"Pairs with good edges are typically faster to solve than bad-edge pairs, so when there's multiple pairs to solve, it's nice to solve good-edge pairs first."}</p>
-        <p>{"Doing x, y, and z rotations in a solve is essentially time spent doing nothing. In a perfect world only one y rotation would be needed in a solve. You can solve cross and all good-edge pairs, rotate to turn all the bad edges into good edges, and finally solve the remaining pairs. And indeed, EO is a powerful tool for you to see how to reduce unnecessary rotations and F moves."}</p>
+        <p>{"Doing x, y, and z rotations in a solve is essentially time spent doing nothing. In a perfect world, only one y rotation would be needed in a solve. You can solve cross and all good-edge pairs, rotate to turn all the bad edges into good edges, and finally solve the remaining pairs. And indeed, EO is a powerful tool for you to see how to reduce unnecessary rotations and F moves."}</p>
         <p>{"But reality is more complicated. What if a very fast pair would require a rotation before all good-edge pairs are solved? What if you have multiple bad edges in the middle layer? The choice is yours."}</p>
 
         <p>{"Here's a hard example. Which pair is better to solve here, orange-blue or orange-green?"}</p>

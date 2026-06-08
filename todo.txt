@@ -20,6 +20,8 @@ R' U R U R' U R U' R' U' R
 R U' R' D R' U R D'
 R U R' U2 R U' R' U R U' R'
 Roux algs
+ZBLL algs
+Lefty algs
 
 Think about function of solve review carefully. Form will follow.
 
