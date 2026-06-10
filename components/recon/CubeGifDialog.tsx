@@ -22,7 +22,7 @@ import {
   useCubeColors,
   useHintFaceletsElevation,
 } from '../../composables/useSettings';
-import { CENTER_PIECES, defaultHighlightSet } from './UnfoldedCube';
+import { ALL_PIECE_NAMES, allHighlightSet } from './UnfoldedCube';
 import LineConfigItem, { type LineEntry, MIN_LINE_PCT } from './LineConfigItem';
 import type { LineIconDatum } from './IconStack';
 import type { SvgShape } from '@/composables/recon/stepIconDescriptors';
@@ -113,8 +113,6 @@ const renderShape = (shape: SvgShape, i: number) => {
   return <circle key={i} cx={shape.cx} cy={shape.cy} r={shape.r} fill={shape.fill} />;
 };
 
-const EMPTY_HIGHLIGHT_SET = new Set<string>();
-
 export default function CubeGifDialog({
   onClose,
   scramble,
@@ -138,12 +136,8 @@ export default function CubeGifDialog({
   const cameraRef = useRef<PerspectiveCamera | null>(null);
   const rendererRef = useRef<WebGLRenderer | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
-  const previewRafRef = useRef<number | null>(null);
   const previewStartRef = useRef<number>(0);
-  const isMountedRef = useRef(true);
-  const cleanupRef = useRef<(() => void) | null>(null);
   const isCapturingRef = useRef(false);
-  const forceHighlightReapplyRef = useRef(false);
   const zoomFactorRef = useRef(1);
 
   const [backgroundColor, setBackgroundColor] = useState('#161018ff');
@@ -158,13 +152,6 @@ export default function CubeGifDialog({
   const [previewLoaded, setPreviewLoaded] = useState(false);
 
   const [lockedLines, setLockedLines] = useState<Record<number, boolean>>({});
-  // piece highlighting
-  const [highlightBase, setHighlightBase] = useState<'none' | 'auto'>('none');
-  const [isCustomizing, setIsCustomizing] = useState(false);
-  const [lineHighlights, setLineHighlights] = useState<Array<Set<string>>>([]);
-  const highlightBaseRef = useRef<'none' | 'auto'>('none');
-  const isCustomizingRef = useRef(false);
-  const lineHighlightsRef = useRef<Array<Set<string>>>([]);
 
   // build line entries (non-whitespace, has moves)
   const lineEntries = useMemo<LineEntry[]>(() => {
@@ -190,6 +177,14 @@ export default function CubeGifDialog({
     }
     return entries;
   }, [solutionLines]);
+
+  // piece highlighting — each line carries the set of currently-selected pieces.
+  // "None" mode means every piece is selected (no filtering); "Auto" derives from solve steps.
+  const [highlightBase, setHighlightBase] = useState<'none' | 'auto'>('none');
+  const [isCustomizing, setIsCustomizing] = useState(false);
+  const [lineHighlights, setLineHighlights] = useState<Array<Set<string>>>(
+    () => lineEntries.map(() => allHighlightSet()),
+  );
 
   const parseSplitValues = (entries: LineEntry[]) => {
     return entries.map(entry => {
@@ -238,6 +233,7 @@ export default function CubeGifDialog({
       if (!desc || datum.isEmptyIcon) return null;
       return (
         <svg
+          key={entry.index}
           viewBox={desc.viewBox}
           className="flex-none w-7.5 h-7.5 border"
           style={desc.eoBorderColor
@@ -268,40 +264,28 @@ export default function CubeGifDialog({
     }, 0);
     return tpsSum > 0 ? tpsSum : Math.max(10, lineEntries.length * 3);
   });
-  const [totalDurationInput, setTotalDurationInput] = useState(() => totalDuration.toFixed(2));  
-
-  const percentagesRef = useRef<number[]>([]);
-  const totalDurationRef = useRef<number>(totalDuration);
-  const lineEntriesRef = useRef<LineEntry[]>([]);
-  const totalCubeDurationRef = useRef<number>(0);
-  const lineDelaysRef = useRef<number[]>([]);
-
-  percentagesRef.current = percentages;
-  totalDurationRef.current = totalDuration;
-  lineEntriesRef.current = lineEntries;
+  const [totalDurationInput, setTotalDurationInput] = useState(() => totalDuration.toFixed(2));
 
   // adjust a single line's percentage; redistribute among unlocked lines proportionally
-  const adjustPercentage = (entryIdx: number, newPct: number) => {
-    if (percentages.length === 0) return;
+  const adjustPercentage = useCallback((entryIdx: number, newPct: number) => {
+    const { percentages: pcts, lockedLines: locked } = latestStateRef.current;
+    if (pcts.length === 0) return;
     const clamped = Math.max(MIN_LINE_PCT, Math.min(99, newPct));
-    const oldPct = percentages[entryIdx] ?? 0;
+    const oldPct = pcts[entryIdx] ?? 0;
     const delta = clamped - oldPct;
 
     // gather indices that are unlocked and not the one being changed
     const adjustableIdxs: number[] = [];
-    for (let i = 0; i < percentages.length; i++) {
+    for (let i = 0; i < pcts.length; i++) {
       if (i === entryIdx) continue;
-      if (lockedLines[i]) continue;
+      if (locked[i]) continue;
       adjustableIdxs.push(i);
     }
+    // nothing to redistribute to; refuse change
+    if (adjustableIdxs.length === 0) return;
 
-    if (adjustableIdxs.length === 0) {
-      // nothing to redistribute to; refuse change
-      return;
-    }
-
-    const adjustableTotal = adjustableIdxs.reduce((sum, i) => sum + (percentages[i] ?? 0), 0);
-    const next = [...percentages];
+    const adjustableTotal = adjustableIdxs.reduce((sum, i) => sum + (pcts[i] ?? 0), 0);
+    const next = [...pcts];
     next[entryIdx] = clamped;
 
     if (adjustableTotal <= 0) {
@@ -322,51 +306,56 @@ export default function CubeGifDialog({
     // normalize so sum is 100
     const sum = next.reduce((a, b) => a + b, 0);
     if (sum > 0) {
-      for (let i = 0; i < next.length; i++) {
-        next[i] = (next[i] / sum) * 100;
-      }
+      for (let i = 0; i < next.length; i++) next[i] = (next[i] / sum) * 100;
     }
     setPercentages(next);
-  };
+  }, []);
 
   // set absolute split (in seconds); recompute percentages and total duration
-  const setSplitSeconds = (entryIdx: number, seconds: number) => {
-    if (percentages.length === 0) return;
+  const setSplitSeconds = useCallback((entryIdx: number, seconds: number) => {
+    const s = latestStateRef.current;
+    if (s.percentages.length === 0) return;
     const clamped = Math.max(0.05, Math.min(MAX_TOTAL_DURATION, seconds));
-    const currentSeconds = percentages.map(p => (p / 100) * totalDuration);
+    const currentSeconds = s.percentages.map(p => (p / 100) * s.totalDuration);
     currentSeconds[entryIdx] = clamped;
     const newTotal = currentSeconds.reduce((a, b) => a + b, 0);
     if (newTotal <= 0) return;
     setTotalDuration(newTotal);
     setTotalDurationInput(newTotal.toFixed(2));
-    setPercentages(currentSeconds.map(s => (s / newTotal) * 100));
+    setPercentages(currentSeconds.map(sec => (sec / newTotal) * 100));
 
     // commit all line durations so re-opening the dialog can recover the full total
-    const newSplits = [...splits];
-    lineEntries.forEach((entry, i) => {
+    const newSplits = [...s.splits];
+    s.lineEntries.forEach((entry, i) => {
       while (newSplits.length <= entry.splitIdx) newSplits.push('');
       newSplits[entry.splitIdx] = currentSeconds[i].toFixed(3).replace(/\.?0+$/, '');
     });
-    onSplitsChange(newSplits);
-    onSplitsCommit(newSplits);
-  };
+    s.onSplitsChange(newSplits);
+    s.onSplitsCommit(newSplits);
+  }, []);
 
   const toggleLock = useCallback((entryIdx: number) => {
     setLockedLines(prev => ({ ...prev, [entryIdx]: !prev[entryIdx] }));
   }, []);
 
   const toggleLineHighlightPiece = useCallback((lineIdx: number, piece: string) => {
-    const next = lineHighlightsRef.current.map(s => new Set(s));
+    setLineHighlights(prev => {
+      const next = prev.map(s => new Set(s));
+      const lineSet = next[lineIdx];
+      if (!lineSet) return prev;
+      if (lineSet.has(piece)) lineSet.delete(piece);
+      else lineSet.add(piece);
+      return next;
+    });
+  }, []);
 
-    while (next.length <= lineIdx) next.push(defaultHighlightSet());
-    if (next[lineIdx].has(piece)) {
-      next[lineIdx].delete(piece);
-    } else {
-      next[lineIdx].add(piece);
-    }
-
-    lineHighlightsRef.current = next;
-    setLineHighlights(next);
+  const setLineHighlightSet = useCallback((lineIdx: number, set: Set<string>) => {
+    setLineHighlights(prev => {
+      if (lineIdx < 0 || lineIdx >= prev.length) return prev;
+      const next = prev.map(s => new Set(s));
+      next[lineIdx] = new Set(set);
+      return next;
+    });
   }, []);
 
   const handleDelayPctChange = (value: string) => {
@@ -386,35 +375,29 @@ export default function CubeGifDialog({
   };
 
   const computeAutoHighlightsForAllLines = (): Array<Set<string>> =>
-    lineEntriesRef.current.map((_, idx) => {
-      const entries = lineEntriesRef.current;
-      const relevantStepInfos = entries
+    lineEntries.map((_, idx) => {
+      const relevantStepInfos = lineEntries
         .slice(0, idx + 1)
         .map(e => lineIconData[e.index]?.compiledStepInfo ?? null);
       return getAutoHighlight(relevantStepInfos);
-  });
+    });
 
   const handleHighlightBaseChange = (mode: 'none' | 'auto') => {
-    highlightBaseRef.current = mode;
     setHighlightBase(mode);
-    if (mode === 'none') {
-      applyHighlightForLine(-1);
-    } else {
-      const highlights = computeAutoHighlightsForAllLines();
-      lineHighlightsRef.current = highlights;
-      setLineHighlights(highlights);
-      previewStartRef.current = performance.now();
-      forceHighlightReapplyRef.current = true;
-    }
+    setLineHighlights(
+      mode === 'none'
+        ? lineEntries.map(() => allHighlightSet())
+        : computeAutoHighlightsForAllLines(),
+    );
   };
 
   const handleCustomizeToggle = (enabled: boolean) => {
-    isCustomizingRef.current = enabled;
     setIsCustomizing(enabled);
   };
 
-  const setLineDelay = (idx: number, seconds: number) => {
-    const lineTime = ((percentages[idx] ?? 0) / 100) * totalDuration;
+  const setLineDelay = useCallback((idx: number, seconds: number) => {
+    const { percentages: pcts, totalDuration: tot } = latestStateRef.current;
+    const lineTime = ((pcts[idx] ?? 0) / 100) * tot;
     const clamped = Math.max(0, Math.min(lineTime, seconds));
     setLineDelays(prev => {
       const next = [...prev];
@@ -422,7 +405,7 @@ export default function CubeGifDialog({
       next[idx] = clamped;
       return next;
     });
-  };
+  }, []);
 
   const handleTotalDurationChange = (value: string) => {
     setTotalDurationInput(value);
@@ -448,23 +431,11 @@ export default function CubeGifDialog({
     setTransparentBackground(value.toLowerCase().endsWith('00') && value.length === 9);
   };
 
-  // stable callback refs so LineConfigItem memo props don't change identity every render
-  const adjustPercentageRef = useRef(adjustPercentage);
-  adjustPercentageRef.current = adjustPercentage;
-  const setSplitSecondsRef = useRef(setSplitSeconds);
-  setSplitSecondsRef.current = setSplitSeconds;
-  const setLineDelayRef = useRef(setLineDelay);
-  setLineDelayRef.current = setLineDelay;
-  const stableAdjustPercentage = useCallback((idx: number, pct: number) => adjustPercentageRef.current(idx, pct), []);
-  const stableSetSplitSeconds = useCallback((idx: number, sec: number) => setSplitSecondsRef.current(idx, sec), []);
-  const stableSetLineDelay = useCallback((idx: number, sec: number) => setLineDelayRef.current(idx, sec), []);
-
   // total cube duration (sum of move durations across all entries)
   const totalCubeDuration = useMemo(
     () => lineEntries.reduce((sum, e) => sum + e.totalCubeDuration, 0),
     [lineEntries]
   );
-  totalCubeDurationRef.current = totalCubeDuration;
 
   // effective delay per line in seconds; when individual mode is off, computed from global delayPct
   const effectiveDelays = (() => {
@@ -482,17 +453,56 @@ export default function CubeGifDialog({
       return Math.min(rawDelay, lineTime);
     });
   })();
-  lineDelaysRef.current = effectiveDelays;
 
-  // map real time t (in seconds, 0..totalDuration) to cube timestamp (ms).
-  // reads from refs so it remains correct across renders without re-creating closures.
+  // single ref-bag holding the latest values the rAF, capture, and line-config callbacks need.
+  // updated each render via useEffect so consumers always see fresh state
+  // without needing to be torn down on every change.
+  interface LatestRef {
+    lineEntries: LineEntry[];
+    percentages: number[];
+    totalDuration: number;
+    totalCubeDuration: number;
+    effectiveDelays: number[];
+    lineHighlights: Array<Set<string>>;
+    lockedLines: Record<number, boolean>;
+    splits: string[];
+    onSplitsChange: (splits: string[]) => void;
+    onSplitsCommit: (splits: string[]) => void;
+  }
+  const latestStateRef = useRef<LatestRef>({
+    lineEntries,
+    percentages,
+    totalDuration,
+    totalCubeDuration,
+    effectiveDelays,
+    lineHighlights,
+    lockedLines,
+    splits,
+    onSplitsChange,
+    onSplitsCommit,
+  });
+  useEffect(() => {
+    // canonical "sync latest values into a ref" pattern; the lint rule for ref immutability
+    // doesn't recognize that useRef.current is meant to be mutated.
+    // eslint-disable-next-line react-hooks/immutability
+    latestStateRef.current = {
+      lineEntries,
+      percentages,
+      totalDuration,
+      totalCubeDuration,
+      effectiveDelays,
+      lineHighlights,
+      lockedLines,
+      splits,
+      onSplitsChange,
+      onSplitsCommit,
+    };
+  });
+
+  // map real time t (seconds in [0..totalDuration]) to cube timestamp (ms).
   // each line has a leading delay (frozen) period; moves play faster to fill the remainder.
   const realTimeToCubeTimestamp = (tSec: number): number => {
-    const entries = lineEntriesRef.current;
-    const pcts = percentagesRef.current;
-    const tot = totalDurationRef.current;
-    const totCube = totalCubeDurationRef.current;
-    const delays = lineDelaysRef.current;
+    const { lineEntries: entries, percentages: pcts, totalDuration: tot, totalCubeDuration: totCube, effectiveDelays: delays } = latestStateRef.current;
     if (entries.length === 0) return 0;
     if (tSec <= 0) return 0;
     if (tSec >= tot) return totCube;
@@ -505,9 +515,7 @@ export default function CubeGifDialog({
       const playDuration = lineRealDuration - lineDelay;
       if (tSec <= cumulativeReal + lineRealDuration) {
         const withinLine = tSec - cumulativeReal;
-        if (withinLine <= lineDelay) {
-          return cumulativeCube;
-        }
+        if (withinLine <= lineDelay) return cumulativeCube;
         const playFrac = playDuration > 0 ? (withinLine - lineDelay) / playDuration : 1;
         return cumulativeCube + Math.min(1, playFrac) * lineCubeDuration;
       }
@@ -519,9 +527,7 @@ export default function CubeGifDialog({
 
   // returns the 0-based index of the line being shown at real time tSec
   const realTimeToLineIndex = (tSec: number): number => {
-    const entries = lineEntriesRef.current;
-    const pcts = percentagesRef.current;
-    const tot = totalDurationRef.current;
+    const { lineEntries: entries, percentages: pcts, totalDuration: tot } = latestStateRef.current;
     if (entries.length === 0) return -1;
     let cumulative = 0;
     for (let i = 0; i < entries.length; i++) {
@@ -532,32 +538,17 @@ export default function CubeGifDialog({
     return entries.length - 1;
   };
 
-  // applies or clears the cubing.js stickering mask based on highlight config for a given line
+  // applies or clears the cubing.js stickering mask based on highlight config for a given line.
+  // lineIdx < 0 clears all highlighting (used after capture). a set that covers every piece is
+  // treated as "no mask" so the cube renders normally.
   const applyHighlightForLine = (lineIdx: number) => {
     const cube = cubeObjectRef.current as any;
     if (!cube?.setStickeringMask) return;
 
     let highlighted: Set<string> | null = null;
-
-    // none
-    if (!isCustomizingRef.current && highlightBaseRef.current === 'none') {
-      cube.setStickeringMask(buildStickeringMask(null, colorBasedOrbitNamesRef.current));
-      return;
-    }
-
-    // auto
-    if (!isCustomizingRef.current && highlightBaseRef.current === 'auto') {
-      if (lineIdx >= 0) {
-        const autoSet = lineHighlightsRef.current[lineIdx];
-        highlighted = autoSet && autoSet.size > 0 ? autoSet : null;
-      }
-    
-    // manual
-    } else {
-      const lineHighlight = lineHighlightsRef.current[lineIdx];
-      // only activate highlighting when at least one non-center piece is selected
-      const hasNonCenter = lineHighlight && [...lineHighlight].some(p => !CENTER_PIECES.has(p));
-      highlighted = hasNonCenter ? lineHighlight : null;
+    if (lineIdx >= 0) {
+      const set = latestStateRef.current.lineHighlights[lineIdx];
+      if (set && set.size < ALL_PIECE_NAMES.length) highlighted = set;
     }
 
     cube.setStickeringMask(buildStickeringMask(highlighted, colorBasedOrbitNamesRef.current));
@@ -601,6 +592,174 @@ export default function CubeGifDialog({
     cam.position.y = (1 / 2) * total;
   };
 
+  // creates and mounts a TwistyPlayer in div, storing it in playerElRef
+  const createAndMountPlayer = (div: HTMLElement) => {
+    const fullAlg = lineEntries.map(e => e.moves.join(' ')).join(' ');
+    const player = new TwistyPlayer({
+      viewerLink: 'none',
+      puzzle: '3x3x3',
+      hintFacelets: 'floating',
+      experimentalInitialHintFaceletsAnimation: 'always',
+      experimentalHintFaceletsElevation: elevation,
+      backView: 'none',
+      background: 'none',
+      controlPanel: 'none',
+      experimentalSetupAlg: scramble,
+      alg: fullAlg,
+      tempoScale: 1,
+    });
+    // size the player to match the preview area so cubing's intersection observer
+    // sees it on-screen and initializes its 3D objects. we hide it after extracting the cube.
+    player.style.position = 'absolute';
+    player.style.inset = '0';
+    player.style.width = '100%';
+    player.style.height = '100%';
+    player.style.opacity = '0';
+    player.style.pointerEvents = 'none';
+    player.experimentalFaceletScale = 0.95;
+    div.appendChild(player);
+    playerElRef.current = player;
+    return player;
+  };
+
+  // waits up to 10s for the cube 3D object to become available
+  const waitForCube = async (player: TwistyPlayer): Promise<Object3D | null> => {
+    let cube: Object3D | null = null;
+    const start = Date.now();
+    while (!cube && Date.now() - start < 10000) {
+      try {
+        cube = (await player.experimentalCurrentThreeJSPuzzleObject()) as unknown as Object3D | null;
+      } catch {
+        // keep trying
+      }
+      if (!cube) await new Promise(r => setTimeout(r, 100));
+    }
+    return cube;
+  };
+
+  // adds URFDLB face direction label meshes to the cube
+  const addFaceLabels = (cube: Object3D) => {
+    const loader = new TextureLoader();
+    const faceConfigs = [
+      { file: '/U.svg', position: { x: 0, y: 2, z: 0 }, rotation: { x: -Math.PI / 2, y: 0, z: 0 } },
+      { file: '/D.svg', position: { x: 0, y: -2, z: 0 }, rotation: { x: Math.PI / 2, y: 0, z: 0 } },
+      { file: '/R.svg', position: { x: 2, y: 0, z: 0 }, rotation: { x: 0, y: Math.PI / 2, z: 0 } },
+      { file: '/L.svg', position: { x: -2, y: 0, z: 0 }, rotation: { x: 0, y: -Math.PI / 2, z: 0 } },
+      { file: '/B.svg', position: { x: 0, y: 0, z: -2 }, rotation: { x: 0, y: Math.PI, z: 0 } },
+      { file: '/F.svg', position: { x: 0, y: 0, z: 2 }, rotation: { x: 0, y: 0, z: 0 } },
+    ];
+    faceConfigs.forEach(cfg => {
+      const texture = loader.load(cfg.file, () => {
+        texture.generateMipmaps = true;
+        texture.minFilter = LinearMipmapLinearFilter;
+        texture.magFilter = LinearFilter;
+        texture.anisotropy = 32;
+        const material = new MeshBasicMaterial({ map: texture, transparent: true });
+        const mesh = new Mesh(new PlaneGeometry(1.1, 1.6), material);
+        mesh.position.set(cfg.position.x, cfg.position.y, cfg.position.z);
+        mesh.rotation.set(cfg.rotation.x, cfg.rotation.y, cfg.rotation.z);
+        cube.add(mesh);
+        faceLabelMeshesRef.current.push(mesh);
+      });
+    });
+  };
+
+  // applies user's cube color settings to the six center facelets
+  const initStickerColors = (cube: any) => {
+    const info = cube.kpuzzleFaceletInfo;
+    if (!info) return;
+    info.CENTERS[0][0].facelet.material.color.set(cubeColors.up);
+    info.CENTERS[1][0].facelet.material.color.set(cubeColors.left);
+    info.CENTERS[2][0].facelet.material.color.set(cubeColors.front);
+    info.CENTERS[3][0].facelet.material.color.set(cubeColors.right);
+    info.CENTERS[4][0].facelet.material.color.set(cubeColors.back);
+    info.CENTERS[5][0].facelet.material.color.set(cubeColors.down);
+  };
+
+  // derives color-based piece names (e.g. 'WGR') from actual facelet hex colors and stores in ref.
+  // must be called after initStickerColors so center hex values reflect the user's color settings.
+  const buildColorPieceNames = (cube: any) => {
+    const faceletInfo = cube.kpuzzleFaceletInfo;
+    if (!faceletInfo) return;
+    // map hex → color letter from center facelets (cubing.js order: U=W, L=O, F=G, R=R, B=B, D=Y)
+    const hexToLetter = new Map<number, string>();
+    ['W', 'O', 'G', 'R', 'B', 'Y'].forEach((letter, i) => {
+      const hex = faceletInfo.CENTERS?.[i]?.[0]?.facelet?.material?.color?.getHex?.();
+      if (hex !== undefined) hexToLetter.set(hex, letter);
+    });
+    // canonical name: W/Y (U/D-face color) first, remaining letters sorted alphabetically
+    const orbitNames: Record<string, string[]> = {};
+    for (const orbit of ['CORNERS', 'EDGES', 'CENTERS']) {
+      orbitNames[orbit] = (faceletInfo[orbit] as any[][] ?? []).map((pieceInfos: any[]) => {
+        const letters = pieceInfos.map((fi: any) => {
+          const hex = fi?.facelet?.material?.color?.getHex?.();
+          return hex !== undefined ? (hexToLetter.get(hex) ?? '?') : '?';
+        });
+        const primary = letters.find(l => l === 'W' || l === 'Y') ?? '';
+        const rest = letters.filter(l => l !== 'W' && l !== 'Y').sort();
+        return primary + rest.join('');
+      });
+    }
+    colorBasedOrbitNamesRef.current = orbitNames;
+  };
+
+  // caches original facelet hex colors before any masking is applied
+  const cacheOriginalFaceletColors = (cube: any) => {
+    const faceletInfo = cube.kpuzzleFaceletInfo;
+    if (!faceletInfo) return;
+    const colorMap = new Map<string, number>();
+    for (const orbit of ['CORNERS', 'EDGES', 'CENTERS']) {
+      (faceletInfo[orbit] as any[][] ?? []).forEach((pieceInfos: any[], pieceIdx: number) => {
+        pieceInfos.forEach((fi: any, fiIdx: number) => {
+          const hex = fi.facelet?.material?.color?.getHex?.();
+          if (hex !== undefined) colorMap.set(`${orbit}_${pieceIdx}_${fiIdx}`, hex);
+        });
+      });
+    }
+    originalFaceletColorsRef.current = colorMap;
+  };
+
+  // creates the Three.js scene, camera, and renderer; appends the canvas to div
+  const createSceneCameraRenderer = (cube: Object3D, div: HTMLElement) => {
+    const scene = new Scene();
+    scene.add(cube);
+    sceneRef.current = scene;
+
+    const aspect = (div.clientWidth || 360) / (div.clientHeight || 360);
+    const camera = new PerspectiveCamera(75, aspect, 0.1, 5);
+    cameraRef.current = camera;
+    // initial position; updated via updateCameraPosition below
+    camera.position.set(0, 0.5, 0.9);
+    camera.lookAt(0, 0, 0);
+
+    const renderer = new WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+    renderer.setPixelRatio(window.devicePixelRatio || 1);
+    renderer.setSize(div.clientWidth || 360, div.clientHeight || 360, false);
+    renderer.setClearColor(0x000000, 0);
+    const canvas = renderer.domElement;
+    canvas.style.position = 'absolute';
+    canvas.style.inset = '0';
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    div.appendChild(canvas);
+    rendererRef.current = renderer;
+
+    return { scene, camera, renderer };
+  };
+
+  // adds ambient light and sets up OrbitControls for the scene
+  const setupLightsAndControls = (scene: Scene, camera: PerspectiveCamera, renderer: WebGLRenderer) => {
+    const light = new AmbientLight(0xffffff, 1);
+    scene.add(light);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.15;
+    controls.enableZoom = false;
+    controls.enablePan = false;
+    controlsRef.current = controls;
+  };
+
   // Escape closes the dialog
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
@@ -610,217 +769,35 @@ export default function CubeGifDialog({
     return () => window.removeEventListener('keydown', handleEscape);
   }, []);
 
-  // setup the preview Three.js scene
+  // setup the preview Three.js scene (mount once; rAF lives in its own effect below)
   useEffect(() => {
-    isMountedRef.current = true;
     let disposed = false;
 
     const setup = async () => {
       const div = previewDivRef.current;
       if (!div) return;
 
-      const fullAlg = lineEntries.map(e => e.moves.join(' ')).join(' ');
-
-      const player = new TwistyPlayer({
-        viewerLink: 'none',
-        puzzle: '3x3x3',
-        hintFacelets: 'floating',
-        experimentalInitialHintFaceletsAnimation: 'always',
-        experimentalHintFaceletsElevation: elevation,
-        backView: 'none',
-        background: 'none',
-        controlPanel: 'none',
-        experimentalSetupAlg: scramble,
-        alg: fullAlg,
-        tempoScale: 1,
-      });
-      // size the player to match the preview area so cubing's intersection observer
-      // sees it on-screen and initializes its 3D objects. we hide it after extracting the cube.
-      player.style.position = 'absolute';
-      player.style.inset = '0';
-      player.style.width = '100%';
-      player.style.height = '100%';
-      player.style.opacity = '0';
-      player.style.pointerEvents = 'none';
-      player.experimentalFaceletScale = 0.95;
-      div.appendChild(player);
-      playerElRef.current = player;
-
-      // wait for cube object
-      let cube: Object3D | null = null;
-      const start = Date.now();
-      while (!cube && Date.now() - start < 10000) {
-        try {
-          cube = (await player.experimentalCurrentThreeJSPuzzleObject()) as unknown as Object3D | null;
-        } catch {
-          // keep trying
-        }
-        if (!cube) await new Promise(r => setTimeout(r, 100));
-      }
+      const player = createAndMountPlayer(div);
+      const cube = await waitForCube(player);
       if (!cube || disposed) return;
       cubeObjectRef.current = cube;
       hintStickerMeshesRef.current = (cube as any).experimentalHintStickerMeshes || [];
 
-      // add face direction labels (U/D/R/L/F/B) to the cube
-      const loader = new TextureLoader();
-      const faceConfigs = [
-        { file: '/U.svg', position: { x: 0, y: 2, z: 0 }, rotation: { x: -Math.PI / 2, y: 0, z: 0 } },
-        { file: '/D.svg', position: { x: 0, y: -2, z: 0 }, rotation: { x: Math.PI / 2, y: 0, z: 0 } },
-        { file: '/R.svg', position: { x: 2, y: 0, z: 0 }, rotation: { x: 0, y: Math.PI / 2, z: 0 } },
-        { file: '/L.svg', position: { x: -2, y: 0, z: 0 }, rotation: { x: 0, y: -Math.PI / 2, z: 0 } },
-        { file: '/B.svg', position: { x: 0, y: 0, z: -2 }, rotation: { x: 0, y: Math.PI, z: 0 } },
-        { file: '/F.svg', position: { x: 0, y: 0, z: 2 }, rotation: { x: 0, y: 0, z: 0 } },
-      ];
-      faceConfigs.forEach(cfg => {
-        const texture = loader.load(cfg.file, () => {
-          texture.generateMipmaps = true;
-          texture.minFilter = LinearMipmapLinearFilter;
-          texture.magFilter = LinearFilter;
-          texture.anisotropy = 32;
-          const material = new MeshBasicMaterial({ map: texture, transparent: true });
-          const mesh = new Mesh(new PlaneGeometry(1.1, 1.6), material);
-          mesh.position.set(cfg.position.x, cfg.position.y, cfg.position.z);
-          mesh.rotation.set(cfg.rotation.x, cfg.rotation.y, cfg.rotation.z);
-          cube.add(mesh);
-          faceLabelMeshesRef.current.push(mesh);
-        });
-      });
+      addFaceLabels(cube);
 
       // detach the player's own canvas (we own the cube via our own scene now)
       const twistyEl = player.querySelector('canvas');
-      if (twistyEl?.parentNode) {
-        twistyEl.parentNode.removeChild(twistyEl);
-      }
+      if (twistyEl?.parentNode) twistyEl.parentNode.removeChild(twistyEl);
 
-      // set sticker colors
-      const setStickerColors = (cube: any) => {
-        const info = cube.kpuzzleFaceletInfo;
-        if (!info) return;
-        info.CENTERS[0][0].facelet.material.color.set(cubeColors.up);
-        info.CENTERS[1][0].facelet.material.color.set(cubeColors.left);
-        info.CENTERS[2][0].facelet.material.color.set(cubeColors.front);
-        info.CENTERS[3][0].facelet.material.color.set(cubeColors.right);
-        info.CENTERS[4][0].facelet.material.color.set(cubeColors.back);
-        info.CENTERS[5][0].facelet.material.color.set(cubeColors.down);
-      };
-      setStickerColors(cube);
+      initStickerColors(cube);
+      buildColorPieceNames(cube);
+      cacheOriginalFaceletColors(cube);
 
-      // derive color-based piece names by inspecting actual facelet hex colors.
-      // built after setStickerColors so center hex values reflect the user's color settings.
-      {
-        const faceletInfo = (cube as any).kpuzzleFaceletInfo;
-        if (faceletInfo) {
-          // map hex → color letter from center facelets (cubing.js order: U=W, L=O, F=G, R=R, B=B, D=Y)
-          const hexToLetter = new Map<number, string>();
-          ['W', 'O', 'G', 'R', 'B', 'Y'].forEach((letter, i) => {
-            const hex = faceletInfo.CENTERS?.[i]?.[0]?.facelet?.material?.color?.getHex?.();
-            if (hex !== undefined) hexToLetter.set(hex, letter);
-          });
-          // canonical name: W/Y (U/D-face color) first, remaining letters sorted alphabetically
-          const orbitNames: Record<string, string[]> = {};
-          for (const orbit of ['CORNERS', 'EDGES', 'CENTERS']) {
-            orbitNames[orbit] = (faceletInfo[orbit] as any[][] ?? []).map((pieceInfos: any[]) => {
-              const letters = pieceInfos.map((fi: any) => {
-                const hex = fi?.facelet?.material?.color?.getHex?.();
-                return hex !== undefined ? (hexToLetter.get(hex) ?? '?') : '?';
-              });
-              const primary = letters.find(l => l === 'W' || l === 'Y') ?? '';
-              const rest = letters.filter(l => l !== 'W' && l !== 'Y').sort();
-              return primary + rest.join('');
-            });
-          }
-          colorBasedOrbitNamesRef.current = orbitNames;
-        }
-      }
+      const { scene, camera, renderer } = createSceneCameraRenderer(cube, div);
+      setupLightsAndControls(scene, camera, renderer);
 
-      // cache original facelet colors before any masking (sticker colors are fixed per piece)
-      {
-        const faceletInfo = (cube as any).kpuzzleFaceletInfo;
-        if (faceletInfo) {
-          const colorMap = new Map<string, number>();
-          for (const orbit of ['CORNERS', 'EDGES', 'CENTERS']) {
-            (faceletInfo[orbit] as any[][] ?? []).forEach((pieceInfos: any[], pieceIdx: number) => {
-              pieceInfos.forEach((fi: any, fiIdx: number) => {
-                const hex = fi.facelet?.material?.color?.getHex?.();
-                if (hex !== undefined) colorMap.set(`${orbit}_${pieceIdx}_${fiIdx}`, hex);
-              });
-            });
-          }
-          originalFaceletColorsRef.current = colorMap;
-        }
-      }
-
-      // create scene/camera/renderer
-      const scene = new Scene();
-      scene.add(cube);
-      sceneRef.current = scene;
-
-      const aspect = (div.clientWidth || 360) / (div.clientHeight || 360);
-      const camera = new PerspectiveCamera(75, aspect, 0.1, 5);
-
-      cameraRef.current = camera;
-      // initial position; updated via updateCameraPosition below
-      camera.position.set(0, 0.5, 0.9);
-      camera.lookAt(0, 0, 0);
-
-      const renderer = new WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
-      renderer.setPixelRatio(window.devicePixelRatio || 1);
-      renderer.setSize(div.clientWidth || 360, div.clientHeight || 360, false);
-      renderer.setClearColor(0x000000, 0);
-      const canvas = renderer.domElement;
-      canvas.style.position = 'absolute';
-      canvas.style.inset = '0';
-      canvas.style.width = '100%';
-      canvas.style.height = '100%';
-      div.appendChild(canvas);
-      rendererRef.current = renderer;
-
-      const light = new AmbientLight(0xffffff, 1);
-      scene.add(light);
-
-      const controls = new OrbitControls(camera, renderer.domElement);
-      controls.enableDamping = true;
-      controls.dampingFactor = 0.15;
-      controls.enableZoom = false;
-      controls.enablePan = false;
-      controlsRef.current = controls;
-
-      // place camera based on container size, current elevation, and user zoom
       updateCameraPosition();
-
       previewStartRef.current = performance.now();
-      let lastHighlightLineIdx = -2; // -2 = uninitialised; forces first apply
-      const animate = () => {
-        if (disposed || !isMountedRef.current) return;
-        previewRafRef.current = requestAnimationFrame(animate);
-
-        if (isCapturingRef.current) return;
-
-        // loop the preview through the solve
-        const now = performance.now();
-        const tot = totalDurationRef.current;
-        const elapsedSec = ((now - previewStartRef.current) / 1000) % (tot + 0.5);
-        const tClamped = Math.min(elapsedSec, tot);
-        const cubeT = realTimeToCubeTimestamp(tClamped);
-        try {
-          // @ts-ignore - timestamp is a number-like setter
-          player.timestamp = cubeT;
-        } catch {
-          // ignore
-        }
-
-        // apply piece highlighting when the current line changes (or forced)
-        const lineIdx = realTimeToLineIndex(tClamped);
-        if (lineIdx !== lastHighlightLineIdx || forceHighlightReapplyRef.current) {
-          forceHighlightReapplyRef.current = false;
-          applyHighlightForLine(lineIdx);
-          lastHighlightLineIdx = lineIdx;
-        }
-
-        controls.update();
-        renderer.render(scene, camera);
-      };
-      animate();
       setPreviewLoaded(true);
     };
 
@@ -831,13 +808,6 @@ export default function CubeGifDialog({
 
     return () => {
       disposed = true;
-      isMountedRef.current = false;
-      if (previewRafRef.current !== null) {
-        cancelAnimationFrame(previewRafRef.current);
-        previewRafRef.current = null;
-      }
-      cleanupRef.current?.();
-      cleanupRef.current = null;
       controlsRef.current?.dispose();
       controlsRef.current = null;
       rendererRef.current?.dispose();
@@ -855,6 +825,52 @@ export default function CubeGifDialog({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // dedicated rAF loop: kicks off once the scene is ready and tears down on unmount.
+  // reads latest state via latestStateRef so it never needs to restart on state changes.
+  useEffect(() => {
+    if (!previewLoaded) return;
+    const player = playerElRef.current;
+    const scene = sceneRef.current;
+    const camera = cameraRef.current;
+    const renderer = rendererRef.current;
+    const controls = controlsRef.current;
+    if (!player || !scene || !camera || !renderer || !controls) return;
+
+    let rafId = 0;
+    let lastLineIdx = -2;
+    let lastSet: Set<string> | undefined;
+
+    const animate = () => {
+      rafId = requestAnimationFrame(animate);
+      if (isCapturingRef.current) return;
+
+      const { totalDuration: tot, lineHighlights } = latestStateRef.current;
+      const elapsedSec = ((performance.now() - previewStartRef.current) / 1000) % (tot + 0.5);
+      const tClamped = Math.min(elapsedSec, tot);
+      try {
+        // @ts-ignore - timestamp is a number-like setter
+        player.timestamp = realTimeToCubeTimestamp(tClamped);
+      } catch {
+        // ignore
+      }
+
+      // re-apply mask when the active line OR its highlight set identity changes
+      const lineIdx = realTimeToLineIndex(tClamped);
+      const currentSet = lineIdx >= 0 ? lineHighlights[lineIdx] : undefined;
+      if (lineIdx !== lastLineIdx || currentSet !== lastSet) {
+        applyHighlightForLine(lineIdx);
+        lastLineIdx = lineIdx;
+        lastSet = currentSet;
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    };
+    animate();
+
+    return () => cancelAnimationFrame(rafId);
+  }, [previewLoaded]);
 
   // update sticker colors live if the user changes them on another ao1k browser tab
   useEffect(() => {
@@ -1018,14 +1034,15 @@ export default function CubeGifDialog({
       effectiveDelay={effectiveDelays[idx] ?? 0}
       individualDelays={individualDelays}
       isCustomizing={isCustomizing}
-      lineHighlight={lineHighlights[idx] ?? EMPTY_HIGHLIGHT_SET}
+      lineHighlight={lineHighlights[idx]}
       cubeColors={cubeColors}
       icon={lineIcons[idx]}
-      onAdjustPercentage={stableAdjustPercentage}
-      onSetSplitSeconds={stableSetSplitSeconds}
+      onAdjustPercentage={adjustPercentage}
+      onSetSplitSeconds={setSplitSeconds}
       onToggleLock={toggleLock}
-      onSetLineDelay={stableSetLineDelay}
+      onSetLineDelay={setLineDelay}
       onToggleHighlightPiece={toggleLineHighlightPiece}
+      onSetLineHighlight={setLineHighlightSet}
     />
   ));
 

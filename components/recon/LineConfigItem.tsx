@@ -37,6 +37,7 @@ export interface LineConfigItemProps {
   onToggleLock: (idx: number) => void;
   onSetLineDelay: (idx: number, seconds: number) => void;
   onToggleHighlightPiece: (lineIdx: number, piece: string) => void;
+  onSetLineHighlight: (lineIdx: number, set: Set<string>) => void;
 }
 
 const LineConfigItem = memo(function LineConfigItem({
@@ -56,6 +57,7 @@ const LineConfigItem = memo(function LineConfigItem({
   onToggleLock,
   onSetLineDelay,
   onToggleHighlightPiece,
+  onSetLineHighlight,
 }: LineConfigItemProps) {
   const seconds = (pct / 100) * totalDuration;
   const movePreview = entry.moves.join(' ');
@@ -141,6 +143,7 @@ const LineConfigItem = memo(function LineConfigItem({
           <UnfoldedCube
             selected={lineHighlight}
             onToggle={piece => onToggleHighlightPiece(idx, piece)}
+            onSetSelection={set => onSetLineHighlight(idx, set)}
             cubeColors={cubeColors}
           />
         </div>

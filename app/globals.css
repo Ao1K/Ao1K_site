@@ -178,7 +178,13 @@ input[type='range']::-moz-range-track {
 
 @media (pointer: coarse) {
   .main-content {
-    overflow-x: hidden;
+    /* main is a flex item; min-width:auto would let wide content (no-wrap rows, the player)
+    push it past the viewport. min-width:0 lets it shrink to the available width — `overflow-x:
+    hidden` used to do this implicitly (scroll containers get an automatic min size of 0) but
+    also forced overflow-y to `auto`, adding a second vertical scrollbar. clip + explicit
+    min-width:0 keeps main narrow and clips horizontal overflow with overflow-y still visible. */
+    min-width: 0;
+    overflow-x: clip;
   }
 }
 

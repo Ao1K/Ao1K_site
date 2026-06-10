@@ -327,6 +327,10 @@ export function getNewSteps(previousSteps: StepInfo[] | undefined, steps: StepIn
   let carriedNameType: StepInfo['nameType'];
 
   const newSteps = steps.filter(step => {
+    if (step.type === 'solved') { // allow multiple "solved" steps to appear
+      return true;
+    }
+
     if (previousSteps.some(prev => sameStepAndColors(prev, step))) {
       if (step.name) { carriedName = step.name; carriedNameType = step.nameType; }
       return false;

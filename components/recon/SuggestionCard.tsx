@@ -5,6 +5,7 @@ interface SuggestionCardProps {
   alg: string;
   steps: string[];
   id: string;
+  placement: string;
   isFocused: boolean;
   hasEOsolved?: boolean;
   handleSuggestionRequest: () => void;
@@ -60,7 +61,7 @@ const renderMultislotIcon = (colors: string[], defaultColors: string[]): JSX.Ele
 };
 
 const renderTextIcon = (label: string): JSX.Element => (
-  <div className="border border-neutral-600 text-primary-100 p-[2px] bg-dark flex items-center align-middle justify-center text-xs font-semibold uppercase">
+  <div className="border border-neutral-600 text-primary-100 p-0.5 bg-dark flex items-center align-middle justify-center text-xs font-semibold uppercase">
     {label || '?'}
   </div>
 );
@@ -90,7 +91,7 @@ const renderStepIcon = (steps: string[], letterToColor: Record<string, string>, 
   return renderTextIcon(steps[0] || '?');
 };
 
-export const SuggestionCard = ({ alg, steps, id, isFocused, hasEOsolved, handleSuggestionRequest, handleSuggestionAccept }: SuggestionCardProps) => {
+export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolved, handleSuggestionRequest, handleSuggestionAccept }: SuggestionCardProps) => {
   const { settings } = useSyncedSettings();
   const { cubeColors } = settings;
 
@@ -114,7 +115,12 @@ export const SuggestionCard = ({ alg, steps, id, isFocused, hasEOsolved, handleS
     <div 
       className={
         `hover:bg-primary-100 hover:shadow-md
-        flex flex-row items-center gap-3 border border-neutral-300 bg-primary-200 text-dark text-md p-1`
+        flex flex-row items-center gap-3 border text-dark text-md p-1
+        ${isFocused ? 'bg-primary-100 shadow-md border-primary-100' : 'bg-primary-200 border-neutral-400'}
+        ${placement === '0'  ? 'rounded-t-sm' : ''}
+        ${placement === 'last' ? 'rounded-br-sm' : ''}
+        ${placement === 'only' ? 'rounded-t-sm rounded-br-sm' : ''}
+        `
       }
       onMouseOver={handleSuggestionRequest}
       onClick={handleSuggestionAccept}
@@ -124,7 +130,7 @@ export const SuggestionCard = ({ alg, steps, id, isFocused, hasEOsolved, handleS
       <div className="w-6 h-6"> 
         {icon}
       </div>
-      <div className="flex-grow">{alg}</div>
+      <div className="grow">{alg}</div>
     </div>
   );
 };

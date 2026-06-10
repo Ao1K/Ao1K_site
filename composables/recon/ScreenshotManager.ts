@@ -28,6 +28,7 @@ interface ScreenshotState {
   scrambleHTML: string;
   solutionHTML: string;
   solveTime: number | string;
+  solutionLabel?: string;
 }
 
 interface ScreenshotExtraData {
@@ -218,6 +219,17 @@ export interface ScreenshotContentProps {
   scale?: number;
 }
 
+export function isSolveComplete(stepInfoLines: Array<StepInfo[] | null | undefined>): boolean {
+  for (let i = stepInfoLines.length - 1; i >= 0; i--) {
+    const stepInfo = stepInfoLines[i];
+    if (stepInfo && stepInfo.length > 0) {
+      return stepInfo.some(step => step.type?.toLowerCase() === 'solved');
+    }
+  }
+
+  return false;
+}
+
 // generates JSX-compatible content for use with Next.js ImageResponse/Satori.
 // returns a tree of elements created via the passed createElement function.
 export function createPreviewContent({ data, createElement, scale = 1 }: ScreenshotContentProps): ReactNode {
@@ -260,6 +272,8 @@ export function createPreviewContent({ data, createElement, scale = 1 }: Screens
     );
   }
 
+  const isSolved = isSolveComplete(solutionLines.map((line) => (line.icon ? [line.icon] : [])));
+
   return h('div', { style: styles.wrapper },
     // Left Column: All Moves
     h('div', { style: { ...styles.allMoves, position: 'relative', overflow: 'hidden' } },
@@ -272,7 +286,7 @@ export function createPreviewContent({ data, createElement, scale = 1 }: Screens
         )
       ),
 
-      h('div', { style: styles.label }, 'Solution'),
+      h('div', { style: styles.label }, isSolved ? 'Solution' : 'Partial Solution'),
       h('div', { style: { display: 'flex', flexDirection: 'column', flex: 1, marginBottom: 8 * scale, overflow: 'hidden' } },
         h('div', { style: { display: 'flex', flexDirection: 'column', gap: 1 * scale, marginTop: 8 * scale } }, ...solutionContent)
       ),
@@ -330,6 +344,84 @@ function fixModernColors(root: HTMLElement): void {
   walk(root);
 }
 
+function stripHighlightStyling(root: HTMLElement): void {
+  root.querySelectorAll(`.${highlightClass}`).forEach((element) => {
+    const highlighted = element as HTMLElement;
+    highlighted.classList.remove(highlightClass);
+    highlighted.style.color = SCREENSHOT_STYLES.textColor;
+  });
+}
+
+function createScreenshotTextbox(
+  html: string,
+  options: { marginTop?: string; lineHeight?: string } = {}
+): HTMLDivElement {
+  const textbox = document.createElement('div');
+  textbox.innerHTML = html;
+
+  Object.assign(textbox.style, {
+    width: 'fit-content',
+    minWidth: '0',
+    minHeight: '4.7rem',
+    marginTop: options.marginTop ?? '0',
+    paddingTop: '0',
+    paddingBottom: '1rem',
+    paddingLeft: '0.5rem',
+    paddingRight: '0.5rem',
+    border: '1px solid #525252',
+    borderRadius: '0.125rem',
+    boxSizing: 'border-box',
+    lineHeight: options.lineHeight ?? '1.6',
+    height: 'auto',
+    color: SCREENSHOT_STYLES.textColor,
+    backgroundColor: SCREENSHOT_STYLES.wrapperBg,
+    textAlign: 'left',
+    whiteSpace: 'pre-wrap',
+  });
+
+  textbox.querySelectorAll('div').forEach((div: Element) => {
+    Object.assign((div as HTMLElement).style, {
+      marginTop: '0',
+      marginBottom: '0',
+      paddingTop: '0',
+    });
+  });
+
+  stripHighlightStyling(textbox);
+  return textbox;
+}
+
+function styleClonedIconStack(iconStack: HTMLElement, iconWidth: number): void {
+  iconStack.style.width = `${iconWidth}px`;
+  iconStack.style.marginTop = '-2px';
+
+  Array.from(iconStack.children).forEach((child) => {
+    const iconContainer = child as HTMLElement;
+    iconContainer.style.width = `${iconWidth}px`;
+
+    const inner = iconContainer.querySelector('.step-icon-inner') as HTMLElement | null;
+    if (inner) {
+      inner.style.width = `${iconWidth}px`;
+    }
+
+    const svg = iconContainer.querySelector('.step-icon-svg') as SVGElement | null;
+    if (svg && inner) {
+      const inlineBorderColor = (svg as unknown as HTMLElement).style.borderColor;
+      const hasEoBorder = svg.classList.contains('border-2') && inlineBorderColor;
+
+      if (hasEoBorder) {
+        inner.style.border = `2px solid ${inlineBorderColor}`;
+      } else if (svg.classList.contains('border')) {
+        inner.style.border = '1px solid #525252';
+      }
+
+      inner.style.boxSizing = 'border-box';
+      svg.style.border = 'none';
+      svg.classList.remove('border', 'border-1', 'border-2');
+    }
+  });
+}
+
 export class ScreenshotManager {
   private cache: { blob: Blob; state: ScreenshotState } | null = null;
 
@@ -371,17 +463,12 @@ export class ScreenshotManager {
   }
 
   private async generateBlob(state: ScreenshotState, extraData: ScreenshotExtraData, html2canvas: any): Promise<Blob | null> {
-    const { solveTime } = state;
+    const { scrambleHTML, solutionHTML, solveTime, solutionLabel = 'Solution' } = state;
     const { totalMoves, tpsString } = extraData;
 
     try {
-      // get original DOM elements
-      const scrambleDiv = document.getElementById('scramble');
       const richSolutionDiv = document.getElementById('rich-solution-display');
-      if (!scrambleDiv || !richSolutionDiv) {
-        console.error('Scramble or solution div not found');
-        return null;
-      }
+      const liveIconStack = richSolutionDiv?.querySelector('.icon-column-clip')?.firstElementChild?.firstElementChild as HTMLElement | null;
 
       // create wrapper with styles
       const wrapper = document.createElement('div');
@@ -398,8 +485,25 @@ export class ScreenshotManager {
         borderRadius: '0.5rem',
       });
 
-      // clone and style scramble
-      const scrambleClone = scrambleDiv.cloneNode(true) as HTMLElement;
+      const createLabel = (text: string) => {
+        const label = document.createElement('div');
+        Object.assign(label.style, {
+          color: '#ACC8D7',
+          fontSize: '1.2rem',
+          fontWeight: '600',
+          lineHeight: '1.2',
+          marginTop: '-1rem',
+          paddingBottom: '1rem',
+        });
+        label.textContent = text;
+        return label;
+      };
+
+      const scrambleLabel = createLabel('Scramble');
+      const solutionLabelElement = createLabel(solutionLabel);
+
+      const scrambleBox = createScreenshotTextbox(scrambleHTML, { marginTop: '-0.2rem' });
+      const scrambleClone = document.createElement('div');
       Object.assign(scrambleClone.style, {
         width: 'fit-content',
         maxWidth: 'none',
@@ -408,118 +512,50 @@ export class ScreenshotManager {
         marginTop: '0',
         paddingTop: '0.25rem',
       });
+      scrambleClone.appendChild(scrambleBox);
 
-      // clone and style solution
-      const solutionClone = richSolutionDiv.cloneNode(true) as HTMLElement;
+      const solutionClone = document.createElement('div');
       Object.assign(solutionClone.style, {
         width: 'fit-content',
         maxWidth: 'none',
         maxHeight: 'none',
+        display: 'flex',
+        alignItems: 'flex-start',
         overflow: 'visible',
         paddingTop: '0',
         paddingBottom: '0rem',
         marginBottom: '0rem',
       });
-      // remove highlight from solution
-      solutionClone.innerHTML = solutionClone.innerHTML.replace(
-        new RegExp(`<span class="${highlightClass}">`, 'g'),
-        '<span class="text-primary-100">'
-      );
 
       // hardcode medium icon size for the screenshot regardless of user setting
       const SCREENSHOT_ICON_WIDTH = 36;
       const SCREENSHOT_LINE_HEIGHT = 36;
 
-      // query child elements 
-      const solutionTextbox = solutionClone.querySelector('#solution') as HTMLElement | null;
-      const scrambleEditable = scrambleClone.querySelector('div[contenteditable="true"]') as HTMLElement | null;
-      const solutionEditable = solutionClone.querySelector('div[contenteditable="true"]') as HTMLElement | null;
-      const iconStack = solutionClone.querySelector('.flex.flex-col.items-center') as HTMLElement | null;
-      const iconColumnClip = solutionClone.querySelector('.icon-column-clip') as HTMLElement | null;
-
-      // force icon column to medium size and remove height constraint
-      if (iconColumnClip) {
-        iconColumnClip.style.width = `${SCREENSHOT_ICON_WIDTH}px`;
-        iconColumnClip.style.maxHeight = 'none';
-        iconColumnClip.style.overflow = 'visible';
-        // reset scroll-driven translateY on the inner scroll container (cloned from live DOM)
-        const scrollContainer = iconColumnClip.firstElementChild as HTMLElement | null;
-        if (scrollContainer) scrollContainer.style.transform = 'none';
-      }
-
-      // resize the iconStack wrapper and every individual icon container/inner div
-      if (iconStack) {
-        iconStack.style.width = `${SCREENSHOT_ICON_WIDTH}px`;
-        iconStack.style.marginTop = '-2px';
-        Array.from(iconStack.children).forEach((child) => {
-          const el = child as HTMLElement;
-          el.style.width = `${SCREENSHOT_ICON_WIDTH}px`;
-          const inner = el.querySelector('.step-icon-inner') as HTMLElement | null;
-          if (inner) inner.style.width = `${SCREENSHOT_ICON_WIDTH}px`;
-
-          // move border from SVG to its parent div to avoid html2canvas
-          // rendering the border twice (once as CSS, once baked into the SVG image).
-          // can't use getComputedStyle here because the clone isn't in the document yet,
-          // so check inline style and class names directly.
-          const svg = el.querySelector('.step-icon-svg') as SVGElement | null;
-          if (svg && inner) {
-            const inlineBorderColor = (svg as unknown as HTMLElement).style.borderColor;
-            const hasEoBorder = svg.classList.contains('border-2') && inlineBorderColor;
-            if (hasEoBorder) {
-              inner.style.border = `2px solid ${inlineBorderColor}`;
-            } else if (svg.classList.contains('border')) {
-              inner.style.border = '1px solid #525252';
-            }
-            inner.style.boxSizing = 'border-box';
-            svg.style.border = 'none';
-            svg.classList.remove('border', 'border-1', 'border-2');
-          }
-        });
-      }
-
-      // style solution textbox — remove max-height/overflow constraints from original DOM
-      // force marginLeft to match hardcoded icon width
-      if (solutionTextbox) {
-        Object.assign(solutionTextbox.style, {
-          width: 'fit-content',
-          minWidth: '0',
-          maxHeight: 'none',
-          overflow: 'visible',
-          height: 'auto',
-          marginLeft: `${SCREENSHOT_ICON_WIDTH}px`,
-        });
-      }
-
-      // style both contenteditable divs
-      [scrambleEditable, solutionEditable].filter(Boolean).forEach((editableDiv) => {
-        Object.assign(editableDiv!.style, {
-          paddingTop: '0',
-          paddingBottom: '1rem',
-          paddingLeft: '0.5rem',
-          paddingRight: '0.5rem',
-          marginTop: '-0.2rem',
-          border: '1px solid #525252',
-          borderRadius: '0.125rem',
-          boxSizing: 'border-box',
-          lineHeight: '1.6',
-          minHeight: '0',
-          height: 'auto',
-        });
-
-        // style child divs within contenteditable
-        editableDiv!.querySelectorAll('div').forEach((div: HTMLElement) => {
-          Object.assign(div.style, {
-            marginTop: '0',
-            marginBottom: '0',
-            paddingTop: '0',
-          });
-        });
+      const solutionEditable = createScreenshotTextbox(solutionHTML, {
+        lineHeight: `${SCREENSHOT_LINE_HEIGHT}px`,
       });
 
-      // override solution line height to match hardcoded icon size
-      if (solutionEditable) {
-        solutionEditable.style.lineHeight = `${SCREENSHOT_LINE_HEIGHT}px`;
+      const iconColumn = document.createElement('div');
+      Object.assign(iconColumn.style, {
+        width: `${SCREENSHOT_ICON_WIDTH}px`,
+        flexShrink: '0',
+        overflow: 'visible',
+      });
+
+      const iconStack = liveIconStack?.cloneNode(true) as HTMLElement | null;
+      const hasRenderedIcons = !!iconStack?.querySelector('.step-icon-svg');
+
+      if (iconStack && hasRenderedIcons) {
+        styleClonedIconStack(iconStack, SCREENSHOT_ICON_WIDTH);
+        iconColumn.appendChild(iconStack);
+      } else {
+        iconColumn.style.width = '0';
       }
+
+      if (hasRenderedIcons) {
+        solutionClone.appendChild(iconColumn);
+      }
+      solutionClone.appendChild(solutionEditable);
 
       // create info div with stats and watermark
       const infoDiv = document.createElement('div');
@@ -546,23 +582,23 @@ export class ScreenshotManager {
       infoDiv.appendChild(watermarkSpan);
 
       // append all elements and add to body
+      wrapper.appendChild(scrambleLabel);
       wrapper.appendChild(scrambleClone);
+      wrapper.appendChild(solutionLabelElement);
       wrapper.appendChild(solutionClone);
       wrapper.appendChild(infoDiv);
       document.body.appendChild(wrapper);
 
       // calculate and apply unified width
-      // solutionTextbox has a marginLeft equal to the icon column width; subtract it so the
-      // text area doesn't overflow solutionClone to the right
-      const iconColumnWidth = solutionTextbox ? solutionTextbox.offsetLeft : 0;
+      const iconColumnWidth = hasRenderedIcons ? iconColumn.offsetWidth : 0;
       const minWidth = Math.max(300, Math.min(scrambleClone.offsetWidth, solutionClone.offsetWidth) + 5);
 
+      scrambleLabel.style.width = `${minWidth}px`;
       scrambleClone.style.width = `${minWidth}px`;
+      solutionLabelElement.style.width = `${minWidth}px`;
       solutionClone.style.width = `${minWidth}px`;
       infoDiv.style.width = `${minWidth}px`;
-      if (solutionTextbox) {
-        solutionTextbox.style.width = `${minWidth - iconColumnWidth}px`;
-      }
+      solutionEditable.style.width = `${minWidth - iconColumnWidth}px`;
 
       // build and set stats text
       const statsText = [
@@ -573,7 +609,7 @@ export class ScreenshotManager {
       statsSpan.textContent = statsText;
 
       // sync icon heights with text line heights after reflow
-      if (solutionEditable && iconStack) {
+      if (solutionEditable && iconStack && hasRenderedIcons) {
         const textLineDivs = solutionEditable.querySelectorAll(':scope > div');
         const iconContainers = iconStack.children;
 

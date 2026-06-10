@@ -31,14 +31,16 @@ import InfoPanel from '../../components/recon/InfoPanel';
 import IconStack, { computeLineIconData } from './IconStack';
 import SplitsStack, { SPLITS_WIDTH, splitsToURLParam } from './SplitsStack';
 import { ICON_SIZE_CONFIG, useCubeColors, useShowSplits } from '../../composables/useSettings';
-import { SimpleCube } from '../../composables/recon/SimpleCube';
+import { SimpleCube, type CubeState } from '../../composables/recon/SimpleCube';
 import { SimpleCubeInterpreter } from '../../composables/recon/SimpleCubeInterpreter';
 import type { StepInfo, Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
 import { getNewSteps } from '../../composables/recon/getLineStepInfo';
-import { ScreenshotManager } from '../../composables/recon/ScreenshotManager';
+import { ScreenshotManager, isSolveComplete } from '../../composables/recon/ScreenshotManager';
 import type { TwistyPlayerImperativeRef } from '../../components/recon/TwistyPlayer';
 
 // utility imports
+// import HtmlSceneDialog from "../../components/recon/HtmlSceneDialog";
+// import HtmlImageDialog from "../../components/recon/HtmlImageDialog";
 // import { AlgCompiler } from '../../utils/AlgCompiler';
 // import ManualAlgVerifier from './ManualAlgVerifier';
 // import LLpatternBuilder from '../../utils/LLpatternBuilder';
@@ -97,14 +99,21 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   const [scrambleHTML, setScrambleHTML] = useState<string>('');
   const [solutionHTML, setSolutionHTML] = useState<string>('');
   const [isGifDialogOpen, setIsGifDialogOpen] = useState<boolean>(false);
+  const [isHtmlSceneDialogOpen, setIsHtmlSceneDialogOpen] = useState<boolean>(false);
+  const [htmlImageData, setHtmlImageData] = useState<{ cubeState: CubeState; setupMovesForFilename: string } | null>(null);
 
   const [playerParams, setPlayerParams] = useState<PlayerParams>({ animationTimes: [], solution: '', scramble: '' });
   const suggestionsRef = useRef<Suggestion[]>([]);
+  // the line index the current suggestions were generated for. suggestions are computed only
+  // for an empty line's position, so they're only valid while the caret stays on that line.
+  // returning to a different line (e.g. via backspace) must not reuse them.
+  const suggestionLineIndexRef = useRef<number | null>(null);
 
   // TODO: check if these are needed any more
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const updateSuggestions = useCallback((next: Suggestion[]) => {
+  const updateSuggestions = useCallback((next: Suggestion[], lineIndex: number | null) => {
     suggestionsRef.current = next;
+    suggestionLineIndexRef.current = lineIndex;
     setSuggestions(next);
   }, []);
 
@@ -168,14 +177,8 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     && allRequiredSplitsFilled
     && Math.abs(splitsSum - solveTime) > 0.1;
 
-  const lastContentfulLineStep = (() => {
-    for (let i = lineSteps.length - 1; i >= 0; i--) {
-      if (lineSteps[i].stepInfo.length > 0) {
-        return lineSteps[i];
-      }
-    }
-  })();
-  const isSolveComplete = lastContentfulLineStep?.stepInfo.some(step => step.type?.toLowerCase() === 'solved');
+  const isCompletedSolve = isSolveComplete(lineSteps.map((line) => line.stepInfo));
+  const solutionSectionLabel = isCompletedSolve ? 'Solution' : 'Partial Solution';
 
   const moveHistory = useRef<MoveHistory>({ history: [['', '']], index: 0, MAX_HISTORY: MAX_EDITOR_HISTORY, status: 'loading' });
 
@@ -677,7 +680,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   };
 
   const handleEmptyLineSuggestions = (solutionMoves: string[][], trueLineIndex: number) => {
-    if (!solutionMethodsRef.current || !cubeInterpreter.current) {
+    if (!cubeInterpreter.current) {
       return;
     }
     const lastMoveIndex = findLastMoveInLine(solutionMoves, trueLineIndex);
@@ -701,16 +704,15 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       newSuggestions.some((newSug, index) => newSug.alg !== (prevSuggestions[index]?.alg ?? ''));
 
     suggestionsRef.current = newSuggestions;
+    // even when the suggestion content is unchanged, the line they apply to may differ,
+    // so always retag before deciding whether a re-render is needed.
+    suggestionLineIndexRef.current = trueLineIndex;
 
     if (!isSuggestionChange) {
       return;
     }
 
-    if (newSuggestions.length > 0) {
-      solutionMethodsRef.current?.showSuggestion(newSuggestions[0].alg);
-    }
-
-    updateSuggestions(newSuggestions);
+    updateSuggestions(newSuggestions, trueLineIndex);
 
   };
 
@@ -969,6 +971,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     setSplits([]);
     setCommittedSplits([]);
     setLineSteps([]);
+    updateSuggestions([], null);
 
     // don't clear moveHistory
 
@@ -1017,7 +1020,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       };
     }
 
-    if (!isSolveComplete) {
+    if (!isCompletedSolve) {
       return {
         message: 'Copied, Solve Incomplete',
         messageType: 'warn'
@@ -1052,7 +1055,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
 
     title ? printout += `${title}\n\n` : '';
     scramble ? printout += `${scramble}\n\n` : '';
-    solution ? printout += `Solution:\n${solution}\n\n` : '';
+    solution ? printout += `${solutionSectionLabel}:\n${solution}\n\n` : '';
 
     time ? printout += `${time} sec` : '';
     time && stm ? printout += `, ` : ' ';
@@ -1073,7 +1076,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
 
     const tpsString = (tpsRef.current && tpsRef.current.innerHTML !== '(-- tps)') ? tpsRef.current.innerHTML : '';
     const blob = await screenshotManagerRef.current.getBlob(
-      { scrambleHTML, solutionHTML, solveTime },
+      { scrambleHTML, solutionHTML, solveTime, solutionLabel: solutionSectionLabel },
       { totalMoves, tpsString }
     );
 
@@ -1183,13 +1186,10 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     storeLastSelection();
 
     if (lastSelection === 'solution' && oldSelectionRef.current.textbox !== 'solution') {
-      const isCubeSolved = lineStepsRef.current.some(stepEntry =>
-        stepEntry.stepInfo.some(step => step.type?.toLowerCase() === 'solved')
-      );
-      if (isCubeSolved) {
+      if (isCompletedSolve) {
         const tpsString = (tpsRef.current && tpsRef.current.innerHTML !== '(-- tps)') ? tpsRef.current.innerHTML : '';
         void screenshotManagerRef.current?.getBlob(
-          { scrambleHTML, solutionHTML, solveTime },
+          { scrambleHTML, solutionHTML, solveTime, solutionLabel: solutionSectionLabel },
           { totalMoves, tpsString }
         );
       }
@@ -1430,7 +1430,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       screenshotManagerRef.current = new ScreenshotManager();
     }
     void screenshotManagerRef.current.getBlob(
-      { scrambleHTML: '', solutionHTML: '', solveTime: '' },
+      { scrambleHTML: '', solutionHTML: '', solveTime: '', solutionLabel: 'Solution' },
       { totalMoves: 0, tpsString: '' }
     );
   };
@@ -1530,7 +1530,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   const toolbarButtons = ctrlKey === '⌘' ? macToolbarButtons : windowsToolbarButtons;
 
   return (
-    <main id="main_page" className="relative flex flex-col bg-primary-900 mt-10">
+    <main id="main_page" className="relative flex flex-col bg-primary-900 mt-10 overflow-visible">
 
       {/* For aligning the skeleton perfectly */}
       {/* <div className="absolute inset-0 z-50 pointer-events-none opacity-50 [&>main]:mt-0">
@@ -1548,6 +1548,48 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
 
       {/* utility for building case patterns */}
       {/* <LLpatternBuilder /> */}
+
+      {/* utility for HTML video of solve */}
+      {/* <button className="w-40 h-10 flex items-center justify-center z-50 bg-neutral-700 text-primary-100 px-3 py-1 text-sm rounded" onClick={() => setIsHtmlSceneDialogOpen(true)}>Create HTML Video</button>
+      {isHtmlSceneDialogOpen ? (
+        <HtmlSceneDialog
+          onClose={() => setIsHtmlSceneDialogOpen(false)}
+          scramble={allMovesRef.current[0].flat().join(' ')}
+          solutionLines={allMovesRef.current[1].map((moves, i) => ({
+            moves,
+            isWhitespace: !!isWhitespaceLine[i],
+          }))}
+          lineIconData={lineIconData}
+          splits={splits}
+          committedSplits={committedSplits}
+          onSplitsChange={setSplits}
+          onSplitsCommit={handleSplitsCommit}
+        />
+      ) : null} */}
+
+      {/* utility for static HTML image of the cube */}
+      {/* <button
+        className="w-40 h-10 flex items-center justify-center z-50 bg-neutral-700 text-primary-100 px-3 py-1 text-sm rounded"
+        onClick={() => {
+          const [, lineIdx, moveIdx] = moveLocation.current;
+          const scrambleMoves = allMovesRef.current[0].flat();
+          const solutionMovesUpToPoint = allMovesRef.current[1].flatMap((line, i) => {
+            if (i < lineIdx) return line;
+            if (i === lineIdx) return line.slice(0, moveIdx);
+            return [];
+          });
+          const setupMoves = [...scrambleMoves, ...solutionMovesUpToPoint];
+          const cubeState = new SimpleCube().getCubeState(setupMoves);
+          setHtmlImageData({ cubeState, setupMovesForFilename: setupMoves.join(' ') });
+        }}
+      >Create HTML Image</button>
+      {htmlImageData ? (
+        <HtmlImageDialog
+          onClose={() => setHtmlImageData(null)}
+          cubeState={htmlImageData.cubeState}
+          setupMovesForFilename={htmlImageData.setupMovesForFilename}
+        />
+      ) : null} */}
 
       <InfoPanel initiallyDismissed={infoPanelSlot == null}>{infoPanelSlot}</InfoPanel>
       {isGifDialogOpen ? (
@@ -1576,12 +1618,12 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
             alert={topButtonAlert} 
             setAlert={setTopButtonAlert} 
             alertAlign='center' />
-          <CopySolveDropdown 
-            onCopyText={handleCopySolve} 
-            onScreenshot={handleScreenshot} 
-            onOpenGif={() => setIsGifDialogOpen(true)} 
-            alert={topButtonAlert} 
-            setAlert={setTopButtonAlert} 
+          <CopySolveDropdown
+            onCopyText={handleCopySolve}
+            onScreenshot={handleScreenshot}
+            onOpenGif={() => setIsGifDialogOpen(true)}
+            alert={topButtonAlert}
+            setAlert={setTopButtonAlert}
           />
           <TopButton id="share" 
             innerText="Share" 
@@ -1676,6 +1718,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
                 transition: 'margin-left 200ms linear, margin-right 200ms linear',
               }}
               onScroll={(e) => {
+                e.currentTarget.parentElement?.style.setProperty('--solution-scroll-top', `${e.currentTarget.scrollTop}px`);
                 if (iconScrollRef.current) {
                   iconScrollRef.current.style.transform = `translateY(-${e.currentTarget.scrollTop}px)`;
                 }
@@ -1694,6 +1737,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
                 html={solutionHTML}
                 setHTML={memoizedSetSolutionHTML}
                 suggestionsRef={suggestionsRef}
+                suggestionLineIndexRef={suggestionLineIndexRef}
                 lineHeight={solutionLineHeight}
               />
             </div>

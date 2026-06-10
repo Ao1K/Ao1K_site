@@ -1,4 +1,4 @@
-import React, { useState, useImperativeHandle, forwardRef, useEffect } from 'react';
+import React, { useState, useImperativeHandle, useEffect, type Ref } from 'react';
 import ContextMenu from './ContextMenu';
 
 // Handle interface for imperative context menu control
@@ -12,11 +12,11 @@ interface ContextMenuImperativeProps {
   onToggleControls: () => void;
   showControls: boolean;
   containerRef?: React.RefObject<HTMLDivElement | null>;
+  ref?: Ref<ContextMenuHandle>;
 }
 
 // Imperative wrapper around ContextMenu to avoid re-rendering parent
-const ContextMenuImperative = forwardRef<ContextMenuHandle, ContextMenuImperativeProps>(
-  ({ onToggleControls, showControls, containerRef }, ref) => {
+const ContextMenuImperative = ({ onToggleControls, showControls, containerRef, ref }: ContextMenuImperativeProps) => {
     const [isVisible, setIsVisible] = useState(false);
     const [position, setPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
@@ -94,8 +94,7 @@ const ContextMenuImperative = forwardRef<ContextMenuHandle, ContextMenuImperativ
         onClose={handleClose}
       />
     );
-  }
-);
+};
 
 export default ContextMenuImperative;
 ContextMenuImperative.displayName = 'ContextMenuImperative';
