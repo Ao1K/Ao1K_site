@@ -17,7 +17,7 @@ export default function Header() {
       <nav className="w-full flex sm:justify-center relative justify-start">
        <div className="hidden sm:flex sm:flex-row items-center space-x-10">
           {/* <HeaderNavLink href="/" title="Practice" icon={<TimerIcon />} /> */}
-          <HeaderNavLink href="/learn" title="Learn" icon={<GlassesIcon />} version={versionList['learn']}/>
+          {/* <HeaderNavLink href="/learn" title="Learn" icon={<GlassesIcon />} version={versionList['learn']}/> */}
           <HeaderNavLink href="/recon/" title="Reconstruct" icon={<WriteIcon />} version={versionList['recon']}/>
           <HeaderNavLink href="/changeblog/" title="Changeblog" icon={<BulletListIcon />} version={versionList['changeblog']} />
         </div>

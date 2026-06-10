@@ -43,6 +43,7 @@ interface PlayerProps {
     stepRight: string;
     fullRight: string;
   };
+  ref?: React.Ref<TwistyPlayerImperativeRef>;
 }
 
 // Default cube colors - kept for backwards compatibility with imports
@@ -135,14 +136,15 @@ const getDisplayedSolutionAlg = (solution: string, animationTimes: number[]) => 
   return splitAlgMoves(solution).slice(0, appliedMoveCount).join(' ');
 };
 
-const Player = React.memo(React.forwardRef<TwistyPlayerImperativeRef, PlayerProps>(({
+const Player = React.memo(({
   scrambleRequest,
   solutionRequest,
   speed,
   animationTimesRequest,
   handleControllerRequest,
   controllerButtonsStatus,
-}: PlayerProps, ref) => {
+  ref,
+}: PlayerProps) => {
   const { settings } = useSyncedSettings();
   const cubeColors = settings.cubeColors;
   const [showControls] = useShowControls();
@@ -1227,6 +1229,6 @@ const Player = React.memo(React.forwardRef<TwistyPlayerImperativeRef, PlayerProp
       ) : null}
     </>
   );
-}));
+});
 Player.displayName = 'Player';
 export default Player;

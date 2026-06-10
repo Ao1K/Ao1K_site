@@ -24,10 +24,3 @@ ZBLL algs
 Lefty algs
 
 Think about function of solve review carefully. Form will follow.
-
-Fix movestexteditor and suggestions:
-If line wraps, suggestions get put too high
-Ghost text treated as actual text
-Escape doesn't always work
-Selection border around suggestions gets hidden by items below items
-Correct line should be selected for suggestion to be at-all visible

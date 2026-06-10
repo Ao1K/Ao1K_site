@@ -1,9 +1,6 @@
 'use client';
 
-import React, { useImperativeHandle, useEffect, Suspense, memo } from 'react';
-import { useRef } from 'react';
-import { createPortal } from 'react-dom';
-import { useSearchParams } from 'next/navigation';
+import React, { useImperativeHandle, useEffect, useLayoutEffect, memo, useEffectEvent, useRef } from 'react';
 import sanitizeHtml from 'sanitize-html';
 
 import parseTextInput from "../../composables/recon/validateTextInput";
@@ -15,88 +12,25 @@ import updateURL from '../../composables/recon/updateURL';
 import { customDecodeURL } from '../../composables/recon/urlEncoding';
 
 import type { Token } from "../../composables/recon/validationToMoves";
-import { SuggestionBox } from './SuggestionBox';
 import type { Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
 import { colorDict, highlightClass, editorAliases } from '../../utils/sharedConstants';
+import {
+  SuggestionManager,
+  type SuggestionManagerHandle,
+  type SuggestionFilterClasses,
+} from './SuggestionManager';
 
 interface HTMLUpdateItem {
   html?: string;
-  change: 'modified' | 'none' | 'suggestion';
+  change: 'modified' | 'none';
 }
+
+// the ghost anchor is measured from the freshly painted text, so it must run before paint to
+// stay in lockstep with the recalculated suggestion text. fall back to useEffect on the server.
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 const supportsHardwareKeyboard =
   typeof window !== 'undefined' && !window.matchMedia('(pointer: coarse)').matches;
-
-const EditorLoader = ({
-  editorRef: contentEditableRef,
-  handleInput,
-  name,
-  autofocus,
-  initialContent
-}: {
-  editorRef: React.RefObject<any>,
-  handleInput: (shouldUpdateURL: boolean) => void,
-  name: string,
-  autofocus: boolean,
-  initialContent?: string
-}) => {
-  // useSearchParams is a hook. Storing searchParams here prevents it from being called again and causing reloads.
-  const searchParams = useSearchParams();
-
-  const handleStartupProcess = () => {
-    const aliases = editorAliases[name] ?? [];
-    const editorText = searchParams.get(name)
-      ?? aliases.reduce<string | null>((found, alias) => found ?? searchParams.get(alias), null);
-    const otherID = name === 'scramble' ? 'solution' : 'scramble';
-    const otherEditorText = searchParams.get(otherID);
-
-    if (editorText) {
-      let decodedText: string;
-      try {
-        decodedText = decodeURIComponent(customDecodeURL(editorText));
-      } catch {
-        decodedText = customDecodeURL(editorText);
-      }
-      const lines = decodedText.replace(/\n+/g, '\n').split('\n');
-      const formattedHTML = lines.map(line => `<div>${line}<br></div>`).join('');
-      contentEditableRef.current.innerHTML = formattedHTML;
-
-    } else if (initialContent && !otherEditorText) {
-      // if initial content (such as scramble of day) gets passed in,
-      // pass it in as pre-formatted html
-      contentEditableRef.current.innerHTML = initialContent; 
-    }
-
-    // Run for syntax highlighting, but skip URL update since we just loaded from URL
-    handleInput(false);
-
-
-    if (autofocus && editorText && !otherEditorText) { // TODO: `&& !otherURLtext` isn't desired, but an unknown bug causes animation desync otherwise.
-      // adds caretNode span, which then is processed by onInputChange
-      const selection = window.getSelection();
-      const range = document.createRange();
-      const caretNode = document.createElement('span');
-      caretNode.id = 'caretNode';
-      range.selectNodeContents(contentEditableRef.current);
-      range.collapse(false);
-      range.insertNode(caretNode);
-      selection?.removeAllRanges();
-      selection?.addRange(range);
-    } else if (autofocus) {
-      // select the other textbox
-      const parentOtherElement = document.getElementById(otherID);
-      const otherTextbox = parentOtherElement?.querySelector<HTMLDivElement>('div[contenteditable="true"]');
-      otherTextbox?.focus();
-    }
-
-  };
-
-  useEffect(() => {
-    handleStartupProcess();
-  }, []);
-
-  return null;
-}
 
 interface EditorProps {
   name: string;
@@ -108,6 +42,7 @@ interface EditorProps {
   setHTML: (html: string) => void;
   ref?: React.Ref<ImperativeRef>;
   suggestionsRef?: React.MutableRefObject<Suggestion[] | undefined>;
+  suggestionLineIndexRef?: React.MutableRefObject<number | null>;
   initialContent?: string;
   lineHeight?: number;
 }
@@ -119,8 +54,6 @@ export interface ImperativeRef {
   highlightMove: (moveIndex: number, lineIndex: number) => void;
   removeHighlight: () => void;
   getElement: () => HTMLDivElement | null;
-  showSuggestion: (alg: string) => void;
-  dismissSuggestion: () => void;
   flushURLUpdate: () => void;
 }
 
@@ -134,18 +67,18 @@ function MovesTextEditor({
   setHTML,
   ref,
   suggestionsRef,
+  suggestionLineIndexRef,
   initialContent,
   lineHeight,
 }: EditorProps) {
 
   const suggestions = suggestionsRef?.current;
+  const suggestionLineIndex = suggestionLineIndexRef?.current ?? null;
   const contentEditableRef = useRef<HTMLDivElement>(null);
   const moveOffsetRef = useRef<number>(0); // number of moves before and at the caret. 0 is at the start of the line before any moves.
   const lineOffsetRef = useRef<number>(0);
   const textboxMovesRef = useRef<string[][]>([['']]); // inner array for line of moves, outer array for all lines in textbox 
-  const selectedSuggestionRef = useRef<{ lineIndex: number, full: string; remaining: string } | null>(null);
-  const suggestionStateRef = useRef<'showing' | 'dismissed' | 'accepted'>('showing');
-  const suggestionSignatureRef = useRef<string>(''); // for knowing when to show new suggestions, should previous suggestions be dismissed
+  const suggestionManagerRef = useRef<SuggestionManagerHandle | null>(null);
   const restoreFrameRef = useRef<number | null>(null);
 
   const updateURLTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -154,6 +87,8 @@ function MovesTextEditor({
   const oldLineMoveCounts = useRef<number[]>([0]);
 
   const idIndex = name === 'scramble' ? 0 : 1;
+  const fallbackEditorTopInset = 9;
+  const fallbackLineHeight = lineHeight || 28;
 
   const sanitizeConf = {
     allowedTags: ["b", "i", "br", "div"],
@@ -212,39 +147,44 @@ function MovesTextEditor({
     return lines;
   }
 
+  const getCurrentLineHeights = (element: HTMLDivElement) => {
+    const lineDivs = Array.from(element.children).filter(
+      (child): child is HTMLDivElement => child instanceof HTMLDivElement,
+    );
+
+    return lineDivs.map((div) => div.getBoundingClientRect().height);
+  };
+
+  const getMeasuredSuggestionTopOffset = () => {
+    const element = contentEditableRef.current;
+    if (!element) {
+      return fallbackEditorTopInset + fallbackLineHeight * (lineOffsetRef.current + 1) + 5;
+    }
+
+    const styles = window.getComputedStyle(element);
+    const editorTopInset = Number.parseFloat(styles.paddingTop) + Number.parseFloat(styles.borderTopWidth);
+    const lineHeights = getCurrentLineHeights(element);
+
+    let totalHeight = 0;
+    for (let index = 0; index < lineOffsetRef.current; index++) {
+      totalHeight += lineHeights[index] ?? fallbackLineHeight;
+    }
+
+    return editorTopInset + totalHeight + fallbackLineHeight;
+  };
+
   const findHTMLchanges = (oldHTML: string[], newHTML: string[]): HTMLUpdateItem[] => {
     const htmlUpdateMatrix: HTMLUpdateItem[] = [];
-    const suggestionClass = colorDict['suggestion'];
 
     newHTML.forEach((line, index) => {
       const oldLine = oldHTML[index];
 
-      // Check if line contains suggestions and is active line
-      if (line.includes(`class="${suggestionClass}"`) && selectedSuggestionRef.current?.lineIndex === index) {
-        htmlUpdateMatrix.push({
-          html: line,
-          change: 'suggestion'
-        });
-
-      // if not an active line
-      } else if (line.includes(`class="${suggestionClass}"`) && selectedSuggestionRef.current?.lineIndex !== index) {
-        suggestionStateRef.current = 'dismissed';
-        htmlUpdateMatrix.push({
-          html: line
-            .replace(/<img[^>]*>/g, '')
-            .replace(new RegExp(`<span class="${suggestionClass}">.*<\\/span>`, 'g'),
-              (match) => match.includes('id="caretNode"') ? '<span id="caretNode"></span>' : ''
-            ),
-          change: 'modified'
-        });
-
       // adds changed lines or lines that are not painted
-      } else if (line !== oldLine || !line.includes('span')) { 
+      if (line !== oldLine || !line.includes('span')) {
         htmlUpdateMatrix.push({
           html: line,
           change: 'modified'
         });
-
       } else {
         htmlUpdateMatrix.push({
           change: 'none'
@@ -431,51 +371,6 @@ function MovesTextEditor({
     return newHTMLline;
   };
 
-  const handleLineSuggestion = (updateItem: HTMLUpdateItem, index: number, lineMoveCounts: number[]): string => {
-
-    if (selectedSuggestionRef.current === null) {
-      selectedSuggestionRef.current = { lineIndex: -1, full: '', remaining: '' };
-    }
-
-    const line = updateItem.html || '';
-    const text = line.replace(/<[^>]+>/g, '');
-
-    // try to remove duplicate text in suggestion and manual entry
-    let acceptedSuggestion = '';
-    let remainingSuggestion = '';
-
-    const textNotSuggestion = text.replace(selectedSuggestionRef.current.remaining, '');
-
-    let isSuggestionMatch = !!selectedSuggestionRef.current.full; // if no suggestion, no match possible
-    (isSuggestionMatch && textNotSuggestion.split('').forEach((char, index) => {
-      if (!selectedSuggestionRef.current || selectedSuggestionRef.current.full[index] !== char) {
-        isSuggestionMatch = false;
-        return;
-      }
-    }));
-    if (isSuggestionMatch) {
-      acceptedSuggestion = textNotSuggestion;
-      remainingSuggestion = selectedSuggestionRef.current.full.replace(acceptedSuggestion, '');
-    }
-
-    // get html without suggestion or image
-    const htmlWithoutSuggestion = line.replace(selectedSuggestionRef.current.remaining, '').replace(/<img[^>]*>/g, '');
-    const validatedHTML = handleLineModified({ html: htmlWithoutSuggestion, change: 'modified' }, index, lineMoveCounts);
-    const suggestionClass = colorDict['suggestion'];
-    const tabImageHTML = supportsHardwareKeyboard
-      ? `<img src="/tab.svg" alt="Press Tab" style="display: inline; pointer-events-none; width: 51px; height: 20px; margin-left: 8px; margin-bottom: 4px; vertical-align: middle;" />`
-      : '';
-
-    const suggestionHTML = remainingSuggestion ? `<span class="${suggestionClass}">${remainingSuggestion}</span>${tabImageHTML}` : '';
-    const combinedHTML = validatedHTML.replace(/<br><\/div>$/, `${suggestionHTML}<br></div>`);
-    selectedSuggestionRef.current = {
-      lineIndex: index,
-      full: selectedSuggestionRef.current.full,
-      remaining: remainingSuggestion
-    };
-    return combinedHTML;
-  };
-
   const handleHTMLlines = (htmlUpdateMatrix: HTMLUpdateItem[], lineMoveCounts: number[]): [string[], number[]] => {
 
     if (textboxMovesRef.current.length > htmlUpdateMatrix.length) {
@@ -496,8 +391,6 @@ function MovesTextEditor({
       switch (updateItem.change) {
         case 'modified':
           return handleLineModified(updateItem, i, lineMoveCounts);
-        case 'suggestion':
-          return handleLineSuggestion(updateItem, i, lineMoveCounts);
         case 'none':
         default:
           return oldHTMLlinesRef.current[i];
@@ -746,7 +639,7 @@ function MovesTextEditor({
     // moveCount is stored for the purposes of undo/redo. 
     // MoveHistory updated.
     // 5. Refs updated.
-    // 6. Contenteditable div's and move history buttons' state updated.
+    // 6. State update queued.
     // 7. Cube visualization state passed to page through trackMoves().
 
     // 1
@@ -771,13 +664,8 @@ function MovesTextEditor({
     // 5
     oldHTMLlinesRef.current = htmlLines;
     oldLineMoveCounts.current = lineMoveCounts;
-    // suggestionStateRef.current = 
-    //   // if there's any change after accept, show suggestions again.
-    //   suggestionStateRef.current === 'accepted' ? 'showing' : suggestionStateRef.current;
-    suggestionStateRef.current = 'showing';
 
     // 6
-    updateHistoryBtns();
     setHTML(newHTMLlines);
 
     // 7
@@ -973,45 +861,10 @@ function MovesTextEditor({
       return;
     }
 
-    const suggestionClass = colorDict['suggestion'];
-
-    // TODO: try just cloning the node and removing suggestions from that
-    const removeSuggestions = (element: HTMLElement) => {
-      const removedNodes: Array<{ parent: Node; node: Node; nextSibling: Node | null }> = [];
-      const suggestionSpans = element.querySelectorAll(`span.${suggestionClass}`);
-      suggestionSpans.forEach((span) => {
-        const parent = span.parentNode;
-        if (parent) {
-          removedNodes.push({ parent, node: span, nextSibling: span.nextSibling });
-          parent.removeChild(span);
-        }
-      });
-
-      const tabImages = element.querySelectorAll('img[src="/tab.svg"]');
-      tabImages.forEach((img) => {
-        const parent = img.parentNode;
-        if (parent) {
-          removedNodes.push({ parent, node: img, nextSibling: img.nextSibling });
-          parent.removeChild(img);
-        }
-      });
-      return removedNodes;
-    };
-
-    // Temporarily remove inline suggestion UI, capture text (with newlines), restore nodes.
-    const removedNodes = removeSuggestions(root);
     // innerText produces double newlines because each <div>...<br></div> line
     // contributes both a <br> newline and a block-boundary newline.
     // Normalize to single newlines.
     const text = (root.innerText || '').replace(/\n\n/g, '\n');
-
-    removedNodes.reverse().forEach(({ parent, node, nextSibling }) => {
-      if (nextSibling && nextSibling.parentNode === parent) {
-        parent.insertBefore(node, nextSibling);
-      } else {
-        parent.appendChild(node);
-      }
-    });
 
     updateURL(name, text);
   };
@@ -1114,15 +967,79 @@ function MovesTextEditor({
     trackMoves(idIndex, lineOffsetRef.current, moveOffsetRef.current, textboxMovesRef.current);
   };
 
+  const lastTextNodeIn = (node: Node): Text | null => {
+    let last: Text | null = null;
+    const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+    while (walker.nextNode()) {
+      last = walker.currentNode as Text;
+    }
+    return last;
+  };
+
+  /**
+   * Positions the ghost preview at the end of the active line's typed text, relative to the
+   * suggestion overlay. The ghost continues the whole line, so it anchors to the end of the
+   * text rather than the live caret — moving the caret back into the line (arrow keys) must
+   * not drag the ghost left with it. Vertical scroll is normalized out (the overlay re-applies
+   * it via --solution-scroll-top). A collapsed Range at the end of the last text node gives the
+   * x just past the final character; the last painted span's right edge is the fallback.
+   */
+  const measureCaretRect = () => {
+    const editor = contentEditableRef.current;
+    const scroller = editor?.closest('#solution') as HTMLElement | null;
+    const overlay = scroller?.parentElement ?? null;
+    if (!editor || !overlay) return;
+
+    const lineDivs = Array.from(editor.children).filter(
+      (child): child is HTMLDivElement => child instanceof HTMLDivElement,
+    );
+    const lineDiv = lineDivs[lineOffsetRef.current] ?? lineDivs[lineDivs.length - 1];
+    if (!lineDiv) return;
+
+    let rect: DOMRect | null = null;
+
+    const lastText = lastTextNodeIn(lineDiv);
+    if (lastText && (lastText.textContent?.length ?? 0) > 0) {
+      const range = document.createRange();
+      range.setStart(lastText, lastText.textContent!.length);
+      range.collapse(true);
+      const measured = range.getBoundingClientRect();
+      if (measured.height > 0) {
+        rect = measured;
+      }
+    }
+
+    if (!rect) {
+      // empty/unmeasurable line: fall back to the right edge of the last painted span,
+      // then to the start of the line box.
+      const spans = lineDiv.querySelectorAll('span:not(#caretNode)');
+      const lastSpan = spans[spans.length - 1] as HTMLElement | undefined;
+      const box = (lastSpan ?? lineDiv).getBoundingClientRect();
+      rect = new DOMRect(lastSpan ? box.right : box.left, box.top, 0, box.height);
+    }
+
+    const overlayRect = overlay.getBoundingClientRect();
+    const scrollTop = scroller?.scrollTop ?? 0;
+    // push to the manager imperatively. updating editor state here would re-render the
+    // contentEditable and reset the caret (React re-applies dangerouslySetInnerHTML).
+    // height is the caret box height so the ghost text aligns to the typed text, not the full
+    // line box (which would center the smaller glyphs lower than the typed text).
+    suggestionManagerRef.current?.updateCaretRect(
+      rect.left - overlayRect.left,
+      rect.top - overlayRect.top + scrollTop,
+      rect.height,
+    );
+  };
+
   /**
    * Handles when user changes caret position.
-   * Gets moveOffset and lineOf
-    console.log('Caret changed');fset, validates text, and updates move history.
+   * Gets moveOffset and lineOffset, validates text, and updates move history.
    */
   const handleCaretChange = () => {
     const state = parseCaretState();
     if (!state) return;
     setCaretState(state);
+    measureCaretRect();
   };
 
   const restoreCaretAfterMouseUp = () => {
@@ -1174,61 +1091,29 @@ function MovesTextEditor({
     });
   };
 
-  const handleSuggestionRequest = (suggestionIndex: number) => {
-    const suggestion = suggestions?.[suggestionIndex];
-    if (suggestion) {
-      handleShowSuggestion(suggestion.alg);
-    }
-  }
-
   const handleSuggestionReject = () => {
     if (name === 'scramble') return;
-
-    const suggestionClass = colorDict['suggestion'];
-    const regex = new RegExp(`<span class="${suggestionClass}">[^<]*<\/span>(<img[^>]*>)?`, 'g');
-
-    runAfterFocus(() => {
-      if (!contentEditableRef.current) return;
-      const isSuggestions = regex.test(contentEditableRef.current.innerHTML);
-      if (!isSuggestions || !selectedSuggestionRef.current) return;
-
-      const linesWithoutSuggestions = removeAllSuggestions();
-      const htmlWithoutSuggestions = linesWithoutSuggestions.join('');
-      contentEditableRef.current.innerHTML = htmlWithoutSuggestions;
-
-      setCaretToCaretSpan();
-      handleInput();
-    });
-
-    // sus. How can we better prevent suggestionBox from showing? Setting a ref to dismissed doesn't update state.
-    selectedSuggestionRef.current = { lineIndex: -1, full: '', remaining: '' };
-
-    suggestionStateRef.current = 'dismissed';
-
+    // the preview is an overlay, so dismissing is pure state — no HTML surgery.
+    suggestionManagerRef.current?.dismissSuggestion();
   };
 
   const handleCommand = (e: KeyboardEvent) => {
     if (e.key === 'Tab' && !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) {
-      const canShowSuggestion = !selectedSuggestionRef.current?.full && suggestionsRef && suggestionsRef.current && suggestionsRef.current.length > 0;
-      const canAcceptSuggestion = selectedSuggestionRef.current !== null && selectedSuggestionRef.current.remaining !== '';
+      const manager = suggestionManagerRef.current;
+      const canAcceptSuggestion = manager?.canAcceptSuggestion() ?? false;
+      const canShowSuggestion = manager?.canShowSuggestion() ?? false;
 
       if (!canShowSuggestion && !canAcceptSuggestion) {
         return;
       }
 
       e.preventDefault();
-      if (canShowSuggestion && suggestionsRef.current) {
-        suggestionStateRef.current = 'showing';
-        // TODO: difficult to say when tab should jump them to the next element instead.
-        // Showing handleShowSuggestion may not generate a suggestion and 
-        // user may expect to be able to tab out, or may not.
-        handleShowSuggestion(suggestionsRef.current[0].alg || '');
-        return;
-      }
       if (canAcceptSuggestion) {
         handleSuggestionAccept();
         return;
       }
+      // re-show after the user previously dismissed with Esc
+      manager?.showSuggestion();
     }
 
     if (e.key === 'Escape' && !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) {
@@ -1259,7 +1144,7 @@ function MovesTextEditor({
       handleRedo();
     }
 
-    if (suggestions && suggestions.length > 0 && suggestionStateRef.current === 'showing') {
+    if (suggestions && suggestions.length > 0 && suggestionManagerRef.current?.isShowing()) {
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault();
       }
@@ -1315,47 +1200,32 @@ function MovesTextEditor({
     if (!contentEditableRef.current) return;
     if (name === 'scramble') return; // no suggestions in scramble
 
-    const suggestionClass = colorDict['suggestion'];
-    const moveClass = colorDict['move'];
+    const remaining = suggestionManagerRef.current?.getAcceptText();
+    if (!remaining) return;
 
     runAfterFocus(() => {
-      if (!contentEditableRef.current) return;
+      const root = contentEditableRef.current;
+      if (!root) return;
 
-      let lines = oldHTMLlinesRef.current;
+      // append at the end of the active line — where the ghost is anchored — rather than at
+      // the live caret, which may have been moved back into the line. the remaining string
+      // already carries its own leading space when one is needed, so it inserts verbatim.
+      const lineDivs = Array.from(root.children).filter(
+        (child): child is HTMLDivElement => child instanceof HTMLDivElement,
+      );
+      const lineDiv = lineDivs[lineOffsetRef.current] ?? lineDivs[lineDivs.length - 1];
+      if (!lineDiv) return;
 
-      // Find the line with the suggestion and replace it
-      lines = lines.map(line => {
-        if (!line.includes(`class="${suggestionClass}"`)) {
-          return line;
-        }
+      root.querySelectorAll('#caretNode').forEach((node) => node.remove());
+      const caret = document.createElement('span');
+      caret.id = 'caretNode';
 
-        // remove all caret nodes from this line
-        let updatedLine = line.replace(/<span id="caretNode"><\/span>/g, '');
-
-        // remove tab instruction image if present
-        updatedLine = updatedLine.replace(/<img src="\/tab\.svg"[^>]*\/>/g, '');
-
-        // replace suggestion span with move span and add caret node
-        // $1 = any other attributes in the span
-        // $2 = suggested text
-        updatedLine = updatedLine.replace(
-          new RegExp(`<span class="${suggestionClass.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"([^>]*)>([^<]*)<\/span>`, 'g'),
-          `<span class="${moveClass}"$1>$2</span><span id="caretNode"></span>`
-        );
-
-        return updatedLine;
-      });
-
-      const newHTML = lines.join('');
-      contentEditableRef.current.innerHTML = newHTML;
+      const br = lineDiv.querySelector('br');
+      lineDiv.insertBefore(document.createTextNode(remaining), br ?? null);
+      lineDiv.insertBefore(caret, br ?? null);
 
       setCaretToCaretSpan();
-
       handleInput();
-      suggestionStateRef.current = 'accepted';
-
-      // changed full to '' for testing
-      selectedSuggestionRef.current = { ...selectedSuggestionRef.current!, full: '', remaining: '' };
     });
   }
 
@@ -1574,121 +1444,10 @@ function MovesTextEditor({
     setHTML(newHTML);
   }
 
-  const removeAllSuggestions = (): string[] => {
-    if (!contentEditableRef.current) return [];
-
-    const lines = htmlToLineArray(contentEditableRef.current.innerHTML);
-    const suggestionClass = colorDict['suggestion'];
-    return lines.map(line => line.replace(new RegExp(`<span class="${suggestionClass}">[^<]*<\/span>(<img[^>]*>)?`, 'g'), ''));
-  }
-
-  const handleShowSuggestion = (suggestion: string) => {
-    if (!contentEditableRef.current) return;
-    if (name === 'scramble') return; // no suggestions in scramble
-    if (selectedSuggestionRef.current?.full === suggestion) return; // same suggestion already shown
-
-    let lines = removeAllSuggestions();
-
-
-    const isCommentSuggestion = suggestion.startsWith('//');
-    if (isCommentSuggestion) {
-      // not currently using comment suggestions
-      showCommentSuggestion(lines, suggestion);
-    } else {
-      showMoveSuggestion(lines, suggestion);
-    }
-  }
-
-  /**
-   * @deprecated
-   */
-  const showCommentSuggestion = (lines: string[], suggestion: string) => {
-    // remove caret nodes
-    let existingCaretNode = contentEditableRef.current?.querySelector('#caretNode');
-    while (existingCaretNode) {
-      existingCaretNode.parentNode!.removeChild(existingCaretNode);
-      existingCaretNode = contentEditableRef.current!.querySelector('#caretNode');
-    }
-    const movecount = oldLineMoveCounts.current[lineOffsetRef.current];
-    if (!movecount || movecount === 0) return;
-    // if there's already a comment, return
-    const commentClass = colorDict['comment'];
-    if (lines[lineOffsetRef.current].includes(`class="${commentClass}"`)) return
-
-    const oldLine = lines[lineOffsetRef.current] || '';
-    const suggestionClass = colorDict['suggestion'];
-    const newline = oldLine.replace(/<br>/, `<span class="${suggestionClass}">${suggestion}</span><span id="caretNode"></span><br>`);
-    lines[lineOffsetRef.current] = newline;
-    oldHTMLlinesRef.current = lines;
-    const newHTML = lines.join('');
-    selectedSuggestionRef.current = {
-      lineIndex: lineOffsetRef.current,
-      full: suggestion,
-      remaining: suggestion
-    };
-    suggestionStateRef.current = 'showing';
-    setHTML(newHTML);
-  }
-
-  const showMoveSuggestion = (lines: string[], suggestion: string) => {
-
-    // remove caret nodes
-    let existingCaretNode = contentEditableRef.current?.querySelector('#caretNode');
-    while (existingCaretNode) {
-      existingCaretNode.parentNode!.removeChild(existingCaretNode);
-      existingCaretNode = contentEditableRef.current!.querySelector('#caretNode');
-    }
-
-    const oldLineMoves = textboxMovesRef.current[lineOffsetRef.current] || [];
-    const movecount = oldLineMoveCounts.current[lineOffsetRef.current];
-    const remainingMoves = suggestion.split(' ');
-    let isMidMove = false;
-    for (let i = 0; i < movecount; i++) {
-      const oldMove = oldLineMoves[i];
-      const suggestedMove = remainingMoves[0];
-      const isLastMove = i === movecount - 1;
-      if (oldMove === suggestedMove) {
-        remainingMoves.shift();
-      } else if (isLastMove && oldMove.length < suggestedMove.length && suggestedMove.startsWith(oldMove)) {
-        remainingMoves[0] = suggestedMove.slice(oldMove.length);
-        isMidMove = true;
-      } else {
-        // moves do not align, do not show suggestion
-        // this can happen in normal use
-        return;
-      }
-    }
-    if (remainingMoves.length === 0) return;
-
-    const remainingSuggestion = remainingMoves.join(' ');
-    const suggestionClass = colorDict['suggestion'];
-    const tabInstruction = supportsHardwareKeyboard
-      ? `<img src="/tab.svg" alt="Press Tab" style="display: inline; pointer-events-none; width: 51px; height: 20px; margin-left: 8px; margin-bottom: 4px; vertical-align: middle;" />`
-      : '';
-
-    const optionalSpace = (oldLineMoveCounts.current[lineOffsetRef.current] > 0 && !isMidMove) ? ' ' : '';
-    const oldMoves = oldLineMoves.join(' ');
-    const validClass = colorDict['move'];
-    const newline = `<div><span class="${validClass}">${oldMoves}</span><span id="caretNode"></span><span class="${suggestionClass}">${optionalSpace}${remainingSuggestion}</span>${tabInstruction}<br></div>`;
-
-    lines[lineOffsetRef.current] = newline;
-
-    oldHTMLlinesRef.current = lines; // update oldHTMLlines to prevent undo/redo issues
-    const newHTML = lines.join('');
-    selectedSuggestionRef.current = {
-      lineIndex: lineOffsetRef.current,
-      full: suggestion,
-      remaining: remainingSuggestion
-    };
-    suggestionStateRef.current = 'showing';
-    setHTML(newHTML);
-  }
-
-  // padding-top of the contenteditable (p-2 = 8px) + 1px border
-  const editorPaddingTop = 9;
-  const effectiveLineHeight = lineHeight || 28;
-  const suggestionTopOffset = editorPaddingTop + effectiveLineHeight * (lineOffsetRef.current + 1);
-  const suggestionLeftOffset = contentEditableRef.current?.parentElement?.offsetLeft ?? 0;
+  const solutionScrollElement = contentEditableRef.current?.closest('#solution') as HTMLDivElement | null;
+  const suggestionOverlayElement = solutionScrollElement?.parentElement ?? null;
+  const suggestionTopOffset = getMeasuredSuggestionTopOffset();
+  const suggestionLeftOffset = solutionScrollElement?.offsetLeft ?? 0;
 
   useImperativeHandle(ref, () => ({
     undo: () => {
@@ -1715,14 +1474,6 @@ function MovesTextEditor({
       return contentEditableRef.current;
     },
 
-    showSuggestion: (alg: string) => {
-      handleShowSuggestion(alg);
-    },
-
-    dismissSuggestion: () => {
-      handleSuggestionReject();
-    },
-
     flushURLUpdate: () => {
       if (updateURLTimeout.current) {
         clearTimeout(updateURLTimeout.current);
@@ -1730,28 +1481,99 @@ function MovesTextEditor({
       }
       passURLupdate();
     }
-  }), []);
+  }));
+
+  const handleSelectionChangeEvent = useEffectEvent(() => {
+    handleCaretChange();
+  });
+
+  const handleMouseUpEvent = useEffectEvent((event: MouseEvent) => {
+    handleMouseUp(event);
+  });
+
+  const handleCommandEvent = useEffectEvent((event: KeyboardEvent) => {
+    handleCommand(event);
+  });
+
+  const cleanupEditorEffect = useEffectEvent(() => {
+    if (updateURLTimeout.current) {
+      clearTimeout(updateURLTimeout.current);
+      updateURLTimeout.current = null;
+    }
+
+    if (restoreFrameRef.current !== null) {
+      cancelAnimationFrame(restoreFrameRef.current);
+      restoreFrameRef.current = null;
+    }
+  });
+
+  // runs once at mount to seed the editor from the URL. reading window.location.search
+  // directly (as updateURL also does) avoids the reactive useSearchParams hook, which would
+  // otherwise force this into a component under a <Suspense> boundary.
+  const handleStartupProcess = useEffectEvent(() => {
+    if (!contentEditableRef.current) return;
+
+    const searchParams = new URLSearchParams(window.location.search);
+    const aliases = editorAliases[name] ?? [];
+    const editorText = searchParams.get(name)
+      ?? aliases.reduce<string | null>((found, alias) => found ?? searchParams.get(alias), null);
+    const otherID = name === 'scramble' ? 'solution' : 'scramble';
+    const otherEditorText = searchParams.get(otherID);
+
+    if (editorText) {
+      let decodedText: string;
+      try {
+        decodedText = decodeURIComponent(customDecodeURL(editorText));
+      } catch {
+        decodedText = customDecodeURL(editorText);
+      }
+      const lines = decodedText.replace(/\n+/g, '\n').split('\n');
+      const formattedHTML = lines.map(line => `<div>${line}<br></div>`).join('');
+      contentEditableRef.current.innerHTML = formattedHTML;
+
+    } else if (initialContent && !otherEditorText) {
+      // if initial content (such as scramble of day) gets passed in,
+      // pass it in as pre-formatted html
+      contentEditableRef.current.innerHTML = initialContent;
+    }
+
+    // Run for syntax highlighting, but skip URL update since we just loaded from URL
+    handleInput(false);
+
+
+    if (autofocus && editorText && !otherEditorText) { // TODO: `&& !otherURLtext` isn't desired, but an unknown bug causes animation desync otherwise.
+      // adds caretNode span, which then is processed by onInputChange
+      const selection = window.getSelection();
+      const range = document.createRange();
+      const caretNode = document.createElement('span');
+      caretNode.id = 'caretNode';
+      range.selectNodeContents(contentEditableRef.current);
+      range.collapse(false);
+      range.insertNode(caretNode);
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+    } else if (autofocus) {
+      // select the other textbox
+      const parentOtherElement = document.getElementById(otherID);
+      const otherTextbox = parentOtherElement?.querySelector<HTMLDivElement>('div[contenteditable="true"]');
+      otherTextbox?.focus();
+    }
+  });
 
   useEffect(() => {
+    handleStartupProcess();
 
-    document.addEventListener('selectionchange', handleCaretChange);
-    document.addEventListener('mouseup', handleMouseUp);
-    document.addEventListener('keydown', handleCommand);
+    document.addEventListener('selectionchange', handleSelectionChangeEvent);
+    document.addEventListener('mouseup', handleMouseUpEvent);
+    document.addEventListener('keydown', handleCommandEvent);
 
     return () => {
 
-      document.removeEventListener('selectionchange', handleCaretChange);
-      document.removeEventListener('mouseup', handleMouseUp);
-      document.removeEventListener('keydown', handleCommand);
+      document.removeEventListener('selectionchange', handleSelectionChangeEvent);
+      document.removeEventListener('mouseup', handleMouseUpEvent);
+      document.removeEventListener('keydown', handleCommandEvent);
 
-      removeAllSuggestions();
-
-      updateURLTimeout.current ? clearTimeout(updateURLTimeout.current) : null;
-
-      if (restoreFrameRef.current !== null) {
-        cancelAnimationFrame(restoreFrameRef.current);
-        restoreFrameRef.current = null;
-      }
+      cleanupEditorEffect();
 
     };
   }, []);
@@ -1812,115 +1634,20 @@ function MovesTextEditor({
     }
   };
 
-  const checkNewSuggestions = () => {
-    if (name !== 'solution') return;
-    const suggestionSignature = suggestions?.map(s => s.alg).join('|') || '';
-    if (suggestionSignature !== suggestionSignatureRef.current) {
-      suggestionSignatureRef.current = suggestionSignature;
-      suggestionStateRef.current = 'showing';
-    }
-  }
-
-  // Dismiss suggestion if caret line has changed
-  // TODO: move this to caret change handler
-  if (selectedSuggestionRef.current
-    && selectedSuggestionRef.current.lineIndex !== lineOffsetRef.current
-    && suggestionStateRef.current !== 'accepted'
-  ) {
-
-    suggestionStateRef.current = 'dismissed';
-    // Show if caret is on the suggestion line
-  } else if (selectedSuggestionRef.current
-    && selectedSuggestionRef.current.lineIndex === lineOffsetRef.current
-    && suggestionStateRef.current !== 'accepted'
-  ) {
-    suggestionStateRef.current = 'showing';
-  }
-
-  // Calculate completedString by examining HTML to detect trailing spaces
-  const getCompletedString = (): string => {
-    const moves = textboxMovesRef.current[lineOffsetRef.current];
-    if (!moves || moves.length === 0) return '';
-    
-    const htmlLine = oldHTMLlinesRef.current[lineOffsetRef.current];
-    if (!htmlLine) return moves.join(' ');
-
-    // Valid types that should be considered as "completed" content
-    const validTypes = ['move', 'space', 'paren', 'rep'];
-    const validClasses = validTypes.map(type => colorDict[type as keyof typeof colorDict]);
-
-    // Find all spans in the line
-    const spanRegex = /<span class="([^"]+)">([^<]*)<\/span>/g;
-    const spans: { className: string; content: string; index: number }[] = [];
-    let match: RegExpExecArray | null;
-    
-    while ((match = spanRegex.exec(htmlLine)) !== null) {
-      spans.push({
-        className: match[1],
-        content: match[2],
-        index: match.index
-      });
-    }
-
-    // Find the last span with a valid type
-    let lastValidSpanIndex = -1;
-    for (let i = spans.length - 1; i >= 0; i--) {
-      if (validClasses.includes(spans[i].className)) {
-        lastValidSpanIndex = i;
-        break;
-      }
-    }
-
-    if (lastValidSpanIndex === -1) {
-      return moves.join(' ');
-    }
-
-    // Check if any span from lastValidSpanIndex onwards has trailing space
-    let hasTrailingSpace = false;
-    for (let i = lastValidSpanIndex; i < spans.length; i++) {
-      const content = spans[i].content;
-      if (content.endsWith(' ')) {
-        hasTrailingSpace = true;
-        break;
-      }
-    }
-
-    const baseString = moves.join(' ');
-    return hasTrailingSpace ? baseString + ' ' : baseString;
-  };
-
-  const hasComments = (() => {
-    const htmlLine = oldHTMLlinesRef.current[lineOffsetRef.current];
-    if (!htmlLine) return false;
-    
-    const commentClass = colorDict['comment'];
-    return htmlLine.includes(`class="${commentClass}"`);
-  })();
-
-  const completedString = getCompletedString();
-  const filteredSuggestions = !hasComments ? suggestions
-    ?.map((suggestion, index) => ({ suggestion, originalIndex: index }))
-    .filter(({ suggestion }) => {
-      // if (suggestion.alg === selectedSuggestionRef.current?.full) return false;
-      return suggestion.alg.startsWith(completedString) && suggestion.alg !== completedString;
-    }) : undefined;
-
-  useEffect(() => {
-    checkNewSuggestions();
+  const syncSuggestionOverlay = useEffectEvent(() => {
     checkCaretRestore();
-  }, [html, suggestions]);
+    measureCaretRect();
+  });
+
+  // layout effect (not useEffect): re-measure and re-anchor the ghost in the same commit the
+  // new suggestion text is computed, before the browser paints, so the ghost doesn't flutter
+  // sideways for a frame while the anchor catches up to the typed character.
+  useIsomorphicLayoutEffect(() => {
+    syncSuggestionOverlay();
+  }, [html]);
 
   return (
-    <>
-      <Suspense fallback={null}>
-        <EditorLoader
-          editorRef={contentEditableRef}
-          handleInput={handleInput}
-          name={name}
-          autofocus={autofocus}
-          initialContent={initialContent}
-        />
-      </Suspense>
+    <div className="relative">
       <div
         contentEditable
         ref={contentEditableRef}
@@ -1943,21 +1670,22 @@ function MovesTextEditor({
         autoCapitalize="characters" // annoying for comments and rotations. Could implement custom fix.
         tabIndex={idIndex === 0 ? 1 : 3}
       />
-      {name === 'solution' && filteredSuggestions?.length && suggestionStateRef.current === 'showing'
-        && typeof document !== 'undefined' && document.getElementById('rich-solution-display') ? (
-        createPortal(
-          <SuggestionBox
-            suggestions={filteredSuggestions || []}
-            topOffset={suggestionTopOffset}
-            leftOffset={suggestionLeftOffset}
-            handleSuggestionRequest={handleSuggestionRequest}
-            handleSuggestionAccept={handleSuggestionAccept}
-            handleSuggestionReject={handleSuggestionReject}
-          />,
-          document.getElementById('rich-solution-display')!
-        )
-      ) : null}
-    </>
+      <SuggestionManager
+        ref={suggestionManagerRef}
+        name={name}
+        suggestions={suggestions}
+        suggestionLineIndex={suggestionLineIndex}
+        activeLineIndex={lineOffsetRef.current}
+        activeLineHtml={oldHTMLlinesRef.current[lineOffsetRef.current]}
+        activeLineMoves={textboxMovesRef.current[lineOffsetRef.current]}
+        overlayElement={suggestionOverlayElement}
+        topOffset={suggestionTopOffset}
+        leftOffset={suggestionLeftOffset}
+        showTabHint={supportsHardwareKeyboard}
+        onAcceptSuggestion={handleSuggestionAccept}
+        onRejectSuggestion={handleSuggestionReject}
+      />
+    </div>
   );
 }
 

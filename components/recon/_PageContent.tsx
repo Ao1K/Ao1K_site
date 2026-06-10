@@ -104,11 +104,16 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
 
   const [playerParams, setPlayerParams] = useState<PlayerParams>({ animationTimes: [], solution: '', scramble: '' });
   const suggestionsRef = useRef<Suggestion[]>([]);
+  // the line index the current suggestions were generated for. suggestions are computed only
+  // for an empty line's position, so they're only valid while the caret stays on that line.
+  // returning to a different line (e.g. via backspace) must not reuse them.
+  const suggestionLineIndexRef = useRef<number | null>(null);
 
   // TODO: check if these are needed any more
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const updateSuggestions = useCallback((next: Suggestion[]) => {
+  const updateSuggestions = useCallback((next: Suggestion[], lineIndex: number | null) => {
     suggestionsRef.current = next;
+    suggestionLineIndexRef.current = lineIndex;
     setSuggestions(next);
   }, []);
 
@@ -675,7 +680,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   };
 
   const handleEmptyLineSuggestions = (solutionMoves: string[][], trueLineIndex: number) => {
-    if (!solutionMethodsRef.current || !cubeInterpreter.current) {
+    if (!cubeInterpreter.current) {
       return;
     }
     const lastMoveIndex = findLastMoveInLine(solutionMoves, trueLineIndex);
@@ -699,16 +704,15 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       newSuggestions.some((newSug, index) => newSug.alg !== (prevSuggestions[index]?.alg ?? ''));
 
     suggestionsRef.current = newSuggestions;
+    // even when the suggestion content is unchanged, the line they apply to may differ,
+    // so always retag before deciding whether a re-render is needed.
+    suggestionLineIndexRef.current = trueLineIndex;
 
     if (!isSuggestionChange) {
       return;
     }
 
-    if (newSuggestions.length > 0) {
-      solutionMethodsRef.current?.showSuggestion(newSuggestions[0].alg);
-    }
-
-    updateSuggestions(newSuggestions);
+    updateSuggestions(newSuggestions, trueLineIndex);
 
   };
 
@@ -967,6 +971,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     setSplits([]);
     setCommittedSplits([]);
     setLineSteps([]);
+    updateSuggestions([], null);
 
     // don't clear moveHistory
 
@@ -1525,7 +1530,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   const toolbarButtons = ctrlKey === '⌘' ? macToolbarButtons : windowsToolbarButtons;
 
   return (
-    <main id="main_page" className="relative flex flex-col bg-primary-900 mt-10">
+    <main id="main_page" className="relative flex flex-col bg-primary-900 mt-10 overflow-visible">
 
       {/* For aligning the skeleton perfectly */}
       {/* <div className="absolute inset-0 z-50 pointer-events-none opacity-50 [&>main]:mt-0">
@@ -1713,6 +1718,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
                 transition: 'margin-left 200ms linear, margin-right 200ms linear',
               }}
               onScroll={(e) => {
+                e.currentTarget.parentElement?.style.setProperty('--solution-scroll-top', `${e.currentTarget.scrollTop}px`);
                 if (iconScrollRef.current) {
                   iconScrollRef.current.style.transform = `translateY(-${e.currentTarget.scrollTop}px)`;
                 }
@@ -1731,6 +1737,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
                 html={solutionHTML}
                 setHTML={memoizedSetSolutionHTML}
                 suggestionsRef={suggestionsRef}
+                suggestionLineIndexRef={suggestionLineIndexRef}
                 lineHeight={solutionLineHeight}
               />
             </div>

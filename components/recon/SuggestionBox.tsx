@@ -47,8 +47,9 @@ export const SuggestionBox = ({suggestions, topOffset, leftOffset, handleSuggest
   const selectedCardRef = useRef<number | null>(null);
   
   const selectCard = (index: number) => {
-    const cardElement = document.getElementById(`suggestion-card-${index}`);
-    cardElement?.focus();
+    // selection is purely visual (drives isFocused), so the editor keeps real DOM focus and the
+    // user can keep typing while arrowing through suggestions. the highlight re-renders because
+    // every navigation path also calls handleSuggestionRequest.
     selectedCardRef.current = index;
   }
   if (selectedCardRef.current === null && sortedSuggestions.length > 0) {
@@ -58,28 +59,21 @@ export const SuggestionBox = ({suggestions, topOffset, leftOffset, handleSuggest
   const handleKeyDown = (event: KeyboardEvent) => {
 
     // tab event handled by parent component
-    
+    if (!sortedSuggestions.length) return;
+
     if (event.key === 'ArrowDown') {
-      if (!sortedSuggestions.length) return;
       event.preventDefault();
-      if (selectedCardRef.current === null) {
-        selectCard(0);
-      } else {
-        const nextIndex = (selectedCardRef.current + 1) % sortedSuggestions.length;
-        selectCard(nextIndex);
-        handleSuggestionRequest(sortedSuggestions[nextIndex].originalIndex);
-      }
+      const current = selectedCardRef.current ?? -1;
+      const nextIndex = (current + 1) % sortedSuggestions.length;
+      selectCard(nextIndex);
+      handleSuggestionRequest(sortedSuggestions[nextIndex].originalIndex);
     }
     if (event.key === 'ArrowUp') {
-      if (!sortedSuggestions.length) return;
       event.preventDefault();
-      if (selectedCardRef.current === null) {
-        selectCard(sortedSuggestions.length - 1);
-      } else {
-        const prevIndex = (selectedCardRef.current - 1 + sortedSuggestions.length) % sortedSuggestions.length;
-        selectCard(prevIndex);
-        handleSuggestionRequest(sortedSuggestions[prevIndex].originalIndex);
-      }
+      const current = selectedCardRef.current ?? 0;
+      const prevIndex = (current - 1 + sortedSuggestions.length) % sortedSuggestions.length;
+      selectCard(prevIndex);
+      handleSuggestionRequest(sortedSuggestions[prevIndex].originalIndex);
     }
   };
 
@@ -108,27 +102,46 @@ export const SuggestionBox = ({suggestions, topOffset, leftOffset, handleSuggest
   const isTouchScreen = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0;
 
   return (
-    <div className="absolute z-40 flex flex-col" style={{ top: topOffset, left: leftOffset }}>
+    <div
+      id="suggestion-box"
+      className="absolute z-40 flex flex-col"
+      style={{
+        top: topOffset,
+        left: leftOffset,
+        transform: 'translateY(calc(0px - var(--solution-scroll-top, 0px)))',
+      }}
+    >
     {
-      sortedSuggestions.map((item, index) => (
-        <SuggestionCard
-          key={index}
-          id={`suggestion-card-${index}`}
-          isFocused={selectedCardRef.current === index}
-          alg={item.suggestion.alg}
-          steps={item.suggestion.steps}
-          hasEOsolved={item.suggestion.hasEOsolved}
-          handleSuggestionRequest={() => focusHoveredElement(index)}
-          handleSuggestionAccept={handleSuggestionAccept}
-        />
-      )) 
+      sortedSuggestions.map((item, index) => {
+        const isLast = index === sortedSuggestions.length - 1;
+        const isOnly = sortedSuggestions.length === 1;
+        let placement = `${index}`;
+        if (isOnly) {
+          placement = 'only';
+        } else if (isLast) {
+          placement = 'last';
+        }
+        return (
+          <SuggestionCard
+            key={index}
+            id={`suggestion-card-${index}`}
+            placement={placement}
+            isFocused={selectedCardRef.current === index}
+            alg={item.suggestion.alg}
+            steps={item.suggestion.steps}
+            hasEOsolved={item.suggestion.hasEOsolved}
+            handleSuggestionRequest={() => focusHoveredElement(index)}
+            handleSuggestionAccept={handleSuggestionAccept}
+          />
+        )
+      })
     }
-    { sortedSuggestions.length < 1 ? 
-      null : 
+    { sortedSuggestions.length < 1 ?
+      null :
       <div className={`
         hover:bg-primary-200 hover:shadow-md
         flex flex-row items-center gap-3 w-fit border-t-dark
-        border border-neutral-400 bg-primary-300 text-dark text-md p-1
+        border rounded-b-sm border-neutral-400 bg-primary-300 text-dark text-md p-1
         ${isTouchScreen ? 'min-w-25 justify-center' : 'w-fit'}`}
         onClick={handleSuggestionReject}>
           Cancel
