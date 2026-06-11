@@ -131,8 +131,7 @@ export default function EO() {
         <h2>OLL edges</h2>
         <p>{"If you know OLL, you already know how to orient last layer edges. You solve the top cross, which flips all the edges so that all of the same color is on top."}</p>
         <p>{"But it's useful to know that an OLL edge in the middle layer can still considered be oriented or not. Sometimes you'll try to influence OLL during F2L in various ways."}</p>
-        <p>{`In the orbits, a correctly oriented OLL edge will always have the top center color in the white orbit.`}</p>
-        <p>{"Knowing that, is the white-green edge good or bad? Try to remember the orbit diagram and how it was made rather than referring back to it."}</p>
+        <p>{`A correctly oriented OLL edge will always have the top center color in the white orbit. Knowing that, is the white-green edge good or bad? Try to remember the orbit diagram and how it was made rather than referring back to it.`}</p>
         <div className="w-80 h-80 mb-2  border border-neutral-400 rounded-sm overflow-hidden">
           <iframe src="/learn/eo_5.html" className="w-165 h-165 overflow-hidden scale-50 origin-top-left" />
         </div>
