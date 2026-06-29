@@ -4,6 +4,7 @@ export const versionList = {
   "learn": "",
   "recon": "v0.8",
   "changeblog": "",
+  "algs": "",
 }
 
 export const highlightClass = 'text-dark bg-primary-100 backdrop-blur-xs caret-dark';

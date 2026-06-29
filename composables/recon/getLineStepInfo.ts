@@ -75,10 +75,10 @@ const getCFOPStep = (currentSteps: StepInfo[], prevSteps: StepInfo[], prevGridPa
   // Individual LL steps
   if(currentSteps.length === 1 && llSteps.length === 1) {
     const step = llSteps[0];
-    if (step.step === 'eo') return { step: '1st look oll', type: 'last layer', colors: step.colors, gridPattern: prevGridPattern };
-    if (step.step === 'co') return { step: '2nd look oll', type: 'last layer', colors: step.colors, gridPattern: prevGridPattern };
-    if (step.step === 'cp') return { step: '1st look pll', type: 'last layer', colors: step.colors, gridPattern: prevGridPattern };
-    if (step.step === 'ep') return { step: '2nd look pll', type: 'last layer', colors: step.colors, gridPattern: prevGridPattern };
+    if (step.step === 'eo') return { step: '1st look oll', type: 'last layer', colors: step.colors, gridPattern: prevGridPattern, ...(prevNameType === 'oll' ? { name: prevName, nameType: prevNameType } : {}) };
+    if (step.step === 'co') return { step: '2nd look oll', type: 'last layer', colors: step.colors, gridPattern: prevGridPattern, ...(prevNameType === 'oll' ? { name: prevName, nameType: prevNameType } : {}) };
+    if (step.step === 'cp') return { step: '1st look pll', type: 'last layer', colors: step.colors, gridPattern: prevGridPattern, ...(prevNameType === 'pll' ? { name: prevName, nameType: prevNameType } : {}) };
+    if (step.step === 'ep') return { step: '2nd look pll', type: 'last layer', colors: step.colors, gridPattern: prevGridPattern, ...(prevNameType === 'pll' ? { name: prevName, nameType: prevNameType } : {}) };
   }
 
   if (currentSteps.some(step => step.type === 'solved')) {
@@ -182,7 +182,7 @@ function determineMethod(allSteps: StepInfo[], prevSteps: StepInfo[], currentSte
   const isSolved = currentSteps.some(step => step.type === 'solved');
   
   // APB takes precedence over all other methods due to its simplicity: 
-  // Only has one step to consider adding.
+  // only has one step to consider adding.
   const apbSteps = currentSteps.filter(step => step.type === 'apbBlock');
   const isRouxBlocksSolved = rouxBlockSteps.filter(step => ['L-Block','R-Block'].includes(step.step)).length === 2;
   if (apbSteps.length > 0 && !isRouxBlocksSolved && !isSolved && !hasDCross) return 'APB';

@@ -1227,9 +1227,9 @@ export class SimpleCubeInterpreter {
   // F2L pair physical positions: corner [x,y,z] and edge [x,y,z]
   private readonly apbF2LPairPositions: Record<string, { corner: [number, number, number], edge: [number, number, number] }> = {
     'front,right': { corner: [2, 2, 0], edge: [2, 1, 0] },  // DFR + FR
-    'back,right':  { corner: [2, 2, 2], edge: [2, 1, 2] },   // DBR + BR
-    'front,left':  { corner: [0, 2, 0], edge: [0, 1, 0] },   // DFL + FL
-    'back,left':   { corner: [0, 2, 2], edge: [0, 1, 2] },    // DBL + BL
+    'back,right': { corner: [2, 2, 2], edge: [2, 1, 2] },   // DBR + BR
+    'front,left': { corner: [0, 2, 0], edge: [0, 1, 0] },   // DFL + FL
+    'back,left': { corner: [0, 2, 2], edge: [0, 1, 2] },    // DBL + BL
   };
 
   /**
@@ -1549,11 +1549,11 @@ export class SimpleCubeInterpreter {
     // TODO: think about if this in the context of variants like EOLRb
     const isCMLLSolved = steps.some(s => s.step === 'co') && steps.some(s => s.step === 'cp');
     if (this.eoValue === 0) {
-      steps.push({ 
-        step: 'eo', 
-        type: 'lse', 
-        caseIndex: this.eoValue, 
-        colors: [], 
+      steps.push({
+        step: 'eo',
+        type: 'lse',
+        caseIndex: this.eoValue,
+        colors: [],
         ...(isCMLLSolved ? { lsePattern: this.getLSEPattern() } : {})
       });
     }
@@ -1588,7 +1588,7 @@ export class SimpleCubeInterpreter {
   /**
    * Method for passing in SimpleCubeState to update and interpret the current state.
    */
-  public getStepsCompleted(cubeState?: SimpleCubeState | null, method: 'Roux' | 'ZZ' |'CFOP' | 'Petrus' | 'All' = 'All'): StepInfo[] {
+  public getStepsCompleted(cubeState?: SimpleCubeState | null, method: 'Roux' | 'ZZ' | 'CFOP' | 'Petrus' | 'All' = 'All', breakdownSolved = false): StepInfo[] {
     if (cubeState) {
       this.cubeState = cubeState;
     }
@@ -1605,9 +1605,9 @@ export class SimpleCubeInterpreter {
     // always add eo step
     steps.push({ step: this.eoValue.toString(), type: 'genericEO', colors: [] });
 
-    if (method === 'CFOP' || method === 'ZZ'|| method === 'All') {
+    if (method === 'CFOP' || method === 'ZZ' || method === 'All') {
       this.crossColorsSolved = this.calcCrossColorsSolved();
-      steps.push(...this.calcCFOPstepsCompleted());
+      steps.push(...this.calcCFOPstepsCompleted(breakdownSolved));
     }
 
     if (['Roux', 'Petrus', 'All'].includes(method)) {
@@ -2163,7 +2163,7 @@ export class SimpleCubeInterpreter {
       if (direction && direction === 'U') {
         const actualColor = centerPiece.stickers[0].colorName;
         const effectiveColor = this.mapActualColorToEffective(actualColor);
-        return { actualColor, effectiveColor, direction: direction };
+        return { actualColor, effectiveColor, direction };
       }
     }
 
@@ -2717,9 +2717,11 @@ export class SimpleCubeInterpreter {
     }
   }
 
-  public calcCFOPstepsCompleted(): StepInfo[] {
+  public calcCFOPstepsCompleted(breakdownSolved = false): StepInfo[] {
 
-    if (this.isCubeSolved()) {
+    // breakdownSolved keeps the granular cross/f2l/ll steps for a solved cube instead of
+    // collapsing to a single 'solved' step, so it can serve as a diff reference (see classifyAlg).
+    if (this.isCubeSolved() && !breakdownSolved) {
       return [{ step: 'solved', type: 'solved', colors: [] }];
     }
 
@@ -3285,7 +3287,10 @@ export class SimpleCubeInterpreter {
     return { index: stepData.index, refPieceMovement, minMovements: stepData.minMovements };
   }
 
-  public getAlgSuggestions(steps?: StepInfo[]): { alg: string, time: number, steps: string[], name?: string }[] {
+  public getAlgSuggestions(
+    steps?: StepInfo[],
+    options?: { f2lPair?: [string, string] },
+  ): { alg: string, time: number, steps: string[], name?: string }[] {
     if (!this.algSuggester || !this.currentState) {
       return [];
     }
@@ -3308,7 +3313,7 @@ export class SimpleCubeInterpreter {
       }
       return this.getLLSuggestions(steps, stepTypes);
     } else {
-      return this.getF2LSuggestions(steps);
+      return this.getF2LSuggestions(steps, options?.f2lPair);
     }
   }
 
@@ -3316,7 +3321,16 @@ export class SimpleCubeInterpreter {
    * Filters out redundant algorithms that are extensions of shorter ones without unique steps.
    * Handles edge case where L' doesn't match L L (but should when L2 is spread).
    */
-  private filterRedundantAlgorithms(suggestions: Suggestion[]): Suggestion[] {
+  private filterOverlongAlgorithms(suggestions: Suggestion[]): Suggestion[] {
+
+    const countMoves = (alg: string): number => {
+      return alg.split(/\s+/).filter(move => move.match(/[^xyz2']/g)).length;
+    };
+
+    suggestions = suggestions.sort((a, b) => {
+      return countMoves(a.alg) - countMoves(b.alg);
+    });
+
     // Helper function to spread double and triple moves
     const spreadAlg = (alg: string): string => {
       return alg.replace(/([A-Za-z])([23])('?)/g, (_, letter, num, prime) => {
@@ -3390,16 +3404,11 @@ export class SimpleCubeInterpreter {
     return filteredSuggestions;
   }
 
-  private getF2LSuggestions(steps: StepInfo[]): { alg: string, time: number, steps: string[], name?: string }[] {
-    const queries = this.getQueriesForF2L();
+  private runF2LQueries(queries: { query: Query, pairColors: [string, string] }[]): Suggestion[] {
 
-    if (!queries || queries.length === 0) {
-      console.warn(`No F2L queries found for steps: ${steps.map(s => s.step).join(', ')}`);
-      return [];
-    }
+    let suggestions: Suggestion[] = [];
 
     const speedEstimator = new AlgSpeedEstimator();
-    let suggestions: Suggestion[] = [];
     const algSet = new Set<string>();
     const currentEO = this.eoValue;
 
@@ -3439,18 +3448,88 @@ export class SimpleCubeInterpreter {
       });
     });
 
-    // Helper function to count moves (excluding rotations and modifiers)
-    const countMoves = (alg: string): number => {
-      return alg.split(/\s+/).filter(move => move.match(/[^xyz2']/g)).length;
-    };
+    return suggestions
+  }
 
-    // Sort suggestions by number of moves first
-    suggestions = suggestions.sort((a, b) => {
-      return countMoves(a.alg) - countMoves(b.alg);
+  private removeAUFFromAlg = (alg: string): string => {
+    return alg.replace(/(?<=^(?:(?:U2?'?|y2?'?)(?=\s|$)\s*)*)U2?'?(?=\s|$)\s*/g, '');
+  };
+
+  private filterUnneededAUFSuggestions(suggestions: Suggestion[]): Suggestion[] {
+
+    const topColor = this.getTopCenterInfo()!.actualColor
+    const pieces = this.currentPieces
+    const topPieces = pieces.filter((piece) => {
+      const hasTopFacingSticker = piece.stickers.find((sticker) => sticker.direction === "U")
+      const hasTopColor = piece.stickers.find((sticker) => sticker.colorName === topColor)
+      return hasTopFacingSticker && !hasTopColor && piece.type !== 'center'
+    })
+
+    // get colors of pieces in the top layer
+    const relevantColors = topPieces.map((piece) => {
+      const colors = piece.stickers.map((sticker) => sticker.colorName)
+      const colorString = colors.map((color) => Array.from(color)[0].toUpperCase()).sort().join('');
+      return colorString;
     });
 
-    // Filter out redundant algorithms that are extensions of shorter ones without unique steps
-    const filteredSuggestions = this.filterRedundantAlgorithms(suggestions);
+    // the pair label ("WG pair") keeps the slot's color order, but relevantColors are sorted,
+    // so canonicalize the label colors the same way before comparing
+    const pairColorsKey = (step: string) => step.replace(' pair', '').split('').sort().join('');
+
+    // get algs that have solved EO and no AUF
+    const goodEOBaseAlgs = new Set(
+      suggestions
+        .filter((s) => {
+          const colors = pairColorsKey(s.steps![0]);
+          const hasAUF = s.alg.replace(/[y23'\s]/g, "").startsWith("U");
+          return !relevantColors.includes(colors) && !hasAUF && s.hasEOsolved;
+        })
+        .map((s) => s.alg)
+    );
+
+    suggestions = suggestions.filter((suggestion) => {
+      const suggestionColors = pairColorsKey(suggestion.steps![0]);
+      const hasF2LPieceInTop = relevantColors.includes(suggestionColors);
+      const hasAUF = suggestion.alg.replace(/[y23'\s]/g, "").startsWith("U");
+      const isSolvingEO = suggestion.hasEOsolved
+      const baseAlg = this.removeAUFFromAlg(suggestion.alg);
+      const hasGoodBase = suggestion.alg !== baseAlg && goodEOBaseAlgs.has(baseAlg)
+
+      if (!hasF2LPieceInTop && hasAUF && (!isSolvingEO || hasGoodBase)) return false;
+
+      return true
+    })
+
+    return suggestions
+  }
+
+  private filterF2LSuggestions(suggestions: Suggestion[]): Suggestion[] {
+
+    // filter redundant algorithms that are extensions of shorter ones without unique steps
+    const f1 = this.filterOverlongAlgorithms(suggestions);
+
+    // filter algs that don't solve EO, have pre-AUF, and don't have pieces in top layer
+    const f2 = this.filterUnneededAUFSuggestions(f1);
+
+    return f2
+  }
+
+  private getF2LSuggestions(steps: StepInfo[], targetPair?: [string, string]): { alg: string, time: number, steps: string[], name?: string }[] {
+    let queries = this.getQueriesForF2L();
+
+    if (targetPair) {
+      const want = new Set(targetPair.map(c => c.toLowerCase()));
+      queries = queries.filter(({ pairColors }) => pairColors.every(c => want.has(c.toLowerCase())));
+    }
+
+    if (!queries || queries.length === 0) {
+      console.warn(`No F2L queries found for steps: ${steps.map(s => s.step).join(', ')}`);
+      return [];
+    }
+
+    const suggestions = this.runF2LQueries(queries);
+
+    const filteredSuggestions = this.filterF2LSuggestions(suggestions);
 
     // Calculate cutoff time for each pair
     const cutoffTimes = new Map<string, number>();

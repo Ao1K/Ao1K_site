@@ -16,6 +16,7 @@ A completely intuitive f2l guide
 Add 
 F R' U' R F' and variants manually. Maybe just all 5 movers (BRU, FRU, BLU, FLU)
 L U L2 U' L2 U L'
+L' U L U L' U L U' L U L'
 R' U R U R' U R U' R' U' R
 R U' R' D R' U R D'
 R U R' U2 R U' R' U R U' R'
@@ -23,4 +24,12 @@ Roux algs
 ZBLL algs
 Lefty algs
 
+Remove
+U R2' u' R U' R U R' D x' U2 L F' L' F F'
+
 Think about function of solve review carefully. Form will follow.
+- Add breakdown into MovesTextEditor? Explore adding divs.
+
+F2L dismissal should be based on empty region, not empty line. If dismissed on one empty line, going to the next empty line shouldn't show it again.
+
+Clicking play on mobile must focus view on cube.

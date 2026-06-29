@@ -56,7 +56,7 @@ export default function EO() {
 
 
         <h1>EO recognition</h1>
-        <p>{"In the videos earlier, we had to attempt to solve the edge to check if it was good or not. It'd be a lot more useful if we didn't have turn the cube to check. Then there's no wasted moves, since we're usually solving more than just one edge. But to do this, we'd need to find some relationship between the colors of cube."}</p>
+        <p>{"In the videos earlier, we had to attempt to solve the edge to check if it was good or not. It'd be a lot more useful if we didn't have turn the cube to check. Then there's no wasted moves. But to do this, we'd need to find some relationship between the colors of cube."}</p>
         <p>{`We'll focus on CFOP in this lesson, but these concepts will apply to any method.`}</p>
 
         <h2>Comparing colors</h2>
@@ -158,7 +158,7 @@ export default function EO() {
         </span>
 
         <h2>Aside: the ZZ method</h2>
-        <p>{"EO is useful for CFOP, but it is an integral part of the ZZ method. It also provides great intuition for what EO really works."}</p>
+        <p>{"EO is useful for CFOP, but it is an integral part of the ZZ method. It also provides great intuition for how EO really works."}</p>
         <span>
           You can find an excellent{' '}
           <a 

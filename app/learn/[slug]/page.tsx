@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { lessons } from "../../../components/learn/lessons";
 import EO from "../../../components/learn/postContent/eo";
@@ -8,6 +9,20 @@ const lessonComponents: Record<string, React.ComponentType> = {
 
 export function generateStaticParams() {
   return lessons.map((lesson) => ({ slug: lesson.slug }));
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const lesson = lessons.find((l) => l.slug === slug);
+
+  return {
+    title: "Ao1K – Lesson",
+    description: lesson?.title ?? "Learn to cube",
+  };
 }
 
 export default async function LearnLesson({

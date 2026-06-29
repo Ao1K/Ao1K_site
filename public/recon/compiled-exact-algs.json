@@ -7510,7 +7510,7 @@
       "step": "f2l"
     },
     {
-      "alg": "U2 L U2' L' U2 L U' L'",
+      "alg": "U2 L U2 L' U2 L U' L'",
       "hash": "dcblefghijkatcjfnqgwabcdef",
       "eoValue": 0,
       "step": "f2l"
@@ -26440,13 +26440,13 @@
       "step": "f2l"
     },
     {
-      "alg": "y U2 L U2' L' U2 L U' L'",
+      "alg": "y U2 L U2 L' U2 L U' L'",
       "hash": "vadcefghinklgqdcnltwabcdef",
       "eoValue": 514,
       "step": "f2l"
     },
     {
-      "alg": "y' U2 L U2' L' U2 L U' L'",
+      "alg": "y' U2 L U2 L' U2 L U' L'",
       "hash": "bawcefghijpljiawnqtfabcdef",
       "eoValue": 1032,
       "step": "f2l"

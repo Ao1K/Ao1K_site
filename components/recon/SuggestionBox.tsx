@@ -45,7 +45,7 @@ const sortSuggestions = (items: SuggestionBoxSuggestion[]) => {
 export const SuggestionBox = ({suggestions, topOffset, leftOffset, handleSuggestionRequest, handleSuggestionAccept, handleSuggestionReject }: SuggestionBoxProps) => {
   const sortedSuggestions = sortSuggestions(suggestions);
   const selectedCardRef = useRef<number | null>(null);
-  
+
   const selectCard = (index: number) => {
     // selection is purely visual (drives isFocused), so the editor keeps real DOM focus and the
     // user can keep typing while arrowing through suggestions. the highlight re-renders because

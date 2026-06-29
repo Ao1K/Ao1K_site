@@ -34625,7 +34625,7 @@
   },
   {
     "new": false,
-    "value": "U2 L U2' L' U2 L U' L'",
+    "value": "U2 L U2 L' U2 L U' L'",
     "step": "f2l",
     "name": "",
     "add_y": false,
@@ -34633,7 +34633,7 @@
   },
   {
     "new": false,
-    "value": "y U L U2' L' U2 L U' L'",
+    "value": "y U L U2 L' U2 L U' L'",
     "step": "f2l",
     "name": "",
     "add_y": false,
@@ -34641,7 +34641,7 @@
   },
   {
     "new": false,
-    "value": "y U' L U2' L' U2 L U' L'",
+    "value": "y U' L U2 L' U2 L U' L'",
     "step": "f2l",
     "name": "",
     "add_y": false,
@@ -34649,7 +34649,7 @@
   },
   {
     "new": false,
-    "value": "y U2 L U2' L' U2 L U' L'",
+    "value": "y U2 L U2 L' U2 L U' L'",
     "step": "f2l",
     "name": "",
     "add_y": false,
@@ -34673,7 +34673,7 @@
   },
   {
     "new": false,
-    "value": "y' U2 L U2' L' U2 L U' L'",
+    "value": "y' U2 L U2 L' U2 L U' L'",
     "step": "f2l",
     "name": "",
     "add_y": false,

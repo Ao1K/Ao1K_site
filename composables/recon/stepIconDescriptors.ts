@@ -121,7 +121,7 @@ function gridColorMap(config: ColorConfig): Record<number, string> {
 
 // --- individual icon builders ---
 
-function crossIcon(crossColor: string, bg: string): IconDescriptor {
+export function crossIcon(crossColor: string, bg: string): IconDescriptor {
   return {
     viewBox: '0 0 24 24',
     shapes: [
@@ -134,6 +134,18 @@ function crossIcon(crossColor: string, bg: string): IconDescriptor {
       { type: 'rect', x: 0, y: 16, width: 8, height: 8, fill: bg },
       { type: 'rect', x: 8, y: 16, width: 8, height: 8, fill: crossColor },
       { type: 'rect', x: 16, y: 16, width: 8, height: 8, fill: bg },
+    ],
+  };
+}
+
+// simplified F2L pair icon: a square split along the anti-diagonal into two
+// colored triangles, without the slot knockout the recon pair icon uses
+export function simplePairIcon(colorA: string, colorB: string): IconDescriptor {
+  return {
+    viewBox: '0 0 24 24',
+    shapes: [
+      { type: 'polygon', points: '0,0 24,0 0,24', fill: colorA },
+      { type: 'polygon', points: '24,0 24,24 0,24', fill: colorB },
     ],
   };
 }

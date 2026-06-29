@@ -2,29 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { HexColorPicker } from 'react-colorful';
-import PhGear from './icons/settings';
+import PhGear, { PhGearFill } from './icons/settings';
 import { useCubeColors, useShowControls, useShowSplits, useHintFaceletsElevation, DEFAULT_HINT_FACELETS_ELEVATION, DEFAULT_CUBE_COLORS, type CubeColors } from '../composables/useSettings';
-
-function GridIcon({ size }: { size: number }) {
-  const edgeSize = 3;
-  const cellSize = 6;
-  const getPos = (i: number) => i === 0 ? 0 : i === 4 ? 21 : edgeSize + (i - 1) * cellSize;
-  const getSize = (i: number) => (i === 0 || i === 4) ? edgeSize : cellSize;
-  const gray = '#888';
-  const bg = '#fff';
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24">
-      {Array.from({ length: 25 }, (_, k) => {
-        const row = Math.floor(k / 5), col = k % 5;
-        const isCorner = (row === 0 || row === 4) && (col === 0 || col === 4);
-        return (
-          <rect key={k} x={getPos(col)} y={getPos(row)} width={getSize(col)} height={getSize(row)}
-            fill={isCorner ? 'transparent' : gray} />
-        );
-      })}
-    </svg>
-  );
-}
 
 const FACE_LABELS: { key: keyof CubeColors; label: string }[] = [
   { key: 'up', label: 'Up' },
@@ -89,14 +68,18 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
     <div ref={menuRef} id="settings-menu-container" className="relative inline-block">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-center p-1 rounded group w-12 h-12 transition-colors"
+        className="flex items-center justify-center p-1 group gear w-12 h-12 relative"
         title="Settings"
       >
-        <PhGear className="text-light_accent w-8 h-8 group-hover:bg-primary-100" />
+        <PhGear className="text-light_accent w-8 h-8 absolute z-10" />
+        <PhGearFill className={`group-hover:text-primary-100 w-8 h-8  ${isOpen ? "text-primary-100" : "text-primary-200"} absolute z-0  transition-colors`}/>
       </button>
 
       {isOpen && (
         <div className="absolute right-0 top-14 bg-primary-100 border border-primary-300 rounded-sm shadow-lg z-50 min-w-62.5">
+          {/* recon-only settings; the algs page omits player controls and splits */}
+          {page !== 'algs' && (
+          <>
           {/* Show Controls Toggle */}
           <div className="px-3 py-2 border-b border-primary-200">
             <label className="flex items-center justify-between cursor-pointer">
@@ -122,8 +105,10 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
               />
             </label>
           </div>
+          </>
+          )}
 
-          {/* Hint Facelets Elevation Slider */}
+          {/* Hint Facelets Elevation Slider — shown on both the recon and algs cubes */}
           <div className="px-3 py-2 border-b border-primary-200">
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold text-light_accent">Hint Facelet Distance</span>

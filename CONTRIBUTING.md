@@ -22,17 +22,27 @@ Discuss new feature ideas on our [discord](https://discord.gg/WMm6JBgt2W). You c
    
 
 ### Pull Requests: 
- - Do not make pull requests for purely cosmetic changes.
+
+The most likely way to get a PR accepted would be through what you want to change on Discord with an admin. You could also take a look at open [Issues](https://github.com/Ao1K/Ao1K_site/issues).
+
+Features should prioritize UX and be easily reachable by the user.
+
+Any UI changes must work well on mobile devices.
+
+**Restrictions:**
+ - LLM use is all well and good, but you must fully understand your PR.
+ - Do not make pull requests for purely cosmetic changes to the code.
  - Do not include code that violates the [MIT license](https://github.com/Ao1K/Ao1K_site/blob/main/LICENSE).
- - Features should prioritize UX and be easily reachable by the user.
- - Any UI changes must work well on mobile devices.
 
 
 
 ### Environment setup: 
-These instructions are untested. Contact an admin if you run into trouble. 
 
-1. Install npm and node.js (the latest LTM version).
-2. Clone the repository using `git clone -b development https://github.com/Ao1K/Ao1K_site`
-3. Navigate to the project directory in a terminal. Run `npm install` to install project dependencies.
-4. Run `npm run dev` to begin testing your code.
+1. Install [Node.js 24 (LTS)](https://nodejs.org). This includes `npm` and Corepack.
+2. Enable Corepack: run `corepack enable` from any directory. This activates the pnpm command for later.
+3. Clone the repository using `git clone -b development https://github.com/Ao1K/Ao1K_site`
+4. Navigate (`cd`) to the project directory in a terminal. 
+5. Run `pnpm install` to install project dependencies.
+6. Run `pnpm dev` to begin testing your code.
+
+Contact an admin if you run into trouble!

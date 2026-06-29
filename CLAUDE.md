@@ -26,7 +26,11 @@ npm run sort-algs    # Sort algorithm database (rawAlgs.tsx)
 
 ## Style
 
-Typically only add comments for code that appears unintuitive. Start comments with lowercase text, example: `// correctly formatted comment`.
+### Comments
+
+Never write comments under your own volition. If, rarely, you think a comment is crucial, request the user for permission to write a brief comment.
+
+Start approved comments with lowercase text, example: `// correctly formatted comment. Next sentence example`.
 
 ## State management style
 

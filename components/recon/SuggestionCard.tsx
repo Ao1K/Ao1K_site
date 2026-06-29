@@ -1,5 +1,7 @@
 import { useSyncedSettings } from '../../composables/useSettings';
-import React, { JSX } from 'react';
+import { useAlgFavorites } from '../../composables/algs/algFavorites';
+import Parrot from '../icons/parrot';
+import React, { JSX, useState } from 'react';
 
 interface SuggestionCardProps {
   alg: string;
@@ -95,6 +97,21 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
   const { settings } = useSyncedSettings();
   const { cubeColors } = settings;
 
+  const { isFavorite, addFavorite, setFavoriteStatus, removeFavorite } = useAlgFavorites();
+  const favorited = isFavorite(alg);
+
+  const [animating, setAnimating] = useState(false);
+
+  const toggleFavorite = () => {
+    if (favorited) {
+      removeFavorite(alg);
+    } else {
+      addFavorite(alg);
+      setFavoriteStatus(alg, 'learned');
+      setAnimating(true);
+    }
+  };
+
   // Create dynamic color mapping based on current cube colors
   const letterToColor: Record<string, string> = {
     W: cubeColors.up,      // white/up
@@ -112,9 +129,9 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
   const icon = renderStepIcon(steps, letterToColor, defaultPairColors, defaultMultislotColors, eoColor);
 
   return (
-    <div 
+    <div
       className={
-        `hover:bg-primary-100 hover:shadow-md
+        `group hover:bg-primary-100 hover:shadow-md
         flex flex-row items-center gap-3 border text-dark text-md p-1
         ${isFocused ? 'bg-primary-100 shadow-md border-primary-100' : 'bg-primary-200 border-neutral-400'}
         ${placement === '0'  ? 'rounded-t-sm' : ''}
@@ -127,10 +144,26 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
       id={id}
       tabIndex={0}
     >
-      <div className="w-6 h-6"> 
+      <div className="w-6 h-6">
         {icon}
       </div>
       <div className="grow">{alg}</div>
+      <button
+        type="button"
+        aria-label={favorited ? 'Unfavorite alg' : 'Favorite alg (f)'}
+        title={favorited ? 'Unfavorite alg' : 'Favorite alg (f)'}
+        aria-pressed={favorited}
+        className={`shrink-0 p-2 -m-2 text-neutral-500 hover:text-primary-800 transition-opacity
+          group-hover:opacity-100 pointer-coarse:opacity-100 ${favorited ? 'opacity-100' : 'opacity-0'}`}
+        onClick={(event) => { event.stopPropagation(); toggleFavorite(); }}
+      >
+        <Parrot
+          filled={favorited}
+          animating={animating}
+          onAnimationEnd={(event) => { if (event.animationName === 'parrot-squawk') setAnimating(false); }}
+          className="w-6 h-6"
+        />
+      </button>
     </div>
   );
 };

@@ -45,6 +45,7 @@ interface EditorProps {
   suggestionLineIndexRef?: React.MutableRefObject<number | null>;
   initialContent?: string;
   lineHeight?: number;
+  simpleInput?: boolean;
 }
 
 export interface ImperativeRef {
@@ -70,6 +71,7 @@ function MovesTextEditor({
   suggestionLineIndexRef,
   initialContent,
   lineHeight,
+  simpleInput = false,
 }: EditorProps) {
 
   const suggestions = suggestionsRef?.current;
@@ -143,6 +145,14 @@ function MovesTextEditor({
 
     let lines = splitHTMLintoLines(html);
     lines = cleanLines(lines);
+
+    // simpleInput disables multi-line input
+    if (simpleInput && lines.length > 1) {
+      const merged = lines
+        .map((line) => line.replace(/^<div>/, '').replace(/<br><\/div>$/, ''))
+        .join(' ');
+      lines = cleanLines([merged]);
+    }
 
     return lines;
   }
@@ -1238,7 +1248,45 @@ function MovesTextEditor({
     }
   };
 
+  const simpleRestore = (html: string) => {
+    contentEditableRef.current!.innerHTML = html;
+    updateHistoryBtns();
+    setCaretToCaretSpan();
+    moveHistory.current.status = 'in_progress_one';
+    handleInput();
+    moveHistory.current.status = 'ready';
+  };
+
+  const simpleUndo = () => {
+    const history = moveHistory.current.history;
+    let index = moveHistory.current.index;
+    if (index < 1) return;
+    moveHistory.current.index = --index;
+
+    let prevHTML = history[index][idIndex];
+    while (prevHTML === '<unchanged>' && index > 0) {
+      prevHTML = history[--index][idIndex];
+    }
+
+    simpleRestore(prevHTML);
+  };
+
+  const simpleRedo = () => {
+    const history = moveHistory.current.history;
+    let index = moveHistory.current.index;
+    if (index + 1 > moveHistory.current.MAX_HISTORY || index + 1 >= history.length) return;
+    moveHistory.current.index = ++index;
+
+    let nextHTML = history[index][idIndex];
+    while (nextHTML === '<unchanged>' && index + 1 < history.length) {
+      nextHTML = history[++index][idIndex];
+    }
+
+    simpleRestore(nextHTML);
+  };
+
   const handleUndo = () => {
+    if (simpleInput) return simpleUndo();
 
     const startStatus = statusTransitions[moveHistory.current.status]?.start;
     if (startStatus) {
@@ -1288,6 +1336,7 @@ function MovesTextEditor({
 
 
   const handleRedo = () => {
+    if (simpleInput) return simpleRedo();
 
     const startStatus = statusTransitions[moveHistory.current.status]?.start;
     if (startStatus) {
@@ -1668,7 +1717,7 @@ function MovesTextEditor({
         role="textbox"
         autoCorrect="off"
         autoCapitalize="characters" // annoying for comments and rotations. Could implement custom fix.
-        tabIndex={idIndex === 0 ? 1 : 3}
+        tabIndex={simpleInput ? undefined : (idIndex === 0 ? 1 : 3)}
       />
       <SuggestionManager
         ref={suggestionManagerRef}
