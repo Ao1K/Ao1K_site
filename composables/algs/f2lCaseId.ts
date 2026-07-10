@@ -23,8 +23,8 @@ export interface F2lCaseConfig {
   // net quarter turns about the vertical axis; the logical y state is ((yTurns % 4) + 4) % 4.
   // a counter (rather than 0–3) so the cube animates in the pressed direction across the wrap.
   yTurns: number;
-  // the placed F2L corner / edge, in the cube-fixed frame (null until located).
-  // buildF2lCubeState spins this by yTurns to express the case from the viewing angle.
+  // the placed F2L corner / edge, in the literal frame (the cube held cross-down and turned
+  // yTurns; null until located). a y turn rotates these locations along with the cube.
   corner: CornerPlacement | null;
   edge: EdgePlacement | null;
   // whether each orientation step is done. orientation 0 is valid, so the value can't tell us
@@ -33,7 +33,7 @@ export interface F2lCaseConfig {
   edgeOriDone: boolean;
   // F2L slots already filled with solved context pairs
   filledSlots: F2lSlot[];
-  // Full EO: cube-fixed free edge locations marked bad (flipped). null when the optional
+  // Full EO: literal-frame free edge locations marked bad (flipped). null when the optional
   // Full EO step is not engaged; only meaningful while on STEP.FULL_EO.
   fullEO: EdgeLocation[] | null;
 }
@@ -60,38 +60,22 @@ export const STEP = {
   FULL_EO: 6,
 } as const;
 
-// diagram order at y=0: index → physical location (see CubeRefDiagram comments)
+// diagram order: index → location (see CubeRefDiagram comments)
 const CORNER_LOCS: CornerLocation[] = ['UFR', 'UBR', 'UBL', 'UFL', 'DFR', 'DBR', 'DBL', 'DFL'];
 const EDGE_LOCS: EdgeLocation[] = ['UF', 'UR', 'UB', 'UL', 'FR', 'BR', 'BL', 'FL'];
 const F2L_SLOT_ORDER: F2lSlot[] = ['FR', 'BR', 'BL', 'FL'];
 
-const rotateSlotIndex = (index: number, y: number): number => (((index + y) % 4) + 4) % 4;
-
-function viewToLoc<T>(locs: T[], i: number, y: number): T {
-  return locs[Math.floor(i / 4) * 4 + rotateSlotIndex(i % 4, y)];
-}
-function locToView<T>(locs: T[], loc: T, y: number): number {
-  const abs = locs.indexOf(loc);
-  return Math.floor(abs / 4) * 4 + rotateSlotIndex(abs % 4, -y);
-}
-
-export const viewEoFlip = (loc: EdgeLocation, y: number): EdgeOrientation =>
-  EDGE_LOC_FACES[loc].includes('up') && y % 2 === 1 ? 1 : 0;
-
-// the Full EO free edges ordered by their on-screen position, so the case-ID bits stay
-// positionally stable as the cube is spun (matching how corner/edge indices are encoded).
+// the Full EO free edges ordered by location index, so the case-ID bits stay positionally
+// stable (matching how corner/edge indices are encoded).
 export function freeEoEdgesInViewOrder(config: F2lCaseConfig): EdgeLocation[] {
-  const y = ((config.yTurns % 4) + 4) % 4;
   const free = freeEoEdgeSet(config.edge?.loc ?? null, config.filledSlots);
-  return [...free].sort((a, b) => locToView(EDGE_LOCS, a, y) - locToView(EDGE_LOCS, b, y));
+  return [...free].sort((a, b) => EDGE_LOCS.indexOf(a) - EDGE_LOCS.indexOf(b));
 }
 
-// how many edges are already pinned bad outside the Full EO selection (just the placed pair
-// edge), counted in the view frame the Full EO bits live in
+// how many edges are already pinned bad outside the Full EO selection (just the placed pair edge)
 const determinedBadCount = (config: F2lCaseConfig): number => {
   if (!config.edge) return 0;
-  const y = ((config.yTurns % 4) + 4) % 4;
-  return config.edge.orientation ^ viewEoFlip(config.edge.loc, y);
+  return config.edge.orientation;
 };
 
 export const isFullEOActive = (config: F2lCaseConfig): boolean => config.fullEO != null;
@@ -122,12 +106,11 @@ export function configToRaw(config: F2lCaseConfig): string {
   const y = ((config.yTurns % 4) + 4) % 4;
   let raw = `y${y}`;
   if (!config.corner) return raw;
-  raw += `${locToView(CORNER_LOCS, config.corner.loc, y)}${config.corner.orientation}`;
+  raw += `${CORNER_LOCS.indexOf(config.corner.loc)}${config.corner.orientation}`;
   if (!config.edge) return raw;
-  raw += `${locToView(EDGE_LOCS, config.edge.loc, y)}${config.edge.orientation ^ viewEoFlip(config.edge.loc, y)}`;
+  raw += `${EDGE_LOCS.indexOf(config.edge.loc)}${config.edge.orientation}`;
   for (let vi = 0; vi < 4; vi++) {
-    const cubeSlot = F2L_SLOT_ORDER[rotateSlotIndex(vi, y)];
-    raw += config.filledSlots.includes(cubeSlot) ? '1' : '0';
+    raw += config.filledSlots.includes(F2L_SLOT_ORDER[vi]) ? '1' : '0';
   }
   if (config.fullEO != null) {
     for (const loc of freeEoEdgesInViewOrder(config)) raw += config.fullEO.includes(loc) ? '1' : '0';
@@ -157,7 +140,7 @@ export function isValidChar(i: number, ch: string, ctx?: SlotContext): boolean {
     case 9: {
       if (n !== 0 && n !== 1) return false;
       if (n === 0 || !ctx) return true;
-      const slot = F2L_SLOT_ORDER[rotateSlotIndex(i - 6, ctx.y)];
+      const slot = F2L_SLOT_ORDER[i - 6];
       if (slot === ctx.homeSlot) return false;
       if (ctx.cornerLoc === F2L_SLOT_PIECES[slot].corner) return false;
       if (ctx.edgeLoc === F2L_SLOT_PIECES[slot].edge) return false;
@@ -173,9 +156,9 @@ export function buildSlotContext(raw: string, cross?: FaceKey, pair?: [FaceKey, 
   const y = parseInt(raw[1]);
   return {
     y,
-    cornerLoc: viewToLoc(CORNER_LOCS, parseInt(raw[2]), y),
-    edgeLoc: viewToLoc(EDGE_LOCS, parseInt(raw[4]), y),
-    homeSlot: cross && pair ? f2lPairHomeSlot(cross, pair) : null,
+    cornerLoc: CORNER_LOCS[parseInt(raw[2])],
+    edgeLoc: EDGE_LOCS[parseInt(raw[4])],
+    homeSlot: cross && pair ? f2lPairHomeSlot(cross, pair, y) : null,
   };
 }
 
@@ -194,14 +177,14 @@ export function rawToConfig(raw: string, cross?: FaceKey, pair?: [FaceKey, FaceK
   const config: F2lCaseConfig = { ...DEFAULT_F2L_CONFIG, yTurns: y, step: STEP.CORNER_LOC };
   if (len < 3) return config;
 
-  config.corner = { loc: viewToLoc(CORNER_LOCS, parseInt(raw[2]), y), orientation: len >= 4 ? parseInt(raw[3]) as CornerOrientation : 0 };
+  config.corner = { loc: CORNER_LOCS[parseInt(raw[2])], orientation: len >= 4 ? parseInt(raw[3]) as CornerOrientation : 0 };
   config.cornerOriDone = len >= 4;
   config.step = len >= 4 ? STEP.EDGE_LOC : STEP.CORNER_ORI;
   if (len < 5) return config;
 
-  const edgeLoc = viewToLoc(EDGE_LOCS, parseInt(raw[4]), y);
-  const edgeOriView = len >= 6 ? parseInt(raw[5]) : 0;
-  config.edge = { loc: edgeLoc, orientation: (edgeOriView ^ viewEoFlip(edgeLoc, y)) as EdgeOrientation };
+  const edgeLoc = EDGE_LOCS[parseInt(raw[4])];
+  const edgeOri = len >= 6 ? parseInt(raw[5]) : 0;
+  config.edge = { loc: edgeLoc, orientation: edgeOri as EdgeOrientation };
   config.edgeOriDone = len >= 6;
   config.step = len >= 6 ? STEP.SLOTS : STEP.EDGE_ORI;
   if (len < 6) return config;
@@ -209,9 +192,9 @@ export function rawToConfig(raw: string, cross?: FaceKey, pair?: [FaceKey, FaceK
   // apply each typed slot bit independently so partial slot input updates the cube right away
   config.filledSlots = [];
   for (let vi = 0; vi < 4 && 6 + vi < len; vi++) {
-    if (raw[6 + vi] === '1') config.filledSlots.push(F2L_SLOT_ORDER[rotateSlotIndex(vi, y)]);
+    if (raw[6 + vi] === '1') config.filledSlots.push(F2L_SLOT_ORDER[vi]);
   }
-  if (len < 10) return config;
+  if (len <= 10) return config;
 
   // Full EO bits (positions 10+), in the same view order configToRaw emits them
   config.step = STEP.FULL_EO;

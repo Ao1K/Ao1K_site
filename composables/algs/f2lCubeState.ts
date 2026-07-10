@@ -7,7 +7,7 @@
 
 import type { CubeState as SimpleCubeState, Color } from '../recon/SimpleCube';
 import {
-  ORIENTATIONS,
+  orientationFor,
   F2L_SLOT_PIECES,
   cornerFaceColors,
   edgeFaceColors,
@@ -18,7 +18,6 @@ import {
   type EdgeLocation,
 } from './cubePaint';
 import type { F2lCaseConfig } from '../../components/algs/f2lSetup';
-import { viewEoFlip } from './f2lCaseId';
 
 const FACE_KEYS: FaceKey[] = ['up', 'down', 'front', 'right', 'back', 'left'];
 
@@ -100,7 +99,7 @@ export function buildF2lCubeState(
   pair: [FaceKey, FaceKey],
 ): SimpleCubeState {
   const state = solvedTemplate();
-  const orient = ORIENTATIONS[cross];
+  const orient = orientationFor(cross, config.yTurns);
 
   const usedEdges = new Set<string>();
   const usedCorners = new Set<string>();
@@ -159,7 +158,7 @@ export function buildF2lCubeState(
 
   // the placed F2L pair (reuse cubePaint's orientation logic for exact colors)
   if (config.corner) placeCorner(config.corner.loc, cornerFaceColors(config.corner.loc, config.corner.orientation, cross, pair));
-  if (config.edge) placeEdge(config.edge.loc, edgeFaceColors(config.edge.loc, config.edge.orientation, cross, pair));
+  if (config.edge) placeEdge(config.edge.loc, edgeFaceColors(config.edge.loc, config.edge.orientation, orient, pair));
 
   // fill leftover edges: the four edges carrying the top color go into the remaining
   // top-then-middle locations, then any remaining edges fill whatever is left.
@@ -173,16 +172,13 @@ export function buildF2lCubeState(
   // the open edge locations are exactly the Full EO free edges. When Full EO is engaged, place
   // each leftover edge oriented (good) and flip the ones the user marked bad, so getEOvalue reads
   // the user's chosen EO; otherwise orientation is irrelevant, so any valid arrangement will do.
-  // fullEO is view-frame, so undo the y spin's up-layer EO flip to get the cube-fixed orientation.
   const badEdges = config.fullEO;
-  const y = (((config.yTurns % 4) + 4) % 4);
   orderedEdges.forEach((piece, i) => {
     const loc = openEdgeLocs[i] as EdgeLocation | undefined;
     if (!loc) return;
     if (badEdges) {
-      let map = orientEdgeMap(loc, piece as [FaceKey, FaceKey], cross);
-      const cubeBad = badEdges.includes(loc) !== (viewEoFlip(loc, y) === 1);
-      if (cubeBad) map = flipEdgeMap(map);
+      let map = orientEdgeMap(loc, piece as [FaceKey, FaceKey], orient);
+      if (badEdges.includes(loc)) map = flipEdgeMap(map);
       placeEdge(loc, map);
     } else {
       placeEdge(loc, assignByFaceOrder(EDGE_FACELETS[loc], piece));
@@ -198,31 +194,7 @@ export function buildF2lCubeState(
     placeCorner(loc, assignByFaceOrder(CORNER_FACELETS[loc], piece));
   });
 
-  // the placements above sit in the cube-fixed frame (true-green front). The cuber dialed
-  // in a viewing angle with y turns, so spin the finished state to match — the interpreter
-  // reads the centers to orient its suggestions, so this is what aligns them to that angle.
-  const yTurns = (((config.yTurns % 4) + 4) % 4);
-  let oriented = state;
-  for (let i = 0; i < yTurns; i++) oriented = rotateStateY(oriented);
-  return oriented;
-}
-
-type Face = SimpleCubeState[number];
-
-// one quarter y rotation (clockwise viewed from above, matching the preview's +y button)
-function rotateStateY(state: SimpleCubeState): SimpleCubeState {
-  const [up, down, front, right, back, left] = state;
-  const cw = (f: Face): Face => [
-    [f[2][0], f[1][0], f[0][0]],
-    [f[2][1], f[1][1], f[0][1]],
-    [f[2][2], f[1][2], f[0][2]],
-  ];
-  const ccw = (f: Face): Face => [
-    [f[0][2], f[1][2], f[2][2]],
-    [f[0][1], f[1][1], f[2][1]],
-    [f[0][0], f[1][0], f[2][0]],
-  ];
-  return [cw(up), ccw(down), right, back, left, front];
+  return state;
 }
 
 // maps a location's physical faces to a piece's identities in order — an arbitrary but

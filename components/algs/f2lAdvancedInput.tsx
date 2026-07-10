@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import CaretIcon from '../icons/dropdown';
 import CopyIcon from '../icons/copy';
-import { pairsForCross, type FaceKey } from '../../composables/algs/cubePaint';
+import { type FaceKey } from '../../composables/algs/cubePaint';
 import {
   configToRaw,
   rawToConfig,
@@ -108,23 +108,6 @@ function CubeRefDiagram() {
   );
 }
 
-const DEFAULT_PAIR = pairsForCross('up')[0];
-
-// the default cross/pair is assumed when p is absent, so omit it to keep a reset URL clean
-const isDefaultSelection = (cross: FaceKey, pair: [FaceKey, FaceKey]): boolean =>
-  cross === 'up' && pair[0] === DEFAULT_PAIR[0] && pair[1] === DEFAULT_PAIR[1];
-
-function writeURLParam(key: string, value: string | null) {
-  const params = new URLSearchParams(window.location.search);
-  if (value === null || value === '') {
-    params.delete(key);
-  } else {
-    params.set(key, value);
-  }
-  const qs = params.toString();
-  window.history.replaceState({}, '', qs ? `${window.location.pathname}?${qs}` : window.location.pathname);
-}
-
 interface F2lAdvancedInputProps {
   config: F2lCaseConfig;
   setConfig: (c: F2lCaseConfig) => void;
@@ -137,22 +120,11 @@ const F2lAdvancedInput = ({ config, setConfig, cross, pair }: F2lAdvancedInputPr
   const [rawInput, setRawInput] = useState(() => configToRaw(config));
   const [hintIndex, setHintIndex] = useState(0);
   const [prevConfig, setPrevConfig] = useState(config);
-  const hydrated = useRef(false);
 
   if (prevConfig !== config) {
     setPrevConfig(config);
     setRawInput(configToRaw(config));
   }
-
-  useEffect(() => {
-    if (!hydrated.current) {
-      hydrated.current = true;
-      return;
-    }
-    const raw = configToRaw(config);
-    writeURLParam('c', raw.length > 2 ? raw : null);
-    writeURLParam('p', isDefaultSelection(cross, pair) ? null : encodePrefixFromState(cross, pair));
-  }, [config, cross, pair]);
 
   const handleConfigInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const typed = e.target.value.replace(/[-()]/g, '');

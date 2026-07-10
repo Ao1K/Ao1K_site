@@ -28,10 +28,11 @@ export const STEPS: { label: string }[] = [
   { label: 'Select an edge' },
   { label: 'Click the edge again to flip it' },
   { label: 'Click a slot to mark it solved or unsolved' },
-  { label: 'Click edges to mark bad ones (optional)' },
+  { label: 'Click edges to toggle EO (Optional)' },
 ];
 
-// drops the slot a piece location belongs to, if any (top-layer pieces belong to no slot)
+// drops the slot a piece location belongs to, if any.
+// Top-layer pieces belong to no slot
 function unmarkSlotAt(filledSlots: F2lSlot[], piece: PieceRef): F2lSlot[] {
   const slot = f2lSlotOf(piece);
   return slot ? filledSlots.filter((s) => s !== slot) : filledSlots;
@@ -89,7 +90,7 @@ export function toggleSlot(
   if (config.corner?.loc === corner || config.edge?.loc === edge) return config;
 
   // block if this would fill the pair's home slot
-  if (f2lPairHomeSlot(cross, pair) === slot) return config;
+  if (f2lPairHomeSlot(cross, pair, config.yTurns) === slot) return config;
 
   return { ...config, filledSlots: [...config.filledSlots, slot] };
 }
@@ -106,7 +107,7 @@ export function highlightedPieces(
     case STEP.EDGE_LOC:
       return (Object.keys(EDGE_LOC_FACES) as EdgeLocation[]).map((loc) => ({ pieceType: 'EDGES', loc }));
     case STEP.SLOTS: {
-      const home = f2lPairHomeSlot(cross, pair);
+      const home = f2lPairHomeSlot(cross, pair, config.yTurns);
       const pieces: PieceRef[] = [];
       for (const slot of Object.keys(F2L_SLOT_PIECES) as F2lSlot[]) {
         if (config.filledSlots.includes(slot) || home === slot) continue;
@@ -161,7 +162,7 @@ function isStepComplete(config: F2lCaseConfig, i: number): boolean {
     case STEP.EDGE_ORI:
       return config.edgeOriDone;
     case STEP.SLOTS:
-      return config.filledSlots.length > 0;
+      return config.step > STEP.SLOTS;
     case STEP.FULL_EO:
       return config.fullEO != null && isFullEOValid(config);
     default:

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useImperativeHandle, useRef } from 'react';
+import React, { useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { TwistyPlayer } from 'cubing/twisty';
 import { rotateAlgByY } from '../../composables/algs/algMoves';
 import {
@@ -27,6 +27,8 @@ import {
   buildF2lOverrides,
   freeEoEdgeSet,
   physicalLocOfFacelet,
+  rotateCornerLocY,
+  rotateEdgeLocY,
   faceletId,
   type FaceKey,
   type FaceletId,
@@ -65,16 +67,16 @@ interface TwistyClickableProps {
   cross?: FaceKey;
   // the F2L pair colors; together with cross they define the placed piece's colors
   pair: [FaceKey, FaceKey];
-  // currently placed F2L corner / edge (cube-fixed), painted via overrides
+  // currently placed F2L corner / edge (literal frame), painted via overrides
   corner: CornerPlacement | null;
   edge: EdgePlacement | null;
-  // F2L slots filled with solved context pairs (cube-fixed)
+  // F2L slots filled with solved context pairs (literal frame)
   filledSlots: F2lSlot[];
-  // pieces tinted as click hints for the active step (cube-fixed)
+  // pieces tinted as click hints for the active step (literal frame)
   highlightedPieces: PieceRef[];
   // Full EO step: recolor the free edges to show good (eo color) / bad (grey)
   eoActive: boolean;
-  // cube-fixed free edges marked bad in the Full EO step
+  // literal-frame free edges marked bad in the Full EO step
   badEdges: EdgeLocation[];
   // net quarter turns about the vertical axis; the cube eases toward this orientation
   yTurns: number;
@@ -91,6 +93,8 @@ const hexString = (hex: number) => `#${hex.toString(16).padStart(6, '0')}`;
 const TwistyClickable = ({ cross = 'up', pair, corner, edge, filledSlots, highlightedPieces, eoActive, badEdges, yTurns, onLocationClick, onPlaybackEnd, ref }: TwistyClickableProps) => {
   const [cubeColors] = useCubeColors();
   const [elevation] = useHintFaceletsElevation();
+  // cleared once the custom scene is built, so the cube fades in instead of a black box
+  const [loading, setLoading] = useState(true);
   const cubeColorsRef = useRef(cubeColors);
   // synced from the elevation effect so the imperative scene setup/repaint reads the latest value
   const elevationRef = useRef(elevation);
@@ -256,6 +260,7 @@ const TwistyClickable = ({ cross = 'up', pair, corner, edge, filledSlots, highli
       filledSlotsRef.current,
       highlightedPiecesRef.current,
       (face) => cubeColorsRef.current[face],
+      yTurnsRef.current,
       eoOverlay,
     );
     repaint();
@@ -283,7 +288,12 @@ const TwistyClickable = ({ cross = 'up', pair, corner, edge, filledSlots, highli
     if (!facelet) return;
 
     const loc = physicalLocOfFacelet(paintMapRef.current, facelet);
-    if (loc) onLocationClick?.(loc);
+    if (!loc) return;
+    const y = yTurnsRef.current;
+    const literal: LocationClick = loc.pieceType === 'CORNERS'
+      ? { pieceType: 'CORNERS', loc: rotateCornerLocY(loc.loc, y) }
+      : { pieceType: 'EDGES', loc: rotateEdgeLocY(loc.loc, y) };
+    onLocationClick?.(literal);
   };
 
   const handlePointerDown = (e: React.PointerEvent) => {
@@ -363,6 +373,7 @@ const TwistyClickable = ({ cross = 'up', pair, corner, edge, filledSlots, highli
   };
 
   const createCustomScene = async () => {
+    playerRef.current!.style.visibility = 'hidden';
     divRef.current!.appendChild(playerRef.current!);
 
     // cubing defers 3D setup until the player is actually intersecting the viewport
@@ -431,6 +442,8 @@ const TwistyClickable = ({ cross = 'up', pair, corner, edge, filledSlots, highli
       renderer.render(scene, camera);
     };
     animate();
+
+    setLoading(false);
   };
 
   const handleResize = () => {
@@ -592,12 +605,20 @@ const TwistyClickable = ({ cross = 'up', pair, corner, edge, filledSlots, highli
   useEffect(() => () => stopPlayback(), []);
 
   return (
-    <div
-      ref={divRef}
-      className="h-full w-full bg-black"
-      onPointerDown={handlePointerDown}
-      onPointerUp={handlePointerUp}
-    />
+    <div className="relative h-full w-full">
+      <div
+        ref={divRef}
+        id="twisty-clickable"
+        className="h-full w-full bg-black"
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+      />
+      {loading && (
+        <div className="pointer-events-none absolute inset-0 flex text-xl justify-center items-center text-primary-100">
+          Loading cube...
+        </div>
+      )}
+    </div>
   );
 };
 

@@ -53,9 +53,9 @@ function TextIcon({ label }: { label: string }) {
     <div className="flex w-11 items-center justify-center m-1">
       <div
         title={label === '?' ? 'Unrecognized step' : label}
-        className="flex h-6 w-fit px-2 py-2 items-center shrink-0  border border-neutral-400 bg-dark text-[10px] font-medium leading-none text-neutral-300"
+        className="flex h-6 w-fit px-2 py-2 items-center justify-center border border-neutral-400 bg-dark text-[10px] font-medium leading-none text-neutral-300"
       >
-        {label.slice(0, 6) || '?'}
+        <span>{label.slice(0, 6) || '?'}</span>
       </div>
     </div>
   );

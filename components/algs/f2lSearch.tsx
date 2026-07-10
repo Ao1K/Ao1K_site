@@ -15,12 +15,43 @@ import F2lSetup, {
   highlightedPieces,
   type F2lCaseConfig,
 } from './f2lSetup';
+// import F2lAdvancedInput from './f2lAdvancedInput';
 import TwistyClickable, { type LocationClick, type TwistyClickableHandle } from './TwistyClickable';
 import ReplayIcon from '../icons/replay';
-import F2lAdvancedInput from './f2lAdvancedInput';
 import F2lSuggestions from './f2lSuggestions';
 import type { Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
-import { pairsForCross,  f2lSlotOf, f2lPairHomeSlot, type FaceKey } from '../../composables/algs/cubePaint';
+import {
+  pairsForCross,
+  f2lSlotOf,
+  f2lPairHomeSlot,
+  rotateCornerLocY,
+  rotateEdgeLocY,
+  rotateSlotY,
+  type FaceKey,
+  type CornerOrientation,
+} from '../../composables/algs/cubePaint';
+import { configToRaw, encodePrefixFromState } from '../../composables/algs/f2lCaseId';
+
+const DEFAULT_PAIR = pairsForCross('up')[0];
+
+// the default cross/pair is assumed when p is absent, so omit it to keep a reset URL clean
+const isDefaultSelection = (cross: FaceKey, pair: [FaceKey, FaceKey]): boolean =>
+  cross === 'up' && pair[0] === DEFAULT_PAIR[0] && pair[1] === DEFAULT_PAIR[1];
+
+// the case (`c`) and cross/pair selection (`p`) are mirrored into the URL so a search survives
+// reload and can be shared. written only from the events that change state, never on render.
+function writeF2lURL(cross: FaceKey, pair: [FaceKey, FaceKey], config: F2lCaseConfig) {
+  const params = new URLSearchParams(window.location.search);
+  const raw = configToRaw(config);
+  const setParam = (key: string, value: string | null) => {
+    if (value) params.set(key, value);
+    else params.delete(key);
+  };
+  setParam('c', raw.length > 2 ? raw : null);
+  setParam('p', isDefaultSelection(cross, pair) ? null : encodePrefixFromState(cross, pair));
+  const qs = params.toString();
+  window.history.replaceState({}, '', qs ? `${window.location.pathname}?${qs}` : window.location.pathname);
+}
 
 interface F2lSearchProps {
   cross: FaceKey;
@@ -38,8 +69,30 @@ const F2lSearch = ({ cross, setCross, pair, setPair, config, setConfig, suggesti
   const twistyRef = useRef<TwistyClickableHandle>(null);
   const [playingAlg, setPlayingAlg] = useState<string | null>(null);
 
+  // every state change routes through one of these so the URL is updated in lockstep, at the
+  // event, rather than reactively after render.
+  const commitConfig = (next: F2lCaseConfig) => {
+    setConfig(next);
+    writeF2lURL(cross, pair, next);
+  };
+
+  const commitSelection = (nextCross: FaceKey, nextPair: [FaceKey, FaceKey], nextConfig: F2lCaseConfig) => {
+    setCross(nextCross);
+    setPair(nextPair);
+    setConfig(nextConfig);
+    writeF2lURL(nextCross, nextPair, nextConfig);
+  };
+
   const handlePlay = (alg: string) => {
     setPlayingAlg(alg);
+    const isInViewport = (el: HTMLElement) => {
+      const rect = el.getBoundingClientRect();
+      return rect.top >= 0 && rect.bottom <= (window.innerHeight || document.documentElement.clientHeight);
+    };
+    const visualizer = document.querySelector('#f2l-visualizer');
+    if (visualizer instanceof HTMLElement && !isInViewport(visualizer)) {
+      visualizer.scrollIntoView({behavior: 'smooth'});
+    }
     twistyRef.current?.playAlg(alg);
   };
 
@@ -47,34 +100,37 @@ const F2lSearch = ({ cross, setCross, pair, setPair, config, setConfig, suggesti
   const handlePlaybackEnd = useCallback(() => setPlayingAlg(null), []);
 
   // drop a filled slot that would now duplicate the selected pair's solved home
-  const dropPairHome = (nextCross: FaceKey, nextPair: [FaceKey, FaceKey]) => {
-    const home = f2lPairHomeSlot(nextCross, nextPair);
-    if (home) setConfig((c) => ({ ...c, filledSlots: c.filledSlots.filter((s) => s !== home) }));
+  const dropPairHome = (nextCross: FaceKey, nextPair: [FaceKey, FaceKey], c: F2lCaseConfig): F2lCaseConfig => {
+    const home = f2lPairHomeSlot(nextCross, nextPair, c.yTurns);
+    return home ? { ...c, filledSlots: c.filledSlots.filter((s) => s !== home) } : c;
   };
 
   const handleCrossChange = (face: FaceKey) => {
-    setCross(face);
     // keep the pair valid for the newly chosen cross
     const nextPair = pairsForCross(face)[0];
-    setPair(nextPair);
-    dropPairHome(face, nextPair);
+    commitSelection(face, nextPair, dropPairHome(face, nextPair, config));
   };
 
   const handlePairChange = (nextPair: [FaceKey, FaceKey]) => {
-    setPair(nextPair);
-    dropPairHome(cross, nextPair);
+    commitSelection(cross, nextPair, dropPairHome(cross, nextPair, config));
   };
 
-  // back to a blank setup; the advanced-input effect clears the case (and default p) from the URL
+  // back to a blank setup; commitSelection clears the case (and default p) from the URL
   const handleReset = () => {
-    setCross('up');
-    setPair(pairsForCross('up')[0]);
-    setConfig(DEFAULT_F2L_CONFIG);
+    commitSelection('up', pairsForCross('up')[0], DEFAULT_F2L_CONFIG);
   };
 
-  // track the logical y state; the cube follows config.yTurns through its prop
   const handleTurnY = (delta: number) => {
-    setConfig((c) => ({ ...c, yTurns: c.yTurns + delta }));
+    const odd = ((((delta % 4) + 4) % 4) % 2) === 1;
+    const swapCO = (o: CornerOrientation): CornerOrientation => (odd ? (o === 0 ? 0 : o === 1 ? 2 : 1) : o);
+    commitConfig({
+      ...config,
+      yTurns: config.yTurns + delta,
+      corner: config.corner ? { loc: rotateCornerLocY(config.corner.loc, delta), orientation: swapCO(config.corner.orientation) } : null,
+      edge: config.edge ? { ...config.edge, loc: rotateEdgeLocY(config.edge.loc, delta) } : null,
+      filledSlots: config.filledSlots.map((s) => rotateSlotY(s, delta)),
+      fullEO: config.fullEO ? config.fullEO.map((l) => rotateEdgeLocY(l, delta)) : null,
+    });
   };
 
   const yButton = (label: string, delta: number) => (
@@ -91,27 +147,29 @@ const F2lSearch = ({ cross, setCross, pair, setPair, config, setConfig, suggesti
   // the edge is editable only after a corner exists, since its colors derive from it.
   // in the Slots step, a click on a free bottom-corner/middle-edge fills that slot.
   const handleSlotClick = (click: LocationClick) => {
-    setConfig((c) => {
-      if (c.step === STEP.ORIENT) return c;
-      if (c.step === STEP.FULL_EO) {
-        return click.pieceType === 'EDGES' ? toggleFullEOEdge(c, click.loc) : c;
-      }
-      if (c.step === STEP.SLOTS) {
-        const slot = f2lSlotOf(click);
-        return slot ? toggleSlot(c, slot, cross, pair) : c;
-      }
-      if (click.pieceType === 'CORNERS') {
-        return c.corner?.loc === click.loc ? twistCorner(c) : placeCorner(c, click.loc);
-      }
-      if (!c.corner) return c;
-      return c.edge?.loc === click.loc ? flipEdge(c) : placeEdge(c, click.loc);
-    });
+    const c = config;
+    let next: F2lCaseConfig;
+    if (c.step === STEP.ORIENT) return;
+    if (c.step === STEP.FULL_EO) {
+      next = click.pieceType === 'EDGES' ? toggleFullEOEdge(c, click.loc) : c;
+    } else if (c.step === STEP.SLOTS) {
+      const slot = f2lSlotOf(click);
+      next = slot ? toggleSlot(c, slot, cross, pair) : c;
+    } else if (click.pieceType === 'CORNERS') {
+      next = c.corner?.loc === click.loc ? twistCorner(c) : placeCorner(c, click.loc);
+    } else if (!c.corner) {
+      return;
+    } else {
+      next = c.edge?.loc === click.loc ? flipEdge(c) : placeEdge(c, click.loc);
+    }
+    // the helpers return the same config on a no-op click, so don't rewrite the URL needlessly
+    if (next !== c) commitConfig(next);
   };
 
   return (
     <div className="grid w-full max-w-220 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_25rem]">
       <div className="flex flex-col items-start gap-4 min-w-0">
-        <div className="flex flex-col w-full border border-neutral-600 rounded-sm bg-black">
+        <div id="f2l-visualizer" className="flex flex-col w-full border border-neutral-600 rounded-sm bg-black">
           <div className="flex flex-row items-center justify-between gap-2 mb-2 px-3 py-2 bg-dark border-b border-neutral-600">
             <h2 className="text-sm text-primary-100 font-medium">Visual Input</h2>
             <div className="flex items-center gap-2">
@@ -162,14 +220,16 @@ const F2lSearch = ({ cross, setCross, pair, setPair, config, setConfig, suggesti
               </div>
             )}
           </div>
-          <F2lSetup config={config} onConfigChange={setConfig} />
+          <F2lSetup config={config} onConfigChange={commitConfig} />
         </div>
-        <F2lAdvancedInput
+
+        {/* Disabled. Works, but doesn't seem very useful in testing */}
+        {/* <F2lAdvancedInput
           config={config}
-          setConfig={setConfig}
+          setConfig={commitConfig}
           cross={cross}
           pair={pair}
-        />
+        /> */}
       </div>
       <F2lSuggestions config={config} cross={cross} pair={pair} suggestions={suggestions} ready={ready} playingAlg={playingAlg} onPlay={handlePlay} />
     </div>

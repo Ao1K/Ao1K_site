@@ -12,10 +12,18 @@ interface AddAlgRowProps {
   onCancel: () => void;
 }
 
+const abbreviateAlg = (alg: string) => {
+  const moves = alg.split(' ');
+  if (moves.length <= 6) return alg;
+  return `${moves.slice(0, 6).join(' ')}…`;
+};
+
 const AddAlgRow = ({ onAdd, onCancel }: AddAlgRowProps) => {
   const [cubeColors] = useCubeColors();
   const [value, setValue] = useState('');
   const [confirming, setConfirming] = useState(false);
+
+  const [added, setAdded] = useState<{ text: string; key: number } | null>(null);
 
   const [html, setHTML] = useState('');
   const editorRef = useRef<ImperativeRef>(null);
@@ -38,6 +46,7 @@ const AddAlgRow = ({ onAdd, onCancel }: AddAlgRowProps) => {
 
   const commit = () => {
     onAdd(normalized);
+    setAdded((prev) => ({ text: abbreviateAlg(normalized), key: (prev?.key ?? 0) + 1 }));
     setValue('');
     setConfirming(false);
     editorRef.current?.transform('');
@@ -57,13 +66,13 @@ const AddAlgRow = ({ onAdd, onCancel }: AddAlgRowProps) => {
   };
 
   return (
-    <div className="flex flex-row items-center gap-3 px-2 py-2" onBlur={handleBlur}>
-      <div className="h-6 shrink-0">
+    <div className="flex flex-row flex-wrap items-center justify-end gap-3 px-2 py-1" onBlur={handleBlur}>
+      <div className="shrink-0 -my-3 flex items-center justify-center">
         <AlgIcon classification={classification} alg={normalized} cubeColors={cubeColors} />
       </div>
 
       <div
-        className="min-w-0 flex-1
+        className="relative min-w-40 flex-1
           **:[[contenteditable]]:min-h-0 **:[[contenteditable]]:py-1
           **:[[contenteditable]]:text-base"
         onKeyDown={(event) => {
@@ -83,6 +92,15 @@ const AddAlgRow = ({ onAdd, onCancel }: AddAlgRowProps) => {
           lineHeight={24}
           simpleInput
         />
+        {added && (
+          <span
+            key={added.key}
+            onAnimationEnd={() => setAdded(null)}
+            className="animate-added-pulse pointer-events-none absolute left-0 top-full mt-0.5 whitespace-nowrap text-xs text-neutral-300"
+          >
+            {added.text} added
+          </span>
+        )}
       </div>
 
       {confirming ? (

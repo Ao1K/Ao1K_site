@@ -10,7 +10,7 @@ import type { AlgStatus } from '../../composables/algs/algFavorites';
 import { classifyAlg, classifyFavorite } from '../../composables/algs/classifyAlg';
 import { useCubeColors } from '../../composables/useSettings';
 import AlgIcon from './AlgIcon';
-import TrashIcon from '../icons/trash';
+import CloseIcon from '../icons/close';
 
 interface YourAlgCardProps {
   alg: string;
@@ -47,7 +47,7 @@ const YourAlgCard = ({ alg, status, algset, onToggleStatus, onSetAlgset, onDelet
 
   const openAlgsetEditor = (event: React.MouseEvent) => {
     event.stopPropagation();
-    setAlgsetDraft(algset ?? '');
+    setAlgsetDraft('');
     setEditingAlgset(true);
   };
 
@@ -67,7 +67,7 @@ const YourAlgCard = ({ alg, status, algset, onToggleStatus, onSetAlgset, onDelet
           autoFocus
           value={algsetDraft}
           maxLength={6}
-          placeholder={classification.label}
+          placeholder={classification.group}
           onClick={(e) => e.stopPropagation()}
           onChange={(e) => setAlgsetDraft(e.target.value)}
           onBlur={commitAlgset}
@@ -93,7 +93,7 @@ const YourAlgCard = ({ alg, status, algset, onToggleStatus, onSetAlgset, onDelet
         <span aria-hidden className={`pointer-events-none absolute inset-0 group-hover:border ${status === 'none' ? '' : 'border-b ' + view.border}`} />
       </div>
 
-      <span className="ml-auto shrink-0 text-sm font-medium text-neutral-400 opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100">{confirming ? '' : view.label}</span>
+      <span className="hidden md:block ml-auto justify-self-stretch shrink-0 justify-text-end text-sm font-medium text-neutral-400 opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100">{confirming ? '' : view.label}</span>
 
       {confirming ? (
         <span className="flex shrink-0 items-center gap-1">
@@ -118,9 +118,12 @@ const YourAlgCard = ({ alg, status, algset, onToggleStatus, onSetAlgset, onDelet
           aria-label="Delete (Press shift to skip confirmation)"
           title="Delete (Press shift to skip confirmation)"
           onClick={(event) => (event.shiftKey ? onDelete() : setConfirming(true))}
-          className="shrink-0 rounded text-neutral-400 opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100 hover:text-red-500 focus-visible:outline-none focus-visible:ring focus-visible:ring-primary-900"
+          className="shrink-0 p-2 rounded text-neutral-400 opacity-100 md:opacity-0 transition-opacity duration-200 
+          md:group-hover:opacity-100 group-focus-within:opacity-100 hover:text-red-500 
+          focus-visible:outline-none focus-visible:ring focus-visible:ring-primary-900
+          ml-auto md:ml-0"
         >
-          <TrashIcon />
+          <CloseIcon />
         </button>
       )}
     </div>

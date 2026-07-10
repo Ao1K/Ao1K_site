@@ -76,6 +76,26 @@ export const ORIENTATIONS: Record<FaceKey, Record<FaceKey, FaceKey>> = {
   left: { up: 'right', down: 'left', front: 'front', back: 'back', right: 'down', left: 'up' },
 };
 
+const ALL_FACES: FaceKey[] = ['up', 'down', 'front', 'back', 'right', 'left'];
+
+const Y_FACE_NEXT: Record<FaceKey, FaceKey> = {
+  front: 'left', left: 'back', back: 'right', right: 'front', up: 'up', down: 'down',
+};
+
+export function rotateFaceY(face: FaceKey, q: number): FaceKey {
+  const n = ((q % 4) + 4) % 4;
+  let f = face;
+  for (let i = 0; i < n; i++) f = Y_FACE_NEXT[f];
+  return f;
+}
+
+export function orientationFor(cross: FaceKey, yTurns: number): Record<FaceKey, FaceKey> {
+  const base = ORIENTATIONS[cross];
+  const orient = {} as Record<FaceKey, FaceKey>;
+  for (const f of ALL_FACES) orient[f] = base[rotateFaceY(f, -yTurns)];
+  return orient;
+}
+
 // the four F2L pairs for a cross: every combination of one color from each of the
 // two side axes (i.e. adjacent pairs, excluding the cross color and its opposite)
 export function pairsForCross(cross: FaceKey): [FaceKey, FaceKey][] {
@@ -197,6 +217,27 @@ export const F2L_SLOT_PIECES: Record<F2lSlot, { corner: CornerLocation; edge: Ed
   FL: { corner: 'DFL', edge: 'FL' },
 };
 
+const sortedFaceKey = (faces: FaceKey[]) => [...faces].sort().join(',');
+
+function cornerLocFromFaces(faces: FaceKey[]): CornerLocation {
+  const key = sortedFaceKey(faces);
+  return (Object.keys(CORNER_LOC_FACES) as CornerLocation[]).find((l) => sortedFaceKey(CORNER_LOC_FACES[l]) === key)!;
+}
+function edgeLocFromFaces(faces: FaceKey[]): EdgeLocation {
+  const key = sortedFaceKey(faces);
+  return (Object.keys(EDGE_LOC_FACES) as EdgeLocation[]).find((l) => sortedFaceKey(EDGE_LOC_FACES[l]) === key)!;
+}
+
+export const rotateCornerLocY = (loc: CornerLocation, q: number): CornerLocation =>
+  cornerLocFromFaces(CORNER_LOC_FACES[loc].map((f) => rotateFaceY(f, q)));
+export const rotateEdgeLocY = (loc: EdgeLocation, q: number): EdgeLocation =>
+  edgeLocFromFaces(EDGE_LOC_FACES[loc].map((f) => rotateFaceY(f, q)));
+
+export function rotateSlotY(slot: F2lSlot, q: number): F2lSlot {
+  const cornerLoc = rotateCornerLocY(F2L_SLOT_PIECES[slot].corner, q);
+  return (Object.keys(F2L_SLOT_PIECES) as F2lSlot[]).find((s) => F2L_SLOT_PIECES[s].corner === cornerLoc)!;
+}
+
 const axisOf = (f: FaceKey): 'X' | 'Y' | 'Z' =>
   f === 'up' || f === 'down' ? 'Y' : f === 'right' || f === 'left' ? 'X' : 'Z';
 const signOf = (f: FaceKey): number => (f === 'up' || f === 'right' || f === 'front' ? 1 : -1);
@@ -231,12 +272,9 @@ export function cornerFaceColors(
   return map;
 }
 
-// color identity shown on a center: physical face f shows ORIENTATIONS[cross][f]
-const centerIdentity = (face: FaceKey, cross: FaceKey): FaceKey => ORIENTATIONS[cross][face];
-
 // a solved piece shows each of its faces' own center identity (its physical face's color)
-const solvedColors = (faces: FaceKey[], cross: FaceKey): Map<FaceKey, FaceKey> =>
-  new Map(faces.map((f) => [f, centerIdentity(f, cross)]));
+const solvedColors = (faces: FaceKey[], orient: Record<FaceKey, FaceKey>): Map<FaceKey, FaceKey> =>
+  new Map(faces.map((f) => [f, orient[f]]));
 
 export function edgeGoodFace(loc: EdgeLocation): FaceKey {
   const faces = EDGE_LOC_FACES[loc];
@@ -248,12 +286,12 @@ export function edgeGoodFace(loc: EdgeLocation): FaceKey {
 export function edgeFaceColors(
   loc: EdgeLocation,
   orientation: EdgeOrientation,
-  cross: FaceKey,
+  orient: Record<FaceKey, FaceKey>,
   pair: [FaceKey, FaceKey],
 ): Map<FaceKey, FaceKey> {
   const faces = EDGE_LOC_FACES[loc];
   // the pair color whose identity sits on a physical L/R center
-  const lrColors = new Set<FaceKey>([centerIdentity('left', cross), centerIdentity('right', cross)]);
+  const lrColors = new Set<FaceKey>([orient.left, orient.right]);
   const lrColor = lrColors.has(pair[0]) ? pair[0] : pair[1];
   const otherColor = lrColor === pair[0] ? pair[1] : pair[0];
 
@@ -284,16 +322,14 @@ export function freeEoEdgeSet(edgeLoc: EdgeLocation | null, filledSlots: F2lSlot
 export function isEdgeOriented(
   faces: FaceKey[],
   faceToId: Map<FaceKey, FaceKey>,
-  cross: FaceKey,
+  orient: Record<FaceKey, FaceKey>,
 ): boolean {
-  const orient = ORIENTATIONS[cross];
   const verticalColors = new Set<FaceKey>([orient.up, orient.down]);
   const xColors = new Set<FaceKey>([orient.left, orient.right]);
   const inTopBottom = faces.includes('up') || faces.includes('down');
 
   let classifyFace = faces.find((f) => verticalColors.has(faceToId.get(f)!));
   if (classifyFace) {
-    console.log('faces', faces, 'classifyFace', classifyFace, 'inTopBottom', inTopBottom);
     return inTopBottom
       ? classifyFace === 'up' || classifyFace === 'down'
       : classifyFace !== 'left' && classifyFace !== 'right';
@@ -309,11 +345,11 @@ export function isEdgeOriented(
 export function orientEdgeMap(
   loc: EdgeLocation,
   piece: [FaceKey, FaceKey],
-  cross: FaceKey,
+  orient: Record<FaceKey, FaceKey>,
 ): Map<FaceKey, FaceKey> {
   const faces = EDGE_LOC_FACES[loc];
   const map = new Map<FaceKey, FaceKey>([[faces[0], piece[0]], [faces[1], piece[1]]]);
-  if (isEdgeOriented(faces, map, cross)) return map;
+  if (isEdgeOriented(faces, map, orient)) return map;
   return new Map<FaceKey, FaceKey>([[faces[0], piece[1]], [faces[1], piece[0]]]);
 }
 
@@ -367,6 +403,12 @@ function applyPiece(
   }
 }
 
+function literalColorsToFixed(litColors: Map<FaceKey, FaceKey>, yTurns: number): Map<FaceKey, FaceKey> {
+  const fixed = new Map<FaceKey, FaceKey>();
+  for (const [litFace, color] of litColors) fixed.set(rotateFaceY(litFace, -yTurns), color);
+  return fixed;
+}
+
 // builds per-facelet paint overrides for the current f2l pair and cross
 export function buildF2lOverrides(
   model: PaintMap,
@@ -377,40 +419,48 @@ export function buildF2lOverrides(
   filledSlots: F2lSlot[],
   highlightedPieces: PieceRef[],
   faceColor: (face: FaceKey) => string,
+  yTurns: number,
   // Full EO step overlay: free edges painted solid (eoColor = good, grey = bad)
   eoOverlay?: { good: EdgeLocation[]; bad: EdgeLocation[]; eoColor: string },
 ): Map<FaceletId, string> {
   const overrides = new Map<FaceletId, string>();
   const cornersIndex = piecesByFaceSet(model, 'CORNERS');
   const edgesIndex = piecesByFaceSet(model, 'EDGES');
+  const orient = orientationFor(cross, yTurns);
+  const baseOrient = ORIENTATIONS[cross];
 
   // tint the step's click-hint pieces first, so filled/active pieces paint over them
   for (const piece of highlightedPieces) {
-    const faces = piece.pieceType === 'CORNERS' ? CORNER_LOC_FACES[piece.loc] : EDGE_LOC_FACES[piece.loc];
+    const faces = piece.pieceType === 'CORNERS'
+      ? CORNER_LOC_FACES[rotateCornerLocY(piece.loc, -yTurns)]
+      : EDGE_LOC_FACES[rotateEdgeLocY(piece.loc, -yTurns)];
     const index = piece.pieceType === 'CORNERS' ? cornersIndex : edgesIndex;
     applySolidPiece(faces, HINT_MASK_COLOR, index, overrides);
   }
 
   // solved context pairs next, so an active piece sharing a slot paints over them
   for (const slot of filledSlots) {
-    const { corner: cLoc, edge: eLoc } = F2L_SLOT_PIECES[slot];
-    applyPiece(CORNER_LOC_FACES[cLoc], solvedColors(CORNER_LOC_FACES[cLoc], cross), cornersIndex, overrides, faceColor);
-    applyPiece(EDGE_LOC_FACES[eLoc], solvedColors(EDGE_LOC_FACES[eLoc], cross), edgesIndex, overrides, faceColor);
+    const cLoc = rotateCornerLocY(F2L_SLOT_PIECES[slot].corner, -yTurns);
+    const eLoc = rotateEdgeLocY(F2L_SLOT_PIECES[slot].edge, -yTurns);
+    applyPiece(CORNER_LOC_FACES[cLoc], solvedColors(CORNER_LOC_FACES[cLoc], baseOrient), cornersIndex, overrides, faceColor);
+    applyPiece(EDGE_LOC_FACES[eLoc], solvedColors(EDGE_LOC_FACES[eLoc], baseOrient), edgesIndex, overrides, faceColor);
   }
 
   if (corner) {
-    const colors = cornerFaceColors(corner.loc, corner.orientation, cross, pair);
-    applyPiece(CORNER_LOC_FACES[corner.loc], colors, cornersIndex, overrides, faceColor);
+    const cLoc = rotateCornerLocY(corner.loc, -yTurns);
+    const colors = literalColorsToFixed(cornerFaceColors(corner.loc, corner.orientation, cross, pair), yTurns);
+    applyPiece(CORNER_LOC_FACES[cLoc], colors, cornersIndex, overrides, faceColor);
   }
   if (edge) {
-    const colors = edgeFaceColors(edge.loc, edge.orientation, cross, pair);
-    applyPiece(EDGE_LOC_FACES[edge.loc], colors, edgesIndex, overrides, faceColor);
+    const eLoc = rotateEdgeLocY(edge.loc, -yTurns);
+    const colors = literalColorsToFixed(edgeFaceColors(edge.loc, edge.orientation, orient, pair), yTurns);
+    applyPiece(EDGE_LOC_FACES[eLoc], colors, edgesIndex, overrides, faceColor);
   }
 
   // the Full EO step recolors the free edges to show good/bad rather than their real stickers
   if (eoOverlay) {
-    for (const loc of eoOverlay.good) applySolidPiece(EDGE_LOC_FACES[loc], eoOverlay.eoColor, edgesIndex, overrides);
-    for (const loc of eoOverlay.bad) applySolidPiece(EDGE_LOC_FACES[loc], HINT_MASK_COLOR, edgesIndex, overrides);
+    for (const loc of eoOverlay.good) applySolidPiece(EDGE_LOC_FACES[rotateEdgeLocY(loc, -yTurns)], eoOverlay.eoColor, edgesIndex, overrides);
+    for (const loc of eoOverlay.bad) applySolidPiece(EDGE_LOC_FACES[rotateEdgeLocY(loc, -yTurns)], HINT_MASK_COLOR, edgesIndex, overrides);
   }
   return overrides;
 }
@@ -438,15 +488,15 @@ export function physicalLocOfFacelet(
   return entry ? { pieceType: 'EDGES', loc: entry[0] } : null;
 }
 
-// finds which slot the f2l pair needs to get solved into 
-export function f2lPairHomeSlot(cross: FaceKey, pair: [FaceKey, FaceKey]): F2lSlot | null {
+// finds which (literal) slot the f2l pair needs to get solved into
+export function f2lPairHomeSlot(cross: FaceKey, pair: [FaceKey, FaceKey], yTurns = 0): F2lSlot | null {
   const want = new Set<FaceKey>(pair);
   const entries = Object.entries(F2L_SLOT_PIECES) as [F2lSlot, { corner: CornerLocation; edge: EdgeLocation }][];
   const match = entries.find(([, p]) => {
-    const sides = EDGE_LOC_FACES[p.edge].map((f) => centerIdentity(f, cross));
+    const sides = EDGE_LOC_FACES[p.edge].map((f) => ORIENTATIONS[cross][f]);
     return sides.every((c) => want.has(c));
   });
-  return match ? match[0] : null;
+  return match ? rotateSlotY(match[0], yTurns) : null;
 }
 
 // finds which f2l slot a clicked piece belongs to

@@ -4,9 +4,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { SimpleCubeInterpreter, type Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
 import { buildF2lCubeState } from '../../composables/algs/f2lCubeState';
 import { type FaceKey } from '../../composables/algs/cubePaint';
-import F2lSearch from './f2lSearch';
+import AlgsetSelector, { type AlgsetId } from './AlgsetSelector';
 import YourAlgsList from './YourAlgsList';
 import { isFullEOValid, type F2lCaseConfig } from '../../composables/algs/f2lCaseId';
+import Footer from '../Footer';
 
 const faceColorInitials: Record<FaceKey, string> = {
   up: 'W', down: 'Y', front: 'G', back: 'B', left: 'O', right: 'R',
@@ -19,9 +20,10 @@ interface AlgsContentProps {
   initialCross: FaceKey;
   initialPair: [FaceKey, FaceKey];
   initialConfig: F2lCaseConfig;
+  initialAlgset: AlgsetId | null;
 }
 
-const AlgsContent = ({ initialCross, initialPair, initialConfig }: AlgsContentProps) => {
+const AlgsContent = ({ initialCross, initialPair, initialConfig, initialAlgset }: AlgsContentProps) => {
   const [cross, setCross] = useState<FaceKey>(initialCross);
   const [pair, setPair] = useState<[FaceKey, FaceKey]>(initialPair);
   const [config, setConfig] = useState<F2lCaseConfig>(initialConfig);
@@ -66,7 +68,7 @@ const AlgsContent = ({ initialCross, initialPair, initialConfig }: AlgsContentPr
 
   return (
     <>
-      <F2lSearch
+      <AlgsetSelector
         cross={cross}
         setCross={setCross}
         pair={pair}
@@ -75,11 +77,13 @@ const AlgsContent = ({ initialCross, initialPair, initialConfig }: AlgsContentPr
         setConfig={setConfig}
         suggestions={suggestions}
         ready={ready}
+        initialAlgset={initialAlgset}
       />
       {/* aligned to F2lSearch's left edge by sharing its max width */}
       <div className="w-full max-w-220">
         <YourAlgsList hasSolutions={suggestions.length > 0} />
       </div>
+      <Footer/>
     </>
   );
 };

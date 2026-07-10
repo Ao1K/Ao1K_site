@@ -23,9 +23,20 @@
   --color-rep: #6229A4;
 }
 
+@keyframes added-pulse {
+  0% { opacity: 0; }
+  15% { opacity: 1; }
+  65% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  .animate-added-pulse {
+    animation: added-pulse 5s ease-in-out forwards;
   }
   input[type=number].no-spinner::-webkit-inner-spin-button,
   input[type=number].no-spinner::-webkit-outer-spin-button {

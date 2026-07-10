@@ -4,7 +4,7 @@
 // learning status and can be deleted inline. The list can be filtered by status and sorted
 // by when it was added or by move count.
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import Parrot from '../icons/parrot';
 import CaretIcon from '../icons/dropdown';
 import FunnelIcon from '../icons/funnel';
@@ -29,6 +29,8 @@ type StatusFilter = AlgStatus | 'all';
 type AlgsetFilter = string | 'all';
 type SortKey = 'added' | 'moves' | 'alpha';
 type SortDir = 'asc' | 'desc';
+
+const PER_PAGE_OPTIONS = [10, 25, 50, 100];
 
 // statuses in the order they should appear in the filter dropdown
 const STATUS_ORDER: AlgStatus[] = ['learning', 'learned', 'none'];
@@ -91,6 +93,22 @@ function FilterSelect<T extends string>(props: {
   );
 }
 
+function NavBtn(props: { onClick: () => void; disabled: boolean; label: string; children: ReactNode }) {
+  const { onClick, disabled, label, children } = props;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      title={label}
+      className={`flex items-center justify-center rounded-sm border px-1.5 h-7.5 transition-colors ${disabled ? 'border-neutral-700 text-neutral-600 cursor-default' : 'border-neutral-600 bg-dark text-primary-100 cursor-pointer hover:border-neutral-500'}`}
+    >
+      {children}
+    </button>
+  );
+}
+
 interface YourAlgsListProps {
   // the empty-state hint only makes sense when there are suggestions to favorite
   hasSolutions: boolean;
@@ -104,18 +122,23 @@ const YourAlgsList = ({ hasSolutions }: YourAlgsListProps) => {
   const [algsetFilter, setAlgsetFilter] = useState<AlgsetFilter>('all');
   const [sortKey, setSortKey] = useState<SortKey>('added');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
 
   // only one toolbar menu is open at a time, so clicking from one straight to another switches
-  const [openMenu, setOpenMenu] = useState<null | 'filter' | 'algset' | 'sort' | 'download'>(null);
+  const [openMenu, setOpenMenu] = useState<null | 'filter' | 'algset' | 'sort' | 'download' | 'perPage'>(null);
   const toolbarRef = useRef<HTMLHeadingElement>(null);
+  const paginationRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent | TouchEvent) => {
-      if (toolbarRef.current && !toolbarRef.current.contains(event.target as Node)) setOpenMenu(null);
+      const target = event.target as Node;
+      const inside = toolbarRef.current?.contains(target) || paginationRef.current?.contains(target);
+      if (!inside) setOpenMenu(null);
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-  const toggleMenu = (menu: 'filter' | 'algset' | 'sort' | 'download') =>
+  const toggleMenu = (menu: 'filter' | 'algset' | 'sort' | 'download' | 'perPage') =>
     setOpenMenu((cur) => (cur === menu ? null : menu));
 
   // the statuses actually present, cached so a long list isn't rescanned every render;
@@ -133,7 +156,7 @@ const YourAlgsList = ({ hasSolutions }: YourAlgsListProps) => {
   // cached so the interpreter isn't re-run on every render (only when the favorites change)
   const algsetByAlg = useMemo(() => {
     const map = new Map<string, string>();
-    favorites.forEach((f) => map.set(f.alg, classifyFavorite(f).label));
+    favorites.forEach((f) => map.set(f.alg, classifyFavorite(f).group));
     return map;
   }, [favorites]);
 
@@ -172,28 +195,37 @@ const YourAlgsList = ({ hasSolutions }: YourAlgsListProps) => {
     { value: 'moves', label: 'Move count' },
     { value: 'alpha', label: 'Alphabetical' },
   ];
+  const perPageOptions = PER_PAGE_OPTIONS.map((n) => ({ value: String(n), label: String(n) }));
+
+  // clamp on read so a shrinking list (from a filter or a delete) never strands us past the end,
+  // without an effect to chase the state back into range
+  const totalPages = Math.max(1, Math.ceil(visible.length / perPage));
+  const currentPage = Math.min(page, totalPages);
+  const pageStart = (currentPage - 1) * perPage;
+  const pageItems = visible.slice(pageStart, pageStart + perPage);
+  const goToPage = (p: number) => setPage(Math.min(Math.max(1, p), totalPages));
 
   return (
+    <>
+    <div className="flex items-stretch h-8 mb-0.75 text-dark_accent font-medium text-xl">
+      <div className="relative">
+        <div title="SQUAAAAWK!! Learn spaced repetition! Learn spaced repetition!" className="absolute left-1 -bottom-1.25 text-4xl z-10">🦜</div>
+        <div className="w-7 h-0 absolute border-b -bottom-1.75 left-2 border-neutral-700"></div>
+      </div>
+      <span className='pl-12 self-center'> Your Algs</span>
+    </div>
     <div className="border border-neutral-600 rounded-sm p-3 w-full h-fit text-primary-100">
       <h2 ref={toolbarRef} className="relative flex flex-wrap items-start gap-x-3 gap-y-2 px-2 font-medium mb-3 pb-1 text-lg border-b border-neutral-600 -mx-3">
-        <div className="flex items-stretch h-8 mb-2">
-          <div className="relative">
-            <div title="SQUAAAAWK!! Learn spaced repetition! Learn spaced repetition!" className="absolute left-1 -bottom-1.25 text-4xl z-10">🦜</div>
-            <div className="w-10 h-0 absolute border-b -bottom-1 left-1 border-neutral-700"></div>
-            <div className="w-7 h-0 absolute border-b -bottom-1.75 left-2 border-neutral-700"></div>
-          </div>
-          <span className='pl-10 self-center'> Your Algs</span>
-        </div>
         {favorites.length > 0 && (
           <>
-          <div className="flex-1 min-w-50 flex flex-wrap-reverse justify-end gap-x-2 gap-y-1.5 pb-1 text-sm font-normal">
-            <div className="flex items-center gap-1.5">
-              <FunnelIcon className="shrink-0 text-dark_accent" />
+          <div className="flex-1 min-w-50 flex flex-wrap-reverse justify-between gap-x-2 gap-y-1.5 pb-1 text-sm font-normal">
+            <div className="flex items-center gap-1.5 bg-neutral-700 p-1 rounded-sm">
+              <FunnelIcon className="shrink-0 text-dark_accent -mr-1" />
               <FilterSelect
                 label="Filter by status"
                 value={effectiveStatus}
                 options={statusOptions}
-                onChange={setStatusFilter}
+                onChange={(v) => { setStatusFilter(v); setPage(1); }}
                 open={openMenu === 'filter'}
                 onToggle={() => toggleMenu('filter')}
                 onClose={() => setOpenMenu(null)}
@@ -203,17 +235,17 @@ const YourAlgsList = ({ hasSolutions }: YourAlgsListProps) => {
                   label="Filter by algset"
                   value={effectiveAlgset}
                   options={algsetOptions}
-                  onChange={setAlgsetFilter}
+                  onChange={(v) => { setAlgsetFilter(v); setPage(1); }}
                   open={openMenu === 'algset'}
                   onToggle={() => toggleMenu('algset')}
                   onClose={() => setOpenMenu(null)}
                 />
               )}
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center justify-items-start mr-auto gap-1.5 bg-neutral-700 p-1 rounded-sm">
               <button
                 type="button"
-                onClick={() => { setSortDir((d) => (d === 'asc' ? 'desc' : 'asc')); setOpenMenu(null); }}
+                onClick={() => { setSortDir((d) => (d === 'asc' ? 'desc' : 'asc')); setPage(1); setOpenMenu(null); }}
                 title={sortDir === 'asc' ? 'Ascending' : 'Descending'}
                 aria-label="Toggle sort direction"
                 className="shrink-0 text-dark_accent hover:text-primary-100 transition-colors
@@ -225,19 +257,21 @@ const YourAlgsList = ({ hasSolutions }: YourAlgsListProps) => {
                 label="Sort by"
                 value={sortKey}
                 options={sortOptions}
-                onChange={setSortKey}
+                onChange={(v) => { setSortKey(v); setPage(1); }}
                 open={openMenu === 'sort'}
                 onToggle={() => toggleMenu('sort')}
                 onClose={() => setOpenMenu(null)}
               />
             </div>
-            <div className="flex items-center gap-1.5 pl-2 pr-1.5 h-7.5 border rounded-sm border-neutral-600 hover:border-neutral-500 focus:border-neutral-500">
-              <DownloadMenu
-                favorites={visible}
-                open={openMenu === 'download'}
-                onToggle={() => toggleMenu('download')}
-                onClose={() => setOpenMenu(null)}
-              />
+            <div className="flex items-center gap-1.5 bg-neutral-700 p-1 rounded-sm">
+              <div className="flex items-center gap-1.5 pl-2 pr-1.5 h-7.5 border rounded-sm bg-dark border-neutral-600 hover:border-neutral-500 focus:border-neutral-500">
+                <DownloadMenu
+                  favorites={visible}
+                  open={openMenu === 'download'}
+                  onToggle={() => toggleMenu('download')}
+                  onClose={() => setOpenMenu(null)}
+                />
+              </div>
             </div>
           </div>
           </>
@@ -257,7 +291,7 @@ const YourAlgsList = ({ hasSolutions }: YourAlgsListProps) => {
           <button type="button"
             onClick={() => setAdding(true)}
             className="flex items-center gap-3 text-primary-100 hover:text-primary-300 transition-colors
-            px-1.5 py-2 bg-dark"
+            px-1.5 py-1 bg-dark"
           >
             <AddIcon className="w-5 h-5 ml-1" />
             <span className="text-sm">Add an alg manually</span>
@@ -266,7 +300,7 @@ const YourAlgsList = ({ hasSolutions }: YourAlgsListProps) => {
       </div>
       {favorites.length > 0 && (
         <ul className="flex flex-col gap-1">
-          {visible.map((fav) => (
+          {pageItems.map((fav) => (
             <li key={fav.alg}>
               <YourAlgCard
                 alg={fav.alg}
@@ -280,7 +314,62 @@ const YourAlgsList = ({ hasSolutions }: YourAlgsListProps) => {
           ))}
         </ul>
       )}
+
+      {visible.length > 0 && (
+        <div
+          ref={paginationRef}
+          className="-mx-3 mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-neutral-600 px-3 pt-3 text-sm text-primary-100"
+        >
+          <div className="flex items-center gap-1">
+            <NavBtn onClick={() => goToPage(1)} disabled={currentPage === 1} label="First page">
+              <CaretIcon className="rotate-90" />
+              <CaretIcon className="-ml-2 rotate-90" />
+            </NavBtn>
+            <NavBtn onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1} label="Previous page">
+              <CaretIcon className="rotate-90" />
+            </NavBtn>
+            <div className="flex items-center gap-1.5 px-1">
+              <span>Page</span>
+              <input
+                type="number"
+                min={1}
+                max={totalPages}
+                value={currentPage}
+                disabled={totalPages === 1}
+                onChange={(e) => {
+                  const n = parseInt(e.target.value, 10);
+                  if (!Number.isNaN(n)) goToPage(n);
+                }}
+                aria-label="Page number"
+                className={`w-12 rounded-sm border bg-dark px-1.5 py-1 text-center focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${totalPages === 1 ? 'border-neutral-700 text-neutral-600 cursor-default' : 'border-neutral-600 text-primary-100 focus:border-neutral-500'}`}
+              />
+              <span className="whitespace-nowrap">of {totalPages}</span>
+            </div>
+            <NavBtn onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages} label="Next page">
+              <CaretIcon className="-rotate-90" />
+            </NavBtn>
+            <NavBtn onClick={() => goToPage(totalPages)} disabled={currentPage === totalPages} label="Last page">
+              <CaretIcon className="-rotate-90" />
+              <CaretIcon className="-ml-2 -rotate-90" />
+            </NavBtn>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span>Show</span>
+            <FilterSelect
+              label="Algs per page"
+              value={String(perPage)}
+              options={perPageOptions}
+              onChange={(v) => { setPerPage(Number(v)); setPage(1); }}
+              open={openMenu === 'perPage'}
+              onToggle={() => toggleMenu('perPage')}
+              onClose={() => setOpenMenu(null)}
+            />
+            <span className="whitespace-nowrap">per page</span>
+          </div>
+        </div>
+      )}
     </div>
+    </>
   );
 };
 

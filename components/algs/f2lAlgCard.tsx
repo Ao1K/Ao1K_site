@@ -211,7 +211,7 @@ const F2lAlgCard = ({ alg, steps, cross, yTurns, colorConfig, isPlaying, isFavor
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-900
         ${isPlaying ? 'bg-primary-800 border-primary-100 shadow-md' : 'bg-dark border-neutral-600 hover:border-neutral-500'}`}
     >
-      <div className="flex flex-row items-center p-1">
+      <div className="flex flex-row items-center p-1 gap-1">
         <span className="flex shrink-0 items-center pr-1">
           {steps.map((step, j) => {
             const descriptor = pairDescriptor(step, cross, iconTurns, colorConfig);
@@ -223,10 +223,9 @@ const F2lAlgCard = ({ alg, steps, cross, yTurns, colorConfig, isPlaying, isFavor
           })}
         </span>
 
-        <span className="grow min-w-0 text-primary-100 tracking-wide wrap-break-word text-md ml-1">{alg}</span>
+        <span className="grow min-w-0 text-primary-100 tracking-wide wrap-break-word text-md">{alg}</span>
 
         <span className="relative flex shrink-0 items-center">
-          {/* sits on top of the alg; its bg/border hide the text beneath so nothing reflows */}
           {copied && (
             <span
               aria-hidden="true"

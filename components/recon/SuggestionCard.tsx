@@ -140,6 +140,7 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
         `
       }
       onMouseOver={handleSuggestionRequest}
+      onMouseDown={(event) => event.preventDefault()}
       onClick={handleSuggestionAccept}
       id={id}
       tabIndex={0}
@@ -150,8 +151,8 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
       <div className="grow">{alg}</div>
       <button
         type="button"
-        aria-label={favorited ? 'Unfavorite alg' : 'Favorite alg (f)'}
-        title={favorited ? 'Unfavorite alg' : 'Favorite alg (f)'}
+        aria-label={favorited ? 'Unfavorite alg' : 'Favorite alg'}
+        title={favorited ? 'Unfavorite alg' : 'Favorite alg'}
         aria-pressed={favorited}
         className={`shrink-0 p-2 -m-2 text-neutral-500 hover:text-primary-800 transition-opacity
           group-hover:opacity-100 pointer-coarse:opacity-100 ${favorited ? 'opacity-100' : 'opacity-0'}`}

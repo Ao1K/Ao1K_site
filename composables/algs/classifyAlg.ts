@@ -13,15 +13,17 @@ export type AlgsetKind = 'f2l' | 'multislot' | 'oll' | 'pll' | 'unknown';
 export interface AlgClassification {
   kind: AlgsetKind;
   label: string;
+  group: string;
   // carries gridPattern/name/nameType for icon rendering
   stepInfo: StepInfo | null;
 }
 
-const UNKNOWN: AlgClassification = { kind: 'unknown', label: '?', stepInfo: null };
+const UNKNOWN: AlgClassification = { kind: 'unknown', label: '?', group: '?', stepInfo: null };
 
 export const overrideClassification = (algset: string): AlgClassification => ({
   kind: 'unknown',
   label: algset,
+  group: algset,
   stepInfo: null,
 });
 
@@ -66,15 +68,15 @@ export function classifyAlg(alg: string): AlgClassification {
 
   if (stepInfo.type === 'f2l') {
     return stepInfo.step === 'multislot'
-      ? { kind: 'multislot', label: 'F2L', stepInfo }
-      : { kind: 'f2l', label: 'F2L', stepInfo };
+      ? { kind: 'multislot', label: 'F2L', group: 'F2L', stepInfo }
+      : { kind: 'f2l', label: 'F2L', group: 'F2L', stepInfo };
   }
 
   if (stepInfo.type === 'last layer') {
     if (stepInfo.nameType === 'pll' || stepInfo.step.includes('pll')) {
-      return { kind: 'pll', label: stepInfo.name || 'PLL', stepInfo };
+      return { kind: 'pll', label: stepInfo.name || 'PLL', group: 'PLL', stepInfo };
     }
-    return { kind: 'oll', label: 'OLL', stepInfo };
+    return { kind: 'oll', label: 'OLL', group: 'OLL', stepInfo };
   }
 
   return UNKNOWN;
