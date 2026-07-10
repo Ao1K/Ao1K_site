@@ -41,7 +41,7 @@ import type { TwistyPlayerImperativeRef } from '../../components/recon/TwistyPla
 // utility imports
 // import HtmlSceneDialog from "../../components/recon/HtmlSceneDialog";
 // import HtmlImageDialog from "../../components/recon/HtmlImageDialog";
-// import { AlgCompiler } from '../../utils/AlgCompiler';
+import { AlgCompiler } from '../../utils/AlgCompiler';
 // import ManualAlgVerifier from './ManualAlgVerifier';
 // import LLpatternBuilder from '../../utils/LLpatternBuilder';
 // import { highlightClass } from '../../utils/sharedConstants';
@@ -1500,7 +1500,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       </div> */}
 
       {/* utility for compiling list of alg hashes */}
-      {/* <AlgCompiler /> */}
+      <AlgCompiler />
 
       {/* utility for verifying manual algs */}
       {/* <ManualAlgVerifier

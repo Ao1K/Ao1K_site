@@ -3,7 +3,7 @@ import { rawGeneric, rawOLLalgs, rawPLLalgs } from "./rawAlgs";
 import type { ExactAlg, LastLayerAlg } from "./rawAlgs";
 import { SimpleCubeInterpreter, type StepInfo } from "../composables/recon/SimpleCubeInterpreter";
 import { SimpleCube } from '../composables/recon/SimpleCube';
-import { reverseMove, replacementTable_Y } from '../composables/recon/transformHTML';
+import { reverseMove, replacementTable_Y, replacementTable_M } from '../composables/recon/transformHTML';
 import AlgSpeedEstimator from '../composables/recon/AlgSpeedEstimator';
 import type { CompiledLLAlg } from '../composables/recon/LLsuggester';
 import { ollFrequencies, pllFrequencies } from './algFrequencies';
@@ -149,13 +149,13 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
 
   const compileSelectedAlgs = () => {
     if (selectedAlgTypes.has('exact')) {
-      compileAlgorithms(rawGeneric, 'Exact');
+      compileExactAlgorithms(prepareExactAlgs(rawGeneric));
     }
     if (selectedAlgTypes.has('oll')) {
-      compileAlgorithms(rawOLLalgs, 'LastLayer');
+      compileLLalgorithms(prepareLLAlgs(rawOLLalgs));
     }
     if (selectedAlgTypes.has('pll')) {
-      compileAlgorithms(rawPLLalgs, 'LastLayer');
+      compileLLalgorithms(prepareLLAlgs(rawPLLalgs));
     }
   };
 
@@ -352,6 +352,41 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
     return newMoves.join(' ');
   };
 
+  const getMirrorMVariant = (alg: string): string => {
+    const moves = alg.trim().split(/\s+/);
+    if (!moves.length || (moves.length === 1 && moves[0] === '')) return alg;
+
+    const rootMoves = new Set<string>();
+    for (const move of moves) {
+      if (!move) continue;
+      const root = move.replace(/['23]/g, '');
+      rootMoves.add(root);
+    }
+
+    const yRU_set = new Set(['y', 'R', 'U']);
+    const yLU_set = new Set(['y', 'L', 'U']);
+
+    let is_yRU = true;
+    let is_yLU = true;
+
+    for (const root of rootMoves) {
+      if (!yRU_set.has(root)) is_yRU = false;
+      if (!yLU_set.has(root)) is_yLU = false;
+    }
+
+    // must be just yRU or just yLU
+    if ((is_yRU && is_yLU) || (!is_yRU && !is_yLU)) {
+      return alg;
+    }
+
+    const newMoves = moves.map(move => {
+        // let program crash if not found in table
+        return replacementTable_M[move];
+    });
+
+    return newMoves.join(' ');
+  };
+
   /**
    * Filters out new F2L algs where a move doesn't change the value at the slot's indices.
    *
@@ -424,6 +459,20 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
         continue;
       }
 
+      // Initialize cube with inverse of alg
+      const inverseAlg = getAlgInverse(alg.value);
+      const tempCube = new SimpleCube();
+      const tempInterpreter = new SimpleCubeInterpreter();
+
+      const inverseMoves = inverseAlg.split(' ').filter(m => m.length > 0);
+      let cubeState = tempCube.getCubeState(inverseMoves);
+      const inverseSteps = tempInterpreter.getStepsCompleted(cubeState);
+      const inverseF2lSolved = inverseSteps.filter(s => s.type === 'f2l').length;
+      if (inverseF2lSolved === 4) {
+        if (DEBUG) console.log(`DEBUG: inverse leaves all F2L slots solved, filtering out`);
+        continue;
+      }
+
       const lastMove = moves[moves.length - 1];
       const slot = slotIndices[lastMove];
       const oppositePattern = oppositeMovePattern[lastMove];
@@ -446,14 +495,6 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
         continue;
       }
 
-      // Initialize cube with inverse of alg
-      const inverseAlg = getAlgInverse(alg.value);
-      const tempCube = new SimpleCube();
-      const tempInterpreter = new SimpleCubeInterpreter();
-
-      const inverseMoves = inverseAlg.split(' ').filter(m => m.length > 0);
-      let cubeState = tempCube.getCubeState(inverseMoves);
-      tempInterpreter.getStepsCompleted(cubeState);
       let prevHash = tempInterpreter.getCurrentState()?.hash || '';
 
       if (DEBUG) console.log(`DEBUG: inverseAlg="${inverseAlg}", initial prevHash="${prevHash}"`);
@@ -585,8 +626,7 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
         break;
       }
 
-      const inverseAlg = getAlgInverse(alg.value);
-      const cube = simpleCubeRef.current!.getCubeState(inverseAlg.split(' '));
+      const cube = simpleCubeRef.current!.getCubeState(alg.value.split(' '));
       const steps: StepInfo[] = cubeInterpreter.getStepsCompleted(cube);
       const f2lPairsSolved: number = steps.filter(step => step.type === 'f2l').length;
       if (f2lPairsSolved === 4) {
@@ -631,6 +671,19 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
       if (y2Variant !== alg.value) {
         expandedAlgs.push({
           value: y2Variant,
+          originalIndex: -1, // no need to associate with original index
+          step: alg.step,
+          name: (alg as ExactAlg).name ?? "",
+          new: true,
+        } as ExpandedExactAlg);
+      }
+    });
+
+    algs.forEach((alg, index) => {
+      const mirrorVariant = getMirrorMVariant(alg.value);
+      if (mirrorVariant !== alg.value) {
+        expandedAlgs.push({
+          value: mirrorVariant,
           originalIndex: -1, // no need to associate with original index
           step: alg.step,
           name: (alg as ExactAlg).name ?? "",
@@ -699,69 +752,81 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
     URL.revokeObjectURL(url);
   };
 
-  const compileAlgorithms = (algs: ExactAlg[] | LastLayerAlg[], algType: 'Exact' | 'LastLayer') => {
+  const prepareExactAlgs = (algs: ExactAlg[]): ExactAlg[] => {
 
-    console.log(`Compiling ${algType} algorithms... Total algs: ${algs.length}`);
+    console.log(`Preparing Exact algorithms... Total algs: ${algs.length}`);
 
-    const simplifiedAlgs: (ExactAlg | LastLayerAlg)[] = simplifyAlgs(algs, algType);
+    const simplifiedAlgs = simplifyAlgs(algs, 'Exact');
 
-    let expandedAlgs: (ExpandedExactAlg | LastLayerAlg)[] = expandAlgs(simplifiedAlgs, algType);
+    let expandedAlgs = expandAlgs(simplifiedAlgs, 'Exact') as ExpandedExactAlg[];
 
     // Filter inefficient new F2L algs AFTER expansion (U moves are added during expansion)
-    if (algType === 'Exact') {
-      const newAlgs: ExpandedExactAlg[] = [];
-      const oldAlgs: (ExpandedExactAlg | LastLayerAlg)[] = [];
-      expandedAlgs.forEach(alg => {
-        if (alg.new) {
-          newAlgs.push(alg as ExpandedExactAlg);
-        } else {
-          oldAlgs.push(alg);
-        }
-      });
-      const filteredNewAlgs = filterInefficientNewF2LAlgs(newAlgs);
-      expandedAlgs = [...oldAlgs, ...filteredNewAlgs];
-    }
+    const newAlgs: ExpandedExactAlg[] = [];
+    const oldAlgs: ExpandedExactAlg[] = [];
+    expandedAlgs.forEach(alg => {
+      if (alg.new) {
+        newAlgs.push(alg);
+      } else {
+        oldAlgs.push(alg);
+      }
+    });
+    const filteredNewAlgs = filterInefficientNewF2LAlgs(newAlgs);
+    expandedAlgs = [...oldAlgs, ...filteredNewAlgs];
 
     // parse out duplicates in algs without `new: true`
-    const algSet = findUniqueOldAlgSet(algType, expandedAlgs);
+    const algSet = findUniqueOldAlgSet('Exact', expandedAlgs);
     console.log('alg set size before adding new algs:', algSet.size);
 
-    const uniqueNewAlgs = findUniqueNewAlgs(algType, algs, expandedAlgs);
+    const uniqueNewAlgs = findUniqueNewAlgs('Exact', algs, expandedAlgs) as ExactAlg[];
 
     if (uniqueNewAlgs.length > 0) {
       console.log('Replace new algs with this list');
 
-      downloadUniqueNewAlgs(algType, uniqueNewAlgs);
+      downloadUniqueNewAlgs('Exact', uniqueNewAlgs);
     }
 
-    // for LL algs, make sure applying alg in reverse keeps F2L solved.
-    let usableNewAlgs: LastLayerAlg[] | ExactAlg[] = uniqueNewAlgs;
-    if (algType === 'LastLayer' && uniqueNewAlgs.length !== 0) {
-      usableNewAlgs = findWorkingLLalgs(uniqueNewAlgs as LastLayerAlg[]) ?? uniqueNewAlgs;
+    const allAlgs = Array.from(algSet) as ExactAlg[];
+    console.log('Usable new algs count:', uniqueNewAlgs.length);
+    console.log('Existing algs count:', allAlgs.length);
+    allAlgs.push(...uniqueNewAlgs);
+
+    return allAlgs;
+  };
+
+  const prepareLLAlgs = (algs: LastLayerAlg[]): LastLayerAlg[] => {
+
+    console.log(`Preparing LastLayer algorithms... Total algs: ${algs.length}`);
+
+    const simplifiedAlgs = simplifyAlgs(algs, 'LastLayer');
+
+    const expandedAlgs = expandAlgs(simplifiedAlgs, 'LastLayer');
+
+    // parse out duplicates in algs without `new: true`
+    const algSet = findUniqueOldAlgSet('LastLayer', expandedAlgs);
+    console.log('alg set size before adding new algs:', algSet.size);
+
+    const uniqueNewAlgs = findUniqueNewAlgs('LastLayer', algs, expandedAlgs) as LastLayerAlg[];
+
+    if (uniqueNewAlgs.length > 0) {
+      console.log('Replace new algs with this list');
+
+      downloadUniqueNewAlgs('LastLayer', uniqueNewAlgs);
+    }
+
+    // make sure applying alg keeps F2L solved
+    let usableNewAlgs = uniqueNewAlgs;
+    if (uniqueNewAlgs.length !== 0) {
+      usableNewAlgs = findWorkingLLalgs(uniqueNewAlgs) ?? uniqueNewAlgs;
       console.log('Usable new algs. Update rawAlgs.tsx accordingly:');
       console.log(usableNewAlgs);
     }
 
-    // add new algs to expandedAlgs for final processing
-    const allAlgs: ExactAlg[] | LastLayerAlg[] = Array.from(algSet)
-    if (typeof usableNewAlgs !== typeof allAlgs) {
-      console.error('Type mismatch between usableNewAlgs and allAlgs');;
-      return;
-    }
+    const allAlgs = Array.from(algSet) as LastLayerAlg[];
     console.log('Usable new algs count:', usableNewAlgs.length);
     console.log('Existing algs count:', allAlgs.length);
     allAlgs.push(...usableNewAlgs);
 
-    switch (algType) {
-      case 'Exact':
-        compileExactAlgorithms(allAlgs as ExactAlg[]);
-        break;
-      case 'LastLayer':
-        compileLLalgorithms(allAlgs as LastLayerAlg[]);
-        break;
-      default:
-        console.error(`Unknown algorithm type: ${algType}`);
-    }
+    return allAlgs;
   };
 
   const removeAngleFromAlg = (alg: string): string => {
@@ -975,7 +1040,8 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
 
       const isCrossSolved = steps.some(step => step.type === 'cross');
       if (!isCrossSolved) {
-        console.warn(`Algorithm does not solve the cross: ${completeAlg}.`);
+        console.error(`Algorithm either does not solve the cross or does nothing: ${completeAlg}. Skipping.`);
+        continue;
       }
       const cubeState = cubeInterpreter.getCurrentState();
       const hash = cubeState?.hash || 'unknown';

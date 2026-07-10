@@ -1178,15 +1178,6 @@
         0
       ],
       "frequency": 1
-    },
-    {
-      "alg": "R2' u' R U' R U R' D x' U2 L F' L' F x",
-      "caseIndex": 7,
-      "refPieceMovement": 1,
-      "minMovements": [
-        3
-      ],
-      "frequency": 0
     }
   ]
 }

@@ -432,10 +432,6 @@
     "step": "pll"
   },
   {
-    "value": "R2' u' R U' R U R' D x' U2 L F' L' F x",
-    "step": "pll"
-  },
-  {
     "value": "R2' u' R U' R U R' D x' U2 r U' r' x",
     "step": "pll"
   },
