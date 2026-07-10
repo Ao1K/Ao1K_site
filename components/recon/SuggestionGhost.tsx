@@ -28,7 +28,7 @@ export const SuggestionGhost = ({
 
   return (
     <div
-      className={`absolute z-30 pointer-events-none whitespace-pre text-[1.125rem] ff-space-adjust ${colorDict['suggestion']}`}
+      className={`absolute z-30 pointer-events-none text-[1.125rem] ff-space-adjust ${colorDict['suggestion']}`}
       style={{
         left,
         top,

@@ -28,6 +28,12 @@ export interface SuggestionManagerHandle {
   // ghost anchor box (relative to the overlay) for aligning the ghost. kept in the manager
   // so updating it re-renders only the ghost, never the editor's contentEditable.
   updateCaretRect: (left: number, top: number, height: number) => void;
+  setSuggestions: (suggestions: Suggestion[], lineIndex: number | null) => void;
+}
+
+interface SuggestionState {
+  suggestions: Suggestion[];
+  lineIndex: number | null;
 }
 
 interface SuggestionFilterInput {
@@ -42,13 +48,8 @@ interface FilteredSuggestionItem {
 
 interface SuggestionManagerProps {
   name: string;
-  suggestions?: Suggestion[];
-  // the line index `suggestions` were generated for; null when none are active. suggestions
-  // are only valid on the line they were computed for, so a mismatch hides them as stale.
-  suggestionLineIndex?: number | null;
   activeLineIndex: number;
-  activeLineHtml?: string;
-  activeLineMoves?: string[];
+  lines: string[];
   overlayElement: HTMLElement | null;
   topOffset: number;
   leftOffset: number;
@@ -86,6 +87,22 @@ const getLineText = (lineHtml = ''): string =>
 const resolveRemaining = (suggestionAlg: string, visibleText: string): string =>
   suggestionAlg.startsWith(visibleText) ? suggestionAlg.slice(visibleText.length) : '';
 
+const NO_REGION = -2;
+
+const isBlankLine = (lineHtml = '') => getLineText(lineHtml).trim() === '';
+
+const buildRegionOfLine = (lines: string[]) => {
+  const regionByLine: number[] = [];
+
+  let anchor = -1;
+  lines.forEach((lineHtml, lineIndex) => {
+    regionByLine[lineIndex] = anchor;
+    if (!isBlankLine(lineHtml)) anchor = lineIndex;
+  });
+
+  return (lineIndex: number) => regionByLine[lineIndex] ?? NO_REGION;
+};
+
 const filterSuggestionsForDisplay = ({
   suggestions,
   lineHtml,
@@ -103,11 +120,8 @@ const filterSuggestionsForDisplay = ({
 
 export function SuggestionManager({
   name,
-  suggestions,
-  suggestionLineIndex,
   activeLineIndex,
-  activeLineHtml,
-  activeLineMoves,
+  lines,
   overlayElement,
   topOffset,
   leftOffset,
@@ -116,6 +130,10 @@ export function SuggestionManager({
   onRejectSuggestion,
   ref,
 }: SuggestionManagerProps) {
+  const [{ suggestions, lineIndex: suggestionLineIndex }, setSuggestionState] = useState<SuggestionState>({
+    suggestions: [],
+    lineIndex: null,
+  });
   // the only genuine state: which suggestion is highlighted, and whether Esc was pressed.
   const [selectedOriginalIndex, setSelectedOriginalIndex] = useState<number | null>(null);
   const [dismissed, setDismissed] = useState(false);
@@ -124,11 +142,15 @@ export function SuggestionManager({
   const [caretTop, setCaretTop] = useState(0);
   const [caretHeight, setCaretHeight] = useState(0);
 
-  // suggestions are only valid on the line they were generated for; on any other line they're
-  // stale (e.g. backspacing onto an earlier line whose suggestions were never recomputed).
-  const suggestionsApplyToActiveLine = suggestionLineIndex === activeLineIndex;
+  // suggestions are only valid in the region they were generated for; in any other region
+  // they're stale (e.g. backspacing onto an earlier line whose suggestions were never recomputed).
+  const regionOfLine = buildRegionOfLine(lines);
+  const activeRegionId = regionOfLine(activeLineIndex);
+  const activeLineHtml = lines[activeLineIndex] ?? '';
+  const suggestionsApplyToActiveRegion = suggestionLineIndex !== null
+    && regionOfLine(suggestionLineIndex) === activeRegionId;
 
-  const filteredSuggestions = name === 'solution' && suggestionsApplyToActiveLine
+  const filteredSuggestions = name === 'solution' && suggestionsApplyToActiveRegion
     ? filterSuggestionsForDisplay({
         suggestions,
         lineHtml: activeLineHtml,
@@ -144,11 +166,11 @@ export function SuggestionManager({
     setDismissed(false);
   }
 
-  // reset dismissal when the active line's content (line index or its moves) changes.
-  const lineKey = `${activeLineIndex}::${(activeLineMoves ?? []).join(' ')}`;
-  const prevLineKeyRef = useRef(lineKey);
-  if (prevLineKeyRef.current !== lineKey) {
-    prevLineKeyRef.current = lineKey;
+  // a dismissal belongs to the region it was made in, so it survives moving between the blank
+  // lines of that region, and clears once the caret leaves it.
+  const prevRegionIdRef = useRef(activeRegionId);
+  if (prevRegionIdRef.current !== activeRegionId) {
+    prevRegionIdRef.current = activeRegionId;
     setDismissed(false);
   }
 
@@ -174,6 +196,13 @@ export function SuggestionManager({
       setCaretLeft(left);
       setCaretTop(top);
       setCaretHeight(height);
+    },
+    setSuggestions: (next: Suggestion[], nextLineIndex: number | null) => {
+      setSuggestionState((prev) =>
+        prev.lineIndex === nextLineIndex && buildSuggestionSignature(prev.suggestions) === buildSuggestionSignature(next)
+          ? prev
+          : { suggestions: next, lineIndex: nextLineIndex },
+      );
     },
   }));
 

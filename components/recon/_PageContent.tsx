@@ -103,19 +103,6 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   const [htmlImageData, setHtmlImageData] = useState<{ cubeState: CubeState; setupMovesForFilename: string } | null>(null);
 
   const [playerParams, setPlayerParams] = useState<PlayerParams>({ animationTimes: [], solution: '', scramble: '' });
-  const suggestionsRef = useRef<Suggestion[]>([]);
-  // the line index the current suggestions were generated for. suggestions are computed only
-  // for an empty line's position, so they're only valid while the caret stays on that line.
-  // returning to a different line (e.g. via backspace) must not reuse them.
-  const suggestionLineIndexRef = useRef<number | null>(null);
-
-  // TODO: check if these are needed any more
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const updateSuggestions = useCallback((next: Suggestion[], lineIndex: number | null) => {
-    suggestionsRef.current = next;
-    suggestionLineIndexRef.current = lineIndex;
-    setSuggestions(next);
-  }, []);
 
   const [splits, setSplits] = useState<string[]>([]);
   const splitsRef = useRef<string[]>([]);
@@ -698,22 +685,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     const steps = cubeInterpreter.current!.getStepsCompleted(cubeState);
     const newSuggestions: Suggestion[] = cubeInterpreter.current.getAlgSuggestions(steps);
 
-    const prevSuggestions = suggestionsRef.current;
-
-    const isSuggestionChange = prevSuggestions.length !== newSuggestions.length ||
-      newSuggestions.some((newSug, index) => newSug.alg !== (prevSuggestions[index]?.alg ?? ''));
-
-    suggestionsRef.current = newSuggestions;
-    // even when the suggestion content is unchanged, the line they apply to may differ,
-    // so always retag before deciding whether a re-render is needed.
-    suggestionLineIndexRef.current = trueLineIndex;
-
-    if (!isSuggestionChange) {
-      return;
-    }
-
-    updateSuggestions(newSuggestions, trueLineIndex);
-
+    solutionMethodsRef.current?.setSuggestions(newSuggestions, trueLineIndex);
   };
 
   const trackMoves = useCallback(
@@ -805,21 +777,11 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
 
       setPlayerParams({ animationTimes: limitedTimes, solution: sol, scramble: scram });
 
-      const validPlayPauseStatuses = ['play', 'pause', 'replay', 'disabled'];
-      const playPauseStatus =
-        (moveControllerStatus && validPlayPauseStatuses.includes(moveControllerStatus)) ?
-          moveControllerStatus : controllerButtonsStatus.playPause;
+      const playPauseStatus = moveControllerStatus === 'play' ? 'play' : 'pause';
 
       const controllerButtonsEnabled = getControllerButtonsStatus(idIndex, lineIndex, moveIndex, allMovesRef.current[idIndex], playPauseStatus);
       setControllerButtonsStatus(controllerButtonsEnabled)
 
-  }, [controllerButtonsStatus, suggestions]);
-
-  const memoizedSetScrambleHTML = useCallback((html: string) => {
-    setScrambleHTML(html);
-  }, []);
-  const memoizedSetSolutionHTML = useCallback((html: string) => {
-    setSolutionHTML(html);
   }, []);
 
   const memoizedUpdateHistoryBtns = useCallback(() => {
@@ -881,7 +843,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     }
   }
 
-  const handleHistoryBtnUpdate = () => {
+  function handleHistoryBtnUpdate() {
     const isAtEnd = moveHistory.current.index === moveHistory.current.history.length - 1;
     const isAtStart = moveHistory.current.index === 0;
 
@@ -903,7 +865,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
         ref.current.classList.add("text-primary-100");
       }
     });
-  };
+  }
 
   const getWholeTextboxRange = (textboxName: 'scramble' | 'solution'): Range => {
 
@@ -971,7 +933,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     setSplits([]);
     setCommittedSplits([]);
     setLineSteps([]);
-    updateSuggestions([], null);
+    solutionMethodsRef.current?.setSuggestions([], null);
 
     // don't clear moveHistory
 
@@ -1282,7 +1244,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     }
   };
 
-  const hasLineStepSpaceChanges = (moves: string[][], currentLineSteps: { moveLine: string; stepInfo: StepInfo[] }[]): boolean => {
+  function hasLineStepSpaceChanges(moves: string[][], currentLineSteps: { moveLine: string; stepInfo: StepInfo[] }[]): boolean {
     let hasAddedScramble = false;
     for (let idx = 0; idx < moves.length; idx++) {
       const line = moves[idx];
@@ -1294,9 +1256,9 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       if (lineStepEntry.moveLine !== lineAndScram.join(' ')) return true;
     }
     return false;
-  };
+  }
 
-  const respaceLineSteps = () => {
+  function respaceLineSteps() {
     const respacedSteps: { moveLine: string, stepInfo: StepInfo[] }[] = [];
     const solutionMoves = allMovesRef.current[1];
     const currentLineSteps = lineStepsRef.current;
@@ -1323,9 +1285,9 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     };
     lineStepsRef.current = respacedSteps;
     setLineSteps(respacedSteps);
-  };
+  }
 
-  const updateLineSteps = () => {
+  function updateLineSteps() {
     if (!cubeInterpreter.current) {
       return;
     }
@@ -1418,7 +1380,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
 
     lineStepsRef.current = updatedSteps;
     setLineSteps(updatedSteps);
-  };
+  }
 
   const initializeCubeInterpreter = async () => {
     const algDoc = await import('../../public/recon/compiled-exact-algs.json');
@@ -1648,7 +1610,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
             moveHistory={moveHistory}
             updateHistoryBtns={memoizedUpdateHistoryBtns}
             html={scrambleHTML}
-            setHTML={memoizedSetScrambleHTML}
+            setHTML={setScrambleHTML}
             initialContent={solutionHTML ? '' : dailyScramble}
           />
         </div>
@@ -1735,10 +1697,9 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
                 moveHistory={moveHistory}
                 updateHistoryBtns={memoizedUpdateHistoryBtns}
                 html={solutionHTML}
-                setHTML={memoizedSetSolutionHTML}
-                suggestionsRef={suggestionsRef}
-                suggestionLineIndexRef={suggestionLineIndexRef}
+                setHTML={setSolutionHTML}
                 lineHeight={solutionLineHeight}
+                iconColumnWidth={hasIcons ? ICON_SIZE_CONFIG['medium'].iconWidth : 0}
               />
             </div>
             {showSplitsColumn && (
