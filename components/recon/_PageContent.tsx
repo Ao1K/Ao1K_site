@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef, useEffect, lazy, Suspense, useCallback } from 'react';
+import { useState, useRef, useEffect, lazy, Suspense, useCallback, useMemo, useSyncExternalStore } from 'react';
 import MovesTextEditor from "../../components/recon/MovesTextEditor";
 import SpeedDropdown from "../../components/recon/SpeedDropdown";
 
@@ -78,14 +78,16 @@ const isRotationOnlyLine = (moves: string[]) =>
 
 const MAX_EDITOR_HISTORY = 100;
 
+const noopSubscribe = () => () => {};
+const getCtrlKeySnapshot = () => (/Mac|iPod|iPhone|iPad/.test(navigator.userAgent) ? '⌘' : 'Ctrl');
+const getCtrlKeyServerSnapshot = () => 'Ctrl';
+
 export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScramble?: string, infoPanelSlot?: React.ReactNode }) {
   const solutionLineHeight = ICON_SIZE_CONFIG['medium'].lineHeight;
   const [cubeColors] = useCubeColors();
   const [showSplitsSetting] = useShowSplits();
   const [algsets] = useAlgsets();
-  const enabledAlgsets = new Set(Object.values(algsets).flat());
-  const enabledAlgsetsRef = useRef(enabledAlgsets);
-  enabledAlgsetsRef.current = enabledAlgsets;
+  const enabledAlgsets = useMemo(() => new Set(Object.values(algsets).flat()), [algsets]);
 
   const allMovesRef = useRef<string[][][]>([[[]], [[]]]);
   const moveLocation = useRef<[number, number, number]>([0, 0, 0]);
@@ -99,7 +101,6 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   const [topButtonAlert, setTopButtonAlert] = useState<{ id: string; message: string; messageType: 'info' | 'warn' }>({ id: "", message: "", messageType: 'info' });
   const [isShowingToolbar, setIsShowingToolbar] = useState<boolean>(true);
   const [lineSteps, setLineSteps] = useState<{ moveLine: string; stepInfo: StepInfo[] }[]>([]);
-  const lineStepsRef = useRef(lineSteps); // keep latest lineSteps accessible inside stable callbacks
 
   const [scrambleHTML, setScrambleHTML] = useState<string>('');
   const [solutionHTML, setSolutionHTML] = useState<string>('');
@@ -110,7 +111,6 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   const [playerParams, setPlayerParams] = useState<PlayerParams>({ animationTimes: [], solution: '', scramble: '' });
 
   const [splits, setSplits] = useState<string[]>([]);
-  const splitsRef = useRef<string[]>([]);
   const [committedSplits, setCommittedSplits] = useState<string[]>([]);
   const committedSplitsRef = useRef<string[]>([]);
 
@@ -135,7 +135,6 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     }
   }, []);
 
-  splitsRef.current = splits;
   committedSplitsRef.current = committedSplits;
 
   const totalMoves = allMovesRef.current[1].flat(2).filter(move => move.match(/[^xyz2']/g)).length
@@ -185,13 +184,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   const cubeInterpreter = useRef<SimpleCubeInterpreter | null>(null);
   const simpleCubeRef = useRef<SimpleCube>(new SimpleCube());
 
-  // Detect OS on client side only to avoid hydration mismatch
-  const [ctrlKey, setCtrlKey] = useState('Ctrl');
-
-  useEffect(() => {
-    const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.userAgent);
-    setCtrlKey(isMac ? '⌘' : 'Ctrl');
-  }, []);
+  const ctrlKey = useSyncExternalStore(noopSubscribe, getCtrlKeySnapshot, getCtrlKeyServerSnapshot);
 
   /**
    * Finds the first non-empty line at or before the given line index.
@@ -671,7 +664,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     return { fullLeft, stepLeft, stepRight, fullRight, playPause }
   };
 
-  const handleEmptyLineSuggestions = (solutionMoves: string[][], trueLineIndex: number) => {
+  const handleEmptyLineSuggestions = (solutionMoves: string[][], trueLineIndex: number, enabledAlgsets: Set<string>) => {
     if (!cubeInterpreter.current) {
       return;
     }
@@ -688,7 +681,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     const cubeState = simpleCubeRef.current.getCubeState(allMoves as any);
 
     const steps = cubeInterpreter.current!.getStepsCompleted(cubeState);
-    const newSuggestions: Suggestion[] = cubeInterpreter.current.getAlgSuggestions(steps, { enabledAlgsets: enabledAlgsetsRef.current });
+    const newSuggestions: Suggestion[] = cubeInterpreter.current.getAlgSuggestions(steps, { enabledAlgsets });
 
     solutionMethodsRef.current?.setSuggestions(newSuggestions, trueLineIndex);
   };
@@ -699,12 +692,13 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       if (idIndex !== 1) return;
       const moves = allMovesRef.current[1];
       if (moves[lineIndex]?.length === 0) {
-        enabledAlgsetsRef.current = new Set(Object.values(readSettingsFromCookie().algsets).flat());
-        handleEmptyLineSuggestions(moves, lineIndex);
+        const freshEnabledAlgsets = new Set(Object.values(readSettingsFromCookie().algsets).flat());
+        handleEmptyLineSuggestions(moves, lineIndex, freshEnabledAlgsets);
       }
     };
     window.addEventListener('ao1kSettingsChanged', handleSettingsChanged);
     return () => window.removeEventListener('ao1kSettingsChanged', handleSettingsChanged);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- listens once at mount; handleEmptyLineSuggestions only closes over refs plus its own params
   }, []);
 
   const trackMoves = useCallback(
@@ -732,7 +726,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       if (isLineEmpty) {
 
         // only allowing suggestions on empty line simplifies logic and leads to more beautiful recons
-        idIndex === 0 ? null : handleEmptyLineSuggestions(moves, lineIndex);
+        idIndex === 0 ? null : handleEmptyLineSuggestions(moves, lineIndex, enabledAlgsets);
 
         // pretend caret is at end of the last line that has a move
         const adjustedLineIndex = findPrevNonEmptyLine(moves, lineIndex);
@@ -760,16 +754,14 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
 
       if (idIndex === 1) {
         const nonEmptyCount = moves.filter(line => line.length > 0).length;
-        const prev = splitsRef.current;
+        const prev = splits;
         if (prev.length !== nonEmptyCount) {
           if (prev.length < nonEmptyCount) {
             const padded = [...prev, ...Array(nonEmptyCount - prev.length).fill('')];
-            splitsRef.current = padded;
             setSplits(padded);
             setCommittedSplits(c => [...c, ...Array(nonEmptyCount - c.length).fill('')]);
           } else {
             const trimmed = prev.slice(0, nonEmptyCount);
-            splitsRef.current = trimmed;
             setSplits(trimmed);
             setCommittedSplits(c => c.slice(0, nonEmptyCount));
             updateURL('splits', splitsToURLParam(trimmed));
@@ -786,7 +778,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       let limitedTimes = findAnimationTimes(idIndex, lineIndex, moveIndex, moves);
       moveLocation.current = [idIndex, lineIndex, moveIndex];
 
-      const currentLineSteps = lineStepsRef.current;
+      const currentLineSteps = lineSteps;
 
       if (!isMoveLineContentSame) {
         updateLineSteps();
@@ -803,7 +795,8 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       const controllerButtonsEnabled = getControllerButtonsStatus(idIndex, lineIndex, moveIndex, allMovesRef.current[idIndex], playPauseStatus);
       setControllerButtonsStatus(controllerButtonsEnabled)
 
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- the helper fns below only close over refs/params, not component state; listing them would force a new trackMoves identity every render
+  }, [splits, lineSteps, enabledAlgsets]);
 
   const memoizedUpdateHistoryBtns = useCallback(() => {
     handleHistoryBtnUpdate();
@@ -1282,8 +1275,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   function respaceLineSteps() {
     const respacedSteps: { moveLine: string, stepInfo: StepInfo[] }[] = [];
     const solutionMoves = allMovesRef.current[1];
-    const currentLineSteps = lineStepsRef.current;
-    const filteredLineSteps = currentLineSteps.filter(item => item.moveLine.trim() !== '');
+    const filteredLineSteps = lineSteps.filter(item => item.moveLine.trim() !== '');
     let hasStepsCount = 0;
     let hasAddedScramble = false;
     for (let lineIdx = 0; lineIdx < solutionMoves.length; lineIdx++) {
@@ -1304,7 +1296,6 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
         respacedSteps.push({ moveLine: flatLine, stepInfo: [] });
       }
     };
-    lineStepsRef.current = respacedSteps;
     setLineSteps(respacedSteps);
   }
 
@@ -1313,7 +1304,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       return;
     }
     const updatedSteps: { moveLine: string, stepInfo: StepInfo[] }[] = [];
-    const previousLineSteps = lineStepsRef.current;
+    const previousLineSteps = lineSteps;
 
     const getStepsForLine = (lineIdx: number): StepInfo[] => {
       if (!cubeInterpreter.current) {
@@ -1399,7 +1390,6 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       }
     };
 
-    lineStepsRef.current = updatedSteps;
     setLineSteps(updatedSteps);
   }
 
@@ -1425,6 +1415,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
 
   useEffect(() => {
     initializeCubeInterpreter();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- must run exactly once at mount; re-running on every lineSteps change would re-initialize the interpreter
   }, []);
 
   useEffect(() => {
@@ -1434,6 +1425,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     if (time) {
       const parsedTime = parseFloat(time);
       if (!isNaN(parsedTime)) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrating from the URL query string, which only exists client-side; must run once at mount
         setSolveTime(parsedTime);
       }
     }
@@ -1482,6 +1474,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     };
 
     // may create screenshot, so handleStoreSelection needs current values.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- deliberately re-subscribes only on scramble/solution changes, not every value handleStoreSelection reads
   }, [scrambleHTML, solutionHTML]);
 
   const windowsToolbarButtons = [
