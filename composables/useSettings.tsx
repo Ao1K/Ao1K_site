@@ -18,6 +18,22 @@ export type CubeColors = typeof DEFAULT_CUBE_COLORS;
 
 export type IconSize = 'small' | 'medium';
 
+export const ALGSET_OPTIONS = {
+  CFOP: ['f2l', 'oll', 'pll'],
+  ZB: ['zbls', 'zbll'],
+  Roux: ['cmll', 'lse'],
+} as const;
+
+export type AlgsetDict = {
+  [K in keyof typeof ALGSET_OPTIONS]: (typeof ALGSET_OPTIONS)[K][number][];
+};
+
+export const DEFAULT_ALGSETS: AlgsetDict = {
+  CFOP: ['f2l', 'oll', 'pll'],
+  ZB: [],
+  Roux: [],
+};
+
 export const ICON_SIZE_CONFIG = {
   small:  { lineHeight: 28, iconWidth: 28 },
   medium: { lineHeight: 36, iconWidth: 36 },
@@ -30,13 +46,14 @@ export interface AppSettings {
   showPlayerControls: boolean;
   hintFaceletsElevation: number;
   showSplits: boolean;
+  algsets: AlgsetDict;
 }
 
 const SETTINGS_COOKIE_KEY = 'ao1kSettings';
 const BROADCAST_CHANNEL_NAME = 'ao1k-settings-sync';
 
 // Read settings from cookie (non-reactive)
-function readSettingsFromCookie(): AppSettings {
+export function readSettingsFromCookie(): AppSettings {
   const cookieValue = Cookies.get(SETTINGS_COOKIE_KEY);
   if (cookieValue) {
     try {
@@ -46,6 +63,7 @@ function readSettingsFromCookie(): AppSettings {
         showPlayerControls: parsed.showPlayerControls ?? true,
         hintFaceletsElevation: typeof parsed.hintFaceletsElevation === 'number' ? parsed.hintFaceletsElevation : DEFAULT_HINT_FACELETS_ELEVATION,
         showSplits: parsed.showSplits ?? false,
+        algsets: parsed.algsets ?? DEFAULT_ALGSETS,
       };
       return result;
     } catch (e) {
@@ -57,6 +75,7 @@ function readSettingsFromCookie(): AppSettings {
     showPlayerControls: true,
     hintFaceletsElevation: DEFAULT_HINT_FACELETS_ELEVATION,
     showSplits: false,
+    algsets: DEFAULT_ALGSETS,
   };
 }
 
@@ -67,6 +86,7 @@ export function useSyncedSettings() {
     showPlayerControls: true,
     hintFaceletsElevation: DEFAULT_HINT_FACELETS_ELEVATION,
     showSplits: false,
+    algsets: DEFAULT_ALGSETS,
   });
 
   useEffect(() => {
@@ -115,7 +135,6 @@ export function useSyncedSettings() {
   return { settings, updateSettings };
 }
 
-// Hook specifically for cube colors
 export function useCubeColors(): [CubeColors, (colors: Partial<CubeColors>) => void, () => void] {
   const { settings, updateSettings } = useSyncedSettings();
 
@@ -136,7 +155,6 @@ export function useCubeColors(): [CubeColors, (colors: Partial<CubeColors>) => v
   return [settings.cubeColors, setCubeColors, resetColors];
 }
 
-// Hook for show controls
 export function useShowControls(): [boolean, (value: boolean) => void] {
   const { settings, updateSettings } = useSyncedSettings();
   
@@ -150,7 +168,6 @@ export function useShowControls(): [boolean, (value: boolean) => void] {
   return [settings.showPlayerControls, setShowControls] as const;
 }
 
-// Hook for show splits column
 export function useShowSplits(): [boolean, (value: boolean) => void] {
   const { settings, updateSettings } = useSyncedSettings();
 
@@ -164,7 +181,6 @@ export function useShowSplits(): [boolean, (value: boolean) => void] {
   return [settings.showSplits, setShowSplits] as const;
 }
 
-// Hook for hint facelets elevation
 export function useHintFaceletsElevation(): [number, (value: number) => void] {
   const { settings, updateSettings } = useSyncedSettings();
 
@@ -176,5 +192,18 @@ export function useHintFaceletsElevation(): [number, (value: number) => void] {
   }, [settings, updateSettings]);
 
   return [settings.hintFaceletsElevation, setElevation] as const;
+}
+
+export function useAlgsets(): [AlgsetDict, (value: AlgsetDict) => void] {
+  const { settings, updateSettings } = useSyncedSettings();
+
+  const setAlgsets = useCallback((value: AlgsetDict) => {
+    updateSettings({
+      ...settings,
+      algsets: value,
+    });
+  }, [settings, updateSettings]);
+
+  return [settings.algsets, setAlgsets] as const;
 }
 

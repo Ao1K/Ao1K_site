@@ -15,6 +15,12 @@ export interface Suggestion {
   frequency?: number;
 }
 
+export type AlgsetFilter = ReadonlySet<string> | 'all';
+
+function isAlgsetEnabled(filter: AlgsetFilter, name: string): boolean {
+  return filter === 'all' || filter.has(name);
+}
+
 type ColorName = 'white' | 'yellow' | 'red' | 'orange' | 'green' | 'blue';
 type DirectionChar = 'U' | 'D' | 'L' | 'R' | 'F' | 'B';
 
@@ -121,6 +127,7 @@ export class SimpleCubeInterpreter {
   public currentCubeRotation: string | number = -1;
   private algSuggester: AlgSuggester | null = null;
   private LLsuggester: LLsuggester | null = null;
+  private enabledAlgsets: AlgsetFilter = 'all';
 
   // standard facelets mapping (face index to color name for solved cube)
   private readonly facelets: { faceIdx: number; colorName: string }[] = [
@@ -3190,23 +3197,36 @@ export class SimpleCubeInterpreter {
 
     if (!types.has('last layer')) {
       // OLL, CLL, ELL, 1LLL possible
-      indices.push(this.LLinterpreter.getStepInfo(LLpattern, 'oll'));
+      if (isAlgsetEnabled(this.enabledAlgsets, 'oll')) {
+        indices.push(this.LLinterpreter.getStepInfo(LLpattern, 'oll'));
+      }
       // eoIndex = this.LLinterpreter.getStepInfo(LLpattern, 'eo');
       // onelllIndex = this.get1LLLindex();
       // ellIndex = this.getELLindex();
       // cllIndex = this.getCLLindex();
     } else {
-      if ((!steps.find(s => s.step === 'eo') || !steps.find(s => s.step === 'co')) && (!steps.find(s => s.step === 'ep') || !steps.find(s => s.step === 'cp'))) {
-        indices.push(this.LLinterpreter.getStepInfo(LLpattern, 'oll'));
+      const hasEO = steps.some(s => s.step === 'eo');
+      const hasCO = steps.some(s => s.step === 'co');
+      const hasEP = steps.some(s => s.step === 'ep');
+      const hasCP = steps.some(s => s.step === 'cp');
+
+      if ((!hasEO || !hasCO) && (!hasEP || !hasCP)) {
+        if (isAlgsetEnabled(this.enabledAlgsets, 'oll')) {
+          indices.push(this.LLinterpreter.getStepInfo(LLpattern, 'oll'));
+        }
       }
-      if (steps.find(s => s.step === 'eo') && !steps.find(s => s.step === 'co') && !steps.find(s => s.step === 'ep') && !steps.find(s => s.step === 'cp')) {
-        // zbllIndex = this.LLinterpreter.getStepInfo(LLpattern, 'zbll');
-        // onelllIndex = this.LLinterpreter.getStepInfo(LLpattern, 'onelll');
+      if (hasEO && !hasCO && !hasEP && !hasCP) {
+        if (isAlgsetEnabled(this.enabledAlgsets, 'zbll')) {
+          // zbllIndex = this.LLinterpreter.getStepInfo(LLpattern, 'zbll');
+          // onelllIndex = this.LLinterpreter.getStepInfo(LLpattern, 'onelll');
+        }
       }
-      if (steps.find(s => s.step === 'eo') && steps.find(s => s.step === 'co') && (!steps.find(s => s.step === 'cp') || !steps.find(s => s.step === 'ep'))) {
-        indices.push(this.LLinterpreter.getStepInfo(LLpattern, 'pll'));
+      if (hasEO && hasCO && (!hasCP || !hasEP)) {
+        if (isAlgsetEnabled(this.enabledAlgsets, 'pll')) {
+          indices.push(this.LLinterpreter.getStepInfo(LLpattern, 'pll'));
+        }
       }
-      if (steps.find(s => s.step === 'eo') && steps.find(s => s.step === 'co') && steps.find(s => s.step === 'ep') && steps.find(s => s.step === 'cp')) {
+      if (hasEO && hasCO && hasEP && hasCP) {
         indices.push(this.getAUFindex());
       }
     }
@@ -3289,8 +3309,8 @@ export class SimpleCubeInterpreter {
 
   public getAlgSuggestions(
     steps?: StepInfo[],
-    options?: { f2lPair?: [string, string] },
-  ): { alg: string, time: number, steps: string[], name?: string }[] {
+    options?: { f2lPair?: [string, string], enabledAlgsets?: AlgsetFilter },
+  ): Suggestion[] {
     if (!this.algSuggester || !this.currentState) {
       return [];
     }
@@ -3301,6 +3321,8 @@ export class SimpleCubeInterpreter {
     if (steps.filter(s => s.type === 'solved').length === 1) {
       return [];
     }
+
+    this.enabledAlgsets = options?.enabledAlgsets ?? 'all';
 
     const stepTypes = new Set(steps.map(s => s.type));
     const f2lSteps = steps.filter(s => s.type === 'f2l');
@@ -3313,6 +3335,9 @@ export class SimpleCubeInterpreter {
       }
       return this.getLLSuggestions(steps, stepTypes);
     } else {
+      if (!isAlgsetEnabled(this.enabledAlgsets, 'f2l')) {
+        return [];
+      }
       return this.getF2LSuggestions(steps, options?.f2lPair);
     }
   }
@@ -3514,7 +3539,7 @@ export class SimpleCubeInterpreter {
     return f2
   }
 
-  private getF2LSuggestions(steps: StepInfo[], targetPair?: [string, string]): { alg: string, time: number, steps: string[], name?: string }[] {
+  private getF2LSuggestions(steps: StepInfo[], targetPair?: [string, string]): Suggestion[] {
     let queries = this.getQueriesForF2L();
 
     if (targetPair) {
@@ -3551,7 +3576,7 @@ export class SimpleCubeInterpreter {
     return fastSuggestions.sort((a, b) => a.time - b.time).splice(0, 20); // limit to top 20
   }
 
-  private getLLSuggestions(steps: StepInfo[], stepTypes: Set<StepInfo['type']>): { alg: string, time: number, name?: string, steps: string[] }[] {
+  private getLLSuggestions(steps: StepInfo[], stepTypes: Set<StepInfo['type']>): Suggestion[] {
 
     // Calculate all 4 reference piece origins for different AUF positions
     // preAUFidx 0: green-white, preAUFidx 1: white-red, preAUFidx 2: white-blue, preAUFidx 3: white-orange

@@ -30,7 +30,7 @@ import { customDecodeURL } from '../../composables/recon/urlEncoding';
 import InfoPanel from '../../components/recon/InfoPanel';
 import IconStack, { computeLineIconData } from './IconStack';
 import SplitsStack, { SPLITS_WIDTH, splitsToURLParam } from './SplitsStack';
-import { ICON_SIZE_CONFIG, useCubeColors, useShowSplits } from '../../composables/useSettings';
+import { ICON_SIZE_CONFIG, useCubeColors, useShowSplits, useAlgsets, readSettingsFromCookie } from '../../composables/useSettings';
 import { SimpleCube, type CubeState } from '../../composables/recon/SimpleCube';
 import { SimpleCubeInterpreter } from '../../composables/recon/SimpleCubeInterpreter';
 import type { StepInfo, Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
@@ -82,9 +82,14 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   const solutionLineHeight = ICON_SIZE_CONFIG['medium'].lineHeight;
   const [cubeColors] = useCubeColors();
   const [showSplitsSetting] = useShowSplits();
+  const [algsets] = useAlgsets();
+  const enabledAlgsets = new Set(Object.values(algsets).flat());
+  const enabledAlgsetsRef = useRef(enabledAlgsets);
+  enabledAlgsetsRef.current = enabledAlgsets;
 
   const allMovesRef = useRef<string[][][]>([[[]], [[]]]);
   const moveLocation = useRef<[number, number, number]>([0, 0, 0]);
+  const trueCaretRef = useRef<[number, number]>([0, 0]);
 
   const [speed, setSpeed] = useState<number>(30);
   currentSpeed = speed;
@@ -683,10 +688,24 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     const cubeState = simpleCubeRef.current.getCubeState(allMoves as any);
 
     const steps = cubeInterpreter.current!.getStepsCompleted(cubeState);
-    const newSuggestions: Suggestion[] = cubeInterpreter.current.getAlgSuggestions(steps);
+    const newSuggestions: Suggestion[] = cubeInterpreter.current.getAlgSuggestions(steps, { enabledAlgsets: enabledAlgsetsRef.current });
 
     solutionMethodsRef.current?.setSuggestions(newSuggestions, trueLineIndex);
   };
+
+  useEffect(() => {
+    const handleSettingsChanged = () => {
+      const [idIndex, lineIndex] = trueCaretRef.current;
+      if (idIndex !== 1) return;
+      const moves = allMovesRef.current[1];
+      if (moves[lineIndex]?.length === 0) {
+        enabledAlgsetsRef.current = new Set(Object.values(readSettingsFromCookie().algsets).flat());
+        handleEmptyLineSuggestions(moves, lineIndex);
+      }
+    };
+    window.addEventListener('ao1kSettingsChanged', handleSettingsChanged);
+    return () => window.removeEventListener('ao1kSettingsChanged', handleSettingsChanged);
+  }, []);
 
   const trackMoves = useCallback(
     (
@@ -706,6 +725,8 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
         console.warn('Invalid lineIndex or moveIndex:', lineIndex, moveIndex);
         return;
       }
+
+      trueCaretRef.current = [idIndex, lineIndex];
 
       const isLineEmpty = moves[lineIndex]?.length === 0;
       if (isLineEmpty) {

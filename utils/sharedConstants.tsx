@@ -2,9 +2,9 @@
 
 export const versionList = {
   "learn": "",
-  "recon": "v0.8",
+  "recon": "v0.9",
   "changeblog": "",
-  "algs": "",
+  "algs": "v0.1",
 }
 
 export const highlightClass = 'text-dark bg-primary-100 backdrop-blur-xs caret-dark';

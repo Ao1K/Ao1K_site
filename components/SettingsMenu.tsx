@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { HexColorPicker } from 'react-colorful';
 import PhGear, { PhGearFill } from './icons/settings';
-import { useCubeColors, useShowControls, useShowSplits, useHintFaceletsElevation, DEFAULT_HINT_FACELETS_ELEVATION, DEFAULT_CUBE_COLORS, type CubeColors } from '../composables/useSettings';
+import { useCubeColors, useShowControls, useShowSplits, useHintFaceletsElevation, useAlgsets, ALGSET_OPTIONS, DEFAULT_HINT_FACELETS_ELEVATION, DEFAULT_CUBE_COLORS, type CubeColors, type AlgsetDict } from '../composables/useSettings';
 
 const FACE_LABELS: { key: keyof CubeColors; label: string }[] = [
   { key: 'up', label: 'Up' },
@@ -26,6 +26,7 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
   const [showControls, setShowControls] = useShowControls();
   const [showSplits, setShowSplits] = useShowSplits();
   const [elevation, setElevation] = useHintFaceletsElevation();
+  const [algsets, setAlgsets] = useAlgsets();
   const menuRef = useRef<HTMLDivElement>(null);
 
   const handleClickOutside = (event: MouseEvent | TouchEvent) => {
@@ -64,6 +65,20 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
     setShowControls(!showControls);
   };
 
+  const handleToggleAlgset = <K extends keyof AlgsetDict>(category: K, option: AlgsetDict[K][number]) => {
+    const current = algsets[category];
+    const next = current.includes(option)
+      ? current.filter((o) => o !== option)
+      : [...current, option];
+    setAlgsets({ ...algsets, [category]: next });
+  };
+
+  const handleToggleCategory = <K extends keyof AlgsetDict>(category: K) => {
+    const options = ALGSET_OPTIONS[category];
+    const allSelected = options.every((o) => (algsets[category] as readonly string[]).includes(o));
+    setAlgsets({ ...algsets, [category]: allSelected ? [] : [...options] });
+  };
+
   return (
     <div ref={menuRef} id="settings-menu-container" className="relative inline-block">
       <button
@@ -78,7 +93,7 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
       {isOpen && (
         <div className="absolute right-0 top-14 bg-primary-100 border border-primary-300 rounded-sm shadow-lg z-50 min-w-62.5">
           {/* recon-only settings; the algs page omits player controls and splits */}
-          {page !== 'algs' && (
+          {page === 'recon' && (
           <>
           {/* Show Controls Toggle */}
           <div className="px-3 py-2 border-b border-primary-200">
@@ -104,6 +119,45 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
                 className="ml-2 w-4 h-4 cursor-pointer"
               />
             </label>
+          </div>
+
+          <div className="px-3 py-2 border-b border-primary-200">
+            <span className="text-sm font-semibold text-light_accent">Algsets</span>
+            <div className="grid grid-cols-[auto_1fr] gap-x-0 gap-y-2 mt-2">
+              {(Object.keys(ALGSET_OPTIONS) as (keyof AlgsetDict)[]).map((category) => {
+                const options = ALGSET_OPTIONS[category];
+                const selected = algsets[category] as readonly string[];
+                const allSelected = options.every((o) => selected.includes(o));
+                const someSelected = !allSelected && options.some((o) => selected.includes(o));
+                return (
+                  <div key={category} className="contents">
+                    <label className="flex items-center gap-2 cursor-pointer select-none rounded-l-sm border border-primary-300 bg-primary-200/40 px-3 py-2">
+                      <input
+                        type="checkbox"
+                        checked={allSelected}
+                        ref={(el) => { if (el) el.indeterminate = someSelected; }}
+                        onChange={() => handleToggleCategory(category)}
+                        className="w-4 h-4 cursor-pointer"
+                      />
+                      <span className="text-xs font-semibold text-primary-600">{category}</span>
+                    </label>
+                    <div className="flex flex-row flex-wrap items-center gap-3 rounded-r-sm border border-l-0 border-primary-300 bg-primary-200/40 px-3 py-2">
+                      {options.map((option) => (
+                        <label key={option} className="flex items-center gap-1 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={selected.includes(option)}
+                            onChange={() => handleToggleAlgset(category, option)}
+                            className="w-3.5 h-3.5 cursor-pointer"
+                          />
+                          <span className="text-xs text-primary-600">{option.toUpperCase()}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
           </>
           )}
