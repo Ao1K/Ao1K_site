@@ -7,6 +7,8 @@ import { reverseMove, replacementTable_Y, replacementTable_M } from '../composab
 import AlgSpeedEstimator from '../composables/recon/AlgSpeedEstimator';
 import type { CompiledLLAlg } from '../composables/recon/LLsuggester';
 import { ollFrequencies, pllFrequencies } from './algFrequencies';
+import { collapseAufGroups, canonicalizeAufHashes } from './collapseAufVariants';
+import { combineMoves, parseMove } from './moveUtils';
 
 interface CompiledExactAlg {
   alg: string;
@@ -164,104 +166,6 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
    * If alg-type = LastLayer, also remove leading y, U, and d moves.
    */
   const simplifyAlgs = (algs: ExactAlg[] | LastLayerAlg[], algType: 'Exact' | 'LastLayer') => {
-    const validBases = new Set(['U', 'D', 'R', 'L', 'F', 'B', 'u', 'd', 'r', 'l', 'f', 'b', 'M', 'E', 'S', 'x', 'y', 'z']);
-
-    const formatMove = (base: string, amount: number) => {
-      const normalized = amount % 4;
-
-      if (normalized === 0) {
-        return '';
-      }
-
-      if (normalized === 1) {
-        return base;
-      }
-
-      if (normalized === 2) {
-        return `${base}2`;
-      }
-
-      return `${base}'`;
-    };
-
-    const parseMove = (move: string) => {
-      if (!move) {
-        return null;
-      }
-
-      const base = move.charAt(0);
-      if (!validBases.has(base)) {
-        return null;
-      }
-
-      let index = 1;
-      let amount = 1;
-
-      const digit = move.charAt(index);
-      if (digit === '2' || digit === '3') {
-        amount = Number(digit);
-        index += 1;
-      }
-
-      if (move.charAt(index) === "'") {
-        amount = (4 - amount) % 4;
-        index += 1;
-      }
-
-      if (index !== move.length) {
-        return null;
-      }
-
-      const normalized = amount % 4;
-      if (normalized === 0) {
-        return null;
-      }
-
-      return { base, amount: normalized } as const;
-    };
-
-    type ParsedMove = ReturnType<typeof parseMove>;
-
-    const combineMoves = (moves: string[]) => {
-      const stack: { move: string; parsed: ParsedMove }[] = [];
-
-      for (const move of moves) {
-        const parsed = parseMove(move);
-
-        if (!parsed) {
-          if (move) {
-            stack.push({ move, parsed: null });
-          }
-
-          continue;
-        }
-
-        const last = stack[stack.length - 1];
-        const lastParsed = last?.parsed;
-
-        if (lastParsed && lastParsed.base === parsed.base) {
-          const total = (lastParsed.amount + parsed.amount) % 4;
-
-          if (total === 0) {
-            stack.pop();
-          } else {
-            stack[stack.length - 1] = {
-              move: formatMove(lastParsed.base, total),
-              parsed: { base: lastParsed.base, amount: total },
-            };
-          }
-        } else {
-          // keep original notation when no merge occurs so single moves like R3 stay intact
-          stack.push({
-            move,
-            parsed: { base: parsed.base, amount: parsed.amount },
-          });
-        }
-      }
-
-      return stack.map(entry => entry.move);
-    };
-
     const stripLeadingSetupMoves = (moves: string[]) => {
       if (algType !== 'LastLayer') {
         return moves;
@@ -726,8 +630,8 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
           value: alg.value,
           step: alg.step,
           name: (alg as ExactAlg).name ?? "",
-          add_y: false, // algs were already expanded with all allowed angles
-          add_U: false, // algs were already expanded with all allowed angles
+          add_y: false,
+          add_U: false,
         }
       } else {
         alg = {
@@ -739,6 +643,9 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
       return alg;
     });
 
+    if (algType === 'Exact') {
+      algs = collapseAufGroups(algs as ExactAlg[]);
+    }
 
     const prettyJson = '[\n  ' + algs.map(alg => JSON.stringify(alg).replaceAll(',',', ').replace(/"(\w+)":/g, '$1: ')).join(',\n  ') + '\n]';
     const blob = new Blob([prettyJson], { type: 'application/json' });
@@ -1059,7 +966,7 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
 
     }
     // Create and download JSON file
-    downloadCompiledAlgs(compiledData, 'exact');
+    downloadCompiledAlgs(canonicalizeAufHashes(compiledData), 'exact');
   };
 
   /**

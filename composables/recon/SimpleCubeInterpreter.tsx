@@ -5,6 +5,16 @@ import type { Grid } from './LLinterpreter';
 import LLinterpreter from './LLinterpreter';
 import LLsuggester from './LLsuggester';
 import type { CubeState as SimpleCubeState, Color } from './SimpleCube';
+import { splitLeadingAuf } from '../../utils/collapseAufVariants';
+import {
+  isTopLayerChar,
+  canonicalizePair,
+  rotateEOBits,
+  aufTokenToVal,
+  aufValToToken,
+  combineAuf,
+} from '../../utils/canonicalizeAuf';
+import { combineMoves } from '../../utils/moveUtils';
 
 export interface Suggestion {
   alg: string;
@@ -13,6 +23,14 @@ export interface Suggestion {
   name?: string;
   hasEOsolved?: boolean;
   frequency?: number;
+}
+
+interface F2LPairQuery {
+  query: Query;
+  pairColors: [string, string];
+  q: number;
+  isTopLayer: boolean;
+  isFinalPair: boolean;
 }
 
 export type AlgsetFilter = ReadonlySet<string> | 'all';
@@ -2802,7 +2820,7 @@ export class SimpleCubeInterpreter {
    * Each query requires only that specific slot to be solved.
    * @returns Array of query objects with the related pair colors (max 4)
    */
-  private getQueriesForF2L(): { query: Query; pairColors: [string, string] }[] {
+  private getQueriesForF2L(): F2LPairQuery[] {
     if (!this.currentState) {
       console.warn('Current state not available for query generation');
       return [];
@@ -2812,7 +2830,7 @@ export class SimpleCubeInterpreter {
       return [];
     }
 
-    const queries: { query: Query; pairColors: [string, string] }[] = [];
+    const queries: F2LPairQuery[] = [];
 
     // assume cross must be on bottom
     const effectiveDownColor = 'yellow';
@@ -2845,6 +2863,7 @@ export class SimpleCubeInterpreter {
 
     const pairStatus = this.getF2LPairStatus(color);
     const crossArray = crossIndices.split(',').map(Number);
+    const solvedPairCount = pairStatus.filter((p) => p.isSolved).length;
 
     // Create a query for each unsolved slot
     pairStatus.forEach((pair) => {
@@ -2897,14 +2916,27 @@ export class SimpleCubeInterpreter {
       const edgePosition = this.currentState!.hash[edgeIndex];
       if (typeof edgePosition !== 'string') return;
 
+      // canonicalize this pair's own two characters so a single exact-match search works
+      // regardless of which U-layer orientation the live piece is currently in (see
+      // docs/auf-canonical-search.md section 3). Cross and solved-pair indices are never
+      // U-layer values, so they don't need this.
+      const isTopLayer = isTopLayerChar('corner', cornerPosition) || isTopLayerChar('edge', edgePosition);
+      const { cornerChar: canonicalCorner, edgeChar: canonicalEdge, q } = canonicalizePair(cornerPosition, edgePosition);
+
       query.positions[edgeIndex] = {
-        must: [edgePosition]
+        must: [canonicalEdge]
       };
       query.positions[cornerIndex] = {
-        must: [cornerPosition]
+        must: [canonicalCorner]
       };
 
-      queries.push({ query, pairColors: [pair.pairColors[0], pair.pairColors[1]] });
+      queries.push({
+        query,
+        pairColors: [pair.pairColors[0], pair.pairColors[1]],
+        q,
+        isTopLayer,
+        isFinalPair: solvedPairCount === 3,
+      });
     });
 
     return queries;
@@ -3429,7 +3461,57 @@ export class SimpleCubeInterpreter {
     return filteredSuggestions;
   }
 
-  private runF2LQueries(queries: { query: Query, pairColors: [string, string] }[]): Suggestion[] {
+  /**
+   * Reconstructs the AUF-correct alg text and EO-solved signal for a matched compiled alg, per
+   * the four cases in docs/auf-canonical-search.md. `algText`/`algEOvalue` are the matched
+   * compiled entry's own stored alg text and eoValue; `q` is this pair's canonicalization
+   * rotation from getQueriesForF2L.
+   */
+  private reconstructF2LAlg(
+    algText: string,
+    algEOvalue: number | undefined,
+    q: number,
+    isTopLayer: boolean,
+    isFinalPair: boolean,
+    wantsEORanking: boolean,
+    currentEO: number,
+  ): { alg: string; hasEOsolved: boolean } {
+    const prependAuf = (token: string, text: string): string => {
+      const tokens = [token, ...text.trim().split(/\s+/)].filter(Boolean);
+      const combined = combineMoves(tokens).join(' ').trim();
+      // U and y rotate about the same axis and always commute; reorder to the codebase's
+      // established "y before U" display convention (see reorderAnglingInAlg in AlgCompiler.tsx)
+      return combined.replace(/^(U'?2?)\s+(y'?2?)/, '$2 $1');
+    };
+
+    const eoSolvedAt = (m: number): boolean =>
+      isFinalPair && algEOvalue !== undefined && currentEO >= 0 && rotateEOBits(currentEO, m) === algEOvalue;
+
+    if (isTopLayer) {
+      // the piece is forced to move under any leading AUF, so the reconstructed rotation m is
+      // forced too: strip the compiled alg's own leading rotation and recombine it with q.
+      const { coreKey, aufPart } = splitLeadingAuf(algText);
+      const m = combineAuf(q, aufTokenToVal(aufPart));
+      const alg = prependAuf(aufValToToken(m), coreKey);
+      return { alg, hasEOsolved: eoSolvedAt(m) };
+    }
+
+    // the piece isn't in the U layer, so no AUF is needed to solve the pair itself. When
+    // we want EO ranking, a leading AUF may still be worth adding purely to also solve EO. Try
+    // smallest AUF first ('', U, U', U2); a currentEO whose low 4 bits are all-0 or all-1 is
+    // rotation-invariant and could match more than one candidate, so order matters there.
+    if (wantsEORanking) {
+      for (const candidateToken of ['', 'U', "U'", 'U2'] as const) {
+        if (eoSolvedAt(aufTokenToVal(candidateToken))) {
+          return { alg: prependAuf(candidateToken, algText), hasEOsolved: true };
+        }
+      }
+    }
+
+    return { alg: algText, hasEOsolved: eoSolvedAt(0) };
+  }
+
+  private runF2LQueries(queries: F2LPairQuery[]): Suggestion[] {
 
     let suggestions: Suggestion[] = [];
 
@@ -3438,13 +3520,15 @@ export class SimpleCubeInterpreter {
     const currentEO = this.eoValue;
 
     // iterate and collect suggestions
-    queries.forEach(({ query, pairColors }) => {
+    queries.forEach(({ query, pairColors, q, isTopLayer, isFinalPair }) => {
 
       // some f2l cases will return a lot of algs, and the good ones may be later in the list
       // however, the list is now sorted to help avoid this
       query.limit = 40;
 
       query.scoreBy = 'exact'; // use 'exact' context for F2L searches.
+
+      const wantsEORanking = isFinalPair && isAlgsetEnabled(this.enabledAlgsets, 'zbls');
 
       const algs = this.algSuggester!.searchByPosition(query);
 
@@ -3454,18 +3538,22 @@ export class SimpleCubeInterpreter {
         const secondLetter = secondColor ? secondColor.charAt(0).toUpperCase() : '';
         const pairLabel = firstLetter && secondLetter ? `${firstLetter}${secondLetter} pair` : 'pair';
 
-        if (!algSet.has(alg.id)) {
-          algSet.add(alg.id);
+        const { alg: finalAlg, hasEOsolved } = this.reconstructF2LAlg(
+          alg.id, alg.eoValue, q, isTopLayer, isFinalPair, wantsEORanking, currentEO
+        );
+
+        if (!algSet.has(finalAlg)) {
+          algSet.add(finalAlg);
 
           suggestions.push({
-            alg: alg.id,
-            time: speedEstimator.calcScore(alg.id),
+            alg: finalAlg,
+            time: speedEstimator.calcScore(finalAlg),
             steps: [pairLabel],
-            hasEOsolved: alg.eoValue !== undefined && currentEO >= 0 && alg.eoValue === currentEO,
+            hasEOsolved,
           });
         } else {
           // Algorithm already exists - add this step to the existing suggestion
-          const existingSuggestion = suggestions.find(s => s.alg === alg.id);
+          const existingSuggestion = suggestions.find(s => s.alg === finalAlg);
           if (existingSuggestion && !existingSuggestion.steps.includes(pairLabel)) {
             existingSuggestion.steps.push(pairLabel);
           }
@@ -3476,67 +3564,9 @@ export class SimpleCubeInterpreter {
     return suggestions
   }
 
-  private removeAUFFromAlg = (alg: string): string => {
-    return alg.replace(/(?<=^(?:(?:U2?'?|y2?'?)(?=\s|$)\s*)*)U2?'?(?=\s|$)\s*/g, '');
-  };
-
-  private filterUnneededAUFSuggestions(suggestions: Suggestion[]): Suggestion[] {
-
-    const topColor = this.getTopCenterInfo()!.actualColor
-    const pieces = this.currentPieces
-    const topPieces = pieces.filter((piece) => {
-      const hasTopFacingSticker = piece.stickers.find((sticker) => sticker.direction === "U")
-      const hasTopColor = piece.stickers.find((sticker) => sticker.colorName === topColor)
-      return hasTopFacingSticker && !hasTopColor && piece.type !== 'center'
-    })
-
-    // get colors of pieces in the top layer
-    const relevantColors = topPieces.map((piece) => {
-      const colors = piece.stickers.map((sticker) => sticker.colorName)
-      const colorString = colors.map((color) => Array.from(color)[0].toUpperCase()).sort().join('');
-      return colorString;
-    });
-
-    // the pair label ("WG pair") keeps the slot's color order, but relevantColors are sorted,
-    // so canonicalize the label colors the same way before comparing
-    const pairColorsKey = (step: string) => step.replace(' pair', '').split('').sort().join('');
-
-    // get algs that have solved EO and no AUF
-    const goodEOBaseAlgs = new Set(
-      suggestions
-        .filter((s) => {
-          const colors = pairColorsKey(s.steps![0]);
-          const hasAUF = s.alg.replace(/[y23'\s]/g, "").startsWith("U");
-          return !relevantColors.includes(colors) && !hasAUF && s.hasEOsolved;
-        })
-        .map((s) => s.alg)
-    );
-
-    suggestions = suggestions.filter((suggestion) => {
-      const suggestionColors = pairColorsKey(suggestion.steps![0]);
-      const hasF2LPieceInTop = relevantColors.includes(suggestionColors);
-      const hasAUF = suggestion.alg.replace(/[y23'\s]/g, "").startsWith("U");
-      const isSolvingEO = suggestion.hasEOsolved
-      const baseAlg = this.removeAUFFromAlg(suggestion.alg);
-      const hasGoodBase = suggestion.alg !== baseAlg && goodEOBaseAlgs.has(baseAlg)
-
-      if (!hasF2LPieceInTop && hasAUF && (!isSolvingEO || hasGoodBase)) return false;
-
-      return true
-    })
-
-    return suggestions
-  }
-
   private filterF2LSuggestions(suggestions: Suggestion[]): Suggestion[] {
-
     // filter redundant algorithms that are extensions of shorter ones without unique steps
-    const f1 = this.filterOverlongAlgorithms(suggestions);
-
-    // filter algs that don't solve EO, have pre-AUF, and don't have pieces in top layer
-    const f2 = this.filterUnneededAUFSuggestions(f1);
-
-    return f2
+    return this.filterOverlongAlgorithms(suggestions);
   }
 
   private getF2LSuggestions(steps: StepInfo[], targetPair?: [string, string]): Suggestion[] {
@@ -3572,8 +3602,10 @@ export class SimpleCubeInterpreter {
       suggestion.steps.some(pairLabel => suggestion.time <= (cutoffTimes.get(pairLabel) || Infinity))
     );
 
-    // Sort by time at the end (low is better)
-    return fastSuggestions.sort((a, b) => a.time - b.time).splice(0, 20); // limit to top 20
+    // Sort EO-solving algs first, then by time (low is better)
+    return fastSuggestions
+      .sort((a, b) => (Number(b.hasEOsolved) - Number(a.hasEOsolved)) || (a.time - b.time))
+      .splice(0, 20); // limit to top 20
   }
 
   private getLLSuggestions(steps: StepInfo[], stepTypes: Set<StepInfo['type']>): Suggestion[] {

@@ -21,3 +21,17 @@ Add multislot recognition to YourAlgsList. If one pair gets solved later than th
 Only load zbls once at last step
 
 Consider not storing AUF variants. Minimize form then search.
+
+Query AUF improvement options
+1. Do nothing. Just store AUFs separately.
+2. Try to canonicalize. Most cases have one valid AUF. 
+   Runs into at least three troubles:
+    1. Some ZBLS cases are symmetrical, so multiple AUFs are valid. Meaning you wouldn't want to do U2 for no reason.
+    2. Some cases can have any AUF applied. Like if they only are meant for solving a case where both pieces are misslotted. 
+       But perhaps this can be approached as if it were the above, just with fewer filters after the initial search.
+    3. Cases that affect multiple slots are quite complicated and it's not clear how to canonicalize.
+       We already search once per slot! This isn't an issue. We just need to alphabetize based on the right two pieces?
+       But ZBLS considers several pieces, or at least their EO. Canonicalize by minimizing EO as a backup? 
+3. Rework the hashing system. Most of it doesn't change, but pieces in the top layer get their state defined differently,
+   just with respect to each other.
+4. Transfer with valid AUF info. Finish compilation at runtime in user's browser.

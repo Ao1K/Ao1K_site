@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "eslint .",
     "sort-algs": "npx tsx scripts/sortAlgs.ts",
+    "collapse-aufs": "npx tsx scripts/collapseAufVariants.ts",
     "trigger-combos": "npx tsx scripts/generateTriggerCombos.ts",
     "five-movers": "npx tsx scripts/generateFiveMovers.ts",
     "y-move-algs": "npx tsx scripts/generateYMoveAlgs.ts",
