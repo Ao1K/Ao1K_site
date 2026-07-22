@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-04-15T04:57:10.226Z",
+  "timestamp": "2026-07-19T01:01:38.481Z",
   "step": "oll",
-  "totalAlgorithms": 282,
+  "totalAlgorithms": 476,
   "algorithms": [
     {
       "alg": "R U R' U R U2' R'",
@@ -10,7 +10,7 @@
       "minMovements": [
         3
       ],
-      "frequency": 34
+      "frequency": 42
     },
     {
       "alg": "R U2' R' U' R U' R'",
@@ -46,7 +46,34 @@
       "minMovements": [
         1
       ],
-      "frequency": 8
+      "frequency": 42
+    },
+    {
+      "alg": "L' U2 L U L' U L",
+      "caseIndex": 27,
+      "refPieceMovement": 0,
+      "minMovements": [
+        0
+      ],
+      "frequency": 20
+    },
+    {
+      "alg": "L U L' U L U2 L'",
+      "caseIndex": 27,
+      "refPieceMovement": 1,
+      "minMovements": [
+        1
+      ],
+      "frequency": 27
+    },
+    {
+      "alg": "L U2 L' U' L U' L'",
+      "caseIndex": 26,
+      "refPieceMovement": 3,
+      "minMovements": [
+        2
+      ],
+      "frequency": 11
     },
     {
       "alg": "L' U R U' L U R'",
@@ -96,6 +123,35 @@
       "frequency": 4
     },
     {
+      "alg": "L' U' L U' L' U L U' L' U2 L",
+      "caseIndex": 21,
+      "refPieceMovement": 0,
+      "minMovements": [
+        0,
+        2
+      ],
+      "frequency": 6
+    },
+    {
+      "alg": "L' U2 L U L' U' L U L' U L",
+      "caseIndex": 21,
+      "refPieceMovement": 0,
+      "minMovements": [
+        1,
+        3
+      ],
+      "frequency": 8
+    },
+    {
+      "alg": "L2 D L' U L D' L' U' L'",
+      "caseIndex": 25,
+      "refPieceMovement": 0,
+      "minMovements": [
+        3
+      ],
+      "frequency": 4
+    },
+    {
       "alg": "R U2' R2' U' R2 U' R2' U2' R",
       "caseIndex": 22,
       "refPieceMovement": 1,
@@ -123,6 +179,33 @@
       "frequency": 10
     },
     {
+      "alg": "L' U2 L2 U L2' U L2 U2 L'",
+      "caseIndex": 22,
+      "refPieceMovement": 3,
+      "minMovements": [
+        3
+      ],
+      "frequency": 18
+    },
+    {
+      "alg": "L U2 L2' U' L2 U' L2' U2 L",
+      "caseIndex": 22,
+      "refPieceMovement": 2,
+      "minMovements": [
+        3
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "f' L' U' L U f",
+      "caseIndex": 43,
+      "refPieceMovement": 2,
+      "minMovements": [
+        3
+      ],
+      "frequency": 10
+    },
+    {
       "alg": "F R U R' U' F'",
       "caseIndex": 45,
       "refPieceMovement": 2,
@@ -138,7 +221,7 @@
       "minMovements": [
         0
       ],
-      "frequency": 33
+      "frequency": 35
     },
     {
       "alg": "R' F' U' F U R",
@@ -165,7 +248,7 @@
       "minMovements": [
         1
       ],
-      "frequency": 2
+      "frequency": 35
     },
     {
       "alg": "L U F U' F' L'",
@@ -174,7 +257,25 @@
       "minMovements": [
         1
       ],
-      "frequency": 0
+      "frequency": 33
+    },
+    {
+      "alg": "F' L' U' L U F",
+      "caseIndex": 45,
+      "refPieceMovement": 2,
+      "minMovements": [
+        3
+      ],
+      "frequency": 23
+    },
+    {
+      "alg": "L F U F' U' L'",
+      "caseIndex": 45,
+      "refPieceMovement": 1,
+      "minMovements": [
+        2
+      ],
+      "frequency": 5
     },
     {
       "alg": "R U R' U R' U' R2 U' R2' U2' R",
@@ -231,6 +332,15 @@
       "frequency": 15
     },
     {
+      "alg": "L' U' L U' L U L2' U L2 U2 L'",
+      "caseIndex": 27,
+      "refPieceMovement": 2,
+      "minMovements": [
+        3
+      ],
+      "frequency": 0
+    },
+    {
       "alg": "M' U M U2 M' U M",
       "caseIndex": 28,
       "refPieceMovement": 0,
@@ -248,6 +358,42 @@
         2
       ],
       "frequency": 5
+    },
+    {
+      "alg": "L' U2' L' D' L U2' L' D L2",
+      "caseIndex": 25,
+      "refPieceMovement": 0,
+      "minMovements": [
+        1
+      ],
+      "frequency": 8
+    },
+    {
+      "alg": "L U2' L D L' U2' L D' L2'",
+      "caseIndex": 25,
+      "refPieceMovement": 0,
+      "minMovements": [
+        2
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "L2' D' L U2' L' D L U2' L",
+      "caseIndex": 23,
+      "refPieceMovement": 0,
+      "minMovements": [
+        1
+      ],
+      "frequency": 8
+    },
+    {
+      "alg": "L2 D L' U2' L D' L' U2 L'",
+      "caseIndex": 23,
+      "refPieceMovement": 0,
+      "minMovements": [
+        3
+      ],
+      "frequency": 15
     },
     {
       "alg": "L' U' L U' L' U' R U' L U R'",
@@ -275,7 +421,7 @@
       "minMovements": [
         3
       ],
-      "frequency": 27
+      "frequency": 46
     },
     {
       "alg": "r U2' R' U' R U' r'",
@@ -284,7 +430,7 @@
       "minMovements": [
         0
       ],
-      "frequency": 26
+      "frequency": 42
     },
     {
       "alg": "r' U' R U' R' U2' r",
@@ -311,7 +457,7 @@
       "minMovements": [
         1
       ],
-      "frequency": 19
+      "frequency": 46
     },
     {
       "alg": "l' U2' L U L' U l",
@@ -320,7 +466,25 @@
       "minMovements": [
         0
       ],
-      "frequency": 16
+      "frequency": 42
+    },
+    {
+      "alg": "l U L' U L U2 l'",
+      "caseIndex": 7,
+      "refPieceMovement": 0,
+      "minMovements": [
+        1
+      ],
+      "frequency": 9
+    },
+    {
+      "alg": "l U2 L' U' L U' l'",
+      "caseIndex": 6,
+      "refPieceMovement": 0,
+      "minMovements": [
+        2
+      ],
+      "frequency": 15
     },
     {
       "alg": "R U R' U R U2' R2' U2' R U R' U R",
@@ -350,6 +514,33 @@
       "frequency": 0
     },
     {
+      "alg": "L' U' L U' L' U2 L2 U2 L' U' L U' L'",
+      "caseIndex": 22,
+      "refPieceMovement": 2,
+      "minMovements": [
+        2
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "L' U2 L U L' U L2 U2 L' U' L U' L'",
+      "caseIndex": 24,
+      "refPieceMovement": 1,
+      "minMovements": [
+        2
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "L U L' U L U2 L2' U' L U' L' U2 L",
+      "caseIndex": 23,
+      "refPieceMovement": 1,
+      "minMovements": [
+        3
+      ],
+      "frequency": 0
+    },
+    {
       "alg": "R U R' U R U' R' U R U' R' U R U2' R'",
       "caseIndex": 25,
       "refPieceMovement": 0,
@@ -368,13 +559,22 @@
       "frequency": 0
     },
     {
+      "alg": "L' U' L U' L' U L U' L' U L U' L' U2 L",
+      "caseIndex": 25,
+      "refPieceMovement": 0,
+      "minMovements": [
+        3
+      ],
+      "frequency": 0
+    },
+    {
       "alg": "F R' F' R U R U' R'",
       "caseIndex": 37,
       "refPieceMovement": 3,
       "minMovements": [
         0
       ],
-      "frequency": 16
+      "frequency": 18
     },
     {
       "alg": "R U R' U R U2' R' U R U R' U R U2' R'",
@@ -410,7 +610,7 @@
       "minMovements": [
         1
       ],
-      "frequency": 28
+      "frequency": 30
     },
     {
       "alg": "R U' R' U2 R U R' U2 R U R' U R U' R'",
@@ -483,7 +683,7 @@
       "minMovements": [
         1
       ],
-      "frequency": 2
+      "frequency": 18
     },
     {
       "alg": "L' U' L U L F' L' F",
@@ -492,7 +692,98 @@
       "minMovements": [
         3
       ],
-      "frequency": 2
+      "frequency": 30
+    },
+    {
+      "alg": "L U F' L F L' U' L'",
+      "caseIndex": 44,
+      "refPieceMovement": 1,
+      "minMovements": [
+        0
+      ],
+      "frequency": 1
+    },
+    {
+      "alg": "L U L F' L' F U' L'",
+      "caseIndex": 46,
+      "refPieceMovement": 3,
+      "minMovements": [
+        2
+      ],
+      "frequency": 26
+    },
+    {
+      "alg": "L' U' L U' L' U2 L U' L' U' L U' L' U2 L",
+      "caseIndex": 22,
+      "refPieceMovement": 3,
+      "minMovements": [
+        2
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "L' U' L U' L' U2 L U L' U' L U' L' U2 L",
+      "caseIndex": 22,
+      "refPieceMovement": 2,
+      "minMovements": [
+        3
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "L' U' L U L' U L U2' L' U L U2' L' U' L",
+      "caseIndex": 23,
+      "refPieceMovement": 2,
+      "minMovements": [
+        0
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "L' U L U2' L' U' L U2' L' U' L U' L' U L",
+      "caseIndex": 24,
+      "refPieceMovement": 3,
+      "minMovements": [
+        0
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "L U L' U L U2 L' U L U2 L' U' L U' L'",
+      "caseIndex": 23,
+      "refPieceMovement": 2,
+      "minMovements": [
+        3
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "L U2' L' U' L U' L' U L U L' U L U2 L'",
+      "caseIndex": 24,
+      "refPieceMovement": 3,
+      "minMovements": [
+        0
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "L U2 L' U' L U' L' U' L' U' L U' L' U2 L",
+      "caseIndex": 21,
+      "refPieceMovement": 0,
+      "minMovements": [
+        1,
+        3
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "L U2 L' U' L U' L' U' L U L' U L U2' L'",
+      "caseIndex": 23,
+      "refPieceMovement": 2,
+      "minMovements": [
+        2
+      ],
+      "frequency": 0
     },
     {
       "alg": "R U R' U R U' R' U R' U' R2 U' R2' U2' R",
@@ -540,13 +831,22 @@
       "frequency": 0
     },
     {
+      "alg": "L' U2 L U L' U L U2' L' U' L U' L' U2 L",
+      "caseIndex": 25,
+      "refPieceMovement": 3,
+      "minMovements": [
+        1
+      ],
+      "frequency": 0
+    },
+    {
       "alg": "l U' l2' U l2 U l2' U' l",
       "caseIndex": 49,
       "refPieceMovement": 3,
       "minMovements": [
         3
       ],
-      "frequency": 3
+      "frequency": 11
     },
     {
       "alg": "l' U l2 U' l2' U' l2 U l'",
@@ -555,7 +855,7 @@
       "minMovements": [
         3
       ],
-      "frequency": 13
+      "frequency": 32
     },
     {
       "alg": "r U' r2' U r2 U r2' U' r",
@@ -564,7 +864,7 @@
       "minMovements": [
         1
       ],
-      "frequency": 19
+      "frequency": 32
     },
     {
       "alg": "r' U r2 U' r2' U' r2 U r'",
@@ -573,7 +873,34 @@
       "minMovements": [
         1
       ],
-      "frequency": 8
+      "frequency": 11
+    },
+    {
+      "alg": "L' U' L U' L' U L U' L U L2' U L2 U2 L'",
+      "caseIndex": 24,
+      "refPieceMovement": 1,
+      "minMovements": [
+        3
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "L' U2 L2 U L2' U L U' L U L' U' L U' L'",
+      "caseIndex": 23,
+      "refPieceMovement": 1,
+      "minMovements": [
+        2
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "L U2 L2' U' L2 U' L' U L' U' L U L' U L",
+      "caseIndex": 23,
+      "refPieceMovement": 2,
+      "minMovements": [
+        2
+      ],
+      "frequency": 0
     },
     {
       "alg": "R B' R' U' R U B U' R'",
@@ -603,6 +930,42 @@
       "frequency": 0
     },
     {
+      "alg": "L' D' L U L' D L2' U L' U2' L U L'",
+      "caseIndex": 27,
+      "refPieceMovement": 0,
+      "minMovements": [
+        2
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "L' B L U L' U' B' U L",
+      "caseIndex": 40,
+      "refPieceMovement": 3,
+      "minMovements": [
+        3
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "L' U' B U L U' L' B' L",
+      "caseIndex": 31,
+      "refPieceMovement": 3,
+      "minMovements": [
+        3
+      ],
+      "frequency": 5
+    },
+    {
+      "alg": "L' U2 L U2' L U L' U' L' U L U2' L U2 L'",
+      "caseIndex": 25,
+      "refPieceMovement": 1,
+      "minMovements": [
+        3
+      ],
+      "frequency": 0
+    },
+    {
       "alg": "F R U' R' U R U R' F'",
       "caseIndex": 33,
       "refPieceMovement": 2,
@@ -627,7 +990,7 @@
       "minMovements": [
         1
       ],
-      "frequency": 26
+      "frequency": 36
     },
     {
       "alg": "R' U' F U R U' R' F' R",
@@ -636,7 +999,7 @@
       "minMovements": [
         1
       ],
-      "frequency": 20
+      "frequency": 26
     },
     {
       "alg": "L F' L' U' L U F U' L'",
@@ -645,7 +1008,7 @@
       "minMovements": [
         3
       ],
-      "frequency": 10
+      "frequency": 36
     },
     {
       "alg": "L U F' U' L' U L F L'",
@@ -654,7 +1017,7 @@
       "minMovements": [
         3
       ],
-      "frequency": 6
+      "frequency": 26
     },
     {
       "alg": "R U R' U' r R' U R U' r'",
@@ -685,13 +1048,31 @@
       "frequency": 1
     },
     {
+      "alg": "F' L' U L U' L' U' L F",
+      "caseIndex": 33,
+      "refPieceMovement": 2,
+      "minMovements": [
+        3
+      ],
+      "frequency": 2
+    },
+    {
+      "alg": "F' L' U L U L' U' L F",
+      "caseIndex": 37,
+      "refPieceMovement": 1,
+      "minMovements": [
+        1
+      ],
+      "frequency": 26
+    },
+    {
       "alg": "r U r' R U R' U' r U' r'",
       "caseIndex": 16,
       "refPieceMovement": 2,
       "minMovements": [
         1
       ],
-      "frequency": 24
+      "frequency": 32
     },
     {
       "alg": "r' U' r R' U' R U r' U r",
@@ -701,6 +1082,34 @@
         2
       ],
       "frequency": 12
+    },
+    {
+      "alg": "L' U' L U l' L U' L' U l",
+      "caseIndex": 57,
+      "refPieceMovement": 2,
+      "minMovements": [
+        1,
+        3
+      ],
+      "frequency": 4
+    },
+    {
+      "alg": "l' U' L U L' l U' L' U L",
+      "caseIndex": 28,
+      "refPieceMovement": 1,
+      "minMovements": [
+        1
+      ],
+      "frequency": 24
+    },
+    {
+      "alg": "L' U2 L U2' L F' L' F",
+      "caseIndex": 7,
+      "refPieceMovement": 3,
+      "minMovements": [
+        3
+      ],
+      "frequency": 1
     },
     {
       "alg": "R' U' R' D' R U R' D R U2 R U R' U R",
@@ -727,7 +1136,16 @@
       "minMovements": [
         0
       ],
-      "frequency": 8
+      "frequency": 32
+    },
+    {
+      "alg": "l U l' L U L' U' l U' l'",
+      "caseIndex": 16,
+      "refPieceMovement": 1,
+      "minMovements": [
+        3
+      ],
+      "frequency": 12
     },
     {
       "alg": "R U R' U R U' B U' B' R'",
@@ -737,6 +1155,24 @@
         2
       ],
       "frequency": 8
+    },
+    {
+      "alg": "L U L D L' U' L D' L' U2' L' U' L U' L'",
+      "caseIndex": 24,
+      "refPieceMovement": 3,
+      "minMovements": [
+        3
+      ],
+      "frequency": 3
+    },
+    {
+      "alg": "L U2' L' U' L U' L D L' U L D' L' U' L'",
+      "caseIndex": 23,
+      "refPieceMovement": 3,
+      "minMovements": [
+        3
+      ],
+      "frequency": 3
     },
     {
       "alg": "f R U R' U' R U R' U' f'",
@@ -755,6 +1191,15 @@
         2
       ],
       "frequency": 0
+    },
+    {
+      "alg": "L' U' L U' L' U B' U B L",
+      "caseIndex": 52,
+      "refPieceMovement": 0,
+      "minMovements": [
+        0
+      ],
+      "frequency": 8
     },
     {
       "alg": "R' U R U2' R' U' R U' R U R' U' R' U' R U R U' R'",
@@ -784,13 +1229,22 @@
       "frequency": 1
     },
     {
+      "alg": "M L U2 L' U' L U' l'",
+      "caseIndex": 6,
+      "refPieceMovement": 0,
+      "minMovements": [
+        2
+      ],
+      "frequency": 0
+    },
+    {
       "alg": "F R U R' U' R U R' U' F'",
       "caseIndex": 48,
       "refPieceMovement": 3,
       "minMovements": [
         0
       ],
-      "frequency": 27
+      "frequency": 35
     },
     {
       "alg": "F U R U' R' U R U' R' F'",
@@ -799,7 +1253,7 @@
       "minMovements": [
         3
       ],
-      "frequency": 17
+      "frequency": 18
     },
     {
       "alg": "f' L' U' L U L' U' L U f",
@@ -808,7 +1262,7 @@
       "minMovements": [
         3
       ],
-      "frequency": 0
+      "frequency": 7
     },
     {
       "alg": "R' F' U' F U' R U R' U R",
@@ -844,7 +1298,7 @@
       "minMovements": [
         1
       ],
-      "frequency": 14
+      "frequency": 24
     },
     {
       "alg": "R' F' r U R U' r' F",
@@ -856,13 +1310,67 @@
       "frequency": 0
     },
     {
+      "alg": "L F l' U l F2' L'",
+      "caseIndex": 7,
+      "refPieceMovement": 3,
+      "minMovements": [
+        3
+      ],
+      "frequency": 5
+    },
+    {
+      "alg": "L F2' l' U' l F' L'",
+      "caseIndex": 6,
+      "refPieceMovement": 1,
+      "minMovements": [
+        0
+      ],
+      "frequency": 1
+    },
+    {
       "alg": "l' U' L U l F' L' F",
       "caseIndex": 24,
       "refPieceMovement": 0,
       "minMovements": [
         3
       ],
-      "frequency": 10
+      "frequency": 24
+    },
+    {
+      "alg": "F' L F l' U' L' U l",
+      "caseIndex": 25,
+      "refPieceMovement": 0,
+      "minMovements": [
+        1
+      ],
+      "frequency": 11
+    },
+    {
+      "alg": "F l' U' L U l F' L'",
+      "caseIndex": 25,
+      "refPieceMovement": 0,
+      "minMovements": [
+        0
+      ],
+      "frequency": 9
+    },
+    {
+      "alg": "L F l' U' L' U l F'",
+      "caseIndex": 24,
+      "refPieceMovement": 0,
+      "minMovements": [
+        1
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "L U' L' U2 L U L' U L' U' L U L U L' U' L' U L",
+      "caseIndex": 24,
+      "refPieceMovement": 2,
+      "minMovements": [
+        2
+      ],
+      "frequency": 3
     },
     {
       "alg": "F' L' U' L U L' U' L U F",
@@ -871,7 +1379,7 @@
       "minMovements": [
         3
       ],
-      "frequency": 8
+      "frequency": 35
     },
     {
       "alg": "F' U' L' U L U' L' U L F",
@@ -880,7 +1388,16 @@
       "minMovements": [
         1
       ],
-      "frequency": 1
+      "frequency": 18
+    },
+    {
+      "alg": "L F U F' U L' U' L U' L'",
+      "caseIndex": 52,
+      "refPieceMovement": 0,
+      "minMovements": [
+        2
+      ],
+      "frequency": 6
     },
     {
       "alg": "r U R' U' M U R U' R'",
@@ -939,11 +1456,67 @@
       "frequency": 1
     },
     {
+      "alg": "l' U l U l' U' l F U' F'",
+      "caseIndex": 14,
+      "refPieceMovement": 2,
+      "minMovements": [
+        1
+      ],
+      "frequency": 4
+    },
+    {
+      "alg": "l' U' L U M U' L' U L",
+      "caseIndex": 28,
+      "refPieceMovement": 1,
+      "minMovements": [
+        1
+      ],
+      "frequency": 3
+    },
+    {
+      "alg": "L' U' L U M' U' L' U l",
+      "caseIndex": 57,
+      "refPieceMovement": 2,
+      "minMovements": [
+        1,
+        3
+      ],
+      "frequency": 10
+    },
+    {
+      "alg": "L U L' U' M U L U' l'",
+      "caseIndex": 57,
+      "refPieceMovement": 1,
+      "minMovements": [
+        1,
+        3
+      ],
+      "frequency": 1
+    },
+    {
+      "alg": "l U L' U' M' U L U' L'",
+      "caseIndex": 28,
+      "refPieceMovement": 2,
+      "minMovements": [
+        2
+      ],
+      "frequency": 1
+    },
+    {
       "alg": "r' U' M' U' R U r' U r",
       "caseIndex": 15,
       "refPieceMovement": 3,
       "minMovements": [
         2
+      ],
+      "frequency": 7
+    },
+    {
+      "alg": "l U M' U L' U' l U' l'",
+      "caseIndex": 16,
+      "refPieceMovement": 1,
+      "minMovements": [
+        3
       ],
       "frequency": 7
     },
@@ -972,7 +1545,7 @@
       "minMovements": [
         0
       ],
-      "frequency": 9
+      "frequency": 17
     },
     {
       "alg": "r U2' R' U' R U R' U' R U' r'",
@@ -990,7 +1563,7 @@
       "minMovements": [
         2
       ],
-      "frequency": 19
+      "frequency": 20
     },
     {
       "alg": "r' U' R U' R' U R U' R' U2 r",
@@ -1011,6 +1584,24 @@
       "frequency": 7
     },
     {
+      "alg": "F' U' L' U2 L U L' U' L F",
+      "caseIndex": 14,
+      "refPieceMovement": 2,
+      "minMovements": [
+        1
+      ],
+      "frequency": 10
+    },
+    {
+      "alg": "L' U' L F U F' U' L' U2 L",
+      "caseIndex": 40,
+      "refPieceMovement": 3,
+      "minMovements": [
+        3
+      ],
+      "frequency": 7
+    },
+    {
       "alg": "S F R U R' U' f'",
       "caseIndex": 44,
       "refPieceMovement": 2,
@@ -1018,6 +1609,15 @@
         2
       ],
       "frequency": 2
+    },
+    {
+      "alg": "f S' U R U' R' F'",
+      "caseIndex": 44,
+      "refPieceMovement": 3,
+      "minMovements": [
+        0
+      ],
+      "frequency": 0
     },
     {
       "alg": "F U F' R' F R U' R' F' R",
@@ -1035,7 +1635,7 @@
       "minMovements": [
         0
       ],
-      "frequency": 8
+      "frequency": 17
     },
     {
       "alg": "R' F R U R' F' R F U' F'",
@@ -1074,13 +1674,40 @@
       "frequency": 0
     },
     {
+      "alg": "l' U2 L U L' U' L U L' U l",
+      "caseIndex": 53,
+      "refPieceMovement": 1,
+      "minMovements": [
+        1
+      ],
+      "frequency": 11
+    },
+    {
+      "alg": "l U L' U L U' L' U L U2' l'",
+      "caseIndex": 54,
+      "refPieceMovement": 0,
+      "minMovements": [
+        2
+      ],
+      "frequency": 6
+    },
+    {
+      "alg": "l U2 L' U' L U L' U' L U' l'",
+      "caseIndex": 54,
+      "refPieceMovement": 0,
+      "minMovements": [
+        1
+      ],
+      "frequency": 7
+    },
+    {
       "alg": "L' U2 L2 F' L' F L' U2 L",
       "caseIndex": 35,
       "refPieceMovement": 0,
       "minMovements": [
         3
       ],
-      "frequency": 1
+      "frequency": 20
     },
     {
       "alg": "f' S U' L' U L F",
@@ -1088,6 +1715,33 @@
       "refPieceMovement": 1,
       "minMovements": [
         1
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "S' F' L' U' L U f",
+      "caseIndex": 43,
+      "refPieceMovement": 2,
+      "minMovements": [
+        3
+      ],
+      "frequency": 2
+    },
+    {
+      "alg": "L F U F' U' F U F' U' L'",
+      "caseIndex": 48,
+      "refPieceMovement": 3,
+      "minMovements": [
+        1
+      ],
+      "frequency": 4
+    },
+    {
+      "alg": "L U F U' F' U F U' F' L'",
+      "caseIndex": 51,
+      "refPieceMovement": 1,
+      "minMovements": [
+        0
       ],
       "frequency": 0
     },
@@ -1101,13 +1755,40 @@
       "frequency": 3
     },
     {
+      "alg": "F' U' F L F' L' U L F L'",
+      "caseIndex": 9,
+      "refPieceMovement": 1,
+      "minMovements": [
+        1
+      ],
+      "frequency": 2
+    },
+    {
+      "alg": "L F' L' U' L F L' F' U F",
+      "caseIndex": 13,
+      "refPieceMovement": 2,
+      "minMovements": [
+        3
+      ],
+      "frequency": 24
+    },
+    {
+      "alg": "S U2' L' U' L U' L' U2 L S'",
+      "caseIndex": 12,
+      "refPieceMovement": 2,
+      "minMovements": [
+        0
+      ],
+      "frequency": 0
+    },
+    {
       "alg": "r R2' U' R U' R' U2' R U' R r'",
       "caseIndex": 12,
       "refPieceMovement": 1,
       "minMovements": [
         0
       ],
-      "frequency": 14
+      "frequency": 15
     },
     {
       "alg": "R' F R2 B' R2 F' R2 B R'",
@@ -1126,6 +1807,24 @@
         1
       ],
       "frequency": 1
+    },
+    {
+      "alg": "r' R2 U R' U R U2' R' U R' r",
+      "caseIndex": 11,
+      "refPieceMovement": 0,
+      "minMovements": [
+        3
+      ],
+      "frequency": 2
+    },
+    {
+      "alg": "L U' L' U' L U2' L' D U L' U L U2' L' U L D'",
+      "caseIndex": 23,
+      "refPieceMovement": 0,
+      "minMovements": [
+        0
+      ],
+      "frequency": 3
     },
     {
       "alg": "l' U l U l' U' l y' R U' R'",
@@ -1170,7 +1869,7 @@
       "minMovements": [
         1
       ],
-      "frequency": 17
+      "frequency": 18
     },
     {
       "alg": "R U R' U' R' F R2 U R' U' F'",
@@ -1200,6 +1899,24 @@
       "frequency": 0
     },
     {
+      "alg": "l' U l U l' U' l y L U' L'",
+      "caseIndex": 14,
+      "refPieceMovement": 2,
+      "minMovements": [
+        1
+      ],
+      "frequency": 2
+    },
+    {
+      "alg": "L F U F2' U' L' U L F L'",
+      "caseIndex": 38,
+      "refPieceMovement": 1,
+      "minMovements": [
+        3
+      ],
+      "frequency": 1
+    },
+    {
       "alg": "l L2' U' L U' L' U2 L U' L l'",
       "caseIndex": 12,
       "refPieceMovement": 0,
@@ -1215,7 +1932,16 @@
       "minMovements": [
         1
       ],
-      "frequency": 1
+      "frequency": 15
+    },
+    {
+      "alg": "L F' L2' B L2' F L2' B' L",
+      "caseIndex": 49,
+      "refPieceMovement": 2,
+      "minMovements": [
+        1
+      ],
+      "frequency": 3
     },
     {
       "alg": "R2 U R' B' R U' R2 U R B R'",
@@ -1233,7 +1959,7 @@
       "minMovements": [
         3
       ],
-      "frequency": 0
+      "frequency": 25
     },
     {
       "alg": "L' U' L2 U L F' L' U' L' U F",
@@ -1242,7 +1968,16 @@
       "minMovements": [
         3
       ],
-      "frequency": 0
+      "frequency": 5
+    },
+    {
+      "alg": "F' U' L' U L2 F L' U' L' U L",
+      "caseIndex": 14,
+      "refPieceMovement": 2,
+      "minMovements": [
+        1
+      ],
+      "frequency": 7
     },
     {
       "alg": "L' U' L U' L F' L' F L' U2 L",
@@ -1251,7 +1986,25 @@
       "minMovements": [
         2
       ],
-      "frequency": 1
+      "frequency": 18
+    },
+    {
+      "alg": "F' L' U' L y U' L U L' U L",
+      "caseIndex": 52,
+      "refPieceMovement": 0,
+      "minMovements": [
+        1
+      ],
+      "frequency": 3
+    },
+    {
+      "alg": "L U L F' L' F L' U L U2' L'",
+      "caseIndex": 51,
+      "refPieceMovement": 0,
+      "minMovements": [
+        0
+      ],
+      "frequency": 0
     },
     {
       "alg": "F S' R U R' U' F' U S",
@@ -1287,7 +2040,7 @@
       "minMovements": [
         3
       ],
-      "frequency": 23
+      "frequency": 40
     },
     {
       "alg": "r2' D' r U r' D r2 U' r' U' r",
@@ -1297,6 +2050,33 @@
         2
       ],
       "frequency": 8
+    },
+    {
+      "alg": "l2 D l' U' l D' l2' U l U l'",
+      "caseIndex": 30,
+      "refPieceMovement": 1,
+      "minMovements": [
+        2
+      ],
+      "frequency": 8
+    },
+    {
+      "alg": "F' S L' U' L U F U' S'",
+      "caseIndex": 41,
+      "refPieceMovement": 0,
+      "minMovements": [
+        0
+      ],
+      "frequency": 2
+    },
+    {
+      "alg": "L2' U' L B L' U L2' U' L' B' L",
+      "caseIndex": 29,
+      "refPieceMovement": 3,
+      "minMovements": [
+        2
+      ],
+      "frequency": 0
     },
     {
       "alg": "F R' U2 R F' R' F U2 F' R",
@@ -1335,13 +2115,31 @@
       "frequency": 2
     },
     {
+      "alg": "L' U' L U' L' d L' U L F",
+      "caseIndex": 52,
+      "refPieceMovement": 0,
+      "minMovements": [
+        0
+      ],
+      "frequency": 2
+    },
+    {
       "alg": "L' U' L U' L' U L U L F' L' F",
       "caseIndex": 36,
       "refPieceMovement": 1,
       "minMovements": [
         1
       ],
-      "frequency": 17
+      "frequency": 40
+    },
+    {
+      "alg": "F' L F L' U' L' U' L U L' U L",
+      "caseIndex": 32,
+      "refPieceMovement": 1,
+      "minMovements": [
+        0
+      ],
+      "frequency": 0
     },
     {
       "alg": "R' U2 R' D' r U2 r' D R2",
@@ -1351,6 +2149,24 @@
         3
       ],
       "frequency": 6
+    },
+    {
+      "alg": "F' L U2' L' F L F' U2' F L'",
+      "caseIndex": 26,
+      "refPieceMovement": 0,
+      "minMovements": [
+        2
+      ],
+      "frequency": 1
+    },
+    {
+      "alg": "F' U' L' U2 L U L' U2 L U F",
+      "caseIndex": 29,
+      "refPieceMovement": 1,
+      "minMovements": [
+        0
+      ],
+      "frequency": 8
     },
     {
       "alg": "F U R U' F' r U R' U' r'",
@@ -1371,6 +2187,51 @@
       "frequency": 1
     },
     {
+      "alg": "L U2' L D l' U2' l D' L2'",
+      "caseIndex": 25,
+      "refPieceMovement": 1,
+      "minMovements": [
+        2
+      ],
+      "frequency": 6
+    },
+    {
+      "alg": "F' U' L' U F l' U' L U l",
+      "caseIndex": 31,
+      "refPieceMovement": 1,
+      "minMovements": [
+        1
+      ],
+      "frequency": 2
+    },
+    {
+      "alg": "F U F' U' l' U' L U l L'",
+      "caseIndex": 34,
+      "refPieceMovement": 1,
+      "minMovements": [
+        0
+      ],
+      "frequency": 1
+    },
+    {
+      "alg": "L' U' L y' L F' L' U L F L'",
+      "caseIndex": 9,
+      "refPieceMovement": 0,
+      "minMovements": [
+        2
+      ],
+      "frequency": 3
+    },
+    {
+      "alg": "L F' L' U' L F L' y L' U L",
+      "caseIndex": 13,
+      "refPieceMovement": 2,
+      "minMovements": [
+        3
+      ],
+      "frequency": 2
+    },
+    {
       "alg": "r U2' R' U' r' R2 U R' U' r U' r'",
       "caseIndex": 55,
       "refPieceMovement": 2,
@@ -1386,6 +2247,25 @@
       "refPieceMovement": 3,
       "minMovements": [
         3
+      ],
+      "frequency": 1
+    },
+    {
+      "alg": "l' U2 L U l L2' U' L U l' U l",
+      "caseIndex": 55,
+      "refPieceMovement": 2,
+      "minMovements": [
+        1,
+        3
+      ],
+      "frequency": 1
+    },
+    {
+      "alg": "L F' L' U' L U F L' U L U2' L'",
+      "caseIndex": 15,
+      "refPieceMovement": 1,
+      "minMovements": [
+        2
       ],
       "frequency": 1
     },
@@ -1486,7 +2366,7 @@
       "minMovements": [
         2
       ],
-      "frequency": 0
+      "frequency": 16
     },
     {
       "alg": "F R' F' R U2 R U' R' U R U2' R'",
@@ -1526,8 +2406,53 @@
       "frequency": 2
     },
     {
+      "alg": "F' L F' L2' U L U L' U' L F2",
+      "caseIndex": 29,
+      "refPieceMovement": 1,
+      "minMovements": [
+        0
+      ],
+      "frequency": 4
+    },
+    {
       "alg": "L' U' L U L' U L F U F' L' U' L",
       "caseIndex": 30,
+      "refPieceMovement": 1,
+      "minMovements": [
+        1
+      ],
+      "frequency": 14
+    },
+    {
+      "alg": "F' L' U L U' L' U' L U' L' U L F",
+      "caseIndex": 23,
+      "refPieceMovement": 0,
+      "minMovements": [
+        3
+      ],
+      "frequency": 4
+    },
+    {
+      "alg": "L' U' L F U F' L' U' L U L' U L",
+      "caseIndex": 39,
+      "refPieceMovement": 3,
+      "minMovements": [
+        3
+      ],
+      "frequency": 1
+    },
+    {
+      "alg": "L U L F' L' F L F' L' F U' L'",
+      "caseIndex": 48,
+      "refPieceMovement": 1,
+      "minMovements": [
+        0
+      ],
+      "frequency": 9
+    },
+    {
+      "alg": "l L2' U' L U' l' U2 l U' M'",
+      "caseIndex": 4,
       "refPieceMovement": 1,
       "minMovements": [
         1
@@ -1554,6 +2479,33 @@
       "frequency": 7
     },
     {
+      "alg": "f' F L' U' L U L F' L' f",
+      "caseIndex": 31,
+      "refPieceMovement": 2,
+      "minMovements": [
+        3
+      ],
+      "frequency": 1
+    },
+    {
+      "alg": "F' L F L' U' S L' U L S'",
+      "caseIndex": 17,
+      "refPieceMovement": 2,
+      "minMovements": [
+        1
+      ],
+      "frequency": 1
+    },
+    {
+      "alg": "S L' U' L S' U L F' L' F",
+      "caseIndex": 19,
+      "refPieceMovement": 2,
+      "minMovements": [
+        3
+      ],
+      "frequency": 2
+    },
+    {
       "alg": "r' D' r U' r' D r2 U' r' U r U r'",
       "caseIndex": 30,
       "refPieceMovement": 1,
@@ -1561,6 +2513,52 @@
         1
       ],
       "frequency": 5
+    },
+    {
+      "alg": "l D l' U l D' l2' U l U' l' U' l",
+      "caseIndex": 29,
+      "refPieceMovement": 3,
+      "minMovements": [
+        3
+      ],
+      "frequency": 5
+    },
+    {
+      "alg": "L U F U' F' L2' U2 L U L' U L",
+      "caseIndex": 47,
+      "refPieceMovement": 3,
+      "minMovements": [
+        3
+      ],
+      "frequency": 2
+    },
+    {
+      "alg": "F' L F L' U2' L' U L U' L' U2 L",
+      "caseIndex": 48,
+      "refPieceMovement": 1,
+      "minMovements": [
+        1
+      ],
+      "frequency": 11
+    },
+    {
+      "alg": "L' U2 L U L' U' L U2' L F' L' F",
+      "caseIndex": 47,
+      "refPieceMovement": 1,
+      "minMovements": [
+        3
+      ],
+      "frequency": 1
+    },
+    {
+      "alg": "L F' U' L' U L2' F L2' U' L U L'",
+      "caseIndex": 55,
+      "refPieceMovement": 2,
+      "minMovements": [
+        1,
+        3
+      ],
+      "frequency": 1
     },
     {
       "alg": "F R U R' U' F' R U R' U R U2 R'",
@@ -1626,13 +2624,23 @@
       "frequency": 1
     },
     {
+      "alg": "l' U' l U' L' U L U' L' U L l' U l",
+      "caseIndex": 56,
+      "refPieceMovement": 2,
+      "minMovements": [
+        0,
+        2
+      ],
+      "frequency": 3
+    },
+    {
       "alg": "R r' U' r U2' r' U' R U' R' M'",
       "caseIndex": 4,
       "refPieceMovement": 1,
       "minMovements": [
         1
       ],
-      "frequency": 0
+      "frequency": 1
     },
     {
       "alg": "f R f' U' r' U' R U M'",
@@ -1642,6 +2650,15 @@
         2
       ],
       "frequency": 2
+    },
+    {
+      "alg": "L M' U L' U L U2' L' U L' l",
+      "caseIndex": 11,
+      "refPieceMovement": 3,
+      "minMovements": [
+        1
+      ],
+      "frequency": 7
     },
     {
       "alg": "F U R2 D R' U' R D' R2' F'",
@@ -1678,7 +2695,16 @@
       "minMovements": [
         1
       ],
-      "frequency": 12
+      "frequency": 13
+    },
+    {
+      "alg": "f' L' f U l U L' U' M'",
+      "caseIndex": 34,
+      "refPieceMovement": 0,
+      "minMovements": [
+        0
+      ],
+      "frequency": 2
     },
     {
       "alg": "L U L' U L U2 L' F' L' U' L U F",
@@ -1687,7 +2713,7 @@
       "minMovements": [
         1
       ],
-      "frequency": 0
+      "frequency": 20
     },
     {
       "alg": "L' U' L U' L' U2 L F' L' U' L U F",
@@ -1696,7 +2722,43 @@
       "minMovements": [
         1
       ],
+      "frequency": 22
+    },
+    {
+      "alg": "F' L' U' L U F L' U' L U' L' U2' L",
+      "caseIndex": 39,
+      "refPieceMovement": 2,
+      "minMovements": [
+        1
+      ],
+      "frequency": 1
+    },
+    {
+      "alg": "F' U' L' U L F L' U' L U' L' U2 L",
+      "caseIndex": 48,
+      "refPieceMovement": 1,
+      "minMovements": [
+        1
+      ],
       "frequency": 0
+    },
+    {
+      "alg": "L' U2 L U L' U L F' L' U' L U F",
+      "caseIndex": 49,
+      "refPieceMovement": 3,
+      "minMovements": [
+        0
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "L U2' L' U' L U' L' F' L' U' L U F",
+      "caseIndex": 50,
+      "refPieceMovement": 2,
+      "minMovements": [
+        2
+      ],
+      "frequency": 1
     },
     {
       "alg": "r U R' U' M2 U R U' R' U' M'",
@@ -1709,6 +2771,15 @@
         3
       ],
       "frequency": 1
+    },
+    {
+      "alg": "L U L' U' L F L' U' L U L F' L2'",
+      "caseIndex": 25,
+      "refPieceMovement": 1,
+      "minMovements": [
+        3
+      ],
+      "frequency": 0
     },
     {
       "alg": "F R U R' U' R U R' U' R U R' U' F'",
@@ -1767,6 +2838,25 @@
       "frequency": 1
     },
     {
+      "alg": "F' U' L2' D' L U L' D L2 F",
+      "caseIndex": 42,
+      "refPieceMovement": 1,
+      "minMovements": [
+        1
+      ],
+      "frequency": 1
+    },
+    {
+      "alg": "L' U2 L2 F' L' F U2' L F' L' F",
+      "caseIndex": 1,
+      "refPieceMovement": 1,
+      "minMovements": [
+        0,
+        2
+      ],
+      "frequency": 3
+    },
+    {
       "alg": "l' U' L U R U' r' F",
       "caseIndex": 24,
       "refPieceMovement": 0,
@@ -1791,6 +2881,18 @@
       "minMovements": [
         3
       ],
+      "frequency": 13
+    },
+    {
+      "alg": "l' U' L U M2 U' L' U L U M'",
+      "caseIndex": 20,
+      "refPieceMovement": 1,
+      "minMovements": [
+        0,
+        1,
+        2,
+        3
+      ],
       "frequency": 1
     },
     {
@@ -1803,6 +2905,15 @@
       "frequency": 1
     },
     {
+      "alg": "F' U' L' U L F U F' L' U' L U F",
+      "caseIndex": 3,
+      "refPieceMovement": 2,
+      "minMovements": [
+        2
+      ],
+      "frequency": 1
+    },
+    {
       "alg": "R U R' d' l' U' L U L' l",
       "caseIndex": 34,
       "refPieceMovement": 2,
@@ -1810,6 +2921,44 @@
         3
       ],
       "frequency": 2
+    },
+    {
+      "alg": "F' L' U' L U L' U' L U L' U' L U F",
+      "caseIndex": 21,
+      "refPieceMovement": 0,
+      "minMovements": [
+        1,
+        3
+      ],
+      "frequency": 2
+    },
+    {
+      "alg": "x' U L' U' L x U L U L' U' L U' L'",
+      "caseIndex": 31,
+      "refPieceMovement": 3,
+      "minMovements": [
+        2
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "L' U L2 D l' U l D' L2' U' L",
+      "caseIndex": 1,
+      "refPieceMovement": 2,
+      "minMovements": [
+        1,
+        3
+      ],
+      "frequency": 1
+    },
+    {
+      "alg": "L' U L2 D l' U' l D' L2' U' L",
+      "caseIndex": 2,
+      "refPieceMovement": 1,
+      "minMovements": [
+        0
+      ],
+      "frequency": 3
     },
     {
       "alg": "R U R' M' r' R U' M' U R U' r'",
@@ -1829,6 +2978,15 @@
         1
       ],
       "frequency": 3
+    },
+    {
+      "alg": "l' U' L U' L' U2 l2 U L' U L U2 l'",
+      "caseIndex": 18,
+      "refPieceMovement": 1,
+      "minMovements": [
+        1
+      ],
+      "frequency": 1
     },
     {
       "alg": "F R' F' R U2 R' U' R2 U' R2' U2' R",
@@ -1858,6 +3016,15 @@
       "frequency": 0
     },
     {
+      "alg": "f l' U' l U l F' l' S'",
+      "caseIndex": 40,
+      "refPieceMovement": 1,
+      "minMovements": [
+        3
+      ],
+      "frequency": 3
+    },
+    {
       "alg": "L' U' L U' L' U L U r U' r' F",
       "caseIndex": 36,
       "refPieceMovement": 1,
@@ -1874,6 +3041,15 @@
         1
       ],
       "frequency": 0
+    },
+    {
+      "alg": "L' U2 L y' U L F' L' U L F L'",
+      "caseIndex": 35,
+      "refPieceMovement": 0,
+      "minMovements": [
+        3
+      ],
+      "frequency": 1
     },
     {
       "alg": "F R U R' U' F' U R U2' R' U' R U' R'",
@@ -1994,6 +3170,43 @@
       "frequency": 5
     },
     {
+      "alg": "L' U' L M' l L' U M' U' L' U l",
+      "caseIndex": 57,
+      "refPieceMovement": 2,
+      "minMovements": [
+        1,
+        3
+      ],
+      "frequency": 1
+    },
+    {
+      "alg": "l' U' L U' L F' L' F L' U2 l",
+      "caseIndex": 12,
+      "refPieceMovement": 0,
+      "minMovements": [
+        0
+      ],
+      "frequency": 3
+    },
+    {
+      "alg": "L' U l F' L F' l' U' l F' l'",
+      "caseIndex": 22,
+      "refPieceMovement": 3,
+      "minMovements": [
+        3
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "F' L F L' U2' L U L2' U L2 U2 L'",
+      "caseIndex": 41,
+      "refPieceMovement": 0,
+      "minMovements": [
+        0
+      ],
+      "frequency": 3
+    },
+    {
       "alg": "R U2' R2' F R F' R U' R' U R U2' R'",
       "caseIndex": 29,
       "refPieceMovement": 0,
@@ -2001,6 +3214,15 @@
         1
       ],
       "frequency": 0
+    },
+    {
+      "alg": "F' L' U' L U F U2 F' U' L' U L F",
+      "caseIndex": 2,
+      "refPieceMovement": 3,
+      "minMovements": [
+        3
+      ],
+      "frequency": 1
     },
     {
       "alg": "F R U R' U' R' F' r U R U' r'",
@@ -2030,6 +3252,115 @@
       "frequency": 0
     },
     {
+      "alg": "F' L' U' L U F U' L' U2 L U L' U L",
+      "caseIndex": 40,
+      "refPieceMovement": 0,
+      "minMovements": [
+        1
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "F' L' U' L U F U' L U2 L' U' L U' L'",
+      "caseIndex": 52,
+      "refPieceMovement": 2,
+      "minMovements": [
+        3
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "F' L' U' L U F U L' U2 L U L' U L",
+      "caseIndex": 52,
+      "refPieceMovement": 3,
+      "minMovements": [
+        1
+      ],
+      "frequency": 1
+    },
+    {
+      "alg": "F' L' U L U' L' U2 L U L' U' L U F",
+      "caseIndex": 21,
+      "refPieceMovement": 0,
+      "minMovements": [
+        0,
+        2
+      ],
+      "frequency": 2
+    },
+    {
+      "alg": "F' U' L' U L F U' L' U' L U' L' U2 L",
+      "caseIndex": 42,
+      "refPieceMovement": 2,
+      "minMovements": [
+        1
+      ],
+      "frequency": 1
+    },
+    {
+      "alg": "F' U' L' U L U' L' U2 L U L' U' L F",
+      "caseIndex": 22,
+      "refPieceMovement": 0,
+      "minMovements": [
+        2
+      ],
+      "frequency": 3
+    },
+    {
+      "alg": "L' U' L U' L' U L F U F' U' L' U2' L",
+      "caseIndex": 29,
+      "refPieceMovement": 2,
+      "minMovements": [
+        0
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "L' U' L U' L F' L' F U2' L F' L' F",
+      "caseIndex": 17,
+      "refPieceMovement": 3,
+      "minMovements": [
+        3
+      ],
+      "frequency": 5
+    },
+    {
+      "alg": "L' U2 L U L' U L U' L F U F' U' L'",
+      "caseIndex": 49,
+      "refPieceMovement": 3,
+      "minMovements": [
+        0
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "L' U2 L U L' U L U L U F U' F' L'",
+      "caseIndex": 50,
+      "refPieceMovement": 3,
+      "minMovements": [
+        0
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "L U L' U L U2 F' L' U' L U F U' L'",
+      "caseIndex": 30,
+      "refPieceMovement": 1,
+      "minMovements": [
+        2
+      ],
+      "frequency": 1
+    },
+    {
+      "alg": "L U L' U L U2 L' U' L F U F' U' L'",
+      "caseIndex": 41,
+      "refPieceMovement": 2,
+      "minMovements": [
+        1
+      ],
+      "frequency": 5
+    },
+    {
       "alg": "r U' r' F U2 F U' R U' R' F'",
       "caseIndex": 17,
       "refPieceMovement": 3,
@@ -2057,6 +3388,51 @@
       "frequency": 0
     },
     {
+      "alg": "F' L' U' L U L F l' U' L' U l",
+      "caseIndex": 34,
+      "refPieceMovement": 2,
+      "minMovements": [
+        1
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "F' L F L' U2' L' U B' U B L",
+      "caseIndex": 17,
+      "refPieceMovement": 1,
+      "minMovements": [
+        2
+      ],
+      "frequency": 1
+    },
+    {
+      "alg": "l' U l F' U2' F' U L' U L F",
+      "caseIndex": 17,
+      "refPieceMovement": 1,
+      "minMovements": [
+        1
+      ],
+      "frequency": 1
+    },
+    {
+      "alg": "L' U' L d L F l' U' L' l",
+      "caseIndex": 34,
+      "refPieceMovement": 2,
+      "minMovements": [
+        3
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "L' U2 L2 F' L' F L' U L U' L' U2 L",
+      "caseIndex": 30,
+      "refPieceMovement": 0,
+      "minMovements": [
+        3
+      ],
+      "frequency": 0
+    },
+    {
       "alg": "R U R' U R U2' R' U2' F R U R' U' F'",
       "caseIndex": 5,
       "refPieceMovement": 0,
@@ -2075,11 +3451,38 @@
       "frequency": 1
     },
     {
+      "alg": "F' L' U' L U F L' U' L U L F' L' F",
+      "caseIndex": 54,
+      "refPieceMovement": 1,
+      "minMovements": [
+        0
+      ],
+      "frequency": 0
+    },
+    {
       "alg": "x' U' R U l' U' R' U' R U R' U R",
       "caseIndex": 32,
       "refPieceMovement": 1,
       "minMovements": [
         2
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "L' U' L2 F U F' U' L' U2 L F' L' F",
+      "caseIndex": 18,
+      "refPieceMovement": 2,
+      "minMovements": [
+        3
+      ],
+      "frequency": 1
+    },
+    {
+      "alg": "L' U' L U' L' U2 L U2 F' L' U' L U F",
+      "caseIndex": 6,
+      "refPieceMovement": 0,
+      "minMovements": [
+        0
       ],
       "frequency": 0
     },
@@ -2160,6 +3563,15 @@
       "frequency": 1
     },
     {
+      "alg": "L F l' U l F' l' U l F2' L'",
+      "caseIndex": 54,
+      "refPieceMovement": 1,
+      "minMovements": [
+        0
+      ],
+      "frequency": 2
+    },
+    {
       "alg": "R' F2 R2 U2' R' F R U2' R2' F2 R",
       "caseIndex": 3,
       "refPieceMovement": 1,
@@ -2178,6 +3590,36 @@
       "frequency": 1
     },
     {
+      "alg": "f' L' U' L U f L F U F' U' L'",
+      "caseIndex": 4,
+      "refPieceMovement": 1,
+      "minMovements": [
+        2
+      ],
+      "frequency": 1
+    },
+    {
+      "alg": "l' U' L U l' L M' U' L' U L U M'",
+      "caseIndex": 20,
+      "refPieceMovement": 1,
+      "minMovements": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "l L' U' L' U' L U l' L2 F' L' F",
+      "caseIndex": 19,
+      "refPieceMovement": 3,
+      "minMovements": [
+        0
+      ],
+      "frequency": 2
+    },
+    {
       "alg": "F U R U' R' F' R U' L' U R' U' L",
       "caseIndex": 47,
       "refPieceMovement": 1,
@@ -2185,6 +3627,34 @@
         2
       ],
       "frequency": 2
+    },
+    {
+      "alg": "F' U' L' U L U' L' U L2' F L' U' L' U L",
+      "caseIndex": 22,
+      "refPieceMovement": 0,
+      "minMovements": [
+        2
+      ],
+      "frequency": 2
+    },
+    {
+      "alg": "L' U' L U L F' L2' U' L U L' U' L U F",
+      "caseIndex": 22,
+      "refPieceMovement": 0,
+      "minMovements": [
+        3
+      ],
+      "frequency": 3
+    },
+    {
+      "alg": "F' U L2' D' L U2' L' D L2' U' F",
+      "caseIndex": 55,
+      "refPieceMovement": 2,
+      "minMovements": [
+        1,
+        3
+      ],
+      "frequency": 1
     },
     {
       "alg": "R U R' U R U' R' U R U' R' U' R' F R F'",
@@ -2205,6 +3675,33 @@
       "frequency": 4
     },
     {
+      "alg": "L' U' L U L F' L' F L U2 L' U' L U' L'",
+      "caseIndex": 34,
+      "refPieceMovement": 3,
+      "minMovements": [
+        3
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "x' L' U L F L' U' L U F' U' x",
+      "caseIndex": 14,
+      "refPieceMovement": 1,
+      "minMovements": [
+        3
+      ],
+      "frequency": 1
+    },
+    {
+      "alg": "L F2' L2' U2 L F' L' U2 L2 F2' L'",
+      "caseIndex": 4,
+      "refPieceMovement": 3,
+      "minMovements": [
+        0
+      ],
+      "frequency": 1
+    },
+    {
       "alg": "R' F R U R U' R2' F' R2 U' R' U R U R'",
       "caseIndex": 55,
       "refPieceMovement": 2,
@@ -2213,6 +3710,24 @@
         3
       ],
       "frequency": 8
+    },
+    {
+      "alg": "L' U' L U' L' U L U' L' U L U L F' L' F",
+      "caseIndex": 42,
+      "refPieceMovement": 3,
+      "minMovements": [
+        0
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "L F' L' F L F' L' F L' U' L U L' U' L",
+      "caseIndex": 41,
+      "refPieceMovement": 2,
+      "minMovements": [
+        0
+      ],
+      "frequency": 4
     },
     {
       "alg": "r' R U R U R' U' r M' R' U R U' r'",
@@ -2243,6 +3758,16 @@
         3
       ],
       "frequency": 0
+    },
+    {
+      "alg": "L F' L' U' L' U L2 F L2' U L U' L' U' L",
+      "caseIndex": 55,
+      "refPieceMovement": 2,
+      "minMovements": [
+        1,
+        3
+      ],
+      "frequency": 8
     },
     {
       "alg": "F R U R' U' S R U R' U' f'",
@@ -2281,6 +3806,18 @@
       "frequency": 0
     },
     {
+      "alg": "l L' U' L' U' L U l' M' L U' L' U l",
+      "caseIndex": 20,
+      "refPieceMovement": 3,
+      "minMovements": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "frequency": 1
+    },
+    {
       "alg": "R U R' F' R U R' U' R' F R U' R' F R F'",
       "caseIndex": 36,
       "refPieceMovement": 1,
@@ -2290,6 +3827,60 @@
       "frequency": 4
     },
     {
+      "alg": "f' L' U' L U f U' F' L' U' L U F",
+      "caseIndex": 3,
+      "refPieceMovement": 0,
+      "minMovements": [
+        0
+      ],
+      "frequency": 2
+    },
+    {
+      "alg": "f' L' U' L U f U F' L' U' L U F",
+      "caseIndex": 4,
+      "refPieceMovement": 1,
+      "minMovements": [
+        2
+      ],
+      "frequency": 3
+    },
+    {
+      "alg": "F' L' U' L U S' L' U' L U f",
+      "caseIndex": 2,
+      "refPieceMovement": 1,
+      "minMovements": [
+        3
+      ],
+      "frequency": 2
+    },
+    {
+      "alg": "F' L F L' U' L' U L U' L U L' U L U2' L'",
+      "caseIndex": 54,
+      "refPieceMovement": 0,
+      "minMovements": [
+        0
+      ],
+      "frequency": 1
+    },
+    {
+      "alg": "L' U' L U L F' L' F U' L' U' L U' L' U2 L",
+      "caseIndex": 34,
+      "refPieceMovement": 0,
+      "minMovements": [
+        3
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "L F L' U2 l F2' l' U2 L F' L'",
+      "caseIndex": 2,
+      "refPieceMovement": 3,
+      "minMovements": [
+        2
+      ],
+      "frequency": 0
+    },
+    {
       "alg": "R U R' d' l' U' L U r' R",
       "caseIndex": 34,
       "refPieceMovement": 2,
@@ -2297,6 +3888,15 @@
         3
       ],
       "frequency": 2
+    },
+    {
+      "alg": "L' U' L F L' U' L U L F' L' U L F' L' F",
+      "caseIndex": 38,
+      "refPieceMovement": 3,
+      "minMovements": [
+        3
+      ],
+      "frequency": 4
     },
     {
       "alg": "F R' F' R2 r' U R U' R' U' M'",
@@ -2326,6 +3926,24 @@
       "frequency": 0
     },
     {
+      "alg": "F' L F L2' l U' L' U L U M'",
+      "caseIndex": 17,
+      "refPieceMovement": 1,
+      "minMovements": [
+        1
+      ],
+      "frequency": 1
+    },
+    {
+      "alg": "M U' L' U' L U l' L2 F' L' F",
+      "caseIndex": 19,
+      "refPieceMovement": 3,
+      "minMovements": [
+        0
+      ],
+      "frequency": 2
+    },
+    {
       "alg": "F U R U2 R' U R U R' F' R U2 R' U' R U' R'",
       "caseIndex": 22,
       "refPieceMovement": 0,
@@ -2340,6 +3958,15 @@
       "refPieceMovement": 3,
       "minMovements": [
         2
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "l' U' L U l F' L2' U L U L' U' L F",
+      "caseIndex": 28,
+      "refPieceMovement": 1,
+      "minMovements": [
+        1
       ],
       "frequency": 0
     },
@@ -2372,6 +3999,15 @@
       "frequency": 1
     },
     {
+      "alg": "L' U2 L2 F' L' F U2 l' L U' L' U l",
+      "caseIndex": 18,
+      "refPieceMovement": 1,
+      "minMovements": [
+        0
+      ],
+      "frequency": 0
+    },
+    {
       "alg": "F R U R' U' R2 D R' U R D' R2 U' F'",
       "caseIndex": 48,
       "refPieceMovement": 3,
@@ -2379,6 +4015,15 @@
         0
       ],
       "frequency": 1
+    },
+    {
+      "alg": "F' U' L' U2' L U' L' U' L F L' U2' L U L' U L",
+      "caseIndex": 22,
+      "refPieceMovement": 0,
+      "minMovements": [
+        0
+      ],
+      "frequency": 2
     },
     {
       "alg": "l' U l F' l' U l F' R U R' U' R U R'",
@@ -2390,11 +4035,57 @@
       "frequency": 0
     },
     {
+      "alg": "F' L' U' L U F l' U' L U l F' L' F",
+      "caseIndex": 56,
+      "refPieceMovement": 2,
+      "minMovements": [
+        0,
+        2
+      ],
+      "frequency": 2
+    },
+    {
+      "alg": "f' L' U' L U f U2 l' U' L U' L' U2' l",
+      "caseIndex": 52,
+      "refPieceMovement": 0,
+      "minMovements": [
+        3
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "F' U' L' U L F U' L' U l F' L F l'",
+      "caseIndex": 42,
+      "refPieceMovement": 1,
+      "minMovements": [
+        1
+      ],
+      "frequency": 1
+    },
+    {
       "alg": "r U R' U R U2' r2' F' r U' r' F2 r",
       "caseIndex": 29,
       "refPieceMovement": 3,
       "minMovements": [
         3
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "F' L' U' L U L2' D' L U' L' D L2' U F",
+      "caseIndex": 47,
+      "refPieceMovement": 1,
+      "minMovements": [
+        3
+      ],
+      "frequency": 1
+    },
+    {
+      "alg": "l' U' L U' L' U2 l2 F l' U l F2' l'",
+      "caseIndex": 30,
+      "refPieceMovement": 1,
+      "minMovements": [
+        1
       ],
       "frequency": 0
     },
@@ -2445,6 +4136,24 @@
       "frequency": 0
     },
     {
+      "alg": "l' U' L U' L' U2 l F l' U' L U l F' L'",
+      "caseIndex": 29,
+      "refPieceMovement": 1,
+      "minMovements": [
+        0
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "L U F U' F' L' U' l' U' L U l F' L' F",
+      "caseIndex": 53,
+      "refPieceMovement": 0,
+      "minMovements": [
+        1
+      ],
+      "frequency": 0
+    },
+    {
       "alg": "R U R' U' R' F R F' U' L' U' L U' L' U2 L",
       "caseIndex": 52,
       "refPieceMovement": 1,
@@ -2481,6 +4190,24 @@
       "frequency": 4
     },
     {
+      "alg": "L' U2 L2 F' L' F U2' M' U' L' U l",
+      "caseIndex": 18,
+      "refPieceMovement": 1,
+      "minMovements": [
+        0
+      ],
+      "frequency": 4
+    },
+    {
+      "alg": "L U F2' u L' U' L D' L2' B'",
+      "caseIndex": 41,
+      "refPieceMovement": 3,
+      "minMovements": [
+        0
+      ],
+      "frequency": 0
+    },
+    {
       "alg": "L' l U R U R' U' M' R' F R F'",
       "caseIndex": 19,
       "refPieceMovement": 1,
@@ -2502,6 +4229,15 @@
       "alg": "r U R' U R U2' r' U F R U' R' U' R U2 R' U' F'",
       "caseIndex": 30,
       "refPieceMovement": 1,
+      "minMovements": [
+        0
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "l' U' L U' L' U2 l U' F' L' U L U L' U2' L U F",
+      "caseIndex": 29,
+      "refPieceMovement": 3,
       "minMovements": [
         0
       ],
@@ -2545,11 +4281,38 @@
       "frequency": 0
     },
     {
+      "alg": "f' L' U' L d x L F' L' U' L U F",
+      "caseIndex": 3,
+      "refPieceMovement": 2,
+      "minMovements": [
+        0
+      ],
+      "frequency": 1
+    },
+    {
+      "alg": "L' U' L U L F' L' F L' U' L U M' U' L' U l",
+      "caseIndex": 30,
+      "refPieceMovement": 1,
+      "minMovements": [
+        1
+      ],
+      "frequency": 0
+    },
+    {
       "alg": "R U R' U R U2' R' F f' F S R U R' U' F'",
       "caseIndex": 41,
       "refPieceMovement": 3,
       "minMovements": [
         3
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "L' U' L U' L' U2 L F' f F' S' L' U' L U F",
+      "caseIndex": 42,
+      "refPieceMovement": 1,
+      "minMovements": [
+        1
       ],
       "frequency": 0
     },
@@ -2565,6 +4328,15 @@
     {
       "alg": "f R U R' d' x R' F R U R' U' f' S",
       "caseIndex": 4,
+      "refPieceMovement": 2,
+      "minMovements": [
+        0
+      ],
+      "frequency": 1
+    },
+    {
+      "alg": "f' L' U' L d x L F' L' U' L U f S'",
+      "caseIndex": 3,
       "refPieceMovement": 2,
       "minMovements": [
         0

@@ -498,5 +498,293 @@
   {
     "value": "z D' R U' R2' D R' D' U R U' R2 D R' U R z'",
     "step": "pll"
+  },
+  {
+    "value": "B L' B' L U L U' L2' U' L U L F' L' F",
+    "step": "pll"
+  },
+  {
+    "value": "D' L U L' U' D L2' U' L U' L' U L' U L2",
+    "step": "pll"
+  },
+  {
+    "value": "D L' U' L U D' L2' U L' U L U' L U' L2'",
+    "step": "pll"
+  },
+  {
+    "value": "D L2' U' L U' L U L' U L2' U D' L U' L'",
+    "step": "pll"
+  },
+  {
+    "value": "D U L' U' L U D' L2' U L' U L U' L U' L2'",
+    "step": "pll"
+  },
+  {
+    "value": "D U L2' U' L U' L U L' U L2' D' U L U' L'",
+    "step": "pll"
+  },
+  {
+    "value": "D U2' L' U' L U D' L2' U L' U L U' L U' L2'",
+    "step": "pll"
+  },
+  {
+    "value": "F' L' U L U' L' U' L2 F L' U' L' U L",
+    "step": "pll"
+  },
+  {
+    "value": "F' L F' L2' U L U L' U' L F L' U' L U F",
+    "step": "pll"
+  },
+  {
+    "value": "F L F' L' U L F L2' U' L U L F' L'",
+    "step": "pll"
+  },
+  {
+    "value": "F U F' L2' u' L U' L' U L' u L2",
+    "step": "pll"
+  },
+  {
+    "value": "M2' U' R r' U2 M' U' M2'",
+    "step": "pll"
+  },
+  {
+    "value": "l' M' L U' l' M' L U2' l' M' L U' l' M' L",
+    "step": "pll"
+  },
+  {
+    "value": "L' U' L F L' U' L U L F' L' U L F' L2' U L U L' U' L F",
+    "step": "pll"
+  },
+  {
+    "value": "L' U' L F l' U' L U l F' L2' U L",
+    "step": "pll"
+  },
+  {
+    "value": "L' U' L F L' U2 L U2 L F' L' U' L' U2 L",
+    "step": "pll"
+  },
+  {
+    "value": "L' U' L U' L' U' L F L' U' L U L F' L2' U L U2' L' U L",
+    "step": "pll"
+  },
+  {
+    "value": "L' U' L U' L U L2' U L U' L U' L'",
+    "step": "pll"
+  },
+  {
+    "value": "L' U' L U D' L2' U L' U L U' L U' L2' D",
+    "step": "pll"
+  },
+  {
+    "value": "L' U' L U L F' L2' U L U' x U l U' l'",
+    "step": "pll"
+  },
+  {
+    "value": "L' U' L y L2' u L' U L U' L u' L2'",
+    "step": "pll"
+  },
+  {
+    "value": "L' U' L2 F l' U' L' U l F' L' U L",
+    "step": "pll"
+  },
+  {
+    "value": "L' U' L2 F L' U' L' U L F' L' U L",
+    "step": "pll"
+  },
+  {
+    "value": "L' U L' U' L' U' L' U L U L2'",
+    "step": "pll"
+  },
+  {
+    "value": "L' U L' U' L D' L' D L' U D' L2 U' L2' D L2",
+    "step": "pll"
+  },
+  {
+    "value": "L' U L U L' U' L' D' L U L' D L U2' L",
+    "step": "pll"
+  },
+  {
+    "value": "L' U L U L' U' L U' L D L' U L D' L2' U' L",
+    "step": "pll"
+  },
+  {
+    "value": "L' U L2 D L' U' L D' L' U L' U L U' L' U' L",
+    "step": "pll"
+  },
+  {
+    "value": "L D' L' U L D L' U L D' L' U2' L D L'",
+    "step": "pll"
+  },
+  {
+    "value": "L D' L' U2' L D L' U' L D' L' U' L D L'",
+    "step": "pll"
+  },
+  {
+    "value": "L D' L' U2' L D L' U L D' L' U L D L'",
+    "step": "pll"
+  },
+  {
+    "value": "l D F' l' U l F D' l2' U' l U l F' l' F",
+    "step": "pll"
+  },
+  {
+    "value": "L d F' L2' u' L U' L' U L' u L2",
+    "step": "pll"
+  },
+  {
+    "value": "L D L' U' L D' L' U' L D L' U2' L D' L'",
+    "step": "pll"
+  },
+  {
+    "value": "L D L' U L D' L' U L D L' U2' L D' L'",
+    "step": "pll"
+  },
+  {
+    "value": "L D L' U L D' L' U2' L D L' U L D' L'",
+    "step": "pll"
+  },
+  {
+    "value": "L D L' U2' L D' L' U' L D L' U' L D' L'",
+    "step": "pll"
+  },
+  {
+    "value": "L F' L' f L F' L2' U' L U L F L2' U' L S'",
+    "step": "pll"
+  },
+  {
+    "value": "l F' L F2' l' U l F2' l' L'",
+    "step": "pll"
+  },
+  {
+    "value": "L F L' U' L' U L2 F' L' U' L F L' F'",
+    "step": "pll"
+  },
+  {
+    "value": "L U' L' U' L U L D L' U' L D' L' U2' L'",
+    "step": "pll"
+  },
+  {
+    "value": "L U' L' U L F U F' L' U' L F' L F L' U L'",
+    "step": "pll"
+  },
+  {
+    "value": "L U' L' U L F U F' L' U' L U L' U f' L' f",
+    "step": "pll"
+  },
+  {
+    "value": "L U' L' U L F U F' L' U' L U L' y' U L' U' L",
+    "step": "pll"
+  },
+  {
+    "value": "L U' L' U L2' F U F' U' L' F' L F L2'",
+    "step": "pll"
+  },
+  {
+    "value": "L U' L d L F L2' U L U' L F' L' F'",
+    "step": "pll"
+  },
+  {
+    "value": "L U' L d x L F' L F L2' U L U' L' U' x'",
+    "step": "pll"
+  },
+  {
+    "value": "L U' L U L' D L D' L U' D L2' U L2 D' L2'",
+    "step": "pll"
+  },
+  {
+    "value": "L U' L U L3' U L U' L' U' L2",
+    "step": "pll"
+  },
+  {
+    "value": "L U' L U y' L F L2' U L U' L F' L' F'",
+    "step": "pll"
+  },
+  {
+    "value": "L U L' U' D L2' U' L U' L' U L' U L2 D'",
+    "step": "pll"
+  },
+  {
+    "value": "L U L' U L' U' L' U L U' L' U' L2' U L",
+    "step": "pll"
+  },
+  {
+    "value": "L U L D L' U L D' L' U' L D L' U' L D' L2'",
+    "step": "pll"
+  },
+  {
+    "value": "L U2' L D L' D' U D L D' L' U' L' U L U L'",
+    "step": "pll"
+  },
+  {
+    "value": "L U2' L D L' U' L D' L' U L D L' U2' L D' L2'",
+    "step": "pll"
+  },
+  {
+    "value": "L U2' L D L' U L D' L' U' L' U L U L'",
+    "step": "pll"
+  },
+  {
+    "value": "L U2 L' U2 L F' L' U' L U L F L2'",
+    "step": "pll"
+  },
+  {
+    "value": "L2' u' L U' L U L' u L2' F U' F'",
+    "step": "pll"
+  },
+  {
+    "value": "L2 U L' U L' U' L U' L2 U' D L' U L D'",
+    "step": "pll"
+  },
+  {
+    "value": "L2' U L2 D' L2' U L2 U' L2' U' D L2",
+    "step": "pll"
+  },
+  {
+    "value": "L2' U S U2 S' U L2'",
+    "step": "pll"
+  },
+  {
+    "value": "L2 F' L' U' L' U L F L' U2 L U2' L'",
+    "step": "pll"
+  },
+  {
+    "value": "L2 U' L' U' L U L U L U' L",
+    "step": "pll"
+  },
+  {
+    "value": "L2 U' L' U' L U L3' U L U' L",
+    "step": "pll"
+  },
+  {
+    "value": "L2 u L' U L' U' L D' x' U2' l' U l x",
+    "step": "pll"
+  },
+  {
+    "value": "L2 u L' U L' U' L u' L2' f' L f",
+    "step": "pll"
+  },
+  {
+    "value": "L2 U S' L2 S L2' U' L2",
+    "step": "pll"
+  },
+  {
+    "value": "x L2 F' L' F L' U2 l U' l' U2 x'",
+    "step": "pll"
+  },
+  {
+    "value": "x' F' L' U L' D2' L U' L' D2' L2 x",
+    "step": "pll"
+  },
+  {
+    "value": "x' F' L' U L D' L' U' L D L' U' L D' L' U L D x",
+    "step": "pll"
+  },
+  {
+    "value": "x' L2 D2' L U L' D2' L U' L x",
+    "step": "pll"
+  },
+  {
+    "value": "z' D L' U L2 D' L D U' L' U L2' D' L U' L' z",
+    "step": "pll"
   }
 ]

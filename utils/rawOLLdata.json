@@ -1126,5 +1126,781 @@
   {
     "value": "x' U' R U R' x U' R' U' R U R' U R",
     "step": "oll"
+  },
+  {
+    "value": "f' F L' U' L U L F' L' f",
+    "step": "oll"
+  },
+  {
+    "value": "f' L' f U l U L' U' M'",
+    "step": "oll"
+  },
+  {
+    "value": "f' L' U' L d x L F' L' U' L U F",
+    "step": "oll"
+  },
+  {
+    "value": "f' L' U' L d x L F' L' U' L U f S'",
+    "step": "oll"
+  },
+  {
+    "value": "f' L' U' L U f",
+    "step": "oll"
+  },
+  {
+    "value": "F' L' U' L U F",
+    "step": "oll"
+  },
+  {
+    "value": "F' L' U' L U F L' U' L U' L' U2' L",
+    "step": "oll"
+  },
+  {
+    "value": "F' L' U' L U F l' U' L U l F' L' F",
+    "step": "oll"
+  },
+  {
+    "value": "F' L' U' L U F L' U' L U L F' L' F",
+    "step": "oll"
+  },
+  {
+    "value": "f' L' U' L U f L F U F' U' L'",
+    "step": "oll"
+  },
+  {
+    "value": "f' L' U' L U f U' F' L' U' L U F",
+    "step": "oll"
+  },
+  {
+    "value": "F' L' U' L U F U' L' U2 L U L' U L",
+    "step": "oll"
+  },
+  {
+    "value": "F' L' U' L U F U' L U2 L' U' L U' L'",
+    "step": "oll"
+  },
+  {
+    "value": "f' L' U' L U f U F' L' U' L U F",
+    "step": "oll"
+  },
+  {
+    "value": "F' L' U' L U F U L' U2 L U L' U L",
+    "step": "oll"
+  },
+  {
+    "value": "F' L' U' L U F U2 F' U' L' U L F",
+    "step": "oll"
+  },
+  {
+    "value": "f' L' U' L U f U2 l' U' L U' L' U2' l",
+    "step": "oll"
+  },
+  {
+    "value": "F' L' U' L U L' U' L U L' U' L U F",
+    "step": "oll"
+  },
+  {
+    "value": "F' L' U' L U L F l' U' L' U l",
+    "step": "oll"
+  },
+  {
+    "value": "F' L' U' L U L2' D' L U' L' D L2' U F",
+    "step": "oll"
+  },
+  {
+    "value": "F' L' U' L U S' L' U' L U f",
+    "step": "oll"
+  },
+  {
+    "value": "F' L' U' L y U' L U L' U L",
+    "step": "oll"
+  },
+  {
+    "value": "F' L' U L U' L' U' L F",
+    "step": "oll"
+  },
+  {
+    "value": "F' L' U L U' L' U' L U' L' U L F",
+    "step": "oll"
+  },
+  {
+    "value": "F' L' U L U' L' U2 L U L' U' L U F",
+    "step": "oll"
+  },
+  {
+    "value": "F' L' U L U L' U' L F",
+    "step": "oll"
+  },
+  {
+    "value": "F' L F' L2' U L U L' U' L F2",
+    "step": "oll"
+  },
+  {
+    "value": "F' L F L' U' L' U' L U L' U L",
+    "step": "oll"
+  },
+  {
+    "value": "F' L F l' U' L' U l",
+    "step": "oll"
+  },
+  {
+    "value": "F' L F L' U' L' U L U' L U L' U L U2' L'",
+    "step": "oll"
+  },
+  {
+    "value": "F' L F L' U' S L' U L S'",
+    "step": "oll"
+  },
+  {
+    "value": "F' L F L' U2' L' U B' U B L",
+    "step": "oll"
+  },
+  {
+    "value": "F' L F L' U2' L' U L U' L' U2 L",
+    "step": "oll"
+  },
+  {
+    "value": "F' L F L' U2' L U L2' U L2 U2 L'",
+    "step": "oll"
+  },
+  {
+    "value": "F' L F L2' l U' L' U L U M'",
+    "step": "oll"
+  },
+  {
+    "value": "F' L U2' L' F L F' U2' F L'",
+    "step": "oll"
+  },
+  {
+    "value": "F' S L' U' L U F U' S'",
+    "step": "oll"
+  },
+  {
+    "value": "F' U' F L F' L' U L F L'",
+    "step": "oll"
+  },
+  {
+    "value": "F' U' L' U F l' U' L U l",
+    "step": "oll"
+  },
+  {
+    "value": "F' U' L' U L F L' U' L U' L' U2 L",
+    "step": "oll"
+  },
+  {
+    "value": "F' U' L' U L F U' L' U' L U' L' U2 L",
+    "step": "oll"
+  },
+  {
+    "value": "F' U' L' U L F U' L' U l F' L F l'",
+    "step": "oll"
+  },
+  {
+    "value": "F' U' L' U L F U F' L' U' L U F",
+    "step": "oll"
+  },
+  {
+    "value": "F' U' L' U L U' L' U L2' F L' U' L' U L",
+    "step": "oll"
+  },
+  {
+    "value": "F' U' L' U L U' L' U2 L U L' U' L F",
+    "step": "oll"
+  },
+  {
+    "value": "F' U' L' U L2 F L' U' L' U L",
+    "step": "oll"
+  },
+  {
+    "value": "F' U' L' U2' L U' L' U' L F L' U2' L U L' U L",
+    "step": "oll"
+  },
+  {
+    "value": "F' U' L' U2 L U L' U' L F",
+    "step": "oll"
+  },
+  {
+    "value": "F' U' L' U2 L U L' U2 L U F",
+    "step": "oll"
+  },
+  {
+    "value": "F' U' L2' D' L U L' D L2 F",
+    "step": "oll"
+  },
+  {
+    "value": "F' U L2' D' L U2' L' D L2' U' F",
+    "step": "oll"
+  },
+  {
+    "value": "F l' U' L U l F' L'",
+    "step": "oll"
+  },
+  {
+    "value": "f l' U' l U l F' l' S'",
+    "step": "oll"
+  },
+  {
+    "value": "f S' U R U' R' F'",
+    "step": "oll"
+  },
+  {
+    "value": "F U F' U' l' U' L U l L'",
+    "step": "oll"
+  },
+  {
+    "value": "r' R2 U R' U R U2' R' U R' r",
+    "step": "oll"
+  },
+  {
+    "value": "M L U2 L' U' L U' l'",
+    "step": "oll"
+  },
+  {
+    "value": "M U' L' U' L U l' L2 F' L' F",
+    "step": "oll"
+  },
+  {
+    "value": "L' B L U L' U' B' U L",
+    "step": "oll"
+  },
+  {
+    "value": "L' D' L U L' D L2' U L' U2' L U L'",
+    "step": "oll"
+  },
+  {
+    "value": "L' U' B U L U' L' B' L",
+    "step": "oll"
+  },
+  {
+    "value": "L' U' L d L F l' U' L' l",
+    "step": "oll"
+  },
+  {
+    "value": "L' U' L F L' U' L U L F' L' U L F' L' F",
+    "step": "oll"
+  },
+  {
+    "value": "L' U' L F U F' L' U' L U L' U L",
+    "step": "oll"
+  },
+  {
+    "value": "L' U' L F U F' U' L' U2 L",
+    "step": "oll"
+  },
+  {
+    "value": "L' U' L M' l L' U M' U' L' U l",
+    "step": "oll"
+  },
+  {
+    "value": "L' U' L U' L' d L' U L F",
+    "step": "oll"
+  },
+  {
+    "value": "L' U' L U' L' U B' U B L",
+    "step": "oll"
+  },
+  {
+    "value": "L' U' L U' L' U L F U F' U' L' U2' L",
+    "step": "oll"
+  },
+  {
+    "value": "l' U' l U' L' U L U' L' U L l' U l",
+    "step": "oll"
+  },
+  {
+    "value": "L' U' L U' L' U L U' L' U L U' L' U2 L",
+    "step": "oll"
+  },
+  {
+    "value": "L' U' L U' L' U L U' L' U L U L F' L' F",
+    "step": "oll"
+  },
+  {
+    "value": "L' U' L U' L' U L U' L' U2 L",
+    "step": "oll"
+  },
+  {
+    "value": "L' U' L U' L' U L U' L U L2' U L2 U2 L'",
+    "step": "oll"
+  },
+  {
+    "value": "L' U' L U' L' U2 L F' f F' S' L' U' L U F",
+    "step": "oll"
+  },
+  {
+    "value": "l' U' L U' L' U2 l F l' U' L U l F' L'",
+    "step": "oll"
+  },
+  {
+    "value": "l' U' L U' L' U2 l U' F' L' U L U L' U2' L U F",
+    "step": "oll"
+  },
+  {
+    "value": "L' U' L U' L' U2 L U' L' U' L U' L' U2 L",
+    "step": "oll"
+  },
+  {
+    "value": "L' U' L U' L' U2 L U L' U' L U' L' U2 L",
+    "step": "oll"
+  },
+  {
+    "value": "L' U' L U' L' U2 L U2 F' L' U' L U F",
+    "step": "oll"
+  },
+  {
+    "value": "l' U' L U' L' U2 l2 F l' U l F2' l'",
+    "step": "oll"
+  },
+  {
+    "value": "l' U' L U' L' U2 l2 U L' U L U2 l'",
+    "step": "oll"
+  },
+  {
+    "value": "L' U' L U' L' U2 L2 U2 L' U' L U' L'",
+    "step": "oll"
+  },
+  {
+    "value": "l' U' L U' L F' L' F L' U2 l",
+    "step": "oll"
+  },
+  {
+    "value": "L' U' L U' L F' L' F U2' L F' L' F",
+    "step": "oll"
+  },
+  {
+    "value": "L' U' L U' L U L2' U L2 U2 L'",
+    "step": "oll"
+  },
+  {
+    "value": "l' U' L U M U' L' U L",
+    "step": "oll"
+  },
+  {
+    "value": "L' U' L U M' U' L' U l",
+    "step": "oll"
+  },
+  {
+    "value": "l' U' L U M2 U' L' U L U M'",
+    "step": "oll"
+  },
+  {
+    "value": "l' U' L U l' L M' U' L' U L U M'",
+    "step": "oll"
+  },
+  {
+    "value": "L' U' L U l' L U' L' U l",
+    "step": "oll"
+  },
+  {
+    "value": "L' U' L U L' U L U2' L' U L U2' L' U' L",
+    "step": "oll"
+  },
+  {
+    "value": "L' U' L U L F' L' F L' U' L U M' U' L' U l",
+    "step": "oll"
+  },
+  {
+    "value": "L' U' L U L F' L' F L U2 L' U' L U' L'",
+    "step": "oll"
+  },
+  {
+    "value": "L' U' L U L F' L' F U' L' U' L U' L' U2 L",
+    "step": "oll"
+  },
+  {
+    "value": "L' U' L U L F' L2' U' L U L' U' L U F",
+    "step": "oll"
+  },
+  {
+    "value": "l' U' L U l F' L2' U L U L' U' L F",
+    "step": "oll"
+  },
+  {
+    "value": "l' U' L U L' l U' L' U L",
+    "step": "oll"
+  },
+  {
+    "value": "L' U' L y' L F' L' U L F L'",
+    "step": "oll"
+  },
+  {
+    "value": "L' U' L2 F U F' U' L' U2 L F' L' F",
+    "step": "oll"
+  },
+  {
+    "value": "L' U l F' L F' l' U' l F' l'",
+    "step": "oll"
+  },
+  {
+    "value": "l' U l F' U2' F' U L' U L F",
+    "step": "oll"
+  },
+  {
+    "value": "l' U l U l' U' l F U' F'",
+    "step": "oll"
+  },
+  {
+    "value": "l' U l U l' U' l y L U' L'",
+    "step": "oll"
+  },
+  {
+    "value": "L' U L U2' L' U' L U2' L' U' L U' L' U L",
+    "step": "oll"
+  },
+  {
+    "value": "L' U L2 D l' U l D' L2' U' L",
+    "step": "oll"
+  },
+  {
+    "value": "L' U L2 D l' U' l D' L2' U' L",
+    "step": "oll"
+  },
+  {
+    "value": "L' U2' L' D' L U2' L' D L2",
+    "step": "oll"
+  },
+  {
+    "value": "l' U2 L U L' U' L U L' U l",
+    "step": "oll"
+  },
+  {
+    "value": "L' U2 L U L' U' L U L' U L",
+    "step": "oll"
+  },
+  {
+    "value": "L' U2 L U L' U' L U2' L F' L' F",
+    "step": "oll"
+  },
+  {
+    "value": "L' U2 L U L' U L",
+    "step": "oll"
+  },
+  {
+    "value": "L' U2 L U L' U L F' L' U' L U F",
+    "step": "oll"
+  },
+  {
+    "value": "L' U2 L U L' U L U' L F U F' U' L'",
+    "step": "oll"
+  },
+  {
+    "value": "L' U2 L U L' U L U L U F U' F' L'",
+    "step": "oll"
+  },
+  {
+    "value": "L' U2 L U L' U L U2' L' U' L U' L' U2 L",
+    "step": "oll"
+  },
+  {
+    "value": "L' U2 L U L' U L2 U2 L' U' L U' L'",
+    "step": "oll"
+  },
+  {
+    "value": "l' U2 L U l L2' U' L U l' U l",
+    "step": "oll"
+  },
+  {
+    "value": "L' U2 L U2' L F' L' F",
+    "step": "oll"
+  },
+  {
+    "value": "L' U2 L U2' L U L' U' L' U L U2' L U2 L'",
+    "step": "oll"
+  },
+  {
+    "value": "L' U2 L y' U L F' L' U L F L'",
+    "step": "oll"
+  },
+  {
+    "value": "L' U2 L2 F' L' F L' U L U' L' U2 L",
+    "step": "oll"
+  },
+  {
+    "value": "L' U2 L2 F' L' F U2' M' U' L' U l",
+    "step": "oll"
+  },
+  {
+    "value": "L' U2 L2 F' L' F U2' L F' L' F",
+    "step": "oll"
+  },
+  {
+    "value": "L' U2 L2 F' L' F U2 l' L U' L' U l",
+    "step": "oll"
+  },
+  {
+    "value": "L' U2 L2 U L2' U L U' L U L' U' L U' L'",
+    "step": "oll"
+  },
+  {
+    "value": "L' U2 L2 U L2' U L2 U2 L'",
+    "step": "oll"
+  },
+  {
+    "value": "l D l' U l D' l2' U l U' l' U' l",
+    "step": "oll"
+  },
+  {
+    "value": "L F' L' F L F' L' F L' U' L U L' U' L",
+    "step": "oll"
+  },
+  {
+    "value": "L F' L' U' L' U L2 F L2' U L U' L' U' L",
+    "step": "oll"
+  },
+  {
+    "value": "L F' L' U' L F L' F' U F",
+    "step": "oll"
+  },
+  {
+    "value": "L F' L' U' L F L' y L' U L",
+    "step": "oll"
+  },
+  {
+    "value": "L F' L' U' L U F L' U L U2' L'",
+    "step": "oll"
+  },
+  {
+    "value": "L F' L2' B L2' F L2' B' L",
+    "step": "oll"
+  },
+  {
+    "value": "L F' U' L' U L2' F L2' U' L U L'",
+    "step": "oll"
+  },
+  {
+    "value": "L F l' U' L' U l F'",
+    "step": "oll"
+  },
+  {
+    "value": "L F l' U l F' l' U l F2' L'",
+    "step": "oll"
+  },
+  {
+    "value": "L F l' U l F2' L'",
+    "step": "oll"
+  },
+  {
+    "value": "L F L' U2 l F2' l' U2 L F' L'",
+    "step": "oll"
+  },
+  {
+    "value": "L F U F' U' F U F' U' L'",
+    "step": "oll"
+  },
+  {
+    "value": "L F U F' U' L'",
+    "step": "oll"
+  },
+  {
+    "value": "L F U F' U L' U' L U' L'",
+    "step": "oll"
+  },
+  {
+    "value": "L F U F2' U' L' U L F L'",
+    "step": "oll"
+  },
+  {
+    "value": "L F2' l' U' l F' L'",
+    "step": "oll"
+  },
+  {
+    "value": "L F2' L2' U2 L F' L' U2 L2 F2' L'",
+    "step": "oll"
+  },
+  {
+    "value": "L M' U L' U L U2' L' U L' l",
+    "step": "oll"
+  },
+  {
+    "value": "l L' U' L' U' L U l' M' L U' L' U l",
+    "step": "oll"
+  },
+  {
+    "value": "l L' U' L' U' L U l' L2 F' L' F",
+    "step": "oll"
+  },
+  {
+    "value": "l L2' U' L U' l' U2 l U' M'",
+    "step": "oll"
+  },
+  {
+    "value": "L U' L' U' L U2' L' D U L' U L U2' L' U L D'",
+    "step": "oll"
+  },
+  {
+    "value": "L U' L' U2 L U L' U L' U' L U L U L' U' L' U L",
+    "step": "oll"
+  },
+  {
+    "value": "L U F' L F L' U' L'",
+    "step": "oll"
+  },
+  {
+    "value": "L U F U' F' L' U' l' U' L U l F' L' F",
+    "step": "oll"
+  },
+  {
+    "value": "L U F U' F' L2' U2 L U L' U L",
+    "step": "oll"
+  },
+  {
+    "value": "L U F U' F' U F U' F' L'",
+    "step": "oll"
+  },
+  {
+    "value": "L U F2' u L' U' L D' L2' B'",
+    "step": "oll"
+  },
+  {
+    "value": "l U M' U L' U' l U' l'",
+    "step": "oll"
+  },
+  {
+    "value": "l U l' L U L' U' l U' l'",
+    "step": "oll"
+  },
+  {
+    "value": "L U L' U' M U L U' l'",
+    "step": "oll"
+  },
+  {
+    "value": "l U L' U' M' U L U' L'",
+    "step": "oll"
+  },
+  {
+    "value": "L U L' U' L F L' U' L U L F' L2'",
+    "step": "oll"
+  },
+  {
+    "value": "l U L' U L U' L' U L U2' l'",
+    "step": "oll"
+  },
+  {
+    "value": "L U L' U L U2 F' L' U' L U F U' L'",
+    "step": "oll"
+  },
+  {
+    "value": "l U L' U L U2 l'",
+    "step": "oll"
+  },
+  {
+    "value": "L U L' U L U2 L'",
+    "step": "oll"
+  },
+  {
+    "value": "L U L' U L U2 L' U' L F U F' U' L'",
+    "step": "oll"
+  },
+  {
+    "value": "L U L' U L U2 L' U L U2 L' U' L U' L'",
+    "step": "oll"
+  },
+  {
+    "value": "L U L' U L U2 L2' U' L U' L' U2 L",
+    "step": "oll"
+  },
+  {
+    "value": "L U L D L' U' L D' L' U2' L' U' L U' L'",
+    "step": "oll"
+  },
+  {
+    "value": "L U L F' L' F L' U L U2' L'",
+    "step": "oll"
+  },
+  {
+    "value": "L U L F' L' F L F' L' F U' L'",
+    "step": "oll"
+  },
+  {
+    "value": "L U L F' L' F U' L'",
+    "step": "oll"
+  },
+  {
+    "value": "L U2' L' U' L U' L' F' L' U' L U F",
+    "step": "oll"
+  },
+  {
+    "value": "L U2' L' U' L U' L' U L U L' U L U2 L'",
+    "step": "oll"
+  },
+  {
+    "value": "L U2' L' U' L U' L D L' U L D' L' U' L'",
+    "step": "oll"
+  },
+  {
+    "value": "L U2' L D l' U2' l D' L2'",
+    "step": "oll"
+  },
+  {
+    "value": "L U2' L D L' U2' L D' L2'",
+    "step": "oll"
+  },
+  {
+    "value": "l U2 L' U' L U' l'",
+    "step": "oll"
+  },
+  {
+    "value": "L U2 L' U' L U' L'",
+    "step": "oll"
+  },
+  {
+    "value": "L U2 L' U' L U' L' U' L' U' L U' L' U2 L",
+    "step": "oll"
+  },
+  {
+    "value": "L U2 L' U' L U' L' U' L U L' U L U2' L'",
+    "step": "oll"
+  },
+  {
+    "value": "l U2 L' U' L U L' U' L U' l'",
+    "step": "oll"
+  },
+  {
+    "value": "L U2 L2' U' L2 U' L' U L' U' L U L' U L",
+    "step": "oll"
+  },
+  {
+    "value": "L U2 L2' U' L2 U' L2' U2 L",
+    "step": "oll"
+  },
+  {
+    "value": "L2' D' L U2' L' D L U2' L",
+    "step": "oll"
+  },
+  {
+    "value": "L2' U' L B L' U L2' U' L' B' L",
+    "step": "oll"
+  },
+  {
+    "value": "l2 D l' U' l D' l2' U l U l'",
+    "step": "oll"
+  },
+  {
+    "value": "L2 D L' U L D' L' U' L'",
+    "step": "oll"
+  },
+  {
+    "value": "L2 D L' U2' L D' L' U2 L'",
+    "step": "oll"
+  },
+  {
+    "value": "S' F' L' U' L U f",
+    "step": "oll"
+  },
+  {
+    "value": "S L' U' L S' U L F' L' F",
+    "step": "oll"
+  },
+  {
+    "value": "S U2' L' U' L U' L' U2 L S'",
+    "step": "oll"
+  },
+  {
+    "value": "x' L' U L F L' U' L U F' U' x",
+    "step": "oll"
+  },
+  {
+    "value": "x' U L' U' L x U L U L' U' L U' L'",
+    "step": "oll"
   }
 ]
