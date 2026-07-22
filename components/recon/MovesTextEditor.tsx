@@ -232,7 +232,7 @@ function MovesTextEditor({
     { pattern: /D('?)(?!2)U('?)(?!2)\s/g, replacement: '(U$2 D$1) ' },
     
     // Xw → x conversion
-    { pattern: /([UDFBLR])w('?)(?!2)/g, 
+    { pattern: /([UDFBLR])[wW]('?)(?!2)/g, 
       replacement: (_match: string, face: string, prime: string) =>
         `${face.toLowerCase()}${prime} ` 
     },

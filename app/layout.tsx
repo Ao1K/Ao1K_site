@@ -5,6 +5,7 @@ import "./globals.css";
 import Header from "../components/Header";
 import { versionList } from "../utils/sharedConstants";
 import SidebarAutoClose from "../components/SidebarAutoClose";
+import ToastContainer from "../components/ToastContainer";
 import HeaderNavLink from "../components/HeaderNavLink";
 import WriteIcon from "../components/icons/write";
 import BulletListIcon from "../components/icons/bulletList";
@@ -85,6 +86,7 @@ export default async function RootLayout({
           </label>
         </div>
         {children}
+        <ToastContainer />
       </body>
     </html>
   );
