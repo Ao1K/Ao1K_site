@@ -1,6 +1,8 @@
 import { useSyncedSettings } from '../../composables/useSettings';
 import { useAlgFavorites } from '../../composables/algs/algFavorites';
+import { showToast } from '../../composables/toast';
 import Parrot from '../icons/parrot';
+import Link from 'next/link';
 import React, { JSX, useState } from 'react';
 
 interface SuggestionCardProps {
@@ -109,6 +111,19 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
       addFavorite(alg);
       setFavoriteStatus(alg, 'learned');
       setAnimating(true);
+      showToast({
+        dismissKey: 'alg-added-to-your-algs',
+        addMethod: 'replace',
+        icon: <Parrot filled className="w-6 h-6 text-primary-800" />,
+        message: (
+          <span>
+            {alg} added to{' '}
+            <Link href="/algs/" className="text-primary-800 underline hover:no-underline">
+              Your Algs
+            </Link>
+          </span>
+        ),
+      });
     }
   };
 
