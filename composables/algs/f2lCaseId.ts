@@ -38,9 +38,11 @@ export interface F2lCaseConfig {
   fullEO: EdgeLocation[] | null;
 }
 
+export const BASELINE_Y_TURNS = -1;
+
 export const DEFAULT_F2L_CONFIG: F2lCaseConfig = {
   step: 0,
-  yTurns: 0,
+  yTurns: BASELINE_Y_TURNS,
   corner: null,
   edge: null,
   cornerOriDone: false,

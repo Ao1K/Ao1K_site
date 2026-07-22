@@ -240,7 +240,7 @@ const F2lSetup = ({ config, onConfigChange }: F2lSetupProps) => {
   );
 
   return (
-    <div className="flex flex-col w-full bg-dark">
+    <div className="flex flex-col w-full bg-dark rounded-b-sm">
       <div className="relative flex w-full h-5 overflow-hidden bg-dark">
         {STEPS.map((_, i) => {
           const active = i === config.step;

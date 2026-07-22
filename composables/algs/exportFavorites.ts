@@ -2,7 +2,7 @@
 // only the cards visible after filtering get written out. CSV downloads directly; the PDF is
 // produced by opening a clean print window the browser saves as a PDF.
 
-import type { AlgStatus, FavoriteAlg } from './algFavorites';
+import { STORE_VERSION, type AlgStatus, type FavoriteAlg } from './algFavorites';
 import type { SvgShape } from '../recon/stepIconDescriptors';
 import type { CubeColors } from '../useSettings';
 import { classifyFavorite, type AlgClassification } from './classifyAlg';
@@ -11,7 +11,7 @@ import { buildAlgIcon } from './algIcon';
 const STATUS_LABEL: Record<AlgStatus, string> = {
   learning: 'Learning',
   learned: 'Memorized',
-  none: 'Unmarked',
+  none: 'Unlearned',
 };
 
 // status order used to group the PDF list
@@ -33,6 +33,7 @@ const algsetLabel = (f: FavoriteAlg): string => classifyFavorite(f).label;
 
 export const favoritesToCsv = (favorites: FavoriteAlg[]): string => {
   const rows = [
+    ['Version', String(STORE_VERSION)],
     ['Algorithm', 'Algset', 'Status', 'Moves'],
     ...favorites.map((f) => [cleanAlg(f.alg), algsetLabel(f), STATUS_LABEL[f.status], String(moveCount(f.alg))]),
   ];
@@ -75,7 +76,8 @@ const algIconSvg = (c: AlgClassification, alg: string, cubeColors: CubeColors, l
   const name = showName && descriptor.name
     ? `<text x="12" y="13" text-anchor="middle" dominant-baseline="central" font-size="${descriptor.name.length <= 2 ? 10 : 8}" font-weight="bold" fill="${descriptor.nameColor || '#1a1a1a'}">${escapeHtml(descriptor.name)}</text>`
     : '';
-  return `<svg class="icon" viewBox="${descriptor.viewBox}" stroke="#52525b" stroke-width="1" fill="none">${shapes}${name}</svg>`;
+  const cls = descriptor.enlarge ? 'icon enlarge' : 'icon';
+  return `<svg class="${cls}" viewBox="${descriptor.viewBox}" stroke="#52525b" stroke-width="${descriptor.strokeWidth ?? 1}" fill="none">${shapes}${name}</svg>`;
 };
 
 const buildPrintHtml = (favorites: FavoriteAlg[], cubeColors: CubeColors): string => {
@@ -115,7 +117,7 @@ const buildPrintHtml = (favorites: FavoriteAlg[], cubeColors: CubeColors): strin
   * { box-sizing: border-box; }
   body { font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; color: #1a1a1a; margin: 2.5rem; }
   h1 { display: flex; align-items: center; gap: 0.6rem; font-size: 1.6rem; margin: 0 0 0.25rem; }
-  h1 .logo { height: 2.2rem; width: auto; }
+  h1 .logo { height: 2.2rem; width: auto; margin-right: -1rem; transform: translateY(-1px); }
   .meta { color: #666; font-size: 0.85rem; margin: 0 0 1.5rem; }
   /* each group is a table; tables may break across pages so a long group flows on instead of
      jumping to a new page, and the thead heading repeats at the top of each page it spans */
@@ -131,8 +133,9 @@ const buildPrintHtml = (favorites: FavoriteAlg[], cubeColors: CubeColors): strin
   tr { break-inside: avoid; }
   td { padding: 0.3rem 0; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
   .num { width: 1.75rem; color: #999; font-size: 0.85rem; text-align: right; padding-right: 0.6rem; white-space: nowrap; }
-  .icon-cell { width: 24px; padding-right: 0.75rem; }
+  .icon-cell { width: 32px; padding-right: 0.75rem; }
   .icon { display: block; width: 24px; height: 24px; border: 1px solid #a3a3a3; background: #ffffff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .icon.enlarge { width: 32px; height: 32px; border: 0; background: transparent; margin: -2px 0; }
   .alg { width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 1rem; letter-spacing: 0.05em; word-spacing: 0.35em; }
   .moves { color: #888; font-size: 0.8rem; white-space: nowrap; text-align: right; padding-left: 0.75rem; }
   /* keep the page margin at zero so the browser draws no header/footer; the inch of margin on
@@ -142,7 +145,7 @@ const buildPrintHtml = (favorites: FavoriteAlg[], cubeColors: CubeColors): strin
 </style>
 </head>
 <body>
-  <h1><span>Your Algs</span><span>&middot;</span><img class="logo" src="${escapeHtml(logoUrl)}" alt="Ao1K"></h1>
+  <h1><span>Your Algs</span><img class="logo" src="${escapeHtml(logoUrl)}" alt="Ao1K"><span>.com</span></h1>
   <p class="meta">${count} algorithm${count === 1 ? '' : 's'} &middot; exported ${escapeHtml(date)}</p>
   ${sections}
 </body>

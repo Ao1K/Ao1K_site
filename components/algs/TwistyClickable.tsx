@@ -399,6 +399,7 @@ const TwistyClickable = ({ cross = 'up', pair, corner, edge, filledSlots, highli
     recomputeOverrides();
     applyHintElevation();
     scene.add(cube);
+    cube.rotation.y = targetYRef.current;
     cubeObjectRef.current = cube;
 
     const aspectRatio = (divRef.current.clientWidth - 1) / (divRef.current.clientHeight - 1);

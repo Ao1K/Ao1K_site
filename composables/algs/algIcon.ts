@@ -1,9 +1,10 @@
-// Builds the icon descriptor for a saved alg from its classification. F2L stays the greyscale
-// pair icon; OLL (and other non-PLL last-layer cases) become a greyscale 5x5 case grid where the
-// LL color reads near-white and every other color a darker grey; PLL is the real-color grid with
-// the case name in the center. Shared by the on-page card and the export serializer.
+// Builds the icon descriptor for a saved alg from its classification. F2L is the pair icon
+// colored by the slot it solves; OLL (and other non-PLL last-layer cases) become a 5x5 case grid
+// where the LL color reads in its real color and every other color a dark grey; PLL is the
+// real-color grid with the case name in the center. Shared by the card and the export serializer.
 
-import { greyscalePairDescriptor, PAIR_LIGHT } from './pairIcon';
+import { f2lIsoDescriptor } from './f2lIsoIcon';
+import { f2lPairTitle } from './multislotSlots';
 import { type AlgClassification } from './classifyAlg';
 import {
   getStepIconDescriptor,
@@ -19,15 +20,16 @@ const NAME_TO_FACE: Record<string, keyof Pick<ColorConfig, 'up' | 'down' | 'fron
   white: 'up', yellow: 'down', green: 'front', blue: 'back', red: 'right', orange: 'left',
 };
 
-// greyscale palette for an OLL grid: the LL color (opposite the cross) is near-white, the rest grey
-export function greyscaleLLConfig(llColorName: string): ColorConfig {
+// palette for an OLL grid: the LL face reads yellow the way a white-cross solver sees it, every
+// other color a dark grey. Classification runs with the cross on D, so the LL lands on U (white).
+export function llConfig(llColorName: string, cubeColors: CubeColors): ColorConfig {
   const config: ColorConfig = {
     up: LL_OTHER_GREY, down: LL_OTHER_GREY, front: LL_OTHER_GREY,
     back: LL_OTHER_GREY, right: LL_OTHER_GREY, left: LL_OTHER_GREY,
     gray: LL_OTHER_GREY, darkBg: DARK_BG,
   };
   const face = NAME_TO_FACE[llColorName?.toLowerCase()] ?? 'up';
-  config[face] = PAIR_LIGHT;
+  config[face] = cubeColors.down;
   return config;
 }
 
@@ -43,19 +45,19 @@ export interface AlgIconData {
   descriptor: IconDescriptor | null;
   // PLL draws its case name as a center text overlay
   showName: boolean;
+  title: string;
 }
 
 export function buildAlgIcon(c: AlgClassification, alg: string, cubeColors: CubeColors): AlgIconData {
-  if (c.kind === 'f2l') {
-    return { descriptor: greyscalePairDescriptor(alg), showName: false };
+  if (c.kind === 'f2l' || c.kind === 'multislot') {
+    return { descriptor: f2lIsoDescriptor(alg, realColorConfig(cubeColors)), showName: false, title: f2lPairTitle(alg) };
   }
   if (c.kind === 'oll' && c.stepInfo) {
-    const config = greyscaleLLConfig(c.stepInfo.colors[0]);
-    return { descriptor: getStepIconDescriptor(config, c.stepInfo), showName: false };
+    const config = llConfig(c.stepInfo.colors[0], cubeColors);
+    return { descriptor: getStepIconDescriptor(config, c.stepInfo), showName: false, title: c.label };
   }
   if (c.kind === 'pll' && c.stepInfo) {
-    return { descriptor: getStepIconDescriptor(realColorConfig(cubeColors), c.stepInfo), showName: true };
+    return { descriptor: getStepIconDescriptor(realColorConfig(cubeColors), c.stepInfo), showName: true, title: c.label };
   }
-  // TODO: dedicated multislot icon. For now multislot falls through to the text/override path.
-  return { descriptor: null, showName: false };
+  return { descriptor: null, showName: false, title: c.label };
 }

@@ -14,6 +14,9 @@ export interface IconDescriptor {
   eoBorderColor?: string;
   name?: string;
   nameColor?: string;
+  transparentBg?: boolean;
+  strokeWidth?: number;
+  enlarge?: boolean;
 }
 
 // parameterized color palette - 6 face colors + utility colors
@@ -46,6 +49,8 @@ export const OG_COLOR_CONFIG: ColorConfig = {
   gray: '#888888',
   darkBg: '#161018',
 };
+
+const GROUT_GAP = 0.6;
 
 const owlIcon: IconDescriptor = {
   viewBox: '0 0 24 24',
@@ -402,34 +407,27 @@ function lastLayerIcon(pattern: Grid, config: ColorConfig, name?: string, nameTy
   const getPos = (i: number) => i === 0 ? 0 : i === 4 ? 21 : edgeSize + (i - 1) * cellSize;
   const getSize = (i: number) => (i === 0 || i === 4) ? edgeSize : cellSize;
 
-  const shapes: SvgShape[] = [];
+  const isPll = Boolean(name && nameType === 'pll');
+  const shapes: SvgShape[] = [{ type: 'rect', x: 0, y: 0, width: 24, height: 24, fill: config.darkBg }];
+  const pushSticker = (x: number, y: number, w: number, h: number, fill: string) => {
+    if (fill === config.darkBg) return;
+    shapes.push({ type: 'rect', x: x + GROUT_GAP, y: y + GROUT_GAP, width: w - 2 * GROUT_GAP, height: h - 2 * GROUT_GAP, fill });
+  };
+
   for (let row = 0; row < 5; row++) {
     for (let col = 0; col < 5; col++) {
-      shapes.push({
-        type: 'rect',
-        x: getPos(col),
-        y: getPos(row),
-        width: getSize(col),
-        height: getSize(row),
-        fill: getCellColor(row, col),
-      });
+      if (isPll && row >= 1 && row <= 3 && col >= 1 && col <= 3) continue;
+      pushSticker(getPos(col), getPos(row), getSize(col), getSize(row), getCellColor(row, col));
     }
   }
-  if (name && nameType === 'pll') {
+
+  if (isPll) {
     const centerColor = getCellColor(2, 2);
-    // cover the inner 3x3 grid (rows/cols 1-3, from 3px to 21px)
-    shapes.push({
-      type: 'rect',
-      x: 3,
-      y: 3,
-      width: 18,
-      height: 18,
-      fill: centerColor,
-    });
-    return { viewBox: '0 0 24 24', shapes, name, nameColor: isColorDark(centerColor) ? '#FFFFFF' : '#000000' };
+    shapes.push({ type: 'rect', x: 3 + GROUT_GAP, y: 3 + GROUT_GAP, width: 18 - 2 * GROUT_GAP, height: 18 - 2 * GROUT_GAP, fill: centerColor });
+    return { viewBox: '0 0 24 24', shapes, name, nameColor: isColorDark(centerColor) ? '#FFFFFF' : '#000000', transparentBg: true, strokeWidth: 0 };
   }
 
-  return { viewBox: '0 0 24 24', shapes, name };
+  return { viewBox: '0 0 24 24', shapes, name, transparentBg: true, strokeWidth: 0 };
 }
 
 // cmll icon - 5x5 LL grid but only corners are colored, edges/center greyed out

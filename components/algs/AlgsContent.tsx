@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { SimpleCubeInterpreter, type Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
+import type { Doc } from '../../composables/recon/ExactAlgSuggester';
 import { buildF2lCubeState } from '../../composables/algs/f2lCubeState';
 import { type FaceKey } from '../../composables/algs/cubePaint';
 import AlgsetSelector, { type AlgsetId } from './AlgsetSelector';
@@ -31,12 +32,18 @@ const AlgsContent = ({ initialCross, initialPair, initialConfig, initialAlgset }
   const interpreterRef = useRef<SimpleCubeInterpreter | null>(null);
   const [ready, setReady] = useState(false);
 
-  // load the alg database once, then build the interpreter
+  // load the f2l and zbls databases once, then build the interpreter
   useEffect(() => {
     let cancelled = false;
-    import('../../public/recon/compiled-exact-algs.json').then((algDoc) => {
+    Promise.all([
+      import('../../public/recon/compiled-f2l-algs.json'),
+      import('../../public/recon/compiled-zbls-algs.json'),
+    ]).then(([f2lDoc, zblsDoc]) => {
       if (cancelled) return;
-      interpreterRef.current = new SimpleCubeInterpreter(algDoc.default.algorithms);
+      const interpreter = new SimpleCubeInterpreter();
+      interpreter.addAlgset('f2l', f2lDoc.default.algorithms as Doc[]);
+      interpreter.addAlgset('zbls', zblsDoc.default.algorithms as Doc[]);
+      interpreterRef.current = interpreter;
       setReady(true);
     });
     return () => { cancelled = true; };

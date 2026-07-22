@@ -29,6 +29,7 @@ type StatusFilter = AlgStatus | 'all';
 type AlgsetFilter = string | 'all';
 type SortKey = 'added' | 'moves' | 'alpha';
 type SortDir = 'asc' | 'desc';
+type ActiveEditor = { kind: 'add' } | { kind: 'card'; alg: string } | null;
 
 const PER_PAGE_OPTIONS = [10, 25, 50, 100];
 
@@ -37,7 +38,7 @@ const STATUS_ORDER: AlgStatus[] = ['learning', 'learned', 'none'];
 const STATUS_LABEL: Record<AlgStatus, string> = {
   learning: 'Learning',
   learned: 'Memorized',
-  none: 'Unmarked',
+  none: 'Unlearned',
 };
 
 // movecount is the number of spaces plus one (the count of space-separated moves)
@@ -115,9 +116,10 @@ interface YourAlgsListProps {
 }
 
 const YourAlgsList = ({ hasSolutions }: YourAlgsListProps) => {
-  const { favorites, addFavorite, setFavoriteStatus, setFavoriteAlgset, removeFavorite } = useAlgFavorites();
+  const { favorites, addFavorite, setFavoriteStatus, setFavoriteAlgset, setFavoriteAlg, removeFavorite } = useAlgFavorites();
 
-  const [adding, setAdding] = useState(false);
+  const [activeEditor, setActiveEditor] = useState<ActiveEditor>(null);
+  const [editMode, setEditMode] = useState(false);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [algsetFilter, setAlgsetFilter] = useState<AlgsetFilter>('all');
   const [sortKey, setSortKey] = useState<SortKey>('added');
@@ -209,13 +211,12 @@ const YourAlgsList = ({ hasSolutions }: YourAlgsListProps) => {
     <>
     <div className="flex items-stretch h-8 mb-0.75 text-dark_accent font-medium text-xl">
       <div className="relative">
-        <div title="SQUAAAAWK!! Learn spaced repetition! Learn spaced repetition!" className="absolute left-1 -bottom-1.25 text-4xl z-10">🦜</div>
-        <div className="w-7 h-0 absolute border-b -bottom-1.75 left-2 border-neutral-700"></div>
+        <div id="Algae" title="SQUAAAAWK!! Learn spaced repetition! Learn spaced repetition!" className="absolute left-1 -bottom-1.25 text-4xl z-10">🦜</div>
       </div>
       <span className='pl-12 self-center'> Your Algs</span>
     </div>
-    <div className="border border-neutral-600 rounded-sm p-3 w-full h-fit text-primary-100">
-      <h2 ref={toolbarRef} className="relative flex flex-wrap items-start gap-x-3 gap-y-2 px-2 font-medium mb-3 pb-1 text-lg border-b border-neutral-600 -mx-3">
+    <div className="border border-neutral-600 rounded-sm p-2 w-full h-fit text-primary-100">
+      <h2 ref={toolbarRef} className="relative flex flex-wrap items-start gap-x-3 gap-y-2 px-2 font-medium mb-3 pb-1 text-lg border-b border-neutral-600 -mx-2">
         {favorites.length > 0 && (
           <>
           <div className="flex-1 min-w-50 flex flex-wrap-reverse justify-between gap-x-2 gap-y-1.5 pb-1 text-sm font-normal">
@@ -263,6 +264,17 @@ const YourAlgsList = ({ hasSolutions }: YourAlgsListProps) => {
                 onClose={() => setOpenMenu(null)}
               />
             </div>
+            <div className="flex items-center gap-1.5 bg-neutral-700 p-1 rounded-sm md:hidden">
+              <label className="flex items-center gap-1.5 px-2 h-7.5 border rounded-sm bg-dark border-neutral-600 text-primary-100 cursor-pointer hover:border-neutral-500">
+                <input
+                  type="checkbox"
+                  checked={editMode}
+                  onChange={(e) => setEditMode(e.target.checked)}
+                  className="cursor-pointer accent-primary-100"
+                />
+                <span className="text-sm whitespace-nowrap">Edit Mode</span>
+              </label>
+            </div>
             <div className="flex items-center gap-1.5 bg-neutral-700 p-1 rounded-sm">
               <div className="flex items-center gap-1.5 pl-2 pr-1.5 h-7.5 border rounded-sm bg-dark border-neutral-600 hover:border-neutral-500 focus:border-neutral-500">
                 <DownloadMenu
@@ -285,11 +297,14 @@ const YourAlgsList = ({ hasSolutions }: YourAlgsListProps) => {
       )}
 
       <div className="mb-2 grid min-h-13 items-center">
-        {adding ? (
-          <AddAlgRow onAdd={addFavorite} onCancel={() => setAdding(false)} />
+        {activeEditor?.kind === 'add' ? (
+          <AddAlgRow
+            onAdd={addFavorite}
+            onCancel={() => setActiveEditor((cur) => (cur?.kind === 'add' ? null : cur))}
+          />
         ) : (
           <button type="button"
-            onClick={() => setAdding(true)}
+            onClick={() => setActiveEditor({ kind: 'add' })}
             className="flex items-center gap-3 text-primary-100 hover:text-primary-300 transition-colors
             px-1.5 py-1 bg-dark"
           >
@@ -306,8 +321,13 @@ const YourAlgsList = ({ hasSolutions }: YourAlgsListProps) => {
                 alg={fav.alg}
                 status={fav.status}
                 algset={fav.algset}
+                editMode={editMode}
+                active={activeEditor?.kind === 'card' && activeEditor.alg === fav.alg}
+                onEditStart={() => setActiveEditor({ kind: 'card', alg: fav.alg })}
+                onEditEnd={() => setActiveEditor((cur) => (cur?.kind === 'card' && cur.alg === fav.alg ? null : cur))}
                 onToggleStatus={() => setFavoriteStatus(fav.alg, nextStatus(fav.status))}
                 onSetAlgset={(algset) => setFavoriteAlgset(fav.alg, algset)}
+                onSetAlg={(next) => setFavoriteAlg(fav.alg, next)}
                 onDelete={() => removeFavorite(fav.alg)}
               />
             </li>
@@ -318,7 +338,7 @@ const YourAlgsList = ({ hasSolutions }: YourAlgsListProps) => {
       {visible.length > 0 && (
         <div
           ref={paginationRef}
-          className="-mx-3 mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-neutral-600 px-3 pt-3 text-sm text-primary-100"
+          className="-mx-2 mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-neutral-600 px-2 pt-3 text-sm text-primary-100"
         >
           <div className="flex items-center gap-1">
             <NavBtn onClick={() => goToPage(1)} disabled={currentPage === 1} label="First page">

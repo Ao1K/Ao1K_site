@@ -35,7 +35,8 @@ const DownloadMenu = ({ favorites, open, onToggle, onClose }: DownloadMenuProps)
         <CaretIcon />
       </button>
       {open && (
-        <div className="absolute -right-1.75 top-full mt-1 z-20 min-w-20 rounded-sm border border-neutral-600 bg-dark shadow-lg">
+        <div className="absolute -right-1.75 top-full mt-1 z-20 min-w-28 rounded-sm border border-neutral-600 bg-dark shadow-lg">
+          <div className="text-primary-100 p-2">Download as...</div>
           <button
             type="button"
             onClick={exportCsv}

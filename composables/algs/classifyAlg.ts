@@ -30,8 +30,8 @@ export const overrideClassification = (algset: string): AlgClassification => ({
 export const classifyFavorite = (f: { alg: string; algset?: string }): AlgClassification =>
   f.algset ? overrideClassification(f.algset) : classifyAlg(f.alg);
 
-// base letter + optional single/double/double-prime suffix
-const MOVE_RE = /^[UDFBLRudfblrMESxyz](?:2'|['2])?$/;
+// base letter + optional turn count (2 or 3) and optional prime
+const MOVE_RE = /^[UDFBLRudfblrMESxyz][23]?'?$/;
 
 const invertToken = (m: string): string =>
   m.endsWith('2') ? m
@@ -76,7 +76,10 @@ export function classifyAlg(alg: string): AlgClassification {
     if (stepInfo.nameType === 'pll' || stepInfo.step.includes('pll')) {
       return { kind: 'pll', label: stepInfo.name || 'PLL', group: 'PLL', stepInfo };
     }
-    return { kind: 'oll', label: 'OLL', group: 'OLL', stepInfo };
+    // the interpreter names the OLL case the before state leaves you in, hanging it off that
+    // state's last pair; the alg's own delta is only the eo/co it completes
+    const ollName = prevSteps.find((s) => s.nameType === 'oll')?.name;
+    return { kind: 'oll', label: ollName ? `OLL ${ollName}` : 'OLL', group: 'OLL', stepInfo };
   }
 
   return UNKNOWN;

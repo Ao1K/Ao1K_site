@@ -27,8 +27,11 @@ import {
   rotateCornerLocY,
   rotateEdgeLocY,
   rotateSlotY,
+  isTopEdge,
   type FaceKey,
   type CornerOrientation,
+  type EdgeLocation,
+  type EdgeOrientation,
 } from '../../composables/algs/cubePaint';
 import { configToRaw, encodePrefixFromState } from '../../composables/algs/f2lCaseId';
 
@@ -123,11 +126,13 @@ const F2lSearch = ({ cross, setCross, pair, setPair, config, setConfig, suggesti
   const handleTurnY = (delta: number) => {
     const odd = ((((delta % 4) + 4) % 4) % 2) === 1;
     const swapCO = (o: CornerOrientation): CornerOrientation => (odd ? (o === 0 ? 0 : o === 1 ? 2 : 1) : o);
+    const swapEO =(loc: EdgeLocation, o: EdgeOrientation): EdgeOrientation =>
+      odd && isTopEdge(loc) ? (o === 0 ? 1 : 0) : o;
     commitConfig({
       ...config,
       yTurns: config.yTurns + delta,
       corner: config.corner ? { loc: rotateCornerLocY(config.corner.loc, delta), orientation: swapCO(config.corner.orientation) } : null,
-      edge: config.edge ? { ...config.edge, loc: rotateEdgeLocY(config.edge.loc, delta) } : null,
+      edge: config.edge ? { loc: rotateEdgeLocY(config.edge.loc, delta), orientation: swapEO(config.edge.loc, config.edge.orientation) } : null,
       filledSlots: config.filledSlots.map((s) => rotateSlotY(s, delta)),
       fullEO: config.fullEO ? config.fullEO.map((l) => rotateEdgeLocY(l, delta)) : null,
     });
@@ -170,7 +175,7 @@ const F2lSearch = ({ cross, setCross, pair, setPair, config, setConfig, suggesti
     <div className="grid w-full max-w-220 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_25rem]">
       <div className="flex flex-col items-start gap-4 min-w-0">
         <div id="f2l-visualizer" className="flex flex-col w-full border border-neutral-600 rounded-sm bg-black">
-          <div className="flex flex-row items-center justify-between gap-2 mb-2 px-3 py-2 bg-dark border-b border-neutral-600">
+          <div className="flex flex-row items-center justify-between gap-2 mb-2 px-3 py-2 bg-dark border-b border-neutral-600 rounded-t-sm">
             <h2 className="text-sm text-primary-100 font-medium">Visual Input</h2>
             <div className="flex items-center gap-2">
               <F2lDefaults cross={cross} pair={pair} onCrossChange={handleCrossChange} onPairChange={handlePairChange} />

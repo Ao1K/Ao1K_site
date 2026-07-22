@@ -72,7 +72,7 @@ const F2lSuggestions = ({ config, cross, pair, suggestions, ready, playingAlg, o
 
   return (
     <div className="flex flex-col border border-neutral-600 rounded-sm text-lg text-primary-100 w-full h-full min-h-50">
-      <div className="flex flex-row items-center gap-2 py-2 px-3 min-h-[62] bg-dark border-b border-neutral-600">
+      <div className="flex flex-row items-center gap-2 py-2 px-3 min-h-[62] bg-dark border-b rounded-t-sm border-neutral-600">
         <h2 className="text-sm text-primary-100 font-medium">{ shownSuggestions.length === 1 ? "Solution" : "Solutions"}</h2>
       </div>
 

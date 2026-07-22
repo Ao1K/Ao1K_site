@@ -21,9 +21,9 @@ function IconSvg({ descriptor, showName, title }: { descriptor: IconDescriptor; 
   return (
     <svg
       viewBox={descriptor.viewBox}
-      className={`h-11 m-1 w-fit shrink-0 border border-neutral-400 bg-dark`}
+      className={`${descriptor.enlarge ? 'h-14 -m-0.5' : 'h-11 m-1'} w-fit shrink-0 ${descriptor.transparentBg ? '' : 'bg-dark'}`}
       stroke="#52525b"
-      strokeWidth="1"
+      strokeWidth={descriptor.strokeWidth ?? 1}
       fill="none"
     >
       {descriptor.shapes.map(renderShape)}
@@ -69,11 +69,11 @@ interface AlgIconProps {
 
 export function AlgIcon({ classification, alg, cubeColors }: AlgIconProps) {
   const text = classification.label;
-  const { descriptor, showName } = buildAlgIcon(classification, alg, cubeColors);
+  const { descriptor, showName, title } = buildAlgIcon(classification, alg, cubeColors);
   if (!descriptor) return <TextIcon label={text} />;
   return (
   <div className={``}>
-    <IconSvg descriptor={descriptor} showName={showName} title={text} />
+    <IconSvg descriptor={descriptor} showName={showName} title={title} />
   </div>
   )
 }

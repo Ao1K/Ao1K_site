@@ -308,6 +308,8 @@ export function edgeFaceColors(
 const TOP_EDGE_LOCS: EdgeLocation[] = ['UF', 'UR', 'UB', 'UL'];
 const MIDDLE_EDGE_LOCS: EdgeLocation[] = ['FR', 'BR', 'BL', 'FL'];
 
+export const isTopEdge = (loc: EdgeLocation): boolean => TOP_EDGE_LOCS.includes(loc);
+
 // the non-cross edges not pinned down by the placed pair edge or solved slots: the edges
 // whose orientation the Full EO step lets the user set. Cube-fixed, canonical order.
 export function freeEoEdgeSet(edgeLoc: EdgeLocation | null, filledSlots: F2lSlot[]): EdgeLocation[] {

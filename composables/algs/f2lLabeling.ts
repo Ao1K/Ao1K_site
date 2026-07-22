@@ -20,9 +20,9 @@ const baseOf = (token: string): string => token[0] ?? '';
 
 const amountOf = (token: string): number => {
   const suffix = token.slice(1);
-  if (suffix === '') return 1;
-  if (suffix === "'") return 3;
-  return 2;
+  const magnitude = parseInt(suffix, 10) || 1;
+  const signed = suffix.includes("'") ? -magnitude : magnitude;
+  return ((signed % 4) + 4) % 4;
 };
 
 const RLFB = new Set(['R', 'L', 'F', 'B', 'r', 'l', 'f', 'b']);

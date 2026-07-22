@@ -2,17 +2,15 @@
 //
 // A move token is a single base letter plus an optional suffix:
 //   base   ∈ U D F B L R (faces), u d f b l r (wide), M E S (slices), x y z (rotations)
-//   suffix ∈ '' | "'" | '2' | "2'"
+//   suffix ∈ an optional turn count (default 1) with an optional "'" for counterclockwise, e.g. '' "'" '2' "2'" '3' "3'"
 // We treat a token as (letter, amount) where amount is signed quarter-turns: positive is
 // clockwise, negative counterclockwise. ±2 are both half turns but spin opposite directions.
 
 export const tokenize = (alg: string): string[] => alg.split(/\s+/).filter(Boolean);
 
 const amountOf = (suffix: string): number => {
-  if (suffix === '') return 1;
-  if (suffix === "'") return -1;
-  if (suffix === '2') return 2;
-  return -2; // "2'": a counterclockwise half turn
+  const magnitude = parseInt(suffix, 10) || 1;
+  return suffix.includes("'") ? -magnitude : magnitude;
 };
 
 const suffixOf = (amount: number): string => {
