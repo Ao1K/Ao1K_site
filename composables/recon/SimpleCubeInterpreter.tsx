@@ -3357,6 +3357,7 @@ export class SimpleCubeInterpreter {
     }
 
     this.enabledAlgsets = options?.enabledAlgsets ?? 'all';
+    this.handedness = options?.handedness ?? 'right';
 
     const stepTypes = new Set(steps.map(s => s.type));
     const f2lSteps = steps.filter(s => s.type === 'f2l');
