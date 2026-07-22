@@ -2,8 +2,10 @@ Informal Bugs/Todo List. Not guaranteed to be complete or accurate.
 ===================================================================
 
 Recon saving via profiles.
-  - Give stats on pair choice, efficiency, mistakes over time
-  
+  - Give stats--pair choice, efficiency, mistakes--over time
+
+OLL/PLL algsets in Algs page. Needs fingertricks to be done well.
+
 A tab for your recons (click an icon and expand into a whole new page). A profile system. Oofda.
   - Sharing YourAlgsList via url, once profiles working
 
@@ -16,22 +18,15 @@ ZBLL algs
 Think about function of solve review carefully. Form will follow.
 - Add breakdown into MovesTextEditor? Explore adding divs.
 
-Add multislot recognition to YourAlgsList. If one pair gets solved later than the other, that's the important one.
+Better intuition breakdown
+1. Check inserted pair?
+1. Check keyhole (separate breakdown path)
+2. Check commutators (separate breakdown path)
+3. Check edge/corner put in bottom
+4. Check made split/joined pair
+5. Check put edge/corner in top
+6. Check split pieces generically
 
-Only load zbls once at last step
-
-Consider not storing AUF variants. Minimize form then search.
-
-Query AUF improvement options
-1. Do nothing. Just store AUFs separately.
-2. Try to canonicalize. Most cases have one valid AUF. 
-   Runs into at least three troubles:
-    1. Some ZBLS cases are symmetrical, so multiple AUFs are valid. Meaning you wouldn't want to do U2 for no reason.
-    2. Some cases can have any AUF applied. Like if they only are meant for solving a case where both pieces are misslotted. 
-       But perhaps this can be approached as if it were the above, just with fewer filters after the initial search.
-    3. Cases that affect multiple slots are quite complicated and it's not clear how to canonicalize.
-       We already search once per slot! This isn't an issue. We just need to alphabetize based on the right two pieces?
-       But ZBLS considers several pieces, or at least their EO. Canonicalize by minimizing EO as a backup? 
-3. Rework the hashing system. Most of it doesn't change, but pieces in the top layer get their state defined differently,
-   just with respect to each other.
-4. Transfer with valid AUF info. Finish compilation at runtime in user's browser.
+- But some of these overlap? 
+So tokenize by triggers after checking for keyhole and comms, 
+iterate over all tokens, see which tokens do which functions, combine as necessary?

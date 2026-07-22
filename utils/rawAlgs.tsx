@@ -2,7 +2,7 @@
 // 1. Add new algs to the appropriate JSON data file (rawGenericData.json, rawOLLdata.json, rawPLLdata.json).
 // 2. Add the "new": false field to the alg object.
 // 3. Go to _PageContent and uncomment the AlgCompiler component.
-// 4. `npm run dev`, select algorithm types, and run the tool.
+// 4. `pnpm dev`, select algorithm types, and run the tool.
 
 // cast as unknown to avoid TypeScript inferring huge literal union types from JSON
 import generic from './rawGenericData.json';
