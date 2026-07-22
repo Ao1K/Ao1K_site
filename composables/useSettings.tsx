@@ -18,6 +18,10 @@ export type CubeColors = typeof DEFAULT_CUBE_COLORS;
 
 export type IconSize = 'small' | 'medium';
 
+export type Handedness = 'left' | 'right';
+
+export const DEFAULT_HANDEDNESS: Handedness = 'right';
+
 export const ALGSET_OPTIONS = {
   CFOP: ['f2l', 'oll', 'pll'],
   ZB: ['zbls', 'zbll'],
@@ -47,6 +51,7 @@ export interface AppSettings {
   hintFaceletsElevation: number;
   showSplits: boolean;
   algsets: AlgsetDict;
+  handedness: Handedness;
 }
 
 const SETTINGS_COOKIE_KEY = 'ao1kSettings';
@@ -64,6 +69,7 @@ export function readSettingsFromCookie(): AppSettings {
         hintFaceletsElevation: typeof parsed.hintFaceletsElevation === 'number' ? parsed.hintFaceletsElevation : DEFAULT_HINT_FACELETS_ELEVATION,
         showSplits: parsed.showSplits ?? false,
         algsets: parsed.algsets ?? DEFAULT_ALGSETS,
+        handedness: parsed.handedness === 'left' ? 'left' : DEFAULT_HANDEDNESS,
       };
       return result;
     } catch (e) {
@@ -76,6 +82,7 @@ export function readSettingsFromCookie(): AppSettings {
     hintFaceletsElevation: DEFAULT_HINT_FACELETS_ELEVATION,
     showSplits: false,
     algsets: DEFAULT_ALGSETS,
+    handedness: DEFAULT_HANDEDNESS,
   };
 }
 
@@ -87,6 +94,7 @@ export function useSyncedSettings() {
     hintFaceletsElevation: DEFAULT_HINT_FACELETS_ELEVATION,
     showSplits: false,
     algsets: DEFAULT_ALGSETS,
+    handedness: DEFAULT_HANDEDNESS,
   });
 
   useEffect(() => {
@@ -192,6 +200,19 @@ export function useHintFaceletsElevation(): [number, (value: number) => void] {
   }, [settings, updateSettings]);
 
   return [settings.hintFaceletsElevation, setElevation] as const;
+}
+
+export function useHandedness(): [Handedness, (value: Handedness) => void] {
+  const { settings, updateSettings } = useSyncedSettings();
+
+  const setHandedness = useCallback((value: Handedness) => {
+    updateSettings({
+      ...settings,
+      handedness: value,
+    });
+  }, [settings, updateSettings]);
+
+  return [settings.handedness, setHandedness] as const;
 }
 
 export function useAlgsets(): [AlgsetDict, (value: AlgsetDict) => void] {

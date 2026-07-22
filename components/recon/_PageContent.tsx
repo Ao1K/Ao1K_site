@@ -30,7 +30,7 @@ import { customDecodeURL } from '../../composables/recon/urlEncoding';
 import InfoPanel from '../../components/recon/InfoPanel';
 import IconStack, { computeLineIconData } from './IconStack';
 import SplitsStack, { SPLITS_WIDTH, splitsToURLParam } from './SplitsStack';
-import { ICON_SIZE_CONFIG, useCubeColors, useShowSplits, useAlgsets, readSettingsFromCookie } from '../../composables/useSettings';
+import { ICON_SIZE_CONFIG, useCubeColors, useShowSplits, useAlgsets, useHandedness, readSettingsFromCookie } from '../../composables/useSettings';
 import { SimpleCube, type CubeState } from '../../composables/recon/SimpleCube';
 import { SimpleCubeInterpreter } from '../../composables/recon/SimpleCubeInterpreter';
 import type { StepInfo, Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
@@ -87,6 +87,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   const [cubeColors] = useCubeColors();
   const [showSplitsSetting] = useShowSplits();
   const [algsets] = useAlgsets();
+  const [handedness] = useHandedness();
   const enabledAlgsets = useMemo(() => new Set(Object.values(algsets).flat()), [algsets]);
 
   const allMovesRef = useRef<string[][][]>([[[]], [[]]]);
@@ -681,7 +682,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     const cubeState = simpleCubeRef.current.getCubeState(allMoves as any);
 
     const steps = cubeInterpreter.current!.getStepsCompleted(cubeState);
-    const newSuggestions: Suggestion[] = cubeInterpreter.current.getAlgSuggestions(steps, { enabledAlgsets });
+    const newSuggestions: Suggestion[] = cubeInterpreter.current.getAlgSuggestions(steps, { enabledAlgsets, handedness });
 
     solutionMethodsRef.current?.setSuggestions(newSuggestions, trueLineIndex);
   };
@@ -796,7 +797,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       setControllerButtonsStatus(controllerButtonsEnabled)
 
   // eslint-disable-next-line react-hooks/exhaustive-deps -- the helper fns below only close over refs/params, not component state; listing them would force a new trackMoves identity every render
-  }, [splits, lineSteps, enabledAlgsets]);
+  }, [splits, lineSteps, enabledAlgsets, handedness]);
 
   const memoizedUpdateHistoryBtns = useCallback(() => {
     handleHistoryBtnUpdate();

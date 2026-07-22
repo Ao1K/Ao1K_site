@@ -5,6 +5,7 @@ import type { Grid } from './LLinterpreter';
 import LLinterpreter from './LLinterpreter';
 import LLsuggester from './LLsuggester';
 import type { CubeState as SimpleCubeState, Color } from './SimpleCube';
+import type { Handedness } from '../useSettings';
 import { splitLeadingAuf } from '../../utils/collapseAufVariants';
 import {
   isTopLayerChar,
@@ -146,6 +147,7 @@ export class SimpleCubeInterpreter {
   private algSuggester: AlgSuggester | null = null;
   private LLsuggester: LLsuggester | null = null;
   private enabledAlgsets: AlgsetFilter = 'all';
+  private handedness: Handedness = 'right';
 
   // standard facelets mapping (face index to color name for solved cube)
   private readonly facelets: { faceIdx: number; colorName: string }[] = [
@@ -3341,7 +3343,7 @@ export class SimpleCubeInterpreter {
 
   public getAlgSuggestions(
     steps?: StepInfo[],
-    options?: { f2lPair?: [string, string], enabledAlgsets?: AlgsetFilter },
+    options?: { f2lPair?: [string, string], enabledAlgsets?: AlgsetFilter, handedness?: Handedness },
   ): Suggestion[] {
     if (!this.algSuggester || !this.currentState) {
       return [];
@@ -3515,7 +3517,7 @@ export class SimpleCubeInterpreter {
 
     let suggestions: Suggestion[] = [];
 
-    const speedEstimator = new AlgSpeedEstimator();
+    const speedEstimator = new AlgSpeedEstimator(this.handedness);
     const algSet = new Set<string>();
     const currentEO = this.eoValue;
 
@@ -3608,6 +3610,19 @@ export class SimpleCubeInterpreter {
       .splice(0, 20); // limit to top 20
   }
 
+  private applyHandednessModifier(alg: string, frequency: number): number {
+    const hasRighty = /[Rr]/.test(alg);
+    const hasLefty = /[Ll]/.test(alg);
+
+    if (this.handedness === 'right' && hasLefty && !hasRighty) {
+      return frequency * 0.01;
+    }
+    if (this.handedness === 'left' && hasRighty && !hasLefty) {
+      return frequency * 0.01;
+    }
+    return frequency;
+  }
+
   private getLLSuggestions(steps: StepInfo[], stepTypes: Set<StepInfo['type']>): Suggestion[] {
 
     // Calculate all 4 reference piece origins for different AUF positions
@@ -3633,13 +3648,13 @@ export class SimpleCubeInterpreter {
       });
     });
 
-    const speedEstimator = new AlgSpeedEstimator();
+    const speedEstimator = new AlgSpeedEstimator(this.handedness);
     const suggestions: Suggestion[] = algs.map(alg => ({
       alg: alg.alg,
       time: speedEstimator.calcScore(alg.alg),
       steps: alg.steps,
       name: alg.name,
-      frequency: alg.frequency
+      frequency: this.applyHandednessModifier(alg.alg, alg.frequency)
     }));
 
     // sort by frequency (high is better), then by speed estimation as tiebreaker (low is better)

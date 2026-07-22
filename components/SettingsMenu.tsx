@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { HexColorPicker } from 'react-colorful';
 import PhGear, { PhGearFill } from './icons/settings';
-import { useCubeColors, useShowControls, useShowSplits, useHintFaceletsElevation, useAlgsets, ALGSET_OPTIONS, DEFAULT_HINT_FACELETS_ELEVATION, DEFAULT_CUBE_COLORS, type CubeColors, type AlgsetDict } from '../composables/useSettings';
+import { useCubeColors, useShowControls, useShowSplits, useHintFaceletsElevation, useAlgsets, useHandedness, ALGSET_OPTIONS, DEFAULT_HINT_FACELETS_ELEVATION, DEFAULT_CUBE_COLORS, type CubeColors, type AlgsetDict } from '../composables/useSettings';
 
 const FACE_LABELS: { key: keyof CubeColors; label: string }[] = [
   { key: 'up', label: 'Up' },
@@ -27,6 +27,7 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
   const [showSplits, setShowSplits] = useShowSplits();
   const [elevation, setElevation] = useHintFaceletsElevation();
   const [algsets, setAlgsets] = useAlgsets();
+  const [handedness, setHandedness] = useHandedness();
   const menuRef = useRef<HTMLDivElement>(null);
 
   const handleClickOutside = (event: MouseEvent | TouchEvent) => {
@@ -119,6 +120,35 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
                 className="ml-2 w-4 h-4 cursor-pointer"
               />
             </label>
+          </div>
+
+          {/* Handedness Switch */}
+          <div className="px-3 py-2 border-b border-primary-200">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-light_accent">Handedness</span>
+              <div className="flex rounded-sm overflow-hidden border border-primary-300">
+                <button
+                  onClick={() => setHandedness('left')}
+                  className={`px-3 py-1 text-xs font-semibold transition-colors ${
+                    handedness === 'left'
+                      ? 'bg-neutral-700 text-primary-100'
+                      : 'bg-primary-100 text-dark hover:bg-neutral-300'
+                  }`}
+                >
+                  Lefty
+                </button>
+                <button
+                  onClick={() => setHandedness('right')}
+                  className={`px-3 py-1 text-xs font-semibold transition-colors ${
+                    handedness === 'right'
+                      ? 'bg-neutral-700 text-primary-100'
+                      : 'bg-primary-100 text-dark hover:bg-neutral-300'
+                  }`}
+                >
+                  Righty
+                </button>
+              </div>
+            </div>
           </div>
 
           <div className="px-3 py-2 border-b border-primary-200">
