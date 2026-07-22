@@ -4,6 +4,7 @@ import AlgSpeedEstimator from './AlgSpeedEstimator';
 import type { Grid } from './LLinterpreter';
 import LLinterpreter from './LLinterpreter';
 import LLsuggester from './LLsuggester';
+import type { CompiledLLAlg } from './LLsuggester';
 import type { CubeState as SimpleCubeState, Color } from './SimpleCube';
 import type { Handedness } from '../useSettings';
 import { splitLeadingAuf } from '../../utils/collapseAufVariants';
@@ -148,6 +149,10 @@ export class SimpleCubeInterpreter {
   private LLsuggester: LLsuggester | null = null;
   private enabledAlgsets: AlgsetFilter = 'all';
   private handedness: Handedness = 'right';
+  private loadedAlgsets: Set<string> = new Set();
+
+  // algsets whose compiled algs are hash-searched via the position suggester
+  private static readonly hashAlgsets: ReadonlySet<string> = new Set(['f2l', 'zbls']);
 
   // standard facelets mapping (face index to color name for solved cube)
   private readonly facelets: { faceIdx: number; colorName: string }[] = [
@@ -442,6 +447,40 @@ export class SimpleCubeInterpreter {
     if (algs.length > 0) {
       this.algSuggester = new AlgSuggester(algs);
     }
+  }
+
+  /**
+   * Registers a compiled algset so its suggestions become available. Hash-based algsets
+   * (f2l, zbls) extend the position suggester; case-based algsets (oll, pll) extend the LL
+   * suggester. Loaded algsets stay in memory even when later disabled in settings, so
+   * re-enabling one is instant. Enabling/disabling is handled separately by getAlgSuggestions.
+   */
+  public addAlgset(name: string, algs: Doc[] | CompiledLLAlg[]): void {
+    if (this.loadedAlgsets.has(name)) {
+      return;
+    }
+
+    if (SimpleCubeInterpreter.hashAlgsets.has(name)) {
+      if (!this.algSuggester) {
+        this.algSuggester = new AlgSuggester();
+      }
+      const taggedAlgs = (algs as Doc[]).map(alg => ({ ...alg, step: name }));
+      this.algSuggester.addDocs(taggedAlgs);
+    } else if (name === 'oll' || name === 'pll') {
+      if (!this.LLsuggester) {
+        this.LLsuggester = new LLsuggester();
+      }
+      this.LLsuggester.addAlgs(name, algs as CompiledLLAlg[]);
+    } else {
+      console.warn(`Unknown algset: ${name}`);
+      return;
+    }
+
+    this.loadedAlgsets.add(name);
+  }
+
+  public isAlgsetLoaded(name: string): boolean {
+    return this.loadedAlgsets.has(name);
   }
 
   /**
@@ -3345,7 +3384,7 @@ export class SimpleCubeInterpreter {
     steps?: StepInfo[],
     options?: { f2lPair?: [string, string], enabledAlgsets?: AlgsetFilter, handedness?: Handedness },
   ): Suggestion[] {
-    if (!this.algSuggester || !this.currentState) {
+    if (!this.currentState) {
       return [];
     }
     if (!steps) {
@@ -3364,13 +3403,15 @@ export class SimpleCubeInterpreter {
     const isF2LComplete = f2lSteps.length === 4;
 
     if (isF2LComplete) {
-      // load LLsuggestor
+      // AUF suggestions still work with an empty suggester, so create one on demand
       if (!this.LLsuggester) {
         this.LLsuggester = new LLsuggester();
       }
       return this.getLLSuggestions(steps, stepTypes);
     } else {
-      if (!isAlgsetEnabled(this.enabledAlgsets, 'f2l')) {
+      // f2l covers every pair; zbls only adds EO-solving options on the final pair
+      const hashAlgsetEnabled = isAlgsetEnabled(this.enabledAlgsets, 'f2l') || isAlgsetEnabled(this.enabledAlgsets, 'zbls');
+      if (!hashAlgsetEnabled || !this.algSuggester) {
         return [];
       }
       return this.getF2LSuggestions(steps, options?.f2lPair);
@@ -3496,7 +3537,7 @@ export class SimpleCubeInterpreter {
       const { coreKey, aufPart } = splitLeadingAuf(algText);
       const m = combineAuf(q, aufTokenToVal(aufPart));
       const alg = prependAuf(aufValToToken(m), coreKey);
-      return { alg, hasEOsolved: eoSolvedAt(m) };
+      return { alg, hasEOsolved: eoSolvedAt(q) };
     }
 
     // the piece isn't in the U layer, so no AUF is needed to solve the pair itself. When
@@ -3533,7 +3574,8 @@ export class SimpleCubeInterpreter {
 
       const wantsEORanking = isFinalPair && isAlgsetEnabled(this.enabledAlgsets, 'zbls');
 
-      const algs = this.algSuggester!.searchByPosition(query);
+      const algs = this.algSuggester!.searchByPosition(query)
+        .filter(alg => isAlgsetEnabled(this.enabledAlgsets, alg.step ?? 'f2l'));
 
       algs.forEach(alg => {
         const [firstColor, secondColor] = pairColors;
@@ -3544,6 +3586,11 @@ export class SimpleCubeInterpreter {
         const { alg: finalAlg, hasEOsolved } = this.reconstructF2LAlg(
           alg.id, alg.eoValue, q, isTopLayer, isFinalPair, wantsEORanking, currentEO
         );
+
+        // zbls algs are only valid suggestions when they actually solve EO
+        if (alg.step === 'zbls' && !hasEOsolved) {
+          return;
+        }
 
         if (!algSet.has(finalAlg)) {
           algSet.add(finalAlg);

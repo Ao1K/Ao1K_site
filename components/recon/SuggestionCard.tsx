@@ -109,7 +109,7 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
       removeFavorite(alg);
     } else {
       addFavorite(alg);
-      setFavoriteStatus(alg, 'learned');
+      setFavoriteStatus(alg, 'learning');
       setAnimating(true);
       showToast({
         dismissKey: 'alg-added-to-your-algs',

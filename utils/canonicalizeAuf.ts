@@ -57,7 +57,7 @@ export function canonicalizeChar(pieceType: F2LPieceType, char: string): { char:
  * Rotates (cornerChar, edgeChar) together by q = 0..3 and keeps whichever q makes
  * cornerChar + edgeChar lexicographically smallest, corner first — the same comparison
  * compileExactAlgorithms's pairChars does, just over character rotations instead of 4
- * separately-simulated hashes. Verified against public/recon/compiled-exact-algs.json via
+ * separately-simulated hashes. Verified against public/recon/compiled-f2l-algs.json via
  * scripts/verifyAufReconstruction.ts.
  */
 export function canonicalizePair(cornerChar: string, edgeChar: string): { cornerChar: string; edgeChar: string; q: number } {
@@ -95,7 +95,7 @@ export function aufValToToken(val: number): AufToken {
  * m = combine(q, c): the actual AUF to prepend when executing a matched alg on the live cube.
  * q (query-side canonicalization turns) and c (the matched alg's own stored leading rotation)
  * are both forward-U-turn counts in the same convention as EDGE_STEP/CORNER_STEP, so they
- * simply add mod 4 (turns compose). Verified against compiled-exact-algs.json with zero
+ * simply add mod 4 (turns compose). Verified against compiled-f2l-algs.json with zero
  * counterexamples across 1800+ cleanly-collapsed cases in scripts/verifyAufReconstruction.ts;
  * the subtraction convention fails ~27% of those.
  */

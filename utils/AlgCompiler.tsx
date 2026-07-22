@@ -14,7 +14,6 @@ interface CompiledExactAlg {
   alg: string;
   hash: string;
   eoValue: number;
-  step?: string;
 }
 
 interface ExpandedExactAlg extends ExactAlg {
@@ -28,14 +27,14 @@ interface AlgCompilerProps {
 /**
  * React component for compiling algorithms and rendering a TwistyPlayer
  */
-type AlgorithmType = 'exact' | 'oll' | 'pll';
+type AlgorithmType = 'f2l' | 'zbls' | 'oll' | 'pll';
 
 export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
   const simpleCubeRef = useRef<SimpleCube>(new SimpleCube());
   const isCompilingRef = useRef(false);
 
   const [isCompiling, setIsCompiling] = useState(false);
-  const [selectedAlgTypes, setSelectedAlgTypes] = useState<Set<AlgorithmType>>(new Set(['exact', 'oll', 'pll']));
+  const [selectedAlgTypes, setSelectedAlgTypes] = useState<Set<AlgorithmType>>(new Set(['f2l', 'oll', 'pll']));
 
 
   const handleAlgTypeToggle = (algType: AlgorithmType) => {
@@ -102,11 +101,17 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
    */
   const reorderAnglingInAlg = (angle: string, algValue: string): string => {
     const combined = (angle ? `${angle} ` : '') + algValue;
-    
-    // Use regex to find U move followed by y move and flip them
-    const reordered = combined.replace(/(U'?2?)\s+(y'?2?)/g, '$2 $1');
-    
-    return reordered.trim();
+    const moves = combined.trim().split(/\s+/).filter(m => m.length > 0);
+
+    let leadingCount = 0;
+    while (leadingCount < moves.length && /^[Uy]['2]?$/.test(moves[leadingCount])) {
+      leadingCount++;
+    }
+
+    const leading = moves.slice(0, leadingCount).join(' ').replace(/(U'?2?)\s+(y'?2?)/g, '$2 $1');
+    const rest = moves.slice(leadingCount).join(' ');
+
+    return `${leading} ${rest}`.trim();
   };
 
   /**
@@ -150,8 +155,13 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
   };
 
   const compileSelectedAlgs = () => {
-    if (selectedAlgTypes.has('exact')) {
-      compileExactAlgorithms(prepareExactAlgs(rawGeneric));
+    if (selectedAlgTypes.has('f2l')) {
+      const f2lAlgs = rawGeneric.filter(alg => alg.step === 'f2l');
+      compileExactAlgorithms(prepareExactAlgs(f2lAlgs, 'f2l'), 'f2l');
+    }
+    if (selectedAlgTypes.has('zbls')) {
+      const zblsAlgs = rawGeneric.filter(alg => alg.step === 'zbls');
+      compileExactAlgorithms(prepareExactAlgs(zblsAlgs, 'zbls'), 'zbls');
     }
     if (selectedAlgTypes.has('oll')) {
       compileLLalgorithms(prepareLLAlgs(rawOLLalgs));
@@ -213,6 +223,14 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
     });
 
     return simplifiedAlgs;
+  };
+
+  const stripTrailingYMoves = (alg: string): string => {
+    const moves = alg.trim().split(/\s+/).filter(m => m.length > 0);
+    while (moves.length > 0 && /^y['2]?$/.test(moves[moves.length - 1])) {
+      moves.pop();
+    }
+    return moves.join(' ');
   };
 
   const getY2Variant = (alg: string): string => {
@@ -345,9 +363,9 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
     for (const alg of newAlgs) {
       const DEBUG = alg.value === "";
 
-      if (alg.step !== 'f2l') {
+      if (alg.step !== 'f2l' && alg.step !== 'zbls') {
         filteredAlgs.push(alg);
-        console.log(`Keeping non-F2L alg: "${alg.value}"`);
+        console.log(`Keeping non-f2l/zbls alg: "${alg.value}"`);
         continue;
       }
 
@@ -377,6 +395,14 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
         continue;
       }
 
+      if (alg.step === 'zbls') {
+        // don't bother trying to check zbls algs for inefficiencies
+        // too complicated for now
+        if (DEBUG) console.log('DEBUG: Keeping zbls alg')
+        filteredAlgs.push(alg);
+        continue;
+      }
+
       const lastMove = moves[moves.length - 1];
       const slot = slotIndices[lastMove];
       const oppositePattern = oppositeMovePattern[lastMove];
@@ -393,7 +419,9 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
       const hasOppositeMove = moves.some(m => oppositePattern.test(m));
       if (DEBUG) console.log(`DEBUG: hasOppositeMove=${hasOppositeMove}, moves=${JSON.stringify(moves)}`);
       if (!hasOppositeMove) {
-        // No opposite-side moves, keep the alg
+        // If the alg doesn't change both sides of the cube, 
+        // this function has nothing to make an easy check against,
+        // so we keep these algs by default.
         if (DEBUG) console.log(`DEBUG: No opposite moves, keeping alg`);
         filteredAlgs.push(alg);
         continue;
@@ -473,6 +501,7 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
 
     const newAlgs: (ExactAlg | LastLayerAlg)[] = [];
     const existingAlgs = new Set<string>();
+    const checkedIndices = new Set<number>();
     for (let i = 0; i < expandedAlgs.length; i++) {
 
       const index = algType === 'Exact' ? (expandedAlgs[i] as ExpandedExactAlg).originalIndex : i;
@@ -480,8 +509,13 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
       const simplifiedAlg = expandedAlgs[i];
 
       // warn if old alg is not in its most simplified form
-      if (originalAlg && !originalAlg.new && originalAlg.value !== simplifiedAlg.value) {
-        console.warn(`Algorithm at index ${index} is not in simplified form. Original: "${originalAlg.value}", Simplified: "${simplifiedAlg.value}"`);
+      // only check the first (unrotated/base-angle) expansion per original alg, since
+      // the other expanded angle variants are expected to differ from the original by design
+      if (originalAlg && !checkedIndices.has(index)) {
+        checkedIndices.add(index);
+        if (!originalAlg.new && originalAlg.value !== simplifiedAlg.value) {
+          console.warn(`Algorithm at index ${index} is not in simplified form. Original: "${originalAlg.value}", Simplified: "${simplifiedAlg.value}"`);
+        }
       }
 
       // add simplified alg to either list depending on if it's new or existing
@@ -571,7 +605,7 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
     });
 
     algs.forEach((alg, index) => {
-      const y2Variant = getY2Variant(alg.value);
+      const y2Variant = stripTrailingYMoves(getY2Variant(alg.value));
       if (y2Variant !== alg.value) {
         expandedAlgs.push({
           value: y2Variant,
@@ -584,7 +618,7 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
     });
 
     algs.forEach((alg, index) => {
-      const mirrorVariant = getMirrorMVariant(alg.value);
+      const mirrorVariant = stripTrailingYMoves(getMirrorMVariant(alg.value));
       if (mirrorVariant !== alg.value) {
         expandedAlgs.push({
           value: mirrorVariant,
@@ -620,7 +654,7 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
     return algSet;
   }
 
-  const downloadUniqueNewAlgs = (algType: 'Exact' | 'LastLayer', algs: (ExactAlg | LastLayerAlg)[]) => {
+  const downloadUniqueNewAlgs = (algType: 'Exact' | 'LastLayer', algs: (ExactAlg | LastLayerAlg)[], downloadLabel?: string) => {
     if (algs.length === 0) return;
 
     algs = algs.map(alg => {
@@ -647,19 +681,19 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
       algs = collapseAufGroups(algs as ExactAlg[]);
     }
 
-    const prettyJson = '[\n  ' + algs.map(alg => JSON.stringify(alg).replaceAll(',',', ').replace(/"(\w+)":/g, '$1: ')).join(',\n  ') + '\n]';
+    const prettyJson = '[\n  ' + algs.map(alg => JSON.stringify(alg).replaceAll(',',', ')).join(',\n  ') + '\n]';
     const blob = new Blob([prettyJson], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `new_${algType.toString().toLowerCase()}_algs.tsx`;
+    link.download = `new_${downloadLabel ?? algType.toString().toLowerCase()}_algs.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
 
-  const prepareExactAlgs = (algs: ExactAlg[]): ExactAlg[] => {
+  const prepareExactAlgs = (algs: ExactAlg[], downloadLabel: string): ExactAlg[] => {
 
     console.log(`Preparing Exact algorithms... Total algs: ${algs.length}`);
 
@@ -689,7 +723,7 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
     if (uniqueNewAlgs.length > 0) {
       console.log('Replace new algs with this list');
 
-      downloadUniqueNewAlgs('Exact', uniqueNewAlgs);
+      downloadUniqueNewAlgs('Exact', uniqueNewAlgs, downloadLabel);
     }
 
     const allAlgs = Array.from(algSet) as ExactAlg[];
@@ -811,6 +845,30 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
     return result.join(' ');
   };
 
+  const isPureLefty = (alg: string): boolean => {
+    let hasR = false;
+    let hasL = false;
+    for (const move of alg.trim().split(/\s+/)) {
+      const base = move[0];
+      if (base === 'R' || base === 'r') hasR = true;
+      if (base === 'L' || base === 'l') hasL = true;
+    }
+    return hasL && !hasR;
+  };
+
+  const mirrorToRighty = (alg: string): string => {
+    return alg.trim().split(/\s+/).filter(m => m.length > 0)
+      .map(move => replacementTable_M[move] ?? move)
+      .join(' ');
+  };
+
+  const normalizeToRightyForFrequency = (alg: string): { value: string; wasMirrored: boolean } => {
+    if (isPureLefty(alg)) {
+      return { value: mirrorToRighty(alg), wasMirrored: true };
+    }
+    return { value: alg, wasMirrored: false };
+  };
+
   const compileLLalgorithms = (algs: LastLayerAlg[]) => {
 
     const step = algs[0]!.step;
@@ -818,7 +876,7 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
 
     // build normalized frequency lookup for this step only
     const stepFrequencies = step === 'oll' ? ollFrequencies : pllFrequencies;
-    type FreqEntry = { frequency: number; originalValue: string; matchCount: number };
+    type FreqEntry = { frequency: number; originalValue: string; directMatchCount: number; mirroredMatchCount: number };
     const normalizedFreqMap = new Map<string, FreqEntry>();
     stepFrequencies.forEach(f => {
       const key = normalizeAlgForMatching(f.value);
@@ -827,7 +885,7 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
         console.error(`algFrequencies has duplicate normalized entries: "${f.value}" and "${existing.originalValue}" both normalize to "${key}"`);
         throw new Error('Duplicate normalized algFrequency entries');
       }
-      normalizedFreqMap.set(key, { frequency: f.frequency, originalValue: f.value, matchCount: 0 });
+      normalizedFreqMap.set(key, { frequency: f.frequency, originalValue: f.value, directMatchCount: 0, mirroredMatchCount: 0 });
     });
 
     // Array to store compiled algorithm data
@@ -853,12 +911,17 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
       console.log('Identifying alg:', alg.value);
       const { index: caseIndex, refPieceMovement, minMovements } = cubeInterpreter.identifyLLcase(alg.step, alg.value);
 
-      const normalizedKey = normalizeAlgForMatching(alg.value);
+      const { value: rightyForFrequency, wasMirrored } = normalizeToRightyForFrequency(alg.value);
+      const normalizedKey = normalizeAlgForMatching(rightyForFrequency);
       const freqEntry = normalizedFreqMap.get(normalizedKey);
       if (freqEntry) {
-        freqEntry.matchCount++;
-        if (freqEntry.matchCount > 1) {
-          console.error(`algFrequency entry "${freqEntry.originalValue}" matched more than one compiled alg (also matched: "${alg.value}")`);
+        if (wasMirrored) {
+          freqEntry.mirroredMatchCount++;
+        } else {
+          freqEntry.directMatchCount++;
+        }
+        if (freqEntry.directMatchCount > 1 || freqEntry.mirroredMatchCount > 1) {
+          console.error(`algFrequency entry "${freqEntry.originalValue}" matched more than one compiled alg of the same handedness (also matched: "${alg.value}")`);
           throw new Error('algFrequency entry matched more than one compiled alg');
         }
       }
@@ -874,7 +937,7 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
     }
 
     // validate all frequency entries were matched exactly once
-    const unmatchedEntries = [...normalizedFreqMap.values()].filter(e => e.matchCount === 0);
+    const unmatchedEntries = [...normalizedFreqMap.values()].filter(e => e.directMatchCount === 0 && e.mirroredMatchCount === 0);
     // unmatchedEntries.forEach(e => {
     //   console.error(`algFrequency entry "${e.originalValue}" was not matched by any compiled alg`);
     // });
@@ -889,7 +952,7 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
   /**
    * Takes an array of cubing algs, determines the cube hash, then creates a json file and downloads it.
    */
-  const compileExactAlgorithms = (algs: ExactAlg[]) => {
+  const compileExactAlgorithms = (algs: ExactAlg[], stepLabel: string) => {
 
     const cubeInterpreter = new SimpleCubeInterpreter();
 
@@ -926,7 +989,7 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
       }
 
       if (leadingYMoves.length > 1) {
-        console.error(`Invalid algorithm pattern detected after cleanup: ${completeAlg}. Too many leading y moves (${leadingYMoves.length}). Halting processing.`);
+        console.error(`Invalid algorithm pattern detected after cleanup: ${completeAlg}. Too many leading y moves (${leadingYMoves.length}). Skipping.`);
         continue;
       }
       
@@ -961,12 +1024,11 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
         alg: completeAlg,
         hash: hash,
         eoValue,
-        step: alg.step || '',
       });
 
     }
     // Create and download JSON file
-    downloadCompiledAlgs(canonicalizeAufHashes(compiledData), 'exact');
+    downloadCompiledAlgs(canonicalizeAufHashes(compiledData), stepLabel);
   };
 
   /**
@@ -1048,11 +1110,20 @@ export const AlgCompiler: React.FC<AlgCompilerProps> = () => {
           <label className="flex items-center cursor-pointer">
             <input
               type="checkbox"
-              checked={selectedAlgTypes.has('exact')}
-              onChange={() => handleAlgTypeToggle('exact')}
+              checked={selectedAlgTypes.has('f2l')}
+              onChange={() => handleAlgTypeToggle('f2l')}
               className="w-4 h-4"
             />
-            <span>Exact (F2L)</span>
+            <span>F2L</span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={selectedAlgTypes.has('zbls')}
+              onChange={() => handleAlgTypeToggle('zbls')}
+              className="w-4 h-4"
+            />
+            <span>ZBLS</span>
           </label>
           <label className="flex items-center gap-2 cursor-pointer">
             <input

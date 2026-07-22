@@ -1,6 +1,3 @@
-import compiledOll from '@/public/recon/compiled-oll-algs.json';
-import compiledPll from '@/public/recon/compiled-pll-algs.json';
-
 export interface CompiledLLAlg {
   caseIndex: number;
   alg: string;
@@ -13,9 +10,12 @@ export default class LLsuggester {
   private ollAlgs: CompiledLLAlg[] = [];
   private pllAlgs: CompiledLLAlg[] = [];
 
-  constructor() {
-    this.ollAlgs = (compiledOll as any).algorithms as CompiledLLAlg[];
-    this.pllAlgs = (compiledPll as any).algorithms as CompiledLLAlg[];
+  public addAlgs(step: 'oll' | 'pll', algs: CompiledLLAlg[]): void {
+    if (step === 'oll') {
+      this.ollAlgs = algs;
+    } else if (step === 'pll') {
+      this.pllAlgs = algs;
+    }
   }
 
   /**

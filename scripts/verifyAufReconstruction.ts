@@ -60,9 +60,9 @@ function verifyRotateEOBits(): void {
 
 verifyRotateEOBits();
 
-const dataPath = path.join(process.cwd(), 'public', 'recon', 'compiled-exact-algs.json');
+const dataPath = path.join(process.cwd(), 'public', 'recon', 'compiled-f2l-algs.json');
 const data = JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
-const f2lAlgs: { alg: string; hash: string }[] = data.algorithms.filter((a: any) => a.step === 'f2l');
+const f2lAlgs: { alg: string; hash: string }[] = data.algorithms;
 
 const coreKeyCounts = new Map<string, number>();
 f2lAlgs.forEach((a) => {

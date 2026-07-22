@@ -34,6 +34,8 @@ import { ICON_SIZE_CONFIG, useCubeColors, useShowSplits, useAlgsets, useHandedne
 import { SimpleCube, type CubeState } from '../../composables/recon/SimpleCube';
 import { SimpleCubeInterpreter } from '../../composables/recon/SimpleCubeInterpreter';
 import type { StepInfo, Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
+import type { Doc } from '../../composables/recon/ExactAlgSuggester';
+import type { CompiledLLAlg } from '../../composables/recon/LLsuggester';
 import { getNewSteps } from '../../composables/recon/getLineStepInfo';
 import { ScreenshotManager, isSolveComplete } from '../../composables/recon/ScreenshotManager';
 import type { TwistyPlayerImperativeRef } from '../../components/recon/TwistyPlayer';
@@ -68,6 +70,13 @@ export interface ControllerRequestOptions {
 }
 
 const TwistyPlayer = lazy(() => import("../../components/recon/TwistyPlayer"));
+
+const ALGSET_LOADERS: Record<string, () => Promise<{ default: { algorithms: unknown[] } }>> = {
+  f2l: () => import('../../public/recon/compiled-f2l-algs.json'),
+  oll: () => import('../../public/recon/compiled-oll-algs.json'),
+  pll: () => import('../../public/recon/compiled-pll-algs.json'),
+  zbls: () => import('../../public/recon/compiled-zbls-algs.json'),
+};
 
 let currentSpeed = 30;
 const calcCubeSpeedLocal = (speed: number) =>
@@ -687,19 +696,38 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     solutionMethodsRef.current?.setSuggestions(newSuggestions, trueLineIndex);
   };
 
+  const refreshCurrentLineSuggestions = (enabled: Set<string>) => {
+    const [idIndex, lineIndex] = trueCaretRef.current;
+    if (idIndex !== 1) return;
+    const moves = allMovesRef.current[1];
+    if (moves[lineIndex]?.length === 0) {
+      handleEmptyLineSuggestions(moves, lineIndex, enabled);
+    }
+  };
+
+  const loadEnabledAlgsets = async (enabled: Set<string>) => {
+    const interpreter = cubeInterpreter.current;
+    if (!interpreter) return;
+
+    const toLoad = [...enabled].filter(name => ALGSET_LOADERS[name] && !interpreter.isAlgsetLoaded(name));
+    if (toLoad.length > 0) {
+      await Promise.all(toLoad.map(async name => {
+        const mod = await ALGSET_LOADERS[name]();
+        interpreter.addAlgset(name, mod.default.algorithms as Doc[] | CompiledLLAlg[]);
+      }));
+    }
+
+    refreshCurrentLineSuggestions(enabled);
+  };
+
   useEffect(() => {
     const handleSettingsChanged = () => {
-      const [idIndex, lineIndex] = trueCaretRef.current;
-      if (idIndex !== 1) return;
-      const moves = allMovesRef.current[1];
-      if (moves[lineIndex]?.length === 0) {
-        const freshEnabledAlgsets = new Set(Object.values(readSettingsFromCookie().algsets).flat());
-        handleEmptyLineSuggestions(moves, lineIndex, freshEnabledAlgsets);
-      }
+      const freshEnabledAlgsets = new Set(Object.values(readSettingsFromCookie().algsets).flat());
+      void loadEnabledAlgsets(freshEnabledAlgsets);
     };
     window.addEventListener('ao1kSettingsChanged', handleSettingsChanged);
     return () => window.removeEventListener('ao1kSettingsChanged', handleSettingsChanged);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- listens once at mount; handleEmptyLineSuggestions only closes over refs plus its own params
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- listens once at mount; loadEnabledAlgsets only closes over refs
   }, []);
 
   const trackMoves = useCallback(
@@ -1395,8 +1423,8 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   }
 
   const initializeCubeInterpreter = async () => {
-    const algDoc = await import('../../public/recon/compiled-exact-algs.json');
-    cubeInterpreter.current = new SimpleCubeInterpreter(algDoc.default.algorithms);
+    cubeInterpreter.current = new SimpleCubeInterpreter();
+    await loadEnabledAlgsets(enabledAlgsets);
     updateLineSteps();
 
     // initialize screenshot manager and warm up renderer
