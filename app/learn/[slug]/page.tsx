@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { lessons } from "../../../components/learn/lessons";
 import EO from "../../../components/learn/postContent/eo";
+import Keyhole from "../../../components/learn/postContent/keyhole";
 
 const lessonComponents: Record<string, React.ComponentType> = {
   eo: EO,
+  keyhole: Keyhole,
 };
 
 export function generateStaticParams() {

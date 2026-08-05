@@ -17,7 +17,7 @@ export default function EO() {
           <strong key="story-question">So. When is the right time to drink the potion?</strong>
         ]} />
         <p>{"Cubers are in a similar predicament."}</p>
-        <p>{"They can solve Edge Orientation (EO) right away and get a speed boost, but that stubborn step may cost them. You can delay and finish solving EO near the end, but then the solve is almost over already. Solving EO somewhere in the middle mixes the risks and benefits."}</p>
+        <p>{"They can solve Edge Orientation (EO) right away and get a speed boost, but that stubborn step may cost them. They can delay and finish solving EO near the end, but then the solve is almost over already. Solving EO somewhere in the middle mixes the risks and benefits."}</p>
         <p>{"But, what is EO?"}</p>
 
 
@@ -71,8 +71,8 @@ export default function EO() {
             <iframe src="/learn/eo_1.html" className="w-165 h-165 overflow-hidden scale-50 origin-top-left" />
           </div>
         </div>
-        <p>{`If we were forced to use `}<code>F</code> or <code> B </code>{`to solve it, that'd automatically make it a bad edge. So the edge has to be able to connect to the right or left center for it to be a good edge.`}</p>
-        <p>Thankfully, if we only allow <code>R U L D</code>{` moves, there's only so many places that each sticker on one edge can move to. The sticker's limited to certain "orbits". Let's look at how the sticker moves around. We'll color one sticker white and the other magenta. As you watch, remember that none of these moves change an edge's orientation.`}</p>
+        <p>{`If we were forced to use `}<code>F</code> or <code> B </code>{`to solve it, that'd automatically make it a bad edge. So the edge has to be able to connect to the right or left center using`} <code>R U L D</code> {` moves for it to be a good edge.`}</p>
+        <p>{`Thankfully, since we only checking how pieces move with `} <code>R U L D</code>{`, there's only so many places that each sticker on one edge can be. The sticker is limited to certain "orbits". Let's look at how the sticker moves around. We'll color one sticker white and the other magenta. As you watch, remember that none of these moves change an edge's orientation.`}</p>
         <div className="flex flex-row flex-wrap gap-8 pb-6 pt-2">
           <div className="flex flex-col gap-1">
             <span className="text-sm font-bold">Each location one-by-one</span>
@@ -93,18 +93,18 @@ export default function EO() {
         <p>{`Using this new orbit knowledge, we can make some statements about F2L edges and recognizing EO:`}</p>
         <LessonList
           items={[
-            "**If using white orbit, match L or R**: If a sticker in the white orbit matches the left or right center color, it will connect to that center, so it's a good F2L edge.",
-            "**If using magenta orbit, match F or B**: If a sticker in the magenta orbit matches the front or back center color, it will connect to the left or right center, so it's a good F2L edge."
+            "If a sticker in the **white** orbit matches the **L or R** center color, it's a good F2L edge.",
+            "If a sticker in the **magenta** orbit matches the **F or B** center color, it's a good F2L edge."
           ]}
         />
         <p>{`With the magenta orbit, we're basically making the opposite statement compared to the white orbit. This makes sense, since if one sticker connects to the left or right center, the other must not.`}</p>
-        <p>{"So which orbit do you use to recognize orientation? It's up to you. From the image above, you can see that the magenta orbit is more visible for top edges. For edges in between the top and bottom layers, the white orbit is more visible."}</p>
-        <p>{`Let's see all this theory in action.`}</p>
+        <p>{"So which orbit do you use to recognize orientation? It's up to you. From the image above, you can see that the magenta orbit is more visible for top edges. For edges on the left or right sides, the white orbit is more visible."}</p>
+        <p>{`If this is a bit confusing, don't worry. We'll go through some examples next. By the end of the lesson, you'll see several ways your new EO knowledge can help speed up your solves.`}</p>
 
         <h2>F2L EO examples</h2>
         <p>{"Find the red-green edge on the cube below. Is it good or bad?"}</p>
         <p>{"Let's use the magenta orbit. The sticker on this edge that is within the magenta orbit is green. Green matches the front center color. That's enough to tell you it's a good edge, as long as you know that you're looking at an F2L edge."}</p>
-        <p>{"We can confirm it's good by solving it with"} <code>RULD</code>{" moves. Click the play button below."}</p>
+        <p>{"We can confirm it's good by solving it with"} <code>R U L D</code>{" moves. Click the play button below."}</p>
         <div className="flex flex-row flex-wrap gap-8 pb-6 pt-2">
           <div className="flex flex-col gap-1">
             <span className="text-sm font-bold">Good or bad?</span>
