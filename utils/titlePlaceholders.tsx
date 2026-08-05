@@ -32,7 +32,7 @@ export const titlePlaceholders = [
   "Fingertricks take time",
   "There's always more F2L to learn!",
   "Drill A perms with the AUF and regrip included",
-  "Move notation is an abstraction. Fingertricks are ground truth.",
+  "Move notation is fake, fingertricks are real!",
   "Learn keyhole!",
   "Learn EO!",
   "Learn fingertricks from videos!", // remove if/when fingertrick info added
@@ -106,7 +106,7 @@ export const titlePlaceholders = [
   "SVGs are cool!",
   "Thanks Ari", // for helping me test Mac shortcuts that one time
   "Never code at 2 am",
-  "Now 12% messier code!",
+  "Now 13% messier code!",
   "Spacebar optional!",
   "Remove the title. It's cleaner.",
   "That one's actually just a bug. Sorry.", 
