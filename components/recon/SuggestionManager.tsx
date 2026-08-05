@@ -220,13 +220,15 @@ export function SuggestionManager({
         handleSuggestionAccept={onAcceptSuggestion}
         handleSuggestionReject={onRejectSuggestion}
       />
-      <SuggestionGhost
-        remaining={remaining}
-        showTabHint={showTabHint}
-        left={caretLeft}
-        top={caretTop}
-        height={caretHeight}
-      />
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <SuggestionGhost
+          remaining={remaining}
+          showTabHint={showTabHint}
+          left={caretLeft}
+          top={caretTop}
+          height={caretHeight}
+        />
+      </div>
     </>,
     overlayElement,
   );

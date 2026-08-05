@@ -106,9 +106,8 @@ export const SuggestionBox = ({suggestions, topOffset, leftOffset, handleSuggest
       id="suggestion-box"
       className="absolute z-40 flex flex-col"
       style={{
-        top: topOffset,
+        top: `min(calc(${topOffset}px - var(--solution-scroll-top, 0px)), 100%)`,
         left: leftOffset,
-        transform: 'translateY(calc(0px - var(--solution-scroll-top, 0px)))',
       }}
     >
     {
