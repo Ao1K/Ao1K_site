@@ -27,10 +27,6 @@ export interface F2lCaseConfig {
   // yTurns; null until located). a y turn rotates these locations along with the cube.
   corner: CornerPlacement | null;
   edge: EdgePlacement | null;
-  // whether each orientation step is done. orientation 0 is valid, so the value can't tell us
-  // if the user acted; and it's sticky across step nav, so it can't be re-derived from `step`.
-  cornerOriDone: boolean;
-  edgeOriDone: boolean;
   // F2L slots already filled with solved context pairs
   filledSlots: F2lSlot[];
   // Full EO: literal-frame free edge locations marked bad (flipped). null when the optional
@@ -45,8 +41,6 @@ export const DEFAULT_F2L_CONFIG: F2lCaseConfig = {
   yTurns: BASELINE_Y_TURNS,
   corner: null,
   edge: null,
-  cornerOriDone: false,
-  edgeOriDone: false,
   filledSlots: [],
   fullEO: null,
 };
@@ -54,13 +48,26 @@ export const DEFAULT_F2L_CONFIG: F2lCaseConfig = {
 // step indices, named for clarity
 export const STEP = {
   ORIENT: 0,
-  CORNER_LOC: 1,
-  CORNER_ORI: 2,
-  EDGE_LOC: 3,
-  EDGE_ORI: 4,
-  SLOTS: 5,
-  FULL_EO: 6,
+  F2L: 1,
+  SLOTS: 2,
+  EO: 3,
 } as const;
+
+// Slots and EO are only reachable once both pair pieces are placed
+export const isF2lConfigured = (config: F2lCaseConfig): boolean =>
+  config.corner != null && config.edge != null;
+
+// a slot can hold a solved context pair unless it is the selected pair's home, or one of the
+// placed pair pieces already sits in it
+export function isSlotFillable(
+  slot: F2lSlot,
+  cornerLoc: CornerLocation | null | undefined,
+  edgeLoc: EdgeLocation | null | undefined,
+  homeSlot: F2lSlot | null,
+): boolean {
+  const pieces = F2L_SLOT_PIECES[slot];
+  return slot !== homeSlot && cornerLoc !== pieces.corner && edgeLoc !== pieces.edge;
+}
 
 // diagram order: index → location (see CubeRefDiagram comments)
 const CORNER_LOCS: CornerLocation[] = ['UFR', 'UBR', 'UBL', 'UFL', 'DFR', 'DBR', 'DBL', 'DFL'];
@@ -142,11 +149,7 @@ export function isValidChar(i: number, ch: string, ctx?: SlotContext): boolean {
     case 9: {
       if (n !== 0 && n !== 1) return false;
       if (n === 0 || !ctx) return true;
-      const slot = F2L_SLOT_ORDER[i - 6];
-      if (slot === ctx.homeSlot) return false;
-      if (ctx.cornerLoc === F2L_SLOT_PIECES[slot].corner) return false;
-      if (ctx.edgeLoc === F2L_SLOT_PIECES[slot].edge) return false;
-      return true;
+      return isSlotFillable(F2L_SLOT_ORDER[i - 6], ctx.cornerLoc, ctx.edgeLoc, ctx.homeSlot);
     }
     default:
       // Full EO bits: at most seven free edges (positions 10–16), each 0 (good) or 1 (bad)
@@ -176,20 +179,17 @@ export function rawToConfig(raw: string, cross?: FaceKey, pair?: [FaceKey, FaceK
   if (len < 2) return null;
 
   const y = parseInt(raw[1]);
-  const config: F2lCaseConfig = { ...DEFAULT_F2L_CONFIG, yTurns: y, step: STEP.CORNER_LOC };
+  const config: F2lCaseConfig = { ...DEFAULT_F2L_CONFIG, yTurns: y, step: STEP.F2L };
   if (len < 3) return config;
 
   config.corner = { loc: CORNER_LOCS[parseInt(raw[2])], orientation: len >= 4 ? parseInt(raw[3]) as CornerOrientation : 0 };
-  config.cornerOriDone = len >= 4;
-  config.step = len >= 4 ? STEP.EDGE_LOC : STEP.CORNER_ORI;
   if (len < 5) return config;
 
   const edgeLoc = EDGE_LOCS[parseInt(raw[4])];
   const edgeOri = len >= 6 ? parseInt(raw[5]) : 0;
   config.edge = { loc: edgeLoc, orientation: edgeOri as EdgeOrientation };
-  config.edgeOriDone = len >= 6;
-  config.step = len >= 6 ? STEP.SLOTS : STEP.EDGE_ORI;
   if (len < 6) return config;
+  config.step = STEP.SLOTS;
 
   // apply each typed slot bit independently so partial slot input updates the cube right away
   config.filledSlots = [];
@@ -199,7 +199,7 @@ export function rawToConfig(raw: string, cross?: FaceKey, pair?: [FaceKey, FaceK
   if (len <= 10) return config;
 
   // Full EO bits (positions 10+), in the same view order configToRaw emits them
-  config.step = STEP.FULL_EO;
+  config.step = STEP.EO;
   config.fullEO = [];
   const freeEdges = freeEoEdgesInViewOrder(config);
   for (let i = 0; i < freeEdges.length && 10 + i < len; i++) {

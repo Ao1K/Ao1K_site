@@ -3,11 +3,11 @@
 // A single F2L suggestion: pair icon, the alg, copy / favorite / play controls, and an
 // optional step-by-step breakdown dropdown. Styled after recon's SuggestionCard.
 
-import { JSX, useMemo, useRef, useState } from 'react';
+import { Fragment, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { type StepInfo, type F2LDirection } from '../../composables/recon/SimpleCubeInterpreter';
 import { ORIENTATIONS, FACE_COLOR_NAME, type FaceKey } from '../../composables/algs/cubePaint';
-import { SimpleCube } from '../../composables/recon/SimpleCube';
+import { SimpleCube, type CubeState, type Color } from '../../composables/recon/SimpleCube';
 import { tokenize } from '../../composables/algs/algMoves';
 import {
   getStepIconDescriptor,
@@ -15,8 +15,14 @@ import {
   type IconDescriptor,
   type SvgShape,
 } from '../../composables/recon/stepIconDescriptors';
-import { labelF2lAlg } from '../../composables/algs/f2lLabeling';
+import {
+  labelF2lAlg,
+  UNINFORMATIVE_LABELS,
+  type F2lGroupName,
+  type F2lSegment,
+} from '../../composables/algs/f2lLabeling';
 import PlayIcon from '../icons/play';
+import StopIcon from '../icons/stop';
 import CopyIcon from '../icons/copy';
 import DropdownIcon from '../icons/dropdown';
 import Parrot from '../icons/parrot';
@@ -26,12 +32,18 @@ interface F2lAlgCardProps {
   // the interpreter's step labels for this suggestion (used to draw the pair icon)
   steps: string[];
   cross: FaceKey;
+  // the case position the alg starts from, used to trace the solution's breakpoints
+  caseState: CubeState | null;
+  pairColors: [Color, Color];
   // net quarter turns of the preview about the vertical axis
   yTurns: number;
   colorConfig: ColorConfig;
   isPlaying: boolean;
+  // index of the alg move to highlight while it animates, or -1 for none
+  highlightedMove: number;
   isFavorited: boolean;
-  onPlay: () => void;
+  // the card picks the form to animate: the alg, or the breakdown's split-up moves when open
+  onPlay: (playbackAlg: string) => void;
   onToggleFavorite: () => void;
 }
 
@@ -117,21 +129,36 @@ function focusSiblingCard(current: HTMLElement, direction: 1 | -1) {
   cards[index + direction]?.focus();
 }
 
-// renders a segment label, turning the term "EO" into a link to its lesson
-function renderLabel(label: string) {
-  const idx = label.indexOf('EO');
-  if (idx === -1) return label;
+// terms that link to their lesson wherever they appear in a segment label or group name
+const TERM_LESSONS: Record<string, string> = {
+  EO: '/learn/eo',
+  Keyhole: '/learn/keyhole',
+  Commutator: 'https://www.speedsolving.com/wiki/index.php/Commutators_and_Conjugates',
+  Conjugate: 'https://www.speedsolving.com/wiki/index.php/Commutators_and_Conjugates',
+};
+
+const TERM_PATTERN = new RegExp(`\\b(${Object.keys(TERM_LESSONS).join('|')})\\b`);
+
+function renderTerms(text: string) {
+  const parts = text.split(TERM_PATTERN);
+  if (parts.length === 1) return text;
   return (
     <>
-      {label.slice(0, idx)}
-      <Link
-        href="/learn/eo"
-        target="_blank"
-        className="text-primary-200 underline underline-offset-2 hover:text-primary-300"
-      >
-        EO
-      </Link>
-      {label.slice(idx + 2)}
+      {parts.map((part, i) =>
+        i % 2 === 1 ? (
+          <Link
+            key={i}
+            href={TERM_LESSONS[part]}
+            target="_blank"
+            rel='noopener noreferrer'
+            className="text-primary-200 underline underline-offset-2 hover:text-primary-300"
+          >
+            {part}
+          </Link>
+        ) : (
+          part
+        ),
+      )}
     </>
   );
 }
@@ -139,14 +166,86 @@ function renderLabel(label: string) {
 const iconButtonClass =
   'shrink-0 text-neutral-500 hover:text-neutral-200 focus-visible:outline-none';
 
-const F2lAlgCard = ({ alg, steps, cross, yTurns, colorConfig, isPlaying, isFavorited, onPlay, onToggleFavorite }: F2lAlgCardProps) => {
+const moveHighlightClass = 'text-dark bg-primary-100 rounded-xs shadow-[0_0_0_2px_var(--color-primary-100)]';
+
+function MoveList({ moves, indices, highlighted }: { moves: string[]; indices?: number[]; highlighted: number }) {
+  return (
+    <>
+      {moves.map((move, i) => (
+        <Fragment key={i}>
+          {i > 0 ? ' ' : ''}
+          <span className={highlighted >= 0 && (indices ? indices[i] : i) === highlighted ? moveHighlightClass : ''}>
+            {move}
+          </span>
+        </Fragment>
+      ))}
+    </>
+  );
+}
+
+interface BreakdownLine {
+  segment: F2lSegment;
+  // where this segment's moves sit in the breakdown's own move order
+  positions: number[];
+}
+
+interface BreakdownRow {
+  name?: F2lGroupName;
+  lines: BreakdownLine[];
+}
+
+function SegmentRow({ segment, positions, playingBreakdown, highlighted }: BreakdownLine & {
+  playingBreakdown: boolean;
+  highlighted: number;
+}) {
+  return (
+    <div className="flex items-baseline justify-between gap-3">
+      <span className="font-medium tracking-normal text-neutral-300" style={{ wordSpacing: '8px' }}>
+        <MoveList
+          moves={segment.moves}
+          indices={playingBreakdown ? positions : segment.rawIndices ?? []}
+          highlighted={highlighted}
+        />
+      </span>
+      {segment.label && <span className="shrink-0 text-sm text-neutral-300">{renderTerms(segment.label)}</span>}
+    </div>
+  );
+}
+
+const F2lAlgCard =({ alg, steps, cross, caseState, pairColors, yTurns, colorConfig, isPlaying, highlightedMove, isFavorited, onPlay, onToggleFavorite }: F2lAlgCardProps) => {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [parrotAnimating, setParrotAnimating] = useState(false);
+  const [playingBreakdown, setPlayingBreakdown] = useState(false);
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const segments = useMemo(() => labelF2lAlg(alg), [alg]);
-  const hasDropdown = segments !== null;
+  const labeled = useMemo(() => labelF2lAlg(alg, caseState, pairColors), [alg, caseState, pairColors]);
+  const hasNotableDropdown = !!labeled?.some((row) =>
+    row.segments.some((segment) => segment.label !== undefined && !UNINFORMATIVE_LABELS.has(segment.label))
+  );
+
+  const tokens = useMemo(() => tokenize(alg), [alg]);
+  const showsBreakdown = hasNotableDropdown && open;
+
+  const breakdown = useMemo(() => {
+    const rows: BreakdownRow[] = [];
+    const moves: string[] = [];
+    const toToken: number[] = [];
+    for (const row of labeled ?? []) {
+      const lines: BreakdownLine[] = [];
+      for (const segment of row.segments) {
+        lines.push({ segment, positions: segment.moves.map((_, i) => moves.length + i) });
+        moves.push(...segment.moves);
+        toToken.push(...(segment.rawIndices ?? []));
+      }
+      rows.push({ name: row.name, lines });
+    }
+    return { rows, playbackAlg: moves.join(' '), toToken };
+  }, [labeled]);
+
+  // the index counts moves in whichever form is animating, so translate it for the other one
+  const highlighted = isPlaying ? highlightedMove : -1;
+  const highlightedToken = playingBreakdown ? breakdown.toToken[highlighted] ?? -1 : highlighted;
 
   // rotate the pair icon by the view angle plus the alg's own net rotation
   const algTurns = useMemo(() => netAlgYTurns(alg), [alg]);
@@ -161,7 +260,8 @@ const F2lAlgCard = ({ alg, steps, cross, yTurns, colorConfig, isPlaying, isFavor
   };
 
   const handlePlay = () => {
-    onPlay();
+    setPlayingBreakdown(showsBreakdown);
+    onPlay(showsBreakdown ? breakdown.playbackAlg : alg);
   };
 
   const handleToggleFavorite = () => {
@@ -196,7 +296,7 @@ const F2lAlgCard = ({ alg, steps, cross, yTurns, colorConfig, isPlaying, isFavor
 
   const handleCardClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if ((event.target as HTMLElement).closest('button, a')) return;
-    if (hasDropdown) setOpen((prev) => !prev);
+    if (hasNotableDropdown) setOpen((prev) => !prev);
   };
 
   return (
@@ -223,7 +323,9 @@ const F2lAlgCard = ({ alg, steps, cross, yTurns, colorConfig, isPlaying, isFavor
           })}
         </span>
 
-        <span className="grow min-w-0 text-primary-100 tracking-wide wrap-break-word text-md">{alg}</span>
+        <span className="grow min-w-0 text-primary-100 tracking-wide wrap-break-word text-md">
+          <MoveList moves={tokens} highlighted={showsBreakdown ? -1 : highlightedToken} />
+        </span>
 
         <span className="relative flex shrink-0 items-center">
           {copied && (
@@ -262,32 +364,53 @@ const F2lAlgCard = ({ alg, steps, cross, yTurns, colorConfig, isPlaying, isFavor
 
         <button
           type="button"
-          aria-label="Play alg"
-          title="Play alg"
+          aria-label={isPlaying ? 'Stop alg' : 'Play alg'}
+          title={isPlaying ? 'Stop alg' : 'Play alg'}
           className={`${iconButtonClass} ${isPlaying ? 'text-primary-400' : ''}`}
           onClick={handlePlay}
         >
-          <PlayIcon />
+          {isPlaying ? <StopIcon className="translate-x-[0.13em]" /> : <PlayIcon />}
         </button>
 
         <div
           id="dropdown-btn"
           aria-label={open ? 'Hide breakdown' : 'Show breakdown'}
           aria-expanded={open}
-          className={`iconButtonClass ${hasDropdown? 'visible' : 'invisible'}`}
+          className={`iconButtonClass ${hasNotableDropdown? 'visible' : 'invisible'}`}
         >
-          <DropdownIcon className={`text-lg transition-transform ${open ? 'rotate-180' : ''}`} />
+          <DropdownIcon className={`text-lg transition-transform duration-300 ${open ? '' : 'rotate-180'}`} />
         </div>
       </div>
 
-      {hasDropdown && open && (
+      {showsBreakdown && (
         <div className="flex flex-col gap-1 border-t border-neutral-600 group-hover:border-neutral-500 font-medium px-2 py-1.5">
-          {segments!.map((segment, i) => (
-            <div key={i} className="flex items-baseline justify-between gap-3">
-              <span className="font-medium tracking-normal text-neutral-300" style={{wordSpacing: '8px'}}>{segment.moves.join(' ')}</span>
-              {segment.label && <span className="shrink-0 text-sm text-neutral-300">{renderLabel(segment.label)}</span>}
-            </div>
-          ))}
+          {breakdown.rows.map((row, i) =>
+            row.name === undefined ? (
+              <SegmentRow
+                key={i}
+                {...row.lines[0]}
+                playingBreakdown={playingBreakdown}
+                highlighted={highlighted}
+              />
+            ) : (
+              <fieldset
+                key={i}
+                className="rounded-sm border border-neutral-700 group-hover:border-neutral-600 px-2 pb-1"
+              >
+                <legend className="px-1 text-xs tracking-wide text-neutral-400">{renderTerms(row.name)}</legend>
+                <div className="flex flex-col gap-1">
+                  {row.lines.map((line, j) => (
+                    <SegmentRow
+                      key={j}
+                      {...line}
+                      playingBreakdown={playingBreakdown}
+                      highlighted={highlighted}
+                    />
+                  ))}
+                </div>
+              </fieldset>
+            ),
+          )}
         </div>
       )}
     </div>

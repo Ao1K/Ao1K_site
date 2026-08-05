@@ -62,7 +62,7 @@ function Dropdown({ open, onToggle, triggerIcon, children }: DropdownProps) {
         className="flex items-center gap-1 px-1.5 py-1 rounded-sm border border-neutral-600 bg-dark hover:border-neutral-500"
       >
         {triggerIcon}
-        <CaretDownIcon className={`text-primary-100 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <CaretDownIcon className={`text-primary-100 transition-transform duration-300 ${open ? '' : 'rotate-180'}`} />
       </button>
       {open && (
         <div className="absolute z-50 left-0 top-full flex flex-col rounded-sm border border-neutral-600 bg-dark shadow-lg">

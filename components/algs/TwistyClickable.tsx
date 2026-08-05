@@ -58,10 +58,10 @@ export interface TwistyClickableHandle {
 }
 
 // how fast playback runs, and how long the solved view is held before resetting
-const PLAYBACK_TEMPO = 2;
-const PLAYBACK_HOLD_MS = 500;
+const PLAYBACK_TEMPO = 1;
+const PLAYBACK_HOLD_MS = 1000;
 // fallback in case the player never reports playback finishing
-const PLAYBACK_SAFETY_MS = 10000;
+const PLAYBACK_SAFETY_MS = 15000;
 
 interface TwistyClickableProps {
   cross?: FaceKey;
@@ -83,6 +83,8 @@ interface TwistyClickableProps {
   onLocationClick?: (click: LocationClick) => void;
   // fired once playback has finished and the cube has returned to the case
   onPlaybackEnd?: () => void;
+  // index of the alg move currently animating, or -1 while nothing is playing
+  onHighlightMove?: (moveIndex: number) => void;
   ref?: React.Ref<TwistyClickableHandle>;
 }
 
@@ -90,7 +92,7 @@ const ORBITS: PieceType[] = ['CORNERS', 'EDGES', 'CENTERS'];
 
 const hexString = (hex: number) => `#${hex.toString(16).padStart(6, '0')}`;
 
-const TwistyClickable = ({ cross = 'up', pair, corner, edge, filledSlots, highlightedPieces, eoActive, badEdges, yTurns, onLocationClick, onPlaybackEnd, ref }: TwistyClickableProps) => {
+const TwistyClickable = ({ cross = 'up', pair, corner, edge, filledSlots, highlightedPieces, eoActive, badEdges, yTurns, onLocationClick, onPlaybackEnd, onHighlightMove, ref }: TwistyClickableProps) => {
   const [cubeColors] = useCubeColors();
   const [elevation] = useHintFaceletsElevation();
   // cleared once the custom scene is built, so the cube fades in instead of a black box
@@ -131,6 +133,7 @@ const TwistyClickable = ({ cross = 'up', pair, corner, edge, filledSlots, highli
   // (synced from the prop effect below)
   const yTurnsRef = useRef(yTurns);
   const onPlaybackEndRef = useRef(onPlaybackEnd);
+  const onHighlightMoveRef = useRef(onHighlightMove);
 
   // bumped on every (re)start so stale animation/timer callbacks can bail out
   const playbackTokenRef = useRef(0);
@@ -493,8 +496,9 @@ const TwistyClickable = ({ cross = 'up', pair, corner, edge, filledSlots, highli
     badEdgesRef.current = badEdges;
     yTurnsRef.current = yTurns;
     onPlaybackEndRef.current = onPlaybackEnd;
+    onHighlightMoveRef.current = onHighlightMove;
     recomputeOverrides();
-  }, [cross, cubeColors, pair, corner, edge, filledSlots, highlightedPieces, eoActive, badEdges, yTurns, onPlaybackEnd]);
+  }, [cross, cubeColors, pair, corner, edge, filledSlots, highlightedPieces, eoActive, badEdges, yTurns, onPlaybackEnd, onHighlightMove]);
 
   // reposition/toggle hint facelets and reframe the camera when the elevation setting changes
   useEffect(() => {
@@ -511,6 +515,7 @@ const TwistyClickable = ({ cross = 'up', pair, corner, edge, filledSlots, highli
   // tears down any in-flight playback (timers + model listeners) and invalidates callbacks
   const stopPlayback = () => {
     playbackTokenRef.current++;
+    onHighlightMoveRef.current?.(-1);
     if (playbackTimerRef.current) {
       clearTimeout(playbackTimerRef.current);
       playbackTimerRef.current = null;
@@ -526,6 +531,7 @@ const TwistyClickable = ({ cross = 'up', pair, corner, edge, filledSlots, highli
   const showCase = () => {
     const player = playerRef.current;
     if (!player) return;
+    player.pause();
     player.alg = '';
     player.jumpToStart();
   };
@@ -564,9 +570,16 @@ const TwistyClickable = ({ cross = 'up', pair, corner, edge, filledSlots, highli
       let seenPlaying = false;
       let safety: ReturnType<typeof setTimeout>;
 
+      function onLeaves(info: { patternIndex: number }) {
+        if (token !== playbackTokenRef.current) return;
+        onHighlightMoveRef.current?.(info.patternIndex);
+      }
+
       function finish() {
         if (token !== playbackTokenRef.current) return;
         model.playingInfo.removeFreshListener(onPlaying);
+        model.currentLeavesSimplified.removeFreshListener(onLeaves);
+        onHighlightMoveRef.current?.(-1);
         clearTimeout(safety);
         playbackCleanupRef.current = null;
         // hold the solved view, then return to the case
@@ -588,11 +601,13 @@ const TwistyClickable = ({ cross = 'up', pair, corner, edge, filledSlots, highli
       }
 
       model.playingInfo.addFreshListener(onPlaying);
+      model.currentLeavesSimplified.addFreshListener(onLeaves);
       safety = setTimeout(() => {
         if (token === playbackTokenRef.current) finish();
       }, PLAYBACK_SAFETY_MS);
       playbackCleanupRef.current = () => {
         model.playingInfo.removeFreshListener(onPlaying);
+        model.currentLeavesSimplified.removeFreshListener(onLeaves);
         clearTimeout(safety);
       };
 

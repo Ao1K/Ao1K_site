@@ -84,6 +84,9 @@ const read = (): FavoriteAlg[] => {
   return cachedValue;
 };
 
+// snapshot for non-reactive callers (event handlers that need the current list at call time)
+export const readFavorites = (): FavoriteAlg[] => read();
+
 const listeners = new Set<() => void>();
 
 const subscribe = (callback: () => void): (() => void) => {
@@ -115,12 +118,6 @@ const toggle = (favorites: FavoriteAlg[], alg: string): FavoriteAlg[] =>
     ? favorites.filter((f) => f.alg !== alg)
     : [...favorites, { alg, status: DEFAULT_STATUS }];
 
-// add without toggling: a no-op if the alg is already saved
-const add = (favorites: FavoriteAlg[], alg: string): FavoriteAlg[] =>
-  favorites.some((f) => f.alg === alg)
-    ? favorites
-    : [...favorites, { alg, status: DEFAULT_STATUS }];
-
 const setStatus = (favorites: FavoriteAlg[], alg: string, status: AlgStatus): FavoriteAlg[] =>
   favorites.map((f) => (f.alg === alg ? { ...f, status } : f));
 
@@ -128,12 +125,18 @@ const setStatus = (favorites: FavoriteAlg[], alg: string, status: AlgStatus): Fa
 const setAlgset = (favorites: FavoriteAlg[], alg: string, algset: string): FavoriteAlg[] =>
   favorites.map((f) => (f.alg === alg ? { ...f, algset: algset || undefined } : f));
 
-// rewrite an alg in place, keeping its status and algset. A duplicate of an already saved alg is dropped.
-const setAlgText = (favorites: FavoriteAlg[], alg: string, nextAlg: string): FavoriteAlg[] => {
-  if (nextAlg === '' || nextAlg === alg) return favorites;
-  return favorites
-    .map((f) => (f.alg === alg ? { ...f, alg: nextAlg } : f))
-    .filter((f, i, list) => list.findIndex((other) => other.alg === f.alg) === i);
+// Rewrite an alg in place, keeping its status and algset.
+// If rewrite matches an existing alg, that old existing is dropped.
+const setAlgText = (favorites: FavoriteAlg[], alg: string, nextAlg: string): { favorites: FavoriteAlg[]; replaced: boolean } => {
+  if (nextAlg === '' || nextAlg === alg) return { favorites, replaced: false };
+  if (!favorites.some((f) => f.alg === alg)) return { favorites, replaced: false };
+  const replaced = favorites.some((f) => f.alg === nextAlg);
+  return {
+    favorites: favorites
+      .filter((f) => f.alg !== nextAlg)
+      .map((f) => (f.alg === alg ? { ...f, alg: nextAlg } : f)),
+    replaced,
+  };
 };
 
 const remove = (favorites: FavoriteAlg[], alg: string): FavoriteAlg[] =>
@@ -147,10 +150,21 @@ export function useAlgFavorites() {
   const favorites = useSyncExternalStore(subscribe, read, getServerSnapshot);
 
   const toggleFavorite = useCallback((alg: string) => write(toggle(read(), alg)), []);
-  const addFavorite = useCallback((alg: string) => write(add(read(), alg)), []);
+  // returns false when the alg is already saved, so callers can report the no-op
+  const addFavorite = useCallback((alg: string): boolean => {
+    const current = read();
+    if (current.some((f) => f.alg === alg)) return false;
+    write([...current, { alg, status: DEFAULT_STATUS }]);
+    return true;
+  }, []);
   const setFavoriteStatus = useCallback((alg: string, status: AlgStatus) => write(setStatus(read(), alg, status)), []);
   const setFavoriteAlgset = useCallback((alg: string, algset: string) => write(setAlgset(read(), alg, algset)), []);
-  const setFavoriteAlg = useCallback((alg: string, nextAlg: string) => write(setAlgText(read(), alg, nextAlg)), []);
+  // returns true when the rename dropped an already saved copy of nextAlg
+  const setFavoriteAlg = useCallback((alg: string, nextAlg: string): boolean => {
+    const { favorites: next, replaced } = setAlgText(read(), alg, nextAlg);
+    write(next);
+    return replaced;
+  }, []);
   const removeFavorite = useCallback((alg: string) => write(remove(read(), alg)), []);
 
   const isFavorite = useCallback((alg: string) => favorites.some((f) => f.alg === alg), [favorites]);

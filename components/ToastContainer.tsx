@@ -1,6 +1,7 @@
 'use client';
 
-import { useToasts, dismissToastPermanently } from '../composables/toast';
+import { useToasts, dismissToast, dismissToastPermanently } from '../composables/toast';
+import CloseIcon from './icons/close';
 
 export default function ToastContainer() {
   const toasts = useToasts();
@@ -24,6 +25,16 @@ export default function ToastContainer() {
               className="shrink-0 text-xs text-neutral-500 hover:text-primary-800 whitespace-nowrap"
             >
               Don&apos;t show again
+            </button>
+          )}
+          {toast.closable && (
+            <button
+              type="button"
+              onClick={() => dismissToast(toast.id)}
+              aria-label="Dismiss"
+              className="shrink-0 -mr-1.5 p-1 text-neutral-500 hover:text-primary-800"
+            >
+              <CloseIcon />
             </button>
           )}
         </div>

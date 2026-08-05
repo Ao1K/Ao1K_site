@@ -25,6 +25,9 @@ const cleanAlg = (alg: string): string => alg.trim().replace(/\s+/g, ' ');
 const moveCount = (alg: string): number =>
   cleanAlg(alg).split(' ').filter((move) => /[^xyz2']/.test(move)).length;
 
+const dateStamp = (d: Date): string =>
+  `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+
 const csvEscape = (value: string): string =>
   /[",\n\r]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
 
@@ -53,7 +56,7 @@ const triggerDownload = (blob: Blob, filename: string) => {
 
 export const downloadFavoritesCsv = (favorites: FavoriteAlg[]) => {
   const blob = new Blob([favoritesToCsv(favorites)], { type: 'text/csv;charset=utf-8;' });
-  triggerDownload(blob, 'your-algs.csv');
+  triggerDownload(blob, `YourAlgs_${dateStamp(new Date())}.csv`);
 };
 
 const escapeHtml = (value: string): string =>
@@ -81,7 +84,9 @@ const algIconSvg = (c: AlgClassification, alg: string, cubeColors: CubeColors, l
 };
 
 const buildPrintHtml = (favorites: FavoriteAlg[], cubeColors: CubeColors): string => {
-  const date = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+  const now = new Date();
+  const date = now.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+  const stamp = dateStamp(now);
   const count = favorites.length;
   // absolute URL so the logo resolves inside the blob-URL document; onload waits for it before printing
   const logoUrl = `${window.location.origin}/Ao1K-Logo-v2.svg`;
@@ -112,12 +117,12 @@ const buildPrintHtml = (favorites: FavoriteAlg[], cubeColors: CubeColors): strin
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Your Algs</title>
+<title>YourAlgs_${stamp}</title>
 <style>
   * { box-sizing: border-box; }
   body { font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; color: #1a1a1a; margin: 2.5rem; }
-  h1 { display: flex; align-items: center; gap: 0.6rem; font-size: 1.6rem; margin: 0 0 0.25rem; }
-  h1 .logo { height: 2.2rem; width: auto; margin-right: -1rem; transform: translateY(-1px); }
+  h1 { font-size: 1.6rem; line-height: 2.2rem; white-space: nowrap; margin: 0 0 0.25rem; }
+  h1 .logo { height: 2.2rem; width: auto; margin: 0 -0.4rem 0 0.6rem; vertical-align: -0.54rem; vertical-align: calc(0.5cap - 1.1rem - 0.5px); }
   .meta { color: #666; font-size: 0.85rem; margin: 0 0 1.5rem; }
   /* each group is a table; tables may break across pages so a long group flows on instead of
      jumping to a new page, and the thead heading repeats at the top of each page it spans */

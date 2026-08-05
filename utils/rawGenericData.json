@@ -2748,8 +2748,6 @@
   {"new":false,"value":"S R' U' R U R S' U R U' R'","step":"zbls","name":"","add_y":false,"add_U":true},
   {"new":false,"value":"F R' F' R S U R U' R' S'","step":"zbls","name":"","add_y":false,"add_U":true},
   {"new":false,"value":"R U' R U B U' B' R2","step":"zbls","name":"","add_y":false,"add_U":true},
-  {"new":false,"value":"r' F r","step":"zbls","name":"","add_y":false,"add_U":true},
-  {"new":false,"value":"r' F2 r","step":"zbls","name":"","add_y":false,"add_U":true},
   {"new":false,"value":"r' F' r U2 r U' r' F","step":"zbls","name":"","add_y":false,"add_U":true},
   {"new":false,"value":"r U' r' F","step":"zbls","name":"","add_y":false,"add_U":true},
   {"new":false,"value":"S r' F r S'","step":"zbls","name":"","add_y":false,"add_U":true},

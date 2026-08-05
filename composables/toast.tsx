@@ -11,6 +11,7 @@ export interface Toast {
   icon?: ReactNode;
   message: ReactNode;
   dismissKey?: string;
+  closable: boolean;
   duration: number;
 }
 
@@ -18,6 +19,8 @@ export interface ToastOptions {
   icon?: ReactNode;
   message: ReactNode;
   dismissKey?: string;
+  // shows an X that dismisses this toast only; on unless explicitly disabled
+  closable?: boolean;
   duration?: number;
   addMethod?: ToastMethod;
 }
@@ -99,7 +102,14 @@ export const showToast = (options: ToastOptions): number | null => {
     });
   }
 
-  toasts = [...remaining, { id, icon: options.icon, message: options.message, dismissKey: options.dismissKey, duration }];
+  toasts = [...remaining, {
+    id,
+    icon: options.icon,
+    message: options.message,
+    dismissKey: options.dismissKey,
+    closable: options.closable ?? true,
+    duration,
+  }];
   emit();
 
   if (duration > 0) {

@@ -17,6 +17,8 @@ import {
   combineAuf,
 } from '../../utils/canonicalizeAuf';
 import { combineMoves } from '../../utils/moveUtils';
+import { rankSuggestions, suggestionRank } from './suggestionRanking';
+import type { SavedAlgKeys } from './suggestionRanking';
 
 export interface Suggestion {
   alg: string;
@@ -25,6 +27,7 @@ export interface Suggestion {
   name?: string;
   hasEOsolved?: boolean;
   frequency?: number;
+  algset?: string;
 }
 
 interface F2LPairQuery {
@@ -32,14 +35,10 @@ interface F2LPairQuery {
   pairColors: [string, string];
   q: number;
   isTopLayer: boolean;
-  isFinalPair: boolean;
+  isZBLSrelevant: boolean;
 }
 
 export type AlgsetFilter = ReadonlySet<string> | 'all';
-
-function isAlgsetEnabled(filter: AlgsetFilter, name: string): boolean {
-  return filter === 'all' || filter.has(name);
-}
 
 type ColorName = 'white' | 'yellow' | 'red' | 'orange' | 'green' | 'blue';
 type DirectionChar = 'U' | 'D' | 'L' | 'R' | 'F' | 'B';
@@ -149,6 +148,7 @@ export class SimpleCubeInterpreter {
   private LLsuggester: LLsuggester | null = null;
   private enabledAlgsets: AlgsetFilter = 'all';
   private handedness: Handedness = 'right';
+  private savedAlgs: SavedAlgKeys | undefined = undefined;
   private loadedAlgsets: Set<string> = new Set();
 
   // algsets whose compiled algs are hash-searched via the position suggester
@@ -2904,7 +2904,6 @@ export class SimpleCubeInterpreter {
 
     const pairStatus = this.getF2LPairStatus(color);
     const crossArray = crossIndices.split(',').map(Number);
-    const solvedPairCount = pairStatus.filter((p) => p.isSolved).length;
 
     // Create a query for each unsolved slot
     pairStatus.forEach((pair) => {
@@ -2976,7 +2975,7 @@ export class SimpleCubeInterpreter {
         pairColors: [pair.pairColors[0], pair.pairColors[1]],
         q,
         isTopLayer,
-        isFinalPair: solvedPairCount === 3,
+        isZBLSrelevant: this.checkZBLSrelevance(cornerIndex, edgeIndex),
       });
     });
 
@@ -3270,7 +3269,7 @@ export class SimpleCubeInterpreter {
 
     if (!types.has('last layer')) {
       // OLL, CLL, ELL, 1LLL possible
-      if (isAlgsetEnabled(this.enabledAlgsets, 'oll')) {
+      if (this.enabledAlgsets === 'all' || this.enabledAlgsets.has('oll')) {
         indices.push(this.LLinterpreter.getStepInfo(LLpattern, 'oll'));
       }
       // eoIndex = this.LLinterpreter.getStepInfo(LLpattern, 'eo');
@@ -3284,18 +3283,18 @@ export class SimpleCubeInterpreter {
       const hasCP = steps.some(s => s.step === 'cp');
 
       if ((!hasEO || !hasCO) && (!hasEP || !hasCP)) {
-        if (isAlgsetEnabled(this.enabledAlgsets, 'oll')) {
+        if (this.enabledAlgsets === 'all' || this.enabledAlgsets.has('oll')) {
           indices.push(this.LLinterpreter.getStepInfo(LLpattern, 'oll'));
         }
       }
       if (hasEO && !hasCO && !hasEP && !hasCP) {
-        if (isAlgsetEnabled(this.enabledAlgsets, 'zbll')) {
+        if (this.enabledAlgsets === 'all' || this.enabledAlgsets.has('zbll')) {
           // zbllIndex = this.LLinterpreter.getStepInfo(LLpattern, 'zbll');
           // onelllIndex = this.LLinterpreter.getStepInfo(LLpattern, 'onelll');
         }
       }
       if (hasEO && hasCO && (!hasCP || !hasEP)) {
-        if (isAlgsetEnabled(this.enabledAlgsets, 'pll')) {
+        if (this.enabledAlgsets === 'all' || this.enabledAlgsets.has('pll')) {
           indices.push(this.LLinterpreter.getStepInfo(LLpattern, 'pll'));
         }
       }
@@ -3382,7 +3381,7 @@ export class SimpleCubeInterpreter {
 
   public getAlgSuggestions(
     steps?: StepInfo[],
-    options?: { f2lPair?: [string, string], enabledAlgsets?: AlgsetFilter, handedness?: Handedness },
+    options?: { f2lPair?: [string, string], enabledAlgsets?: AlgsetFilter, handedness?: Handedness, savedAlgs?: SavedAlgKeys },
   ): Suggestion[] {
     if (!this.currentState) {
       return [];
@@ -3397,6 +3396,7 @@ export class SimpleCubeInterpreter {
 
     this.enabledAlgsets = options?.enabledAlgsets ?? 'all';
     this.handedness = options?.handedness ?? 'right';
+    this.savedAlgs = options?.savedAlgs;
 
     const stepTypes = new Set(steps.map(s => s.type));
     const f2lSteps = steps.filter(s => s.type === 'f2l');
@@ -3410,7 +3410,7 @@ export class SimpleCubeInterpreter {
       return this.getLLSuggestions(steps, stepTypes);
     } else {
       // f2l covers every pair; zbls only adds EO-solving options on the final pair
-      const hashAlgsetEnabled = isAlgsetEnabled(this.enabledAlgsets, 'f2l') || isAlgsetEnabled(this.enabledAlgsets, 'zbls');
+      const hashAlgsetEnabled = this.enabledAlgsets === 'all' || this.enabledAlgsets.has('f2l') || this.enabledAlgsets.has('zbls');
       if (!hashAlgsetEnabled || !this.algSuggester) {
         return [];
       }
@@ -3516,7 +3516,6 @@ export class SimpleCubeInterpreter {
     algEOvalue: number | undefined,
     q: number,
     isTopLayer: boolean,
-    isFinalPair: boolean,
     wantsEORanking: boolean,
     currentEO: number,
   ): { alg: string; hasEOsolved: boolean } {
@@ -3529,7 +3528,7 @@ export class SimpleCubeInterpreter {
     };
 
     const eoSolvedAt = (m: number): boolean =>
-      isFinalPair && algEOvalue !== undefined && currentEO >= 0 && rotateEOBits(currentEO, m) === algEOvalue;
+      algEOvalue !== undefined && currentEO >= 0 && rotateEOBits(currentEO, m) === algEOvalue;
 
     if (isTopLayer) {
       // the piece is forced to move under any leading AUF, so the reconstructed rotation m is
@@ -3555,6 +3554,39 @@ export class SimpleCubeInterpreter {
     return { alg: algText, hasEOsolved: eoSolvedAt(0) };
   }
 
+  /**
+   * Whether a zbls alg could apply to this slot at all. Zbls entries are compiled with the other
+   * three slots solved, so they can only match when this pair's own pieces sit in the top layer
+   * or their own slot, and when every middle-layer edge outside this slot is already oriented.
+   */
+  private checkZBLSrelevance(cornerIndex: number, edgeIndex: number): boolean {
+    if (!this.currentState || this.eoValue < 0) {
+      return false;
+    }
+
+    const firstMiddleEdgePos = 8;
+    const firstBottomCornerPos = 4;
+    const middleEdgeEOmask = 0b1111 << firstMiddleEdgePos;
+
+    const charIndex = (char: string) => char.charCodeAt(0) - 'a'.charCodeAt(0);
+    const hash = this.currentState.hash;
+    const solvedHash = this.solvedState.hash;
+
+    const edgePos = charIndex(hash[edgeIndex]) % 12;
+    const homeEdgePos = charIndex(solvedHash[edgeIndex]) % 12;
+    if (edgePos >= firstMiddleEdgePos && edgePos !== homeEdgePos) {
+      return false;
+    }
+
+    const cornerPos = Math.floor(charIndex(hash[cornerIndex]) / 3);
+    const homeCornerPos = Math.floor(charIndex(solvedHash[cornerIndex]) / 3);
+    if (cornerPos >= firstBottomCornerPos && cornerPos !== homeCornerPos) {
+      return false;
+    }
+
+    return (this.eoValue & middleEdgeEOmask & ~(1 << homeEdgePos)) === 0;
+  }
+
   private runF2LQueries(queries: F2LPairQuery[]): Suggestion[] {
 
     let suggestions: Suggestion[] = [];
@@ -3564,18 +3596,21 @@ export class SimpleCubeInterpreter {
     const currentEO = this.eoValue;
 
     // iterate and collect suggestions
-    queries.forEach(({ query, pairColors, q, isTopLayer, isFinalPair }) => {
+    queries.forEach(({ query, pairColors, q, isTopLayer, isZBLSrelevant }) => {
 
       // some f2l cases will return a lot of algs, and the good ones may be later in the list
       // however, the list is now sorted to help avoid this
       query.limit = 40;
 
-      query.scoreBy = 'exact'; // use 'exact' context for F2L searches.
+      query.scoreBy = 'exact';
 
-      const wantsEORanking = isFinalPair && isAlgsetEnabled(this.enabledAlgsets, 'zbls');
+      const wantsEORanking = this.enabledAlgsets === 'all' || this.enabledAlgsets.has('zbls');
 
+      // if E layer EO is all good, or good except relevant pairs, then ZBLS algs are relevant even if not final pair
+      // zbls never relevant if a piece is misslotted
       const algs = this.algSuggester!.searchByPosition(query)
-        .filter(alg => isAlgsetEnabled(this.enabledAlgsets, alg.step ?? 'f2l'));
+      .filter(alg => this.enabledAlgsets === 'all' || this.enabledAlgsets.has(alg.step ?? 'f2l'))
+      .filter(alg => isZBLSrelevant || alg.step !== 'zbls');
 
       algs.forEach(alg => {
         const [firstColor, secondColor] = pairColors;
@@ -3584,7 +3619,7 @@ export class SimpleCubeInterpreter {
         const pairLabel = firstLetter && secondLetter ? `${firstLetter}${secondLetter} pair` : 'pair';
 
         const { alg: finalAlg, hasEOsolved } = this.reconstructF2LAlg(
-          alg.id, alg.eoValue, q, isTopLayer, isFinalPair, wantsEORanking, currentEO
+          alg.id, alg.eoValue, q, isTopLayer, wantsEORanking, currentEO
         );
 
         // zbls algs are only valid suggestions when they actually solve EO
@@ -3600,6 +3635,7 @@ export class SimpleCubeInterpreter {
             time: speedEstimator.calcScore(finalAlg),
             steps: [pairLabel],
             hasEOsolved,
+            algset: alg.step ?? 'f2l',
           });
         } else {
           // Algorithm already exists - add this step to the existing suggestion
@@ -3649,13 +3685,16 @@ export class SimpleCubeInterpreter {
 
     // Filter suggestions based on their pair's cutoff time
     const fastSuggestions = filteredSuggestions.filter(suggestion =>
+      suggestionRank(suggestion, this.savedAlgs) > 0 ||
       suggestion.steps.some(pairLabel => suggestion.time <= (cutoffTimes.get(pairLabel) || Infinity))
     );
 
     // Sort EO-solving algs first, then by time (low is better)
-    return fastSuggestions
-      .sort((a, b) => (Number(b.hasEOsolved) - Number(a.hasEOsolved)) || (a.time - b.time))
-      .splice(0, 20); // limit to top 20
+    return rankSuggestions(
+      fastSuggestions,
+      (a, b) => (Number(b.hasEOsolved) - Number(a.hasEOsolved)) || (a.time - b.time),
+      this.savedAlgs,
+    ).splice(0, 20); // limit to top 20
   }
 
   private applyHandednessModifier(alg: string, frequency: number): number {
@@ -3683,7 +3722,7 @@ export class SimpleCubeInterpreter {
     ];
 
     const llIndices = this.getLLindices(steps, stepTypes);
-    const algs: { alg: string, name: string, steps: string[], frequency: number }[] = [];
+    const algs: { alg: string, name: string, steps: string[], frequency: number, algset: string }[] = [];
 
     llIndices.forEach(index => {
       if (index.step !== 'oll' && index.step !== 'pll' && index.step !== 'auf') {
@@ -3692,7 +3731,7 @@ export class SimpleCubeInterpreter {
       }
       const stepAlgs = this.LLsuggester!.getAlgsForStep(index.step, index.index, index.minMovements, refPieceOrigins);
       stepAlgs.forEach(({ alg, frequency }) => {
-        algs.push({ alg, name: index.name, steps: [index.step], frequency });
+        algs.push({ alg, name: index.name, steps: [index.step], frequency, algset: index.step });
       });
     });
 
@@ -3702,11 +3741,15 @@ export class SimpleCubeInterpreter {
       time: speedEstimator.calcScore(alg.alg),
       steps: alg.steps,
       name: alg.name,
-      frequency: this.applyHandednessModifier(alg.alg, alg.frequency)
+      frequency: this.applyHandednessModifier(alg.alg, alg.frequency),
+      algset: alg.algset
     }));
 
     // sort by frequency (high is better), then by speed estimation as tiebreaker (low is better)
-    const sortedSuggestions = suggestions.sort((a, b) => (b.frequency ?? 0) - (a.frequency ?? 0) || a.time - b.time);
-    return sortedSuggestions;
+    return rankSuggestions(
+      suggestions,
+      (a, b) => (b.frequency ?? 0) - (a.frequency ?? 0) || a.time - b.time,
+      this.savedAlgs,
+    );
   }
 }

@@ -18,15 +18,4 @@ ZBLL algs
 Think about function of solve review carefully. Form will follow.
 - Add breakdown into MovesTextEditor? Explore adding divs.
 
-Better intuition breakdown
-1. Check inserted pair?
-1. Check keyhole (separate breakdown path)
-2. Check commutators (separate breakdown path)
-3. Check edge/corner put in bottom
-4. Check made split/joined pair
-5. Check put edge/corner in top
-6. Check split pieces generically
-
-- But some of these overlap? 
-So tokenize by triggers after checking for keyhole and comms, 
-iterate over all tokens, see which tokens do which functions, combine as necessary?
+Keyhole tutorial

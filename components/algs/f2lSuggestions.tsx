@@ -3,6 +3,8 @@
 import { useMemo } from 'react';
 import { type Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
 import { type FaceKey } from '../../composables/algs/cubePaint';
+import { buildF2lCubeState } from '../../composables/algs/f2lCubeState';
+import type { Color } from '../../composables/recon/SimpleCube';
 import { type ColorConfig } from '../../composables/recon/stepIconDescriptors';
 import { useCubeColors } from '../../composables/useSettings';
 import { useAlgFavorites } from '../../composables/algs/algFavorites';
@@ -18,9 +20,16 @@ interface F2lSuggestionsProps {
   ready: boolean;
   // the alg currently being animated on the cube, if any
   playingAlg?: string | null;
-  // request playback of a suggestion alg on the shared cube
-  onPlay?: (alg: string) => void;
+  // index of the move being animated, highlighted on the playing card
+  highlightedMove?: number;
+  // request playback on the shared cube; `alg` identifies the suggestion, `playbackAlg` is the
+  // form to animate, which is the breakdown's split-up moves when its dropdown is open
+  onPlay?: (alg: string, playbackAlg: string) => void;
 }
+
+const COLOR_OF: Record<FaceKey, Color> = {
+  up: 'W', down: 'Y', front: 'G', right: 'R', back: 'B', left: 'O',
+};
 
 function NoSolutionsDisclaimer() {
   return (
@@ -41,7 +50,7 @@ function NoSolutionsDisclaimer() {
   )
 }
 
-const F2lSuggestions = ({ config, cross, pair, suggestions, ready, playingAlg, onPlay }: F2lSuggestionsProps) => {
+const F2lSuggestions = ({ config, cross, pair, suggestions, ready, playingAlg, highlightedMove = -1, onPlay }: F2lSuggestionsProps) => {
   const [cubeColors] = useCubeColors();
   const { isFavorite, toggleFavorite } = useAlgFavorites();
 
@@ -55,6 +64,12 @@ const F2lSuggestions = ({ config, cross, pair, suggestions, ready, playingAlg, o
     () => (eoActive && eoValid ? suggestions.filter((s) => s.hasEOsolved) : suggestions),
     [suggestions, eoActive, eoValid],
   );
+
+  const caseState = useMemo(
+    () => (hasPair && eoValid ? buildF2lCubeState(config, cross, pair) : null),
+    [hasPair, eoValid, config, cross, pair],
+  );
+  const pairColors = useMemo<[Color, Color]>(() => [COLOR_OF[pair[0]], COLOR_OF[pair[1]]], [pair]);
 
   const colorConfig: ColorConfig = useMemo(
     () => ({
@@ -79,8 +94,6 @@ const F2lSuggestions = ({ config, cross, pair, suggestions, ready, playingAlg, o
       <div className="p-3">
         {!ready && <p className="text-dark_accent">Loading algorithms…</p>}
 
-        {/* TODO: add warning message if both pieces are in first two layers: "This is a bad case, solve a different pair!" */}
-
         {ready && hasPair && eoActive && !eoValid && (
           <p className="text-dark_accent">Fix full EO to see solutions</p>
         )}
@@ -93,11 +106,14 @@ const F2lSuggestions = ({ config, cross, pair, suggestions, ready, playingAlg, o
                   alg={s.alg}
                   steps={s.steps}
                   cross={cross}
+                  caseState={caseState}
+                  pairColors={pairColors}
                   yTurns={config.yTurns}
                   colorConfig={colorConfig}
                   isPlaying={playingAlg === s.alg}
+                  highlightedMove={playingAlg === s.alg ? highlightedMove : -1}
                   isFavorited={isFavorite(s.alg)}
-                  onPlay={() => onPlay?.(s.alg)}
+                  onPlay={(playbackAlg) => onPlay?.(s.alg, playbackAlg)}
                   onToggleFavorite={() => toggleFavorite(s.alg)}
                 />
               </li>

@@ -8,7 +8,7 @@ import { useAlgDraft } from '../../composables/algs/useAlgDraft';
 import MovesTextEditor from '../recon/MovesTextEditor';
 
 interface AddAlgRowProps {
-  onAdd: (alg: string) => void;
+  onAdd: (alg: string) => boolean;
   onCancel: () => void;
 }
 
@@ -23,7 +23,7 @@ const AddAlgRow = ({ onAdd, onCancel }: AddAlgRowProps) => {
   const [added, setAdded] = useState<{ text: string; key: number } | null>(null);
 
   const draft = useAlgDraft('', (alg) => {
-    onAdd(alg);
+    if (!onAdd(alg)) return;
     setAdded((prev) => ({ text: abbreviateAlg(alg), key: (prev?.key ?? 0) + 1 }));
   }, { resetOnCommit: true });
 

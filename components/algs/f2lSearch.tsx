@@ -71,22 +71,36 @@ const F2lSearch = ({ cross, setCross, pair, setPair, config, setConfig, suggesti
   // playback runs on the shared cube; track which alg is animating to highlight its card
   const twistyRef = useRef<TwistyClickableHandle>(null);
   const [playingAlg, setPlayingAlg] = useState<string | null>(null);
+  const [highlightedMove, setHighlightedMove] = useState(-1);
+
+  // drops any running alg and returns the cube to the case it was showing beforehand
+  const stopPlayback = () => {
+    twistyRef.current?.reset();
+    setPlayingAlg(null);
+    setHighlightedMove(-1);
+  };
 
   // every state change routes through one of these so the URL is updated in lockstep, at the
   // event, rather than reactively after render.
   const commitConfig = (next: F2lCaseConfig) => {
+    if (playingAlg) stopPlayback();
     setConfig(next);
     writeF2lURL(cross, pair, next);
   };
 
   const commitSelection = (nextCross: FaceKey, nextPair: [FaceKey, FaceKey], nextConfig: F2lCaseConfig) => {
+    if (playingAlg) stopPlayback();
     setCross(nextCross);
     setPair(nextPair);
     setConfig(nextConfig);
     writeF2lURL(nextCross, nextPair, nextConfig);
   };
 
-  const handlePlay = (alg: string) => {
+  const handlePlay = (alg: string, playbackAlg: string) => {
+    if (playingAlg === alg) {
+      stopPlayback();
+      return;
+    }
     setPlayingAlg(alg);
     const isInViewport = (el: HTMLElement) => {
       const rect = el.getBoundingClientRect();
@@ -96,11 +110,12 @@ const F2lSearch = ({ cross, setCross, pair, setPair, config, setConfig, suggesti
     if (visualizer instanceof HTMLElement && !isInViewport(visualizer)) {
       visualizer.scrollIntoView({behavior: 'smooth'});
     }
-    twistyRef.current?.playAlg(alg);
+    twistyRef.current?.playAlg(playbackAlg);
   };
 
   // stable so TwistyClickable's prop-sync effect doesn't re-run every render
   const handlePlaybackEnd = useCallback(() => setPlayingAlg(null), []);
+  const handleHighlightMove = useCallback((moveIndex: number) => setHighlightedMove(moveIndex), []);
 
   // drop a filled slot that would now duplicate the selected pair's solved home
   const dropPairHome = (nextCross: FaceKey, nextPair: [FaceKey, FaceKey], c: F2lCaseConfig): F2lCaseConfig => {
@@ -149,21 +164,19 @@ const F2lSearch = ({ cross, setCross, pair, setPair, config, setConfig, suggesti
   );
 
   // re-clicking the placed piece twists/flips it, any other click (re)places it.
-  // the edge is editable only after a corner exists, since its colors derive from it.
   // in the Slots step, a click on a free bottom-corner/middle-edge fills that slot.
-  const handleSlotClick = (click: LocationClick) => {
+  const handleCubeClick = (click: LocationClick) => {
+    if (playingAlg) return;
     const c = config;
     let next: F2lCaseConfig;
     if (c.step === STEP.ORIENT) return;
-    if (c.step === STEP.FULL_EO) {
+    if (c.step === STEP.EO) {
       next = click.pieceType === 'EDGES' ? toggleFullEOEdge(c, click.loc) : c;
     } else if (c.step === STEP.SLOTS) {
       const slot = f2lSlotOf(click);
       next = slot ? toggleSlot(c, slot, cross, pair) : c;
     } else if (click.pieceType === 'CORNERS') {
       next = c.corner?.loc === click.loc ? twistCorner(c) : placeCorner(c, click.loc);
-    } else if (!c.corner) {
-      return;
     } else {
       next = c.edge?.loc === click.loc ? flipEdge(c) : placeEdge(c, click.loc);
     }
@@ -209,10 +222,11 @@ const F2lSearch = ({ cross, setCross, pair, setPair, config, setConfig, suggesti
               eoActive={config.fullEO != null}
               badEdges={config.fullEO ?? []}
               yTurns={config.yTurns}
-              onLocationClick={handleSlotClick}
+              onLocationClick={handleCubeClick}
               onPlaybackEnd={handlePlaybackEnd}
+              onHighlightMove={handleHighlightMove}
             />
-            <h2 className="pointer-events-none absolute inset-x-0 top-2 text-center text-sm font-medium text-primary-100">
+            <h2 className="pointer-events-none absolute inset-x-0 top-2 whitespace-pre-line text-center text-sm font-medium text-primary-100">
               {STEPS[config.step].label}
             </h2>
             {config.step === STEP.ORIENT && (
@@ -236,7 +250,7 @@ const F2lSearch = ({ cross, setCross, pair, setPair, config, setConfig, suggesti
           pair={pair}
         /> */}
       </div>
-      <F2lSuggestions config={config} cross={cross} pair={pair} suggestions={suggestions} ready={ready} playingAlg={playingAlg} onPlay={handlePlay} />
+      <F2lSuggestions config={config} cross={cross} pair={pair} suggestions={suggestions} ready={ready} playingAlg={playingAlg} highlightedMove={highlightedMove} onPlay={handlePlay} />
     </div>
   );
 };

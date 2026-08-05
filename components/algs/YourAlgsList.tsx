@@ -11,6 +11,7 @@ import FunnelIcon from '../icons/funnel';
 import SortIcon from '../icons/sort';
 import AddIcon from '../icons/plus';
 import { useAlgFavorites } from '../../composables/algs/algFavorites';
+import { showToast } from '../../composables/toast';
 import { classifyFavorite } from '../../composables/algs/classifyAlg';
 import YourAlgCard from './YourAlgCard';
 import AddAlgRow from './AddAlgRow';
@@ -75,7 +76,7 @@ function FilterSelect<T extends string>(props: {
       >
         {current?.label}
       </button>
-      <CaretIcon className={`pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 ${disabled ? 'text-neutral-600' : 'text-primary-100'}`} />
+      <CaretIcon className={`pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 transition-transform duration-300 ${open && !disabled ? '' : 'rotate-180'} ${disabled ? 'text-neutral-600' : 'text-primary-100'}`} />
       {open && !disabled && (
         <div className="absolute left-0 top-full z-20 min-w-full rounded-sm border border-neutral-600 bg-dark shadow-lg">
           {options.map((o) => (
@@ -119,6 +120,7 @@ const YourAlgsList = ({ hasSolutions }: YourAlgsListProps) => {
   const { favorites, addFavorite, setFavoriteStatus, setFavoriteAlgset, setFavoriteAlg, removeFavorite } = useAlgFavorites();
 
   const [activeEditor, setActiveEditor] = useState<ActiveEditor>(null);
+  const [confirmingAlg, setConfirmingAlg] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [algsetFilter, setAlgsetFilter] = useState<AlgsetFilter>('all');
@@ -142,6 +144,26 @@ const YourAlgsList = ({ hasSolutions }: YourAlgsListProps) => {
   }, []);
   const toggleMenu = (menu: 'filter' | 'algset' | 'sort' | 'download' | 'perPage') =>
     setOpenMenu((cur) => (cur === menu ? null : menu));
+
+  const handleAdd = (alg: string) => {
+    if (addFavorite(alg)) return true;
+    showToast({
+      addMethod: 'replace',
+      closable: false,
+      icon: <Parrot filled className="w-6 h-6 text-primary-800" />,
+      message: <span>{alg} is already in Your Algs</span>,
+    });
+    return false;
+  };
+
+  const handleSetAlg = (alg: string, nextAlg: string) => {
+    if (!setFavoriteAlg(alg, nextAlg)) return;
+    showToast({
+      addMethod: 'replace',
+      icon: <Parrot filled className="w-6 h-6 text-primary-800" />,
+      message: <span>{nextAlg} was added previously. The old entry was replaced.</span>,
+    });
+  };
 
   // the statuses actually present, cached so a long list isn't rescanned every render;
   // recomputed only when the favorites change (e.g. an alg is added)
@@ -299,7 +321,7 @@ const YourAlgsList = ({ hasSolutions }: YourAlgsListProps) => {
       <div className="mb-2 grid min-h-13 items-center">
         {activeEditor?.kind === 'add' ? (
           <AddAlgRow
-            onAdd={addFavorite}
+            onAdd={handleAdd}
             onCancel={() => setActiveEditor((cur) => (cur?.kind === 'add' ? null : cur))}
           />
         ) : (
@@ -323,12 +345,15 @@ const YourAlgsList = ({ hasSolutions }: YourAlgsListProps) => {
                 algset={fav.algset}
                 editMode={editMode}
                 active={activeEditor?.kind === 'card' && activeEditor.alg === fav.alg}
+                confirming={confirmingAlg === fav.alg}
                 onEditStart={() => setActiveEditor({ kind: 'card', alg: fav.alg })}
                 onEditEnd={() => setActiveEditor((cur) => (cur?.kind === 'card' && cur.alg === fav.alg ? null : cur))}
+                onConfirmDelete={() => setConfirmingAlg(fav.alg)}
+                onCancelDelete={() => setConfirmingAlg((cur) => (cur === fav.alg ? null : cur))}
                 onToggleStatus={() => setFavoriteStatus(fav.alg, nextStatus(fav.status))}
                 onSetAlgset={(algset) => setFavoriteAlgset(fav.alg, algset)}
-                onSetAlg={(next) => setFavoriteAlg(fav.alg, next)}
-                onDelete={() => removeFavorite(fav.alg)}
+                onSetAlg={(next) => handleSetAlg(fav.alg, next)}
+                onDelete={() => { removeFavorite(fav.alg); setConfirmingAlg(null); }}
               />
             </li>
           ))}

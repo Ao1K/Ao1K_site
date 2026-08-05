@@ -36,6 +36,8 @@ import { SimpleCubeInterpreter } from '../../composables/recon/SimpleCubeInterpr
 import type { StepInfo, Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
 import type { Doc } from '../../composables/recon/ExactAlgSuggester';
 import type { CompiledLLAlg } from '../../composables/recon/LLsuggester';
+import { savedAlgKeys } from '../../composables/recon/suggestionRanking';
+import { readFavorites } from '../../composables/algs/algFavorites';
 import { getNewSteps } from '../../composables/recon/getLineStepInfo';
 import { ScreenshotManager, isSolveComplete } from '../../composables/recon/ScreenshotManager';
 import type { TwistyPlayerImperativeRef } from '../../components/recon/TwistyPlayer';
@@ -691,7 +693,8 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     const cubeState = simpleCubeRef.current.getCubeState(allMoves as any);
 
     const steps = cubeInterpreter.current!.getStepsCompleted(cubeState);
-    const newSuggestions: Suggestion[] = cubeInterpreter.current.getAlgSuggestions(steps, { enabledAlgsets, handedness });
+    const savedAlgs = savedAlgKeys(readFavorites());
+    const newSuggestions: Suggestion[] = cubeInterpreter.current.getAlgSuggestions(steps, { enabledAlgsets, handedness, savedAlgs });
 
     solutionMethodsRef.current?.setSuggestions(newSuggestions, trueLineIndex);
   };

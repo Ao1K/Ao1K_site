@@ -170,7 +170,7 @@ const F2lAdvancedInput = ({ config, setConfig, cross, pair }: F2lAdvancedInputPr
         className="w-full flex items-center justify-between px-3 py-2 text-sm text-primary-100 transition-colors"
       >
         <span>Advanced input</span>
-        <CaretIcon className={`text-base transition-transform ${open ? 'rotate-180' : ''}`} />
+        <CaretIcon className={`text-base transition-transform duration-300 ${open ? '' : 'rotate-180'}`} />
       </button>
 
       {open && (

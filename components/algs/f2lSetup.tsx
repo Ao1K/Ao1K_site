@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import CaretIcon from '../icons/dropdown';
 import {
   F2L_SLOT_PIECES,
@@ -17,18 +17,24 @@ import {
   type F2lSlot,
   type PieceRef,
 } from '../../composables/algs/cubePaint';
-import { DEFAULT_F2L_CONFIG, STEP, initialFullEO, isFullEOValid, type F2lCaseConfig } from '../../composables/algs/f2lCaseId';
+import {
+  DEFAULT_F2L_CONFIG,
+  STEP,
+  initialFullEO,
+  isF2lConfigured,
+  isFullEOValid,
+  isSlotFillable,
+  type F2lCaseConfig,
+} from '../../composables/algs/f2lCaseId';
 
-export { DEFAULT_F2L_CONFIG, STEP, type F2lCaseConfig };
+export { DEFAULT_F2L_CONFIG, STEP, isF2lConfigured, type F2lCaseConfig };
 
-export const STEPS: { label: string }[] = [
-  { label: 'Choose angle' },
-  { label: 'Select a corner' },
-  { label: 'Click the corner again to twist it' },
-  { label: 'Select an edge' },
-  { label: 'Click the edge again to flip it' },
-  { label: 'Click a slot to mark it solved or unsolved' },
-  { label: 'Click edges to toggle EO (Optional)' },
+// `name` labels the progress segment, `label` is the instruction shown over the cube
+export const STEPS: { name: string; label: string }[] = [
+  { name: 'Angle', label: 'Choose angle' },
+  { name: 'F2L', label: 'Click to place edge and corner.\nClick again to twist piece.' },
+  { name: 'Slots', label: 'Click a slot to mark it solved or unsolved' },
+  { name: 'EO', label: 'Click edges to toggle EO (Optional)' },
 ];
 
 // drops the slot a piece location belongs to, if any.
@@ -42,8 +48,6 @@ export function placeCorner(config: F2lCaseConfig, loc: CornerLocation): F2lCase
   return {
     ...config,
     corner: { loc, orientation: 0 },
-    cornerOriDone: false,
-    step: STEP.CORNER_ORI,
     // a placed piece and a solved slot can't share a location, so unmark the slot first
     filledSlots: unmarkSlotAt(config.filledSlots, { pieceType: 'CORNERS', loc }),
   };
@@ -52,17 +56,13 @@ export function placeCorner(config: F2lCaseConfig, loc: CornerLocation): F2lCase
 export function twistCorner(config: F2lCaseConfig): F2lCaseConfig {
   if (!config.corner) return config;
   const orientation = (((config.corner.orientation + 1) % 3) as CornerOrientation);
-  return { ...config, corner: { ...config.corner, orientation }, cornerOriDone: true };
+  return { ...config, corner: { ...config.corner, orientation } };
 }
 
 export function placeEdge(config: F2lCaseConfig, loc: EdgeLocation): F2lCaseConfig {
-  // selecting an edge marks corner orientation as done
   return {
     ...config,
     edge: { loc, orientation: 0 },
-    edgeOriDone: false,
-    cornerOriDone: true,
-    step: STEP.EDGE_ORI,
     // a placed piece and a solved slot can't share a location, so unmark the slot first
     filledSlots: unmarkSlotAt(config.filledSlots, { pieceType: 'EDGES', loc }),
   };
@@ -72,7 +72,7 @@ export function placeEdge(config: F2lCaseConfig, loc: EdgeLocation): F2lCaseConf
 export function flipEdge(config: F2lCaseConfig): F2lCaseConfig {
   if (!config.edge) return config;
   const orientation = ((config.edge.orientation ^ 1) as EdgeOrientation);
-  return { ...config, edge: { ...config.edge, orientation }, edgeOriDone: true };
+  return { ...config, edge: { ...config.edge, orientation } };
 }
 
 export function toggleSlot(
@@ -84,13 +84,8 @@ export function toggleSlot(
   if (config.filledSlots.includes(slot)) {
     return { ...config, filledSlots: config.filledSlots.filter((s) => s !== slot) };
   }
-  const { corner, edge } = F2L_SLOT_PIECES[slot];
-
-  // block if this would conflict with a currently placed piece
-  if (config.corner?.loc === corner || config.edge?.loc === edge) return config;
-
-  // block if this would fill the pair's home slot
-  if (f2lPairHomeSlot(cross, pair, config.yTurns) === slot) return config;
+  const home = f2lPairHomeSlot(cross, pair, config.yTurns);
+  if (!isSlotFillable(slot, config.corner?.loc, config.edge?.loc, home)) return config;
 
   return { ...config, filledSlots: [...config.filledSlots, slot] };
 }
@@ -102,17 +97,24 @@ export function highlightedPieces(
   pair: [FaceKey, FaceKey],
 ): PieceRef[] {
   switch (config.step) {
-    case STEP.CORNER_LOC:
-      return (Object.keys(CORNER_LOC_FACES) as CornerLocation[]).map((loc) => ({ pieceType: 'CORNERS', loc }));
-    case STEP.EDGE_LOC:
-      return (Object.keys(EDGE_LOC_FACES) as EdgeLocation[]).map((loc) => ({ pieceType: 'EDGES', loc }));
+    case STEP.F2L: {
+      const taken = config.filledSlots.map((slot) => F2L_SLOT_PIECES[slot]);
+      const pieces: PieceRef[] = [];
+      for (const loc of Object.keys(CORNER_LOC_FACES) as CornerLocation[]) {
+        if (!taken.some((p) => p.corner === loc)) pieces.push({ pieceType: 'CORNERS', loc });
+      }
+      for (const loc of Object.keys(EDGE_LOC_FACES) as EdgeLocation[]) {
+        if (!taken.some((p) => p.edge === loc)) pieces.push({ pieceType: 'EDGES', loc });
+      }
+      return pieces;
+    }
     case STEP.SLOTS: {
       const home = f2lPairHomeSlot(cross, pair, config.yTurns);
       const pieces: PieceRef[] = [];
       for (const slot of Object.keys(F2L_SLOT_PIECES) as F2lSlot[]) {
-        if (config.filledSlots.includes(slot) || home === slot) continue;
+        if (config.filledSlots.includes(slot)) continue;
+        if (!isSlotFillable(slot, config.corner?.loc, config.edge?.loc, home)) continue;
         const { corner, edge } = F2L_SLOT_PIECES[slot];
-        if (config.corner?.loc === corner || config.edge?.loc === edge) continue;
         pieces.push({ pieceType: 'CORNERS', loc: corner }, { pieceType: 'EDGES', loc: edge });
       }
       return pieces;
@@ -121,8 +123,6 @@ export function highlightedPieces(
       return [];
   }
 }
-
-const SEGMENT_LABELS = ['Angle', 'CP', 'CO', 'EP', 'EO', 'Slots', 'Full EO'];
 
 // toggles a free edge's Full EO orientation (good ↔ bad); determined edges are ignored
 export function toggleFullEOEdge(config: F2lCaseConfig, loc: EdgeLocation): F2lCaseConfig {
@@ -137,15 +137,11 @@ export function toggleFullEOEdge(config: F2lCaseConfig, loc: EdgeLocation): F2lC
 }
 
 export function goToStep(config: F2lCaseConfig, step: number): F2lCaseConfig {
-  // also seals the completion of any orientation step we've moved past
-  const next: F2lCaseConfig = {
-    ...config,
-    step,
-    cornerOriDone: config.cornerOriDone || (step > STEP.CORNER_ORI && config.corner != null),
-    edgeOriDone: config.edgeOriDone || (step > STEP.EDGE_ORI && config.edge != null),
-  };
+  // Slots and EO stay locked until a corner and an edge are both placed
+  if (step > STEP.F2L && !isF2lConfigured(config)) return config;
+  const next: F2lCaseConfig = { ...config, step };
   // Full EO lives only while on its step: seed it on entry, discard it on leaving
-  if (step === STEP.FULL_EO) return { ...next, fullEO: config.fullEO ?? initialFullEO(config) };
+  if (step === STEP.EO) return { ...next, fullEO: config.fullEO ?? initialFullEO(config) };
   return { ...next, fullEO: null };
 }
 
@@ -153,17 +149,11 @@ function isStepComplete(config: F2lCaseConfig, i: number): boolean {
   switch (i) {
     case STEP.ORIENT:
       return config.step > STEP.ORIENT;
-    case STEP.CORNER_LOC:
-      return config.corner != null;
-    case STEP.CORNER_ORI:
-      return config.cornerOriDone;
-    case STEP.EDGE_LOC:
-      return config.edge != null;
-    case STEP.EDGE_ORI:
-      return config.edgeOriDone;
+    case STEP.F2L:
+      return isF2lConfigured(config);
     case STEP.SLOTS:
       return config.step > STEP.SLOTS;
-    case STEP.FULL_EO:
+    case STEP.EO:
       return config.fullEO != null && isFullEOValid(config);
     default:
       return false;
@@ -177,32 +167,32 @@ interface F2lSetupProps {
 
 const F2lSetup = ({ config, onConfigChange }: F2lSetupProps) => {
   const stepCount = STEPS.length;
+  const locked = !isF2lConfigured(config);
+  const lastStep = locked ? STEP.F2L : stepCount - 1;
   const atStart = config.step <= 0;
-  const atEnd = config.step >= stepCount - 1;
+  const atEnd = config.step >= lastStep;
 
   const goBack = () => onConfigChange(goToStep(config, Math.max(0, config.step - 1)));
-  const goForward = () => onConfigChange(goToStep(config, Math.min(stepCount - 1, config.step + 1)));
-
-  // keep latest nav handlers in a ref so the one-time key listener never reads a stale config
-  const navRef = useRef({ goBack, goForward });
-  navRef.current = { goBack, goForward };
+  const goForward = () => onConfigChange(goToStep(config, Math.min(lastStep, config.step + 1)));
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
+      // an alg card's own hotkeys (space to play) claim the key before it reaches the window
+      if (e.defaultPrevented) return;
       const target = e.target as HTMLElement | null;
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
 
       if (e.key === ' ' || e.key === 'ArrowRight' || e.key === 'd') {
         e.preventDefault();
-        navRef.current.goForward();
+        goForward();
       } else if (e.key === 'ArrowLeft' || e.key === 'a') {
         e.preventDefault();
-        navRef.current.goBack();
+        goBack();
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, []);
+  });
 
   const keyCap = (label: string) => (
     <kbd
@@ -245,22 +235,24 @@ const F2lSetup = ({ config, onConfigChange }: F2lSetupProps) => {
         {STEPS.map((_, i) => {
           const active = i === config.step;
           const complete = isStepComplete(config, i);
+          const disabled = locked && i > STEP.F2L;
           return (
             <button
               key={i}
               type="button"
+              disabled={disabled}
               onClick={() => onConfigChange(goToStep(config, i))}
-              className={`flex flex-1 items-center justify-center skew-x-[-24deg] hover:bg-primary-200 ${
-                active ? 'bg-primary-100' : complete ? 'bg-primary-300' : 'bg-neutral-700'
+              className={`flex flex-1 items-center justify-center skew-x-[-24deg] enabled:hover:bg-primary-200 ${
+                active ? 'bg-primary-100' : complete ? 'bg-primary-300' : disabled ? 'bg-neutral-800' : 'bg-neutral-700'
               } ${i === 0 ? '-ml-2' : ''} ${i === stepCount - 1 ? '-mr-2' : ''}`}
             >
               {/* counter-skew so the label reads straight inside the slanted segment */}
               <span
                 className={`skew-x-24 text-[10px] leading-none ${
-                  active || complete ? 'text-dark' : 'text-dark_accent/60'
+                  active || complete ? 'text-dark' : disabled ? 'text-dark_accent/25' : 'text-dark_accent/60'
                 }`}
               >
-                {SEGMENT_LABELS[i]}
+                {STEPS[i].name}
               </span>
             </button>
           );

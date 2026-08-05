@@ -114,6 +114,7 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
       showToast({
         dismissKey: 'alg-added-to-your-algs',
         addMethod: 'replace',
+        closable: false,
         icon: <Parrot filled className="w-6 h-6 text-primary-800" />,
         message: (
           <span>

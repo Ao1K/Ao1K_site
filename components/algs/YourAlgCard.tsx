@@ -20,8 +20,11 @@ interface YourAlgCardProps {
   algset?: string;
   editMode: boolean;
   active: boolean;
+  confirming: boolean;
   onEditStart: () => void;
   onEditEnd: () => void;
+  onConfirmDelete: () => void;
+  onCancelDelete: () => void;
   onToggleStatus: () => void;
   onSetAlgset: (algset: string) => void;
   onSetAlg: (alg: string) => void;
@@ -47,8 +50,7 @@ const EditButton = ({ className, onClick }: { className: string; onClick: (event
   </button>
 );
 
-const YourAlgCard = ({ alg, status, algset, editMode, active, onEditStart, onEditEnd, onToggleStatus, onSetAlgset, onSetAlg, onDelete }: YourAlgCardProps) => {
-  const [confirming, setConfirming] = useState(false);
+const YourAlgCard = ({ alg, status, algset, editMode, active, confirming, onEditStart, onEditEnd, onConfirmDelete, onCancelDelete, onToggleStatus, onSetAlgset, onSetAlg, onDelete }: YourAlgCardProps) => {
   const [algDraft, setAlgDraft] = useState<string | null>(null);
   const [editingAlgset, setEditingAlgset] = useState(false);
   const [algsetDraft, setAlgsetDraft] = useState('');
@@ -72,7 +74,7 @@ const YourAlgCard = ({ alg, status, algset, editMode, active, onEditStart, onEdi
 
   const openAlgEditor = (event: React.MouseEvent) => {
     event.stopPropagation();
-    setConfirming(false);
+    onCancelDelete();
     setAlgDraft(alg);
     onEditStart();
   };
@@ -167,7 +169,7 @@ const YourAlgCard = ({ alg, status, algset, editMode, active, onEditStart, onEdi
                 </button>
                 <button
                   type="button"
-                  onClick={() => setConfirming(false)}
+                  onClick={onCancelDelete}
                   className="rounded-sm border border-neutral-400 px-2 py-0.5 text-xs font-medium text-neutral-400 hover:bg-neutral-600 transition-colors duration-100"
                 >
                   Cancel
@@ -178,7 +180,7 @@ const YourAlgCard = ({ alg, status, algset, editMode, active, onEditStart, onEdi
                 type="button"
                 aria-label="Delete (Press shift to skip confirmation)"
                 title="Delete (Press shift to skip confirmation)"
-                onClick={(event) => (event.shiftKey ? onDelete() : setConfirming(true))}
+                onClick={(event) => (event.shiftKey ? onDelete() : onConfirmDelete())}
                 className={`shrink-0 p-2 rounded text-neutral-400 transition-opacity duration-200
                 md:opacity-0 md:group-hover:opacity-100 group-focus-within:opacity-100 hover:text-red-500
                 focus-visible:outline-none focus-visible:ring focus-visible:ring-primary-900

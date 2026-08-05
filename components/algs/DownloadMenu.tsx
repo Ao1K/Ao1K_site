@@ -32,7 +32,7 @@ const DownloadMenu = ({ favorites, open, onToggle, onClose }: DownloadMenuProps)
         className="flex items-center gap-1 text-primary-100 transition-colors"
       >
         <DownloadIcon />
-        <CaretIcon />
+        <CaretIcon className={`transition-transform duration-300 ${open ? '' : 'rotate-180'}`} />
       </button>
       {open && (
         <div className="absolute -right-1.75 top-full mt-1 z-20 min-w-28 rounded-sm border border-neutral-600 bg-dark shadow-lg">
