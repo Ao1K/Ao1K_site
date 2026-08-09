@@ -1,7 +1,7 @@
 import AlgSuggester from './ExactAlgSuggester';
 import type { Doc, Constraint, Query } from './ExactAlgSuggester';
 import AlgSpeedEstimator from './AlgSpeedEstimator';
-import type { Grid } from './LLinterpreter';
+import type { Grid, CompilableLLStep, SuggestableLLStep, LLCaseInfo } from './LLinterpreter';
 import LLinterpreter from './LLinterpreter';
 import LLsuggester from './LLsuggester';
 import type { CompiledLLAlg } from './LLsuggester';
@@ -17,9 +17,11 @@ import {
   combineAuf,
 } from '../../utils/canonicalizeAuf';
 import { combineMoves } from '../../utils/moveUtils';
-import { rankSuggestions, suggestionRank } from './suggestionRanking';
+import { algsetPriority, dedupeByAlgsetPriority, rankSuggestions, suggestionRank } from './suggestionRanking';
 import type { SavedAlgKeys } from './suggestionRanking';
 
+export type HashAlgset = 'f2l' | 'zbls';
+export type Algset = HashAlgset | SuggestableLLStep;
 export interface Suggestion {
   alg: string;
   time: number;

@@ -1,10 +1,18 @@
-import type { Suggestion } from './SimpleCubeInterpreter';
+import type { Algset, Suggestion } from './SimpleCubeInterpreter';
 
 export type SavedAlgKeys = ReadonlySet<string>;
 
 export type SuggestionComparator = (a: Suggestion, b: Suggestion) => number;
 
 const CASE_SPECIFIC_ALGSETS: ReadonlySet<string> = new Set(['oll', 'pll', 'zbls', 'zbll', 'cmll', 'lse']);
+export type CaseSpecificAlgset = Exclude<Algset, 'f2l' | 'auf'>;
+const ALGSET_PRIORITY: Partial<Record<Algset, number>> = {
+  zbll: 2,
+  oll: 1,
+};
+
+export const algsetPriority = (algset?: Algset): number =>
+  (algset && ALGSET_PRIORITY[algset]) ?? 0;
 
 const LEADING_SETUP = /^(?:[Uy][2']?\s+)+/;
 const TRAILING_AUF = /(?:\s+U[2']?)+$/;
@@ -28,11 +36,34 @@ export const savedAlgKeys = (favorites: readonly { alg: string }[]): SavedAlgKey
   return keyedResult;
 };
 
+export const dedupeByAlgsetPriority = (suggestions: Suggestion[]): Suggestion[] => {
+  const best = new Map<string, Suggestion>();
+
+  suggestions.forEach((suggestion) => {
+    const key = savedAlgKey(suggestion.alg);
+    const existing = best.get(key);
+    if (!existing || algsetPriority(suggestion.algset) > algsetPriority(existing.algset)) {
+      best.set(key, suggestion);
+    }
+  });
+
+  return suggestions.filter((suggestion) => best.get(savedAlgKey(suggestion.alg)) === suggestion);
+};
+
 export const suggestionRank = (suggestion: Suggestion, savedAlgs?: SavedAlgKeys): number =>
-  savedAlgs && CASE_SPECIFIC_ALGSETS.has(suggestion.algset ?? '') && savedAlgs.has(savedAlgKey(suggestion.alg))
+  savedAlgs && isCaseSpecific(suggestion.algset) && savedAlgs.has(savedAlgKey(suggestion.alg))
     ? 1
     : 0;
 
+const caseKey = (suggestion: Suggestion): string =>
+  `${suggestion.name ?? ''}:::${suggestion.steps[0] ?? ''}`;
+
+/**
+ * Produces the display order: saved algs lead the list on their own, then the rest are
+ * clustered by case so an algset stays together, each cluster placed by its best member.
+ * Saved algs are pulled out of their cluster so one of them can't drag a whole algset above
+ * a higher priority one.
+ */
 export const rankSuggestions = (
   suggestions: Suggestion[],
   compare: SuggestionComparator,
@@ -45,5 +76,24 @@ export const rankSuggestions = (
   const ranks = new Map<Suggestion, number>();
   suggestions.forEach((suggestion) => ranks.set(suggestion, suggestionRank(suggestion, savedAlgs)));
 
-  return suggestions.sort((a, b) => ranks.get(b)! - ranks.get(a)! || compare(a, b));
+  const ordered = suggestions.sort((a, b) => ranks.get(b)! - ranks.get(a)! || compare(a, b));
+
+  const saved: Suggestion[] = [];
+  const clusters = new Map<string, Suggestion[]>();
+
+  ordered.forEach((suggestion) => {
+    if (ranks.get(suggestion)! > 0) {
+      saved.push(suggestion);
+      return;
+    }
+    const key = caseKey(suggestion);
+    const cluster = clusters.get(key);
+    if (cluster) {
+      cluster.push(suggestion);
+    } else {
+      clusters.set(key, [suggestion]);
+    }
+  });
+
+  return [...saved, ...Array.from(clusters.values()).flat()];
 };

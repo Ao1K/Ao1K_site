@@ -1,5 +1,6 @@
 import { useSyncedSettings } from '../../composables/useSettings';
 import { useAlgFavorites } from '../../composables/algs/algFavorites';
+import type { Algset } from '../../composables/recon/SimpleCubeInterpreter';
 import { showToast } from '../../composables/toast';
 import Parrot from '../icons/parrot';
 import Link from 'next/link';
@@ -12,6 +13,7 @@ interface SuggestionCardProps {
   placement: string;
   isFocused: boolean;
   hasEOsolved?: boolean;
+  algset?: Algset;
   handleSuggestionRequest: () => void;
   handleSuggestionAccept: () => void;
 }
@@ -95,7 +97,7 @@ const renderStepIcon = (steps: string[], letterToColor: Record<string, string>, 
   return renderTextIcon(steps[0] || '?');
 };
 
-export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolved, handleSuggestionRequest, handleSuggestionAccept }: SuggestionCardProps) => {
+export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolved, algset, handleSuggestionRequest, handleSuggestionAccept }: SuggestionCardProps) => {
   const { settings } = useSyncedSettings();
   const { cubeColors } = settings;
 
@@ -108,7 +110,7 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
     if (favorited) {
       removeFavorite(alg);
     } else {
-      addFavorite(alg);
+      addFavorite(alg, algset);
       setFavoriteStatus(alg, 'learning');
       setAnimating(true);
       showToast({
@@ -161,7 +163,7 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
       id={id}
       tabIndex={0}
     >
-      <div className="w-6 h-6">
+      <div className="w-fit min-w-6 h-6">
         {icon}
       </div>
       <div className="grow">{alg}</div>

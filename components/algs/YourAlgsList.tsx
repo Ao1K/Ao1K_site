@@ -366,6 +366,7 @@ const YourAlgsList = ({ hasSolutions }: YourAlgsListProps) => {
                 alg={fav.alg}
                 status={fav.status}
                 algset={fav.algset}
+                sourceAlgset={fav.sourceAlgset}
                 editMode={editMode}
                 active={activeEditor?.kind === 'card' && activeEditor.alg === fav.alg}
                 confirming={confirmingAlg === fav.alg}

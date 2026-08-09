@@ -7,7 +7,8 @@
 
 import { useMemo, useState } from 'react';
 import type { AlgStatus } from '../../composables/algs/algFavorites';
-import { classifyAlg, overrideClassification } from '../../composables/algs/classifyAlg';
+import type { Algset } from '../../composables/recon/SimpleCubeInterpreter';
+import { classifyAlg, classifyFavorite } from '../../composables/algs/classifyAlg';
 import { useCubeColors } from '../../composables/useSettings';
 import AlgIcon from './AlgIcon';
 import AlgTextEditor from './AlgTextEditor';
@@ -18,6 +19,7 @@ interface YourAlgCardProps {
   alg: string;
   status: AlgStatus;
   algset?: string;
+  sourceAlgset?: Algset;
   editMode: boolean;
   active: boolean;
   confirming: boolean;
@@ -50,7 +52,7 @@ const EditButton = ({ className, onClick }: { className: string; onClick: (event
   </button>
 );
 
-const YourAlgCard = ({ alg, status, algset, editMode, active, confirming, onEditStart, onEditEnd, onConfirmDelete, onCancelDelete, onToggleStatus, onSetAlgset, onSetAlg, onDelete }: YourAlgCardProps) => {
+const YourAlgCard = ({ alg, status, algset, sourceAlgset, editMode, active, confirming, onEditStart, onEditEnd, onConfirmDelete, onCancelDelete, onToggleStatus, onSetAlgset, onSetAlg, onDelete }: YourAlgCardProps) => {
   const [algDraft, setAlgDraft] = useState<string | null>(null);
   const [editingAlgset, setEditingAlgset] = useState(false);
   const [algsetDraft, setAlgsetDraft] = useState('');
@@ -60,8 +62,11 @@ const YourAlgCard = ({ alg, status, algset, editMode, active, confirming, onEdit
   const editingAlg = active;
   // the icon follows the uncommitted draft while editing, so it updates as the alg is typed
   const iconAlg = active ? (algDraft ?? alg) : alg;
-  const classification = useMemo(() => classifyAlg(iconAlg), [iconAlg]);
-  const iconClassification = algset ? overrideClassification(algset) : classification;
+  const classification = useMemo(() => classifyAlg(iconAlg, sourceAlgset), [iconAlg, sourceAlgset]);
+  const iconClassification = useMemo(
+    () => (algset ? classifyFavorite({ alg: iconAlg, algset, sourceAlgset }) : classification),
+    [iconAlg, algset, sourceAlgset, classification],
+  );
 
   const handleCardClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (editingAlg) return;
@@ -127,7 +132,7 @@ const YourAlgCard = ({ alg, status, algset, editMode, active, confirming, onEdit
           type="button"
           onClick={openAlgsetEditor}
           title="Click to set algset"
-          className="self-stretch -my-2 aspect-square flex shrink-0 items-center justify-center tracking-normal focus-visible:outline-none focus-visible:ring focus-visible:ring-primary-900"
+          className="group/icon self-stretch -my-2 aspect-square flex shrink-0 items-center justify-center tracking-normal focus-visible:outline-none focus-visible:ring focus-visible:ring-primary-900"
         >
           <AlgIcon classification={iconClassification} alg={iconAlg} cubeColors={cubeColors} />
         </button>

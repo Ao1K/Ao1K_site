@@ -1,4 +1,5 @@
 import { type StepInfo, type BlockPattern, type LSEPattern, type F2LDirection } from './SimpleCubeInterpreter';
+import { type CompilableLLStep } from './LLinterpreter';
 
 export type Grid = number[][];
 

@@ -16,30 +16,31 @@ function renderShape(shape: SvgShape, i: number) {
   return <circle key={i} cx={shape.cx} cy={shape.cy} r={shape.r} fill={shape.fill} />;
 }
 
-function IconSvg({ descriptor, showName, title }: { descriptor: IconDescriptor; showName: boolean; title: string }) {
+function IconSvg({ descriptor, title }: { descriptor: IconDescriptor; title: string }) {
   const [, , vw, vh] = descriptor.viewBox.split(' ').map(Number);
   return (
     <svg
       viewBox={descriptor.viewBox}
-      className={`${descriptor.enlarge ? 'h-14 -m-0.5' : 'h-11 m-1'} w-fit shrink-0 ${descriptor.transparentBg ? '' : 'bg-dark'}`}
+      className={`${descriptor.enlarge ? 'h-14 -m-0.5 md:group-hover/icon:h-20' : 'h-11 m-1 md:group-hover/icon:h-16'}
+      w-fit shrink-0 transition-[height] duration-200 ease-out ${descriptor.transparentBg ? '' : 'bg-dark'}`}
       stroke="#52525b"
       strokeWidth={descriptor.strokeWidth ?? 1}
       fill="none"
     >
       {descriptor.shapes.map(renderShape)}
-      {showName && descriptor.name && (
+      {descriptor.label && (
         <text
           x={vw / 2}
           y={vh / 2}
           textAnchor="middle"
           dominantBaseline="central"
-          fill={descriptor.nameColor || '#ECE6EF'}
+          fill={descriptor.label.color}
           stroke="none"
-          fontSize={descriptor.name.length <= 2 ? 10 : 8}
-          fontWeight="bold"
+          fontSize={descriptor.label.fontSize}
+          fontWeight={descriptor.label.fontWeight}
           fontFamily="var(--font-Rubik), system-ui, sans-serif"
         >
-          {descriptor.name}
+          {descriptor.label.text}
         </text>
       )}
       <title>{title}</title>
@@ -69,13 +70,9 @@ interface AlgIconProps {
 
 export function AlgIcon({ classification, alg, cubeColors }: AlgIconProps) {
   const text = classification.label;
-  const { descriptor, showName, title } = buildAlgIcon(classification, alg, cubeColors);
+  const { descriptor, title } = buildAlgIcon(classification, alg, cubeColors);
   if (!descriptor) return <TextIcon label={text} />;
-  return (
-  <div className={``}>
-    <IconSvg descriptor={descriptor} showName={showName} title={title} />
-  </div>
-  )
+  return <IconSvg descriptor={descriptor} title={title} />;
 }
 
 export default AlgIcon;

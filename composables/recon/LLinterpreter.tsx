@@ -1,5 +1,14 @@
 export type Grid = number[][]; // each cell is 0..4
 export type Step = 'oll' | 'pll' | 'zbll' | 'eo' | 'cp' | 'onelll';
+export type CompilableLLStep = Extract<Step, 'oll' | 'pll' | 'zbll'>;
+export type SuggestableLLStep = CompilableLLStep | 'auf';
+export type LLStep = Step | 'auf';
+export interface LLCaseInfo<S extends LLStep = LLStep> {
+  step: S;
+  index: number;
+  minMovements: number[];
+  name: string;
+}
 import ollPatterns from '../../public/recon/oll-patterns.json';
 import pllPatterns from '../../public/recon/pll-patterns.json';
 

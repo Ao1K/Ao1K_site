@@ -8,6 +8,13 @@
 
 export const tokenize = (alg: string): string[] => alg.split(/\s+/).filter(Boolean);
 
+const MOVE_RE = /^[UDFBLRudfblrMESxyz][23]?'?$/;
+
+export const isMoveSequence = (alg: string): boolean => {
+  const tokens = tokenize(alg);
+  return tokens.length > 0 && tokens.every((token) => MOVE_RE.test(token));
+};
+
 const amountOf = (suffix: string): number => {
   const magnitude = parseInt(suffix, 10) || 1;
   return suffix.includes("'") ? -magnitude : magnitude;
