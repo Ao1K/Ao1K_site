@@ -7,6 +7,18 @@ export type Post = {
 
 export const posts: Post[] = [
   {
+    slug: "algs-v0-1",
+    title: "Algs v0.1",
+    date: "Aug 7th, 2026",
+    category: "Algs",
+  },
+  {
+    slug: "reconstruct-v0-9",
+    title: "Reconstruct v0.9",
+    date: "Aug 7th, 2026",
+    category: "Reconstruct",
+  },
+  {
     slug: "reconstruct-v0-8",
     title: "Reconstruct v0.8",
     date: "May 16th, 2026",
