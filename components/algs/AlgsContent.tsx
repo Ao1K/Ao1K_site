@@ -62,7 +62,6 @@ const AlgsContent = ({ initialCross, initialPair, initialConfig, initialAlgset }
     // global top-N limit when other unsolved pairs have many faster algs.
     const f2lPair = pair.map((f) => faceColorNames[f]) as [string, string];
     const allSuggestions = interpreterRef.current.getAlgSuggestions(steps, { f2lPair, enabledAlgsets: 'all' });
-    console.log('all suggs', allSuggestions)
 
     // the interpreter labels the pair by its own slotColors order (e.g. "RG pair"), which can
     // be reversed from this component's pair order ("GR pair"), so match by color set.

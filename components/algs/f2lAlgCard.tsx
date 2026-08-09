@@ -349,8 +349,8 @@ const F2lAlgCard =({ alg, steps, cross, caseState, pairColors, yTurns, colorConf
 
         <button
           type="button"
-          aria-label={isFavorited ? 'Remove favorite' : 'Save to favorites'}
-          title={isFavorited ? 'Remove favorite' : 'Save to favorites'}
+          aria-label={isFavorited ? 'Remove from Your Algs' : 'Save to Your Algs'}
+          title={isFavorited ? 'Remove from Your Algs' : 'Save to Your Algs'}
           aria-pressed={isFavorited}
           className={`${iconButtonClass} ${isFavorited ? 'text-primary-400' : ''}`}
           onClick={handleToggleFavorite}

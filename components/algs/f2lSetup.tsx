@@ -32,7 +32,7 @@ export { DEFAULT_F2L_CONFIG, STEP, isF2lConfigured, type F2lCaseConfig };
 // `name` labels the progress segment, `label` is the instruction shown over the cube
 export const STEPS: { name: string; label: string }[] = [
   { name: 'Angle', label: 'Choose angle' },
-  { name: 'F2L', label: 'Click to place edge and corner.\nClick again to twist piece.' },
+  { name: 'Pieces', label: 'Click to place edge and corner\nClick again to twist piece' },
   { name: 'Slots', label: 'Click a slot to mark it solved or unsolved' },
   { name: 'EO', label: 'Click edges to toggle EO (Optional)' },
 ];
