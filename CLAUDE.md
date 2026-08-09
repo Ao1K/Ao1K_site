@@ -11,6 +11,7 @@ This project is for a speed cubing website.
 ## Terminology
 
 Cubing terms or jargon may be used in user prompts. When this occurs, refer to `/docs/cubing-term-definitions.md`.
+If the jargon is not listed, make an entry in `/docs/papercuts.md`
 
 # Style
 
