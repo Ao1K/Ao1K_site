@@ -1,6 +1,6 @@
-// Export helpers for the "Your Algs" list. Both exports operate on a caller-supplied list so
-// only the cards visible after filtering get written out. CSV downloads directly; the PDF is
-// produced by opening a clean print window the browser saves as a PDF.
+// Export helpers for the "Your Algs" list. Both exports operate on a caller-supplied list.
+// CSV downloads directly; the PDF is produced by opening a clean print window the browser
+// saves as a PDF.
 
 import { STORE_VERSION, type AlgStatus, type FavoriteAlg } from './algFavorites';
 import type { SvgShape } from '../recon/stepIconDescriptors';
@@ -71,13 +71,13 @@ const shapeToSvg = (shape: SvgShape): string => {
 
 // the same step icon shown on each card, serialized as inline SVG (matching AlgIcon)
 const algIconSvg = (c: AlgClassification, alg: string, cubeColors: CubeColors, label: string): string => {
-  const { descriptor, showName } = buildAlgIcon(c, alg, cubeColors);
+  const { descriptor } = buildAlgIcon(c, alg, cubeColors);
   if (!descriptor) {
-    return `<svg class="icon" viewBox="0 0 24 24"><text x="12" y="13" text-anchor="middle" dominant-baseline="central" font-size="10" font-weight="bold" fill="#1a1a1a">${escapeHtml(label.slice(0, 6) || '?')}</text></svg>`;
+    return `<span class="text-icon">${escapeHtml(label.slice(0, 6) || '?')}</span>`;
   }
   const shapes = descriptor.shapes.map(shapeToSvg).join('');
-  const name = showName && descriptor.name
-    ? `<text x="12" y="13" text-anchor="middle" dominant-baseline="central" font-size="${descriptor.name.length <= 2 ? 10 : 8}" font-weight="bold" fill="${descriptor.nameColor || '#1a1a1a'}">${escapeHtml(descriptor.name)}</text>`
+  const name = descriptor.label
+    ? `<text x="12" y="13" text-anchor="middle" dominant-baseline="central" font-size="${descriptor.label.fontSize}" font-weight="${descriptor.label.fontWeight}" fill="${descriptor.label.color}">${escapeHtml(descriptor.label.text)}</text>`
     : '';
   const cls = descriptor.enlarge ? 'icon enlarge' : 'icon';
   return `<svg class="${cls}" viewBox="${descriptor.viewBox}" stroke="#52525b" stroke-width="${descriptor.strokeWidth ?? 1}" fill="none">${shapes}${name}</svg>`;
@@ -138,7 +138,8 @@ const buildPrintHtml = (favorites: FavoriteAlg[], cubeColors: CubeColors): strin
   tr { break-inside: avoid; }
   td { padding: 0.3rem 0; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
   .num { width: 1.75rem; color: #999; font-size: 0.85rem; text-align: right; padding-right: 0.6rem; white-space: nowrap; }
-  .icon-cell { width: 32px; padding-right: 0.75rem; }
+  .icon-cell { width: 32px; padding-right: 0.75rem; white-space: nowrap; }
+  .text-icon { display: inline-flex; align-items: center; justify-content: center; height: 24px; padding: 0 4px; border: 1px solid #a3a3a3; background: #ffffff; font-size: 10px; font-weight: 500; line-height: 1; white-space: nowrap; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .icon { display: block; width: 24px; height: 24px; border: 1px solid #a3a3a3; background: #ffffff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .icon.enlarge { width: 32px; height: 32px; border: 0; background: transparent; margin: -2px 0; }
   .alg { width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 1rem; letter-spacing: 0.05em; word-spacing: 0.35em; }

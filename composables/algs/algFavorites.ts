@@ -9,6 +9,7 @@
 // on read, older shapes are migrated forward to the current version (see migrate).
 
 import { useCallback, useSyncExternalStore } from 'react';
+import type { Algset } from '../recon/SimpleCubeInterpreter';
 
 export type AlgStatus = 'learning' | 'learned' | 'none';
 
@@ -17,6 +18,8 @@ export interface FavoriteAlg {
   status: AlgStatus;
   // manual algset description override (max 6 chars). Absent = use the detected algset.
   algset?: string;
+  // the algset the alg was suggested from; the case name is derived from it, never stored
+  sourceAlgset?: Algset;
 }
 
 interface FavoritesEnvelope {
@@ -34,6 +37,19 @@ const EMPTY: FavoriteAlg[] = [];
 // forward migrations keyed by the version they upgrade from. To change the stored shape, bump
 // STORE_VERSION and add the step that turns version N favorites into version N+1 favorites.
 const MIGRATIONS: Record<number, (favorites: FavoriteAlg[]) => FavoriteAlg[]> = {};
+
+// runs the migration steps from fromVersion up to STORE_VERSION. The CSV import reads a version
+// out of the file and calls this too, so both it and local storage share one set of steps.
+export const migrateFavorites = (favorites: FavoriteAlg[], fromVersion: number): FavoriteAlg[] => {
+  let version = fromVersion;
+  let migrated = favorites;
+  while (version < STORE_VERSION) {
+    const step = MIGRATIONS[version];
+    if (step) migrated = step(migrated);
+    version += 1;
+  }
+  return migrated;
+};
 
 const isEnvelope = (value: unknown): value is FavoritesEnvelope =>
   !!value && typeof value === 'object' && !Array.isArray(value) &&
@@ -53,12 +69,7 @@ const migrate = (parsed: unknown): FavoriteAlg[] => {
   } else {
     return EMPTY;
   }
-  while (version < STORE_VERSION) {
-    const step = MIGRATIONS[version];
-    if (step) favorites = step(favorites);
-    version += 1;
-  }
-  return favorites;
+  return migrateFavorites(favorites, version);
 };
 
 // cache the parsed value keyed by its raw string so getSnapshot returns a stable reference
@@ -142,6 +153,13 @@ const setAlgText = (favorites: FavoriteAlg[], alg: string, nextAlg: string): { f
 const remove = (favorites: FavoriteAlg[], alg: string): FavoriteAlg[] =>
   favorites.filter((f) => f.alg !== alg);
 
+// merging never overwrites: an alg already saved keeps its status and algset
+const merge = (favorites: FavoriteAlg[], incoming: FavoriteAlg[]): { favorites: FavoriteAlg[]; added: number } => {
+  const known = new Set(favorites.map((f) => f.alg));
+  const added = incoming.filter((f) => !known.has(f.alg));
+  return { favorites: [...favorites, ...added], added: added.length };
+};
+
 /**
  * Reads favorites from local storage and keeps them in sync across tabs and components.
  * Returns the current list plus helpers to favorite, add, restatus, and delete an alg.
@@ -151,10 +169,10 @@ export function useAlgFavorites() {
 
   const toggleFavorite = useCallback((alg: string) => write(toggle(read(), alg)), []);
   // returns false when the alg is already saved, so callers can report the no-op
-  const addFavorite = useCallback((alg: string): boolean => {
+  const addFavorite = useCallback((alg: string, sourceAlgset?: Algset): boolean => {
     const current = read();
     if (current.some((f) => f.alg === alg)) return false;
-    write([...current, { alg, status: DEFAULT_STATUS }]);
+    write([...current, { alg, status: DEFAULT_STATUS, sourceAlgset }]);
     return true;
   }, []);
   const setFavoriteStatus = useCallback((alg: string, status: AlgStatus) => write(setStatus(read(), alg, status)), []);
@@ -166,8 +184,14 @@ export function useAlgFavorites() {
     return replaced;
   }, []);
   const removeFavorite = useCallback((alg: string) => write(remove(read(), alg)), []);
+  // returns how many of the incoming algs were new, the rest being already saved
+  const mergeFavorites = useCallback((incoming: FavoriteAlg[]): number => {
+    const { favorites: next, added } = merge(read(), incoming);
+    if (added > 0) write(next);
+    return added;
+  }, []);
 
   const isFavorite = useCallback((alg: string) => favorites.some((f) => f.alg === alg), [favorites]);
 
-  return { favorites, isFavorite, toggleFavorite, addFavorite, setFavoriteStatus, setFavoriteAlgset, setFavoriteAlg, removeFavorite };
+  return { favorites, isFavorite, toggleFavorite, addFavorite, setFavoriteStatus, setFavoriteAlgset, setFavoriteAlg, removeFavorite, mergeFavorites };
 }

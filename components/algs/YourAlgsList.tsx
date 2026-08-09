@@ -15,8 +15,9 @@ import { showToast } from '../../composables/toast';
 import { classifyFavorite } from '../../composables/algs/classifyAlg';
 import YourAlgCard from './YourAlgCard';
 import AddAlgRow from './AddAlgRow';
-import DownloadMenu from './DownloadMenu';
+import TransferMenu from './TransferMenu';
 import type { AlgStatus } from '../../composables/algs/algFavorites';
+import type { ParsedImport } from '../../composables/algs/importFavorites';
 
 const nextStatus = (status: AlgStatus): AlgStatus => {
   switch (status) {
@@ -117,7 +118,7 @@ interface YourAlgsListProps {
 }
 
 const YourAlgsList = ({ hasSolutions }: YourAlgsListProps) => {
-  const { favorites, addFavorite, setFavoriteStatus, setFavoriteAlgset, setFavoriteAlg, removeFavorite } = useAlgFavorites();
+  const { favorites, addFavorite, setFavoriteStatus, setFavoriteAlgset, setFavoriteAlg, removeFavorite, mergeFavorites } = useAlgFavorites();
 
   const [activeEditor, setActiveEditor] = useState<ActiveEditor>(null);
   const [confirmingAlg, setConfirmingAlg] = useState<string | null>(null);
@@ -154,6 +155,27 @@ const YourAlgsList = ({ hasSolutions }: YourAlgsListProps) => {
       message: <span>{alg} is already in Your Algs</span>,
     });
     return false;
+  };
+
+  const importToast = (message: string) => showToast({
+    addMethod: 'replace',
+    icon: <Parrot filled className="w-6 h-6 text-primary-800" />,
+    message: <span>{message}</span>,
+  });
+
+  const handleImport = ({ favorites: imported, invalid }: ParsedImport) => {
+    const added = mergeFavorites(imported);
+    const duplicates = imported.length - added;
+    if (added === 0 && duplicates === 0) {
+      importToast(invalid > 0 ? 'No algs could be read from that file.' : 'That file had no algs in it.');
+      return;
+    }
+    setPage(1);
+    const skipped = [
+      duplicates > 0 ? `${duplicates} already saved` : '',
+      invalid > 0 ? `${invalid} unreadable` : '',
+    ].filter(Boolean).join(', ');
+    importToast(`Imported ${added} alg${added === 1 ? '' : 's'}${skipped ? ` (skipped ${skipped})` : ''}`);
   };
 
   const handleSetAlg = (alg: string, nextAlg: string) => {
@@ -297,19 +319,20 @@ const YourAlgsList = ({ hasSolutions }: YourAlgsListProps) => {
                 <span className="text-sm whitespace-nowrap">Edit Mode</span>
               </label>
             </div>
-            <div className="flex items-center gap-1.5 bg-neutral-700 p-1 rounded-sm">
-              <div className="flex items-center gap-1.5 pl-2 pr-1.5 h-7.5 border rounded-sm bg-dark border-neutral-600 hover:border-neutral-500 focus:border-neutral-500">
-                <DownloadMenu
-                  favorites={visible}
-                  open={openMenu === 'download'}
-                  onToggle={() => toggleMenu('download')}
-                  onClose={() => setOpenMenu(null)}
-                />
-              </div>
-            </div>
           </div>
           </>
         )}
+        <div className="flex items-center gap-1.5 ml-auto bg-neutral-700 p-1 rounded-sm text-sm font-normal">
+          <TransferMenu
+            favorites={favorites}
+            filtered={visible}
+            onImport={handleImport}
+            onImportError={() => importToast('That file could not be read.')}
+            open={openMenu === 'download'}
+            onToggle={() => toggleMenu('download')}
+            onClose={() => setOpenMenu(null)}
+          />
+        </div>
       </h2>
 
       {favorites.length === 0 && hasSolutions && (
