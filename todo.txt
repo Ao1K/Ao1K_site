@@ -32,3 +32,4 @@ Create custom OG previews of different F2L cases on the Algs page:
   - [Case image]
   - Top 3 solutions, or however many fit.
   - "Click link for more info"
+- Add a share button above Solutions
