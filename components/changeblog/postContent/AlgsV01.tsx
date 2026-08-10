@@ -71,8 +71,8 @@ function DummyF2lAlgCard() {
 }
 
 function DummyTransferMenu() {
-  const itemClass = 'block w-full pl-9 pr-3 py-1.5 text-left text-sm text-primary-100';
-  const categoryClass = 'flex items-center gap-2 px-3 text-sm tracking-wide text-dark_accent';
+  const itemClass = "block w-full pl-9 pr-3 py-1.5 text-left text-sm text-primary-100";
+  const categoryClass = "flex items-center gap-2 px-3 text-sm tracking-wide text-dark_accent";
 
   return (
     <div className="flex w-fit flex-col items-end" aria-hidden="true">
@@ -119,7 +119,7 @@ export default function AlgsV01() {
       <div className="bg-primary-100 w-full h-1"></div>
       <div className="pt-6 gap-1 flex flex-col">
         <p>
-          Simplicity is a virtue borne from life's complications. This is the first public release of the <Link className="underline underline-offset-1" href="/algs">Algs tool</Link>.
+          Simplicity is a virtue borne from life&apos;s complications. This is the first public release of the <Link className="underline underline-offset-1" href="/algs">Algs tool</Link>.
         </p>
         <ul className="pt-6 space-y-1 list-none text-neutral-400">
           <li>- Added a tool for finding and making sense of F2L solutions.</li>
@@ -135,21 +135,21 @@ export default function AlgsV01() {
 
       <h2 className="py-2 text-xl mt-12 mb-3 pl-2 w-full text-dark bg-primary-300">{`>`} Visual F2L</h2>
       <div className="flex flex-col gap-6 pb-6">
-        <p>I made an tool to help people understand F2L because I feel there is a gap out there online. It can be hard to find the best solutions, and even if you do find good ones, it's easy to approach it incorrectly.</p>
+        <p>I made an tool to help people understand F2L because I feel there is a gap out there online. It can be hard to find the best solutions, and even if you do find good ones, it&apos;s easy to approach it incorrectly.</p>
         <p>Let me explain:</p>
       </div>
       <h3 className="w-1/2 pl-4 text-lg bg-neutral-300 text-dark">{`>>`} The problem</h3>
       <div className="flex flex-col gap-6 py-6">
         <p>There are a LOT of F2L cases. This site has over 3000 solutions for various cases. Even if you find ways to simplify, learning a bunch of these solutions by just memorizing them would waste a lot of time.</p>
         <p>So instead, F2L is taught intuitively. You learn a generalized process for solving things.
-          This process can be slow because it is new to you and you're not used to recognizing anything. It's also nowhere near as efficient as it could be.</p>
-        <p>So there's too many algorithms to just memorize, and the basic intuitive process is not enough. What do you do?</p>
+          This process can be slow because it is new to you and you&apos;re not used to recognizing anything. It&apos;s also nowhere near as efficient as it could be.</p>
+        <p>So there&apos;s too many algorithms to just memorize, and the basic intuitive process is not enough. What do you do?</p>
       </div>
       <h3 className="w-1/2 pl-4 text-lg bg-neutral-300 text-dark">{`>>`} Understanding F2L</h3>
       <div className="flex flex-col gap-6 py-6">
         <p>Extremely good F2L still follows an intuitive process. 
           By understanding the F2L process better, you give yourself opportunities to improve your solutions to multiple cases. 
-          For example, if you see a case where you can use R' U2 R to pair two pieces, you might be able to apply that idea to cases that look a bit different.</p>
+          For example, if you see a case where you can use R&apos; U2 R to pair two pieces, you might be able to apply that idea to cases that look a bit different.</p>
         <DummyF2lAlgCard />
         <p>The Visual search tool will provide solutions like this one above. The full alg is written out up top. If you click on it, a dropdown will open up that shows how you can understand the alg.</p>
         <p>On the <Link className="underline underline-offset-1" href="/algs">actual page</Link>, clicking the play button will also slowly step through the solution move-by-move. Clicking the <span className="inline-flex align-middle text-neutral-500 text-2xl leading-none mx-1 -ml-0.5"><Parrot/></span>will add the alg to your list.</p>

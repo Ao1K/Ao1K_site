@@ -17,8 +17,6 @@ Add roux algs
 Think about function of solve review carefully. Form will follow.
 - Add breakdown into MovesTextEditor? Explore adding divs.
 
-Keyhole tutorial
-
 Add search bar to YourAlgsList for alg names
  - In dropdown, give context: "Search by keyword: (Jb, T 6, BR)
  - What about expanding the algset search to have name subsearch?

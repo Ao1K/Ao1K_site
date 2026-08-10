@@ -105,10 +105,10 @@ export default function ReconstructV09() {
       </div>
       <h2 className="py-2 text-xl mt-12 mb-3 pl-2 w-full text-dark bg-primary-300">{`>`} Many, many algs</h2>
       <div className="flex flex-col gap-6 pb-6">
-        <p>Can't count all these algs! We now have a full set of ZBLL and ZBLS algs, as well as hundreds more for F2L, OLL, and PLL.</p>
+        <p>Can&apos;t count all these algs! We now have a full set of ZBLL and ZBLS algs, as well as hundreds more for F2L, OLL, and PLL.</p>
         <p>ZBLL and ZBLS algorithm suggestions are off by default. Enable them in the settings.</p>
         <DummySettingsMenu />
-        <p>You may notice there's now a setting for "Handedness" as well. If you prefer algorithms that use R moves, then you won't have to do anything. But otherwise, change it to lefty and algorithm suggestions will favor algorithms with L moves.</p>
+        <p>You may notice there&apos;s now a setting for "Handedness" as well. If you prefer algorithms that use R moves, then you won&apos;t have to do anything. But otherwise, change it to lefty and algorithm suggestions will favor algorithms with L moves.</p>
         <p>This setting gives a slight preference to F2L or ZBLS algs of the given handedness, and a much larger preference to last layer algs.</p>
       </div>
 
