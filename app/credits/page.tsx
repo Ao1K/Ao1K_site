@@ -31,10 +31,22 @@ const credits = [
     extraContrib: null,
   },
   {
+    name: "Wara",
+    contribution: "being the coolest librarian, and for Sharknado, the bite-y-est cat around",
+    source: null,
+    extraContrib: null
+  },
+  {
     name:"Stewy",
     contribution: "OLL and PLL algs",
     source: "https://reco.nz/algs/oll",
     extraContrib: ", for early design commentary, and for Angus",
+  },
+  {
+    name:"Juliette (JuJu) Sébastien and others",
+    contribution: "ZBLL algs",
+    source: "https://docs.google.com/spreadsheets/d/1-uwmZHf4vwJxFgeB3-TiF8MQ0RFSS30d5CUK96PoIwk",
+    extraContrib: null,
   },
   {
     name:"Teri",

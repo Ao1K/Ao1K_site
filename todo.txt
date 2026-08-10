@@ -5,17 +5,25 @@ Recon saving via profiles.
   - Give stats--pair choice, efficiency, mistakes--over time
 
 OLL/PLL algsets in Algs page. Needs fingertricks to be done well.
+- Alternatively, just link other people's sheets!
 
 A tab for your recons (click an icon and expand into a whole new page). A profile system. Oofda.
   - Sharing YourAlgsList via url, once profiles working
 
 A completely intuitive f2l guide
 
-Add 
-Roux algs
-ZBLL algs
+Add roux algs
 
 Think about function of solve review carefully. Form will follow.
 - Add breakdown into MovesTextEditor? Explore adding divs.
 
 Keyhole tutorial
+
+Add search bar to YourAlgsList for alg names
+ - In dropdown, give context: "Search by keyword: (Jb, T 6, BR)
+ - What about expanding the algset search to have name subsearch?
+
+Roux icons in YourAlgsList
+
+Wack suggestion
+http://localhost:3000/algs/?a=f2l&c=y3022000000000000
