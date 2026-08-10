@@ -173,6 +173,32 @@ const findSlot = (state: Facelets, table: Record<string, number[]>, colors: Colo
 export const crossSolved = (state: Facelets): boolean =>
   CROSS_SLOTS.every((key) => isSlotSolved(state, key, EDGE_SLOTS));
 
+// whether the pair edge is oriented (EO "good") in the frame the state's own centers define,
+// matching cubePaint.isEdgeOriented: edges carrying a U/D color orient off that sticker, the
+// rest off their L/R sticker. Null when the edge cannot be located.
+export function pairEdgeOriented(state: Facelets, pairColors: [Color, Color]): boolean | null {
+  const slot = findSlot(state, EDGE_SLOTS, pairColors);
+  if (!slot) return null;
+
+  const indices = EDGE_SLOTS[slot];
+  const faces = [...slot];
+  const verticalColors: Color[] = [centerColor(state, 'U'), centerColor(state, 'D')];
+  const xColors: Color[] = [centerColor(state, 'L'), centerColor(state, 'R')];
+  const inTopBottom = faces.includes('U') || faces.includes('D');
+
+  const faceShowing = (colors: Color[]): string | undefined =>
+    faces.find((_, i) => colors.includes(state[indices[i]]));
+
+  const vertical = faceShowing(verticalColors);
+  if (vertical) {
+    return inTopBottom ? vertical === 'U' || vertical === 'D' : vertical !== 'L' && vertical !== 'R';
+  }
+
+  const lateral = faceShowing(xColors);
+  if (!lateral) return true;
+  return inTopBottom ? lateral !== 'U' && lateral !== 'D' : lateral === 'L' || lateral === 'R';
+}
+
 const pairHome = (state: Facelets, pairColors: [Color, Color]): { corner: string; edge: string } | null => {
   const sides = ['F', 'R', 'B', 'L'].filter((letter) => pairColors.includes(centerColor(state, letter)));
   if (sides.length !== 2) return null;
