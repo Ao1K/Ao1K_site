@@ -7,6 +7,8 @@ import SettingsMenu from './SettingsMenu';
 const PAGE_SETTINGS: Record<string, string> = {
   '/recon': 'recon',
   '/recon/': 'recon',
+  '/algs': 'algs',
+  '/algs/': 'algs',
   // Add more pages here as needed, e.g.:
   // '/practice': 'practice',
   // '/practice/': 'practice',

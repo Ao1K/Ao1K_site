@@ -2,11 +2,19 @@
 
 export const versionList = {
   "learn": "",
-  "recon": "v0.8",
+  "recon": "v0.9",
   "changeblog": "",
+  "algs": "v0.1",
 }
 
 export const highlightClass = 'text-dark bg-primary-100 backdrop-blur-xs caret-dark';
+
+export const OG_PREVIEW_SCALE = 0.7;
+
+export const OG_PREVIEW_SIZE = {
+  width: 1200 * OG_PREVIEW_SCALE,
+  height: 630 * OG_PREVIEW_SCALE,
+};
 
 export const editorAliases: Record<string, string[]> = {
   solution: ['alg'],

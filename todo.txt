@@ -2,25 +2,34 @@ Informal Bugs/Todo List. Not guaranteed to be complete or accurate.
 ===================================================================
 
 Recon saving via profiles.
-  
-Algs page. For your algs. A tab for your recons (click an icon and expand into a whole new page). A profile system. Oofda.
+  - Give stats--pair choice, efficiency, mistakes--over time
 
-Add basic y move algs, like for
-http://localhost:3000/recon/?scramble=%2F%2F_Scramble_of_the_day%0A%2F%2F_2026-01-22%0AR_D%27_B%27_L2_F%27_U%27_L_F_D%27_F_B2_U_B2_U%27_B2_U2_D%27_R2_B2_U%27_L2&time=10.826&solution=y%27_F2_D%27_R%27_F_D2%0Ay%27_R%27_U2_R%0AL%27_U_L_U_L%27_U%27_L
-So like AUF + trigger_1 + y + AUF + trigger_2?
-Trigger_1 = any RU or LU
-Trigger_2 = any RU, LU, or FU
+OLL/PLL algsets in Algs page. Needs fingertricks to be done well.
+- Alternatively, just link other people's sheets!
+
+A tab for your recons (click an icon and expand into a whole new page). A profile system. Oofda.
+  - Sharing YourAlgsList via url, once profiles working
 
 A completely intuitive f2l guide
 
-Add 
-F R' U' R F' and variants manually. Maybe just all 5 movers (BRU, FRU, BLU, FLU)
-L U L2 U' L2 U L'
-R' U R U R' U R U' R' U' R
-R U' R' D R' U R D'
-R U R' U2 R U' R' U R U' R'
-Roux algs
-ZBLL algs
-Lefty algs
+Add roux algs
 
 Think about function of solve review carefully. Form will follow.
+- Add breakdown into MovesTextEditor? Explore adding divs.
+
+Add search bar to YourAlgsList for alg names
+ - In dropdown, give context: "Search by keyword: (Jb, T 6, BR)
+ - What about expanding the algset search to have name subsearch?
+
+Roux icons in YourAlgsList
+
+Wack suggestion
+http://localhost:3000/algs/?a=f2l&c=y3022000000000000
+
+Create custom OG previews of different F2L cases on the Algs page:
+- Description: How to solve this case
+- Logo:
+  - [Case image]
+  - Top 3 solutions, or however many fit.
+  - "Click link for more info"
+- Add a share button above Solutions

@@ -15,7 +15,7 @@ export default function LessonList({ items, style = 'decimal' }: LessonListProps
       ${style === 'alpha' ? 'list-disc' : 'list-decimal'}`}
     >
       {items.map((item, index) => (
-        <li key={index}>{renderBold(item)}</li>
+        <li className="whitespace-pre-wrap" key={index}>{renderBold(item)}</li>
       ))}
     </ol>
   );

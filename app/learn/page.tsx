@@ -1,7 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import LessonBody from "../../components/learn/LessonBody";
 import { lessons } from "../../components/learn/lessons";
 import TitleBar from "../../components/learn/TitleBar";
+
+export const metadata: Metadata = {
+  title: "Lessons",
+  description: "Learn to cube",
+};
 
 export default function Learn() {
   const categories: Record<string, typeof lessons> = {};
@@ -10,7 +16,7 @@ export default function Learn() {
   }
 
   return (
-    <div className="flex flex-col pt-20 pb-10 px-6 max-w-3xl text-md text-primary-100 leading-relaxed">
+    <div className="flex flex-col pt-20 pb-10 px-6 max-w-3xl mx-auto text-md text-primary-100 leading-relaxed">
       <TitleBar title="Cubing Lessons" subtitle="And the adventures of Peaku" />
       <div className="bg-primary-100 w-full h-0.5 mb-8" />
       <LessonBody>

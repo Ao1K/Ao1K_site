@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { lessons } from "./lessons";
 
 export default function LessonSidebar() {
-  const pathname = usePathname();
+  const pathname = usePathname().replace(/\/$/, "") || "/";
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
@@ -20,6 +20,9 @@ export default function LessonSidebar() {
 
   const toggle = (cat: string) =>
     setCollapsed((prev) => ({ ...prev, [cat]: !prev[cat] }));
+
+  // hidden on the learn overview page
+  if (pathname === "/learn") return null;
 
   const sidebar = (
     <nav className="flex flex-col gap-1 p-4 text-sm">

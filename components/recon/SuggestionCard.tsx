@@ -1,5 +1,10 @@
 import { useSyncedSettings } from '../../composables/useSettings';
-import React, { JSX } from 'react';
+import { useAlgFavorites } from '../../composables/algs/algFavorites';
+import type { Algset } from '../../composables/recon/SimpleCubeInterpreter';
+import { showToast } from '../../composables/toast';
+import Parrot from '../icons/parrot';
+import Link from 'next/link';
+import React, { JSX, useState } from 'react';
 
 interface SuggestionCardProps {
   alg: string;
@@ -8,6 +13,7 @@ interface SuggestionCardProps {
   placement: string;
   isFocused: boolean;
   hasEOsolved?: boolean;
+  algset?: Algset;
   handleSuggestionRequest: () => void;
   handleSuggestionAccept: () => void;
 }
@@ -91,9 +97,38 @@ const renderStepIcon = (steps: string[], letterToColor: Record<string, string>, 
   return renderTextIcon(steps[0] || '?');
 };
 
-export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolved, handleSuggestionRequest, handleSuggestionAccept }: SuggestionCardProps) => {
+export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolved, algset, handleSuggestionRequest, handleSuggestionAccept }: SuggestionCardProps) => {
   const { settings } = useSyncedSettings();
   const { cubeColors } = settings;
+
+  const { isFavorite, addFavorite, setFavoriteStatus, removeFavorite } = useAlgFavorites();
+  const favorited = isFavorite(alg);
+
+  const [animating, setAnimating] = useState(false);
+
+  const toggleFavorite = () => {
+    if (favorited) {
+      removeFavorite(alg);
+    } else {
+      addFavorite(alg, algset);
+      setFavoriteStatus(alg, 'learning');
+      setAnimating(true);
+      showToast({
+        dismissKey: 'alg-added-to-your-algs',
+        addMethod: 'replace',
+        closable: false,
+        icon: <Parrot filled className="w-6 h-6 text-primary-800" />,
+        message: (
+          <span>
+            {alg} added to{' '}
+            <Link href="/algs/" className="text-primary-800 underline hover:no-underline">
+              Your Algs
+            </Link>
+          </span>
+        ),
+      });
+    }
+  };
 
   // Create dynamic color mapping based on current cube colors
   const letterToColor: Record<string, string> = {
@@ -112,9 +147,9 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
   const icon = renderStepIcon(steps, letterToColor, defaultPairColors, defaultMultislotColors, eoColor);
 
   return (
-    <div 
+    <div
       className={
-        `hover:bg-primary-100 hover:shadow-md
+        `group hover:bg-primary-100 hover:shadow-md
         flex flex-row items-center gap-3 border text-dark text-md p-1
         ${isFocused ? 'bg-primary-100 shadow-md border-primary-100' : 'bg-primary-200 border-neutral-400'}
         ${placement === '0'  ? 'rounded-t-sm' : ''}
@@ -123,14 +158,31 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
         `
       }
       onMouseOver={handleSuggestionRequest}
+      onMouseDown={(event) => event.preventDefault()}
       onClick={handleSuggestionAccept}
       id={id}
       tabIndex={0}
     >
-      <div className="w-6 h-6"> 
+      <div className="w-fit min-w-6 h-6">
         {icon}
       </div>
       <div className="grow">{alg}</div>
+      <button
+        type="button"
+        aria-label={favorited ? 'Unfavorite alg' : 'Favorite alg'}
+        title={favorited ? 'Unfavorite alg' : 'Favorite alg'}
+        aria-pressed={favorited}
+        className={`shrink-0 p-2 -m-2 text-neutral-500 hover:text-primary-800 transition-opacity
+          group-hover:opacity-100 pointer-coarse:opacity-100 ${favorited ? 'opacity-100' : 'opacity-0'}`}
+        onClick={(event) => { event.stopPropagation(); toggleFavorite(); }}
+      >
+        <Parrot
+          filled={favorited}
+          animating={animating}
+          onAnimationEnd={(event) => { if (event.animationName === 'parrot-squawk') setAnimating(false); }}
+          className="w-6 h-6"
+        />
+      </button>
     </div>
   );
 };

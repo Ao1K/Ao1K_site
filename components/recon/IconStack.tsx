@@ -141,7 +141,7 @@ const IconStack = ({position, moves, lineIconData, editableElement}: IconStackPr
     return <circle key={i} cx={shape.cx} cy={shape.cy} r={shape.r} fill={shape.fill} />;
   };
 
-  const descriptorToJsx = (desc: IconDescriptor, showNameAsText?: boolean, nameType?: string) => {
+  const descriptorToJsx = (desc: IconDescriptor, nameType?: string) => {
     const [, , vw, vh] = desc.viewBox.split(' ').map(Number);
 
     return (
@@ -154,23 +154,23 @@ const IconStack = ({position, moves, lineIconData, editableElement}: IconStackPr
         fill="none"
       >
         {desc.shapes.map(renderShape)}
-        {desc.name && showNameAsText && (
+        {desc.label && (
           <text
             x={vw / 2}
             y={vh / 2}
             textAnchor="middle"
             dominantBaseline="central"
-            fill={desc.nameColor || '#ECE6EF'}
+            fill={desc.label.color}
             stroke="none"
-            fontSize={desc.name.length <= 2 ? 10 : 8}
-            fontWeight="bold"
+            fontSize={desc.label.fontSize}
+            fontWeight={desc.label.fontWeight}
             fontFamily="var(--font-Rubik), system-ui, sans-serif"
           >
-            {desc.name}
+            {desc.label.text}
           </text>
         )}
-        {desc.name && !showNameAsText && (
-          <title>{nameType ? `${nameType} ${desc.name}` : desc.name}</title>
+        {desc.name && !desc.label && (
+          <title>{nameType ? `${nameType.toUpperCase()} ${desc.name}` : desc.name}</title>
         )}
       </svg>
     );
@@ -189,9 +189,6 @@ const IconStack = ({position, moves, lineIconData, editableElement}: IconStackPr
       );
     }
 
-    // PLL-type steps show name as text overlay; others show as hover tooltip
-    const showNameAsText = stepInfo?.nameType === 'pll';
-
     return (
       <div className="relative group w-full h-full overflow-visible">
         <div
@@ -201,7 +198,7 @@ const IconStack = ({position, moves, lineIconData, editableElement}: IconStackPr
             height: `${height}px`
           }}
         >
-          {descriptorToJsx(descriptor, showNameAsText, stepInfo?.nameType)}
+          {descriptorToJsx(descriptor, stepInfo?.nameType)}
         </div>
       </div>
     );

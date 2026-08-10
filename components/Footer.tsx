@@ -2,6 +2,7 @@ import DiscordIcon from './icons/discord';
 import GithubIcon from './icons/github';
 import WriteIcon from './icons/write';
 import { Glory } from 'next/font/google';
+import Link from 'next/link';
 import Tagline from './Tagline';
 
 const glory = Glory({ 
@@ -40,6 +41,9 @@ export default function Footer() {
         <GithubIcon />
         Contribute || Report bugs
       </a>
+      <Link href="/credits" className="hover:text-primary-100">
+        Credits
+      </Link>
       </div>
     </footer>
   );

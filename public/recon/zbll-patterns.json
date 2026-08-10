@@ -1,0 +1,2367 @@
+{
+  "timestamp": "2026-08-06T21:44:08.733Z",
+  "totalPatterns": 472,
+  "patternType": "zbll",
+  "patterns": [
+    {
+      "caseIndex": 1,
+      "name": "T 72",
+      "pattern": 833922581889996
+    },
+    {
+      "caseIndex": 2,
+      "name": "T 71",
+      "pattern": 868412597855436
+    },
+    {
+      "caseIndex": 3,
+      "name": "T 70",
+      "pattern": 839184312717672
+    },
+    {
+      "caseIndex": 4,
+      "name": "T 69",
+      "pattern": 836845582366614
+    },
+    {
+      "caseIndex": 5,
+      "name": "T 66",
+      "pattern": 834002769837126
+    },
+    {
+      "caseIndex": 6,
+      "name": "T 62",
+      "pattern": 853524083298708
+    },
+    {
+      "caseIndex": 7,
+      "name": "T 63",
+      "pattern": 836753789385108
+    },
+    {
+      "caseIndex": 8,
+      "name": "T 68",
+      "pattern": 836676510252948
+    },
+    {
+      "caseIndex": 9,
+      "name": "T 65",
+      "pattern": 834001305491916
+    },
+    {
+      "caseIndex": 10,
+      "name": "T 67",
+      "pattern": 867853176552396
+    },
+    {
+      "caseIndex": 11,
+      "name": "T 64",
+      "pattern": 856109526013032
+    },
+    {
+      "caseIndex": 12,
+      "name": "T 61",
+      "pattern": 853771517896854
+    },
+    {
+      "caseIndex": 13,
+      "name": "T 54",
+      "pattern": 839967877065192
+    },
+    {
+      "caseIndex": 14,
+      "name": "T 53",
+      "pattern": 838561845620178
+    },
+    {
+      "caseIndex": 15,
+      "name": "T 55",
+      "pattern": 840136902149196
+    },
+    {
+      "caseIndex": 16,
+      "name": "T 56",
+      "pattern": 869746427957820
+    },
+    {
+      "caseIndex": 17,
+      "name": "T 57",
+      "pattern": 869749576693500
+    },
+    {
+      "caseIndex": 18,
+      "name": "T 60",
+      "pattern": 840123518681832
+    },
+    {
+      "caseIndex": 19,
+      "name": "T 59",
+      "pattern": 855654616015794
+    },
+    {
+      "caseIndex": 20,
+      "name": "T 58",
+      "pattern": 838728680485554
+    },
+    {
+      "caseIndex": 21,
+      "name": "T 52",
+      "pattern": 857128177813992
+    },
+    {
+      "caseIndex": 22,
+      "name": "T 51",
+      "pattern": 852741407708220
+    },
+    {
+      "caseIndex": 23,
+      "name": "T 49",
+      "pattern": 840215625751116
+    },
+    {
+      "caseIndex": 24,
+      "name": "T 50",
+      "pattern": 838639124752338
+    },
+    {
+      "caseIndex": 25,
+      "name": "T 18",
+      "pattern": 839977975507134
+    },
+    {
+      "caseIndex": 26,
+      "name": "T 17",
+      "pattern": 857142493180512
+    },
+    {
+      "caseIndex": 27,
+      "name": "T 19",
+      "pattern": 834027416522316
+    },
+    {
+      "caseIndex": 28,
+      "name": "T 20",
+      "pattern": 856826631905214
+    },
+    {
+      "caseIndex": 29,
+      "name": "T 21",
+      "pattern": 840134339358654
+    },
+    {
+      "caseIndex": 30,
+      "name": "T 24",
+      "pattern": 868404984156096
+    },
+    {
+      "caseIndex": 31,
+      "name": "T 23",
+      "pattern": 867879287582796
+    },
+    {
+      "caseIndex": 32,
+      "name": "T 22",
+      "pattern": 855625642631580
+    },
+    {
+      "caseIndex": 33,
+      "name": "T 16",
+      "pattern": 839980747961952
+    },
+    {
+      "caseIndex": 34,
+      "name": "T 15",
+      "pattern": 840215113180512
+    },
+    {
+      "caseIndex": 35,
+      "name": "T 13",
+      "pattern": 833938170406086
+    },
+    {
+      "caseIndex": 36,
+      "name": "T 14",
+      "pattern": 834015810655686
+    },
+    {
+      "caseIndex": 37,
+      "name": "T 6",
+      "pattern": 838988084852232
+    },
+    {
+      "caseIndex": 38,
+      "name": "T 5",
+      "pattern": 840167415733056
+    },
+    {
+      "caseIndex": 39,
+      "name": "T 7",
+      "pattern": 840139174972674
+    },
+    {
+      "caseIndex": 40,
+      "name": "T 8",
+      "pattern": 873835043299074
+    },
+    {
+      "caseIndex": 41,
+      "name": "T 9",
+      "pattern": 856830745284354
+    },
+    {
+      "caseIndex": 42,
+      "name": "T 12",
+      "pattern": 839144137982352
+    },
+    {
+      "caseIndex": 43,
+      "name": "T 11",
+      "pattern": 839982811121154
+    },
+    {
+      "caseIndex": 44,
+      "name": "T 10",
+      "pattern": 872570666725500
+    },
+    {
+      "caseIndex": 45,
+      "name": "T 4",
+      "pattern": 840089775483456
+    },
+    {
+      "caseIndex": 46,
+      "name": "T 3",
+      "pattern": 856071879099792
+    },
+    {
+      "caseIndex": 47,
+      "name": "T 1",
+      "pattern": 855655254261660
+    },
+    {
+      "caseIndex": 48,
+      "name": "T 2",
+      "pattern": 839145170938632
+    },
+    {
+      "caseIndex": 49,
+      "name": "T 42",
+      "pattern": 855650930650140
+    },
+    {
+      "caseIndex": 50,
+      "name": "T 41",
+      "pattern": 855650924220054
+    },
+    {
+      "caseIndex": 51,
+      "name": "T 43",
+      "pattern": 840163413488076
+    },
+    {
+      "caseIndex": 52,
+      "name": "T 44",
+      "pattern": 838633556825748
+    },
+    {
+      "caseIndex": 53,
+      "name": "T 45",
+      "pattern": 872576859750294
+    },
+    {
+      "caseIndex": 54,
+      "name": "T 48",
+      "pattern": 856776619099752
+    },
+    {
+      "caseIndex": 55,
+      "name": "T 47",
+      "pattern": 840084326553192
+    },
+    {
+      "caseIndex": 56,
+      "name": "T 46",
+      "pattern": 839928684936552
+    },
+    {
+      "caseIndex": 57,
+      "name": "T 40",
+      "pattern": 872408509871508
+    },
+    {
+      "caseIndex": 58,
+      "name": "T 39",
+      "pattern": 838554472106388
+    },
+    {
+      "caseIndex": 59,
+      "name": "T 37",
+      "pattern": 838723905337494
+    },
+    {
+      "caseIndex": 60,
+      "name": "T 38",
+      "pattern": 840084689886156
+    },
+    {
+      "caseIndex": 61,
+      "name": "T 30",
+      "pattern": 836680383446568
+    },
+    {
+      "caseIndex": 62,
+      "name": "T 29",
+      "pattern": 869735493113340
+    },
+    {
+      "caseIndex": 63,
+      "name": "T 31",
+      "pattern": 856816313464032
+    },
+    {
+      "caseIndex": 64,
+      "name": "T 32",
+      "pattern": 852745750915260
+    },
+    {
+      "caseIndex": 65,
+      "name": "T 33",
+      "pattern": 836847579429384
+    },
+    {
+      "caseIndex": 66,
+      "name": "T 36",
+      "pattern": 840202022284512
+    },
+    {
+      "caseIndex": 67,
+      "name": "T 35",
+      "pattern": 869760511537980
+    },
+    {
+      "caseIndex": 68,
+      "name": "T 34",
+      "pattern": 840206557784256
+    },
+    {
+      "caseIndex": 69,
+      "name": "T 28",
+      "pattern": 836759468165928
+    },
+    {
+      "caseIndex": 70,
+      "name": "T 27",
+      "pattern": 840128917534656
+    },
+    {
+      "caseIndex": 71,
+      "name": "T 25",
+      "pattern": 853774598311944
+    },
+    {
+      "caseIndex": 72,
+      "name": "T 26",
+      "pattern": 840124743152352
+    },
+    {
+      "caseIndex": 73,
+      "name": "U 72",
+      "pattern": 835803452846106
+    },
+    {
+      "caseIndex": 74,
+      "name": "U 71",
+      "pattern": 869757921305946
+    },
+    {
+      "caseIndex": 75,
+      "name": "U 69",
+      "pattern": 836837107024044
+    },
+    {
+      "caseIndex": 76,
+      "name": "U 70",
+      "pattern": 840202381979598
+    },
+    {
+      "caseIndex": 77,
+      "name": "U 62",
+      "pattern": 853528677335724
+    },
+    {
+      "caseIndex": 78,
+      "name": "U 63",
+      "pattern": 836758383422124
+    },
+    {
+      "caseIndex": 79,
+      "name": "U 68",
+      "pattern": 835818730081146
+    },
+    {
+      "caseIndex": 80,
+      "name": "U 66",
+      "pattern": 839968016761038
+    },
+    {
+      "caseIndex": 81,
+      "name": "U 61",
+      "pattern": 853763042554284
+    },
+    {
+      "caseIndex": 82,
+      "name": "U 65",
+      "pattern": 869746315431546
+    },
+    {
+      "caseIndex": 83,
+      "name": "U 67",
+      "pattern": 835814637416826
+    },
+    {
+      "caseIndex": 84,
+      "name": "U 64",
+      "pattern": 857128317509838
+    },
+    {
+      "caseIndex": 85,
+      "name": "U 53",
+      "pattern": 838546527522708
+    },
+    {
+      "caseIndex": 86,
+      "name": "U 54",
+      "pattern": 833844217189992
+    },
+    {
+      "caseIndex": 87,
+      "name": "U 55",
+      "pattern": 836845587117306
+    },
+    {
+      "caseIndex": 88,
+      "name": "U 56",
+      "pattern": 868417329061758
+    },
+    {
+      "caseIndex": 89,
+      "name": "U 49",
+      "pattern": 868178951256558
+    },
+    {
+      "caseIndex": 90,
+      "name": "U 51",
+      "pattern": 850930147893552
+    },
+    {
+      "caseIndex": 91,
+      "name": "U 52",
+      "pattern": 850926516571752
+    },
+    {
+      "caseIndex": 92,
+      "name": "U 50",
+      "pattern": 834001303276392
+    },
+    {
+      "caseIndex": 93,
+      "name": "U 57",
+      "pattern": 836833238868186
+    },
+    {
+      "caseIndex": 94,
+      "name": "U 58",
+      "pattern": 836754515266266
+    },
+    {
+      "caseIndex": 95,
+      "name": "U 59",
+      "pattern": 855630701643414
+    },
+    {
+      "caseIndex": 96,
+      "name": "U 60",
+      "pattern": 834002406776112
+    },
+    {
+      "caseIndex": 97,
+      "name": "U 30",
+      "pattern": 836638954039188
+    },
+    {
+      "caseIndex": 98,
+      "name": "U 29",
+      "pattern": 836795682654426
+    },
+    {
+      "caseIndex": 99,
+      "name": "U 32",
+      "pattern": 853487971554708
+    },
+    {
+      "caseIndex": 100,
+      "name": "U 31",
+      "pattern": 856813292115438
+    },
+    {
+      "caseIndex": 101,
+      "name": "U 36",
+      "pattern": 836718042404826
+    },
+    {
+      "caseIndex": 102,
+      "name": "U 35",
+      "pattern": 870649720419546
+    },
+    {
+      "caseIndex": 103,
+      "name": "U 34",
+      "pattern": 870413545967508
+    },
+    {
+      "caseIndex": 104,
+      "name": "U 33",
+      "pattern": 836797553747094
+    },
+    {
+      "caseIndex": 105,
+      "name": "U 26",
+      "pattern": 840200084288238
+    },
+    {
+      "caseIndex": 106,
+      "name": "U 28",
+      "pattern": 836718038758548
+    },
+    {
+      "caseIndex": 107,
+      "name": "U 27",
+      "pattern": 836798641850106
+    },
+    {
+      "caseIndex": 108,
+      "name": "U 25",
+      "pattern": 853724572629654
+    },
+    {
+      "caseIndex": 109,
+      "name": "U 42",
+      "pattern": 857128898679438
+    },
+    {
+      "caseIndex": 110,
+      "name": "U 41",
+      "pattern": 855644504727264
+    },
+    {
+      "caseIndex": 111,
+      "name": "U 44",
+      "pattern": 835814386601946
+    },
+    {
+      "caseIndex": 112,
+      "name": "U 43",
+      "pattern": 869736204143226
+    },
+    {
+      "caseIndex": 113,
+      "name": "U 48",
+      "pattern": 856816170976398
+    },
+    {
+      "caseIndex": 114,
+      "name": "U 47",
+      "pattern": 840201879796878
+    },
+    {
+      "caseIndex": 115,
+      "name": "U 46",
+      "pattern": 839967153460878
+    },
+    {
+      "caseIndex": 116,
+      "name": "U 45",
+      "pattern": 869735532024666
+    },
+    {
+      "caseIndex": 117,
+      "name": "U 38",
+      "pattern": 835818980896026
+    },
+    {
+      "caseIndex": 118,
+      "name": "U 40",
+      "pattern": 835803854009946
+    },
+    {
+      "caseIndex": 119,
+      "name": "U 39",
+      "pattern": 838561121993184
+    },
+    {
+      "caseIndex": 120,
+      "name": "U 37",
+      "pattern": 838717485844704
+    },
+    {
+      "caseIndex": 121,
+      "name": "U 18",
+      "pattern": 836758858745466
+    },
+    {
+      "caseIndex": 122,
+      "name": "U 17",
+      "pattern": 850923738486672
+    },
+    {
+      "caseIndex": 123,
+      "name": "U 20",
+      "pattern": 856807272650964
+    },
+    {
+      "caseIndex": 124,
+      "name": "U 19",
+      "pattern": 833997131102472
+    },
+    {
+      "caseIndex": 125,
+      "name": "U 24",
+      "pattern": 868410598840878
+    },
+    {
+      "caseIndex": 126,
+      "name": "U 23",
+      "pattern": 836847743752026
+    },
+    {
+      "caseIndex": 127,
+      "name": "U 22",
+      "pattern": 857139928406670
+    },
+    {
+      "caseIndex": 128,
+      "name": "U 21",
+      "pattern": 840114980104404
+    },
+    {
+      "caseIndex": 129,
+      "name": "U 14",
+      "pattern": 868176955857198
+    },
+    {
+      "caseIndex": 130,
+      "name": "U 16",
+      "pattern": 833840045016072
+    },
+    {
+      "caseIndex": 131,
+      "name": "U 15",
+      "pattern": 833995997369232
+    },
+    {
+      "caseIndex": 132,
+      "name": "U 13",
+      "pattern": 836837582347386
+    },
+    {
+      "caseIndex": 133,
+      "name": "U 6",
+      "pattern": 839971567468398
+    },
+    {
+      "caseIndex": 134,
+      "name": "U 5",
+      "pattern": 870647563784826
+    },
+    {
+      "caseIndex": 135,
+      "name": "U 8",
+      "pattern": 836794298370906
+    },
+    {
+      "caseIndex": 136,
+      "name": "U 7",
+      "pattern": 840089199678864
+    },
+    {
+      "caseIndex": 137,
+      "name": "U 12",
+      "pattern": 840010476076944
+    },
+    {
+      "caseIndex": 138,
+      "name": "U 11",
+      "pattern": 839932835827344
+    },
+    {
+      "caseIndex": 139,
+      "name": "U 10",
+      "pattern": 870884777624346
+    },
+    {
+      "caseIndex": 140,
+      "name": "U 9",
+      "pattern": 856780769990544
+    },
+    {
+      "caseIndex": 141,
+      "name": "U 2",
+      "pattern": 836715574768986
+    },
+    {
+      "caseIndex": 142,
+      "name": "U 4",
+      "pattern": 836793526019706
+    },
+    {
+      "caseIndex": 143,
+      "name": "U 3",
+      "pattern": 857133312686958
+    },
+    {
+      "caseIndex": 144,
+      "name": "U 1",
+      "pattern": 856114544953620
+    },
+    {
+      "caseIndex": 145,
+      "name": "L 72",
+      "pattern": 833907475424106
+    },
+    {
+      "caseIndex": 146,
+      "name": "L 71",
+      "pattern": 868388733871506
+    },
+    {
+      "caseIndex": 147,
+      "name": "L 69",
+      "pattern": 839199388950462
+    },
+    {
+      "caseIndex": 148,
+      "name": "L 70",
+      "pattern": 857138122820100
+    },
+    {
+      "caseIndex": 149,
+      "name": "L 62",
+      "pattern": 839031780062052
+    },
+    {
+      "caseIndex": 150,
+      "name": "L 63",
+      "pattern": 833985526899906
+    },
+    {
+      "caseIndex": 151,
+      "name": "L 68",
+      "pattern": 839959289476068
+    },
+    {
+      "caseIndex": 152,
+      "name": "L 66",
+      "pattern": 839187421678692
+    },
+    {
+      "caseIndex": 153,
+      "name": "L 61",
+      "pattern": 857119590224868
+    },
+    {
+      "caseIndex": 154,
+      "name": "L 65",
+      "pattern": 867839564665026
+    },
+    {
+      "caseIndex": 155,
+      "name": "L 67",
+      "pattern": 856124602245822
+    },
+    {
+      "caseIndex": 156,
+      "name": "L 64",
+      "pattern": 833986199026026
+    },
+    {
+      "caseIndex": 157,
+      "name": "L 53",
+      "pattern": 833859494976702
+    },
+    {
+      "caseIndex": 158,
+      "name": "L 54",
+      "pattern": 856093600142940
+    },
+    {
+      "caseIndex": 159,
+      "name": "L 55",
+      "pattern": 840102053476626
+    },
+    {
+      "caseIndex": 160,
+      "name": "L 56",
+      "pattern": 868426126890588
+    },
+    {
+      "caseIndex": 161,
+      "name": "L 49",
+      "pattern": 868190678319708
+    },
+    {
+      "caseIndex": 162,
+      "name": "L 51",
+      "pattern": 840024413227026
+    },
+    {
+      "caseIndex": 163,
+      "name": "L 52",
+      "pattern": 840180777078546
+    },
+    {
+      "caseIndex": 164,
+      "name": "L 50",
+      "pattern": 834026381614692
+    },
+    {
+      "caseIndex": 165,
+      "name": "L 57",
+      "pattern": 857143576533042
+    },
+    {
+      "caseIndex": 166,
+      "name": "L 58",
+      "pattern": 834016581063102
+    },
+    {
+      "caseIndex": 167,
+      "name": "L 59",
+      "pattern": 850941794358462
+    },
+    {
+      "caseIndex": 168,
+      "name": "L 60",
+      "pattern": 840218002120242
+    },
+    {
+      "caseIndex": 169,
+      "name": "L 30",
+      "pattern": 839975961344508
+    },
+    {
+      "caseIndex": 170,
+      "name": "L 29",
+      "pattern": 857107594119492
+    },
+    {
+      "caseIndex": 171,
+      "name": "L 32",
+      "pattern": 840102934987332
+    },
+    {
+      "caseIndex": 172,
+      "name": "L 31",
+      "pattern": 840172251627666
+    },
+    {
+      "caseIndex": 173,
+      "name": "L 36",
+      "pattern": 857028148282692
+    },
+    {
+      "caseIndex": 174,
+      "name": "L 35",
+      "pattern": 876063342794346
+    },
+    {
+      "caseIndex": 175,
+      "name": "L 34",
+      "pattern": 873750553272828
+    },
+    {
+      "caseIndex": 176,
+      "name": "L 33",
+      "pattern": 840210687680508
+    },
+    {
+      "caseIndex": 177,
+      "name": "L 26",
+      "pattern": 839945848900932
+    },
+    {
+      "caseIndex": 178,
+      "name": "L 28",
+      "pattern": 840015887776146
+    },
+    {
+      "caseIndex": 179,
+      "name": "L 27",
+      "pattern": 840093528025746
+    },
+    {
+      "caseIndex": 180,
+      "name": "L 25",
+      "pattern": 857137706563068
+    },
+    {
+      "caseIndex": 181,
+      "name": "L 42",
+      "pattern": 839023254339012
+    },
+    {
+      "caseIndex": 182,
+      "name": "L 41",
+      "pattern": 850914960813252
+    },
+    {
+      "caseIndex": 183,
+      "name": "L 44",
+      "pattern": 833990489900382
+    },
+    {
+      "caseIndex": 184,
+      "name": "L 43",
+      "pattern": 868151506330908
+    },
+    {
+      "caseIndex": 185,
+      "name": "L 48",
+      "pattern": 840178219303746
+    },
+    {
+      "caseIndex": 186,
+      "name": "L 47",
+      "pattern": 839178895955652
+    },
+    {
+      "caseIndex": 187,
+      "name": "L 46",
+      "pattern": 850915703195742
+    },
+    {
+      "caseIndex": 188,
+      "name": "L 45",
+      "pattern": 868390967488848
+    },
+    {
+      "caseIndex": 189,
+      "name": "L 38",
+      "pattern": 840100579054146
+    },
+    {
+      "caseIndex": 190,
+      "name": "L 40",
+      "pattern": 856106637073092
+    },
+    {
+      "caseIndex": 191,
+      "name": "L 39",
+      "pattern": 833831578079172
+    },
+    {
+      "caseIndex": 192,
+      "name": "L 37",
+      "pattern": 833987219695812
+    },
+    {
+      "caseIndex": 193,
+      "name": "L 18",
+      "pattern": 839946208649988
+    },
+    {
+      "caseIndex": 194,
+      "name": "L 17",
+      "pattern": 840171930541506
+    },
+    {
+      "caseIndex": 195,
+      "name": "L 20",
+      "pattern": 856793781695748
+    },
+    {
+      "caseIndex": 196,
+      "name": "L 19",
+      "pattern": 840211411338162
+    },
+    {
+      "caseIndex": 197,
+      "name": "L 24",
+      "pattern": 873798079710468
+    },
+    {
+      "caseIndex": 198,
+      "name": "L 23",
+      "pattern": 856824619165362
+    },
+    {
+      "caseIndex": 199,
+      "name": "L 22",
+      "pattern": 840132326618802
+    },
+    {
+      "caseIndex": 200,
+      "name": "L 21",
+      "pattern": 839976685002162
+    },
+    {
+      "caseIndex": 201,
+      "name": "L 14",
+      "pattern": 873712518368706
+    },
+    {
+      "caseIndex": 202,
+      "name": "L 16",
+      "pattern": 840180573868548
+    },
+    {
+      "caseIndex": 203,
+      "name": "L 15",
+      "pattern": 857020909138140
+    },
+    {
+      "caseIndex": 204,
+      "name": "L 13",
+      "pattern": 840094290291906
+    },
+    {
+      "caseIndex": 205,
+      "name": "L 6",
+      "pattern": 839943490751172
+    },
+    {
+      "caseIndex": 206,
+      "name": "L 5",
+      "pattern": 867841620794946
+    },
+    {
+      "caseIndex": 207,
+      "name": "L 8",
+      "pattern": 856792147149252
+    },
+    {
+      "caseIndex": 208,
+      "name": "L 7",
+      "pattern": 833990491844586
+    },
+    {
+      "caseIndex": 209,
+      "name": "L 12",
+      "pattern": 840184556238108
+    },
+    {
+      "caseIndex": 210,
+      "name": "L 11",
+      "pattern": 839949829902108
+    },
+    {
+      "caseIndex": 211,
+      "name": "L 10",
+      "pattern": 868387680752706
+    },
+    {
+      "caseIndex": 212,
+      "name": "L 9",
+      "pattern": 856798847417628
+    },
+    {
+      "caseIndex": 213,
+      "name": "L 2",
+      "pattern": 856106640961500
+    },
+    {
+      "caseIndex": 214,
+      "name": "L 4",
+      "pattern": 833909942780226
+    },
+    {
+      "caseIndex": 215,
+      "name": "L 3",
+      "pattern": 833987583029826
+    },
+    {
+      "caseIndex": 216,
+      "name": "L 1",
+      "pattern": 840100576837572
+    },
+    {
+      "caseIndex": 217,
+      "name": "Pi 72",
+      "pattern": 835788245603286
+    },
+    {
+      "caseIndex": 218,
+      "name": "Pi 71",
+      "pattern": 868161160763880
+    },
+    {
+      "caseIndex": 219,
+      "name": "Pi 69",
+      "pattern": 850934464514670
+    },
+    {
+      "caseIndex": 220,
+      "name": "Pi 70",
+      "pattern": 855635562451890
+    },
+    {
+      "caseIndex": 221,
+      "name": "Pi 62",
+      "pattern": 839157390401646
+    },
+    {
+      "caseIndex": 222,
+      "name": "Pi 63",
+      "pattern": 835790300901396
+    },
+    {
+      "caseIndex": 223,
+      "name": "Pi 68",
+      "pattern": 867704397310830
+    },
+    {
+      "caseIndex": 224,
+      "name": "Pi 66",
+      "pattern": 850946802965820
+    },
+    {
+      "caseIndex": 225,
+      "name": "Pi 61",
+      "pattern": 839158102838556
+    },
+    {
+      "caseIndex": 226,
+      "name": "Pi 65",
+      "pattern": 868395525982440
+    },
+    {
+      "caseIndex": 227,
+      "name": "Pi 67",
+      "pattern": 867860038927470
+    },
+    {
+      "caseIndex": 228,
+      "name": "Pi 64",
+      "pattern": 835790783510616
+    },
+    {
+      "caseIndex": 229,
+      "name": "Pi 53",
+      "pattern": 850921585475790
+    },
+    {
+      "caseIndex": 230,
+      "name": "Pi 54",
+      "pattern": 852736801649940
+    },
+    {
+      "caseIndex": 231,
+      "name": "Pi 55",
+      "pattern": 836810970231756
+    },
+    {
+      "caseIndex": 232,
+      "name": "Pi 56",
+      "pattern": 867848183054460
+    },
+    {
+      "caseIndex": 233,
+      "name": "Pi 49",
+      "pattern": 868174643297700
+    },
+    {
+      "caseIndex": 234,
+      "name": "Pi 51",
+      "pattern": 836730731903916
+    },
+    {
+      "caseIndex": 235,
+      "name": "Pi 52",
+      "pattern": 836809455505836
+    },
+    {
+      "caseIndex": 236,
+      "name": "Pi 50",
+      "pattern": 867691096968060
+    },
+    {
+      "caseIndex": 237,
+      "name": "Pi 57",
+      "pattern": 868408767771720
+    },
+    {
+      "caseIndex": 238,
+      "name": "Pi 58",
+      "pattern": 852723390188340
+    },
+    {
+      "caseIndex": 239,
+      "name": "Pi 59",
+      "pattern": 839159526624366
+    },
+    {
+      "caseIndex": 240,
+      "name": "Pi 60",
+      "pattern": 839162425633596
+    },
+    {
+      "caseIndex": 241,
+      "name": "Pi 30",
+      "pattern": 867704458313550
+    },
+    {
+      "caseIndex": 242,
+      "name": "Pi 29",
+      "pattern": 868422490234020
+    },
+    {
+      "caseIndex": 243,
+      "name": "Pi 32",
+      "pattern": 839162446045596
+    },
+    {
+      "caseIndex": 244,
+      "name": "Pi 31",
+      "pattern": 836802924878916
+    },
+    {
+      "caseIndex": 245,
+      "name": "Pi 36",
+      "pattern": 855609440783940
+    },
+    {
+      "caseIndex": 246,
+      "name": "Pi 35",
+      "pattern": 867860099930190
+    },
+    {
+      "caseIndex": 247,
+      "name": "Pi 34",
+      "pattern": 868161281952840
+    },
+    {
+      "caseIndex": 248,
+      "name": "Pi 33",
+      "pattern": 855610173368670
+    },
+    {
+      "caseIndex": 249,
+      "name": "Pi 26",
+      "pattern": 850946863696380
+    },
+    {
+      "caseIndex": 250,
+      "name": "Pi 28",
+      "pattern": 836724201276996
+    },
+    {
+      "caseIndex": 251,
+      "name": "Pi 27",
+      "pattern": 836802263382366
+    },
+    {
+      "caseIndex": 252,
+      "name": "Pi 25",
+      "pattern": 839159547308526
+    },
+    {
+      "caseIndex": 253,
+      "name": "Pi 42",
+      "pattern": 836730671430396
+    },
+    {
+      "caseIndex": 254,
+      "name": "Pi 41",
+      "pattern": 839153748745116
+    },
+    {
+      "caseIndex": 255,
+      "name": "Pi 44",
+      "pattern": 867678035737500
+    },
+    {
+      "caseIndex": 256,
+      "name": "Pi 43",
+      "pattern": 868383247989060
+    },
+    {
+      "caseIndex": 257,
+      "name": "Pi 48",
+      "pattern": 836810849307396
+    },
+    {
+      "caseIndex": 258,
+      "name": "Pi 47",
+      "pattern": 850907741823900
+    },
+    {
+      "caseIndex": 259,
+      "name": "Pi 46",
+      "pattern": 839153036580366
+    },
+    {
+      "caseIndex": 260,
+      "name": "Pi 45",
+      "pattern": 868148521653060
+    },
+    {
+      "caseIndex": 261,
+      "name": "Pi 38",
+      "pattern": 836809395032316
+    },
+    {
+      "caseIndex": 262,
+      "name": "Pi 40",
+      "pattern": 867835121823900
+    },
+    {
+      "caseIndex": 263,
+      "name": "Pi 39",
+      "pattern": 855635552366850
+    },
+    {
+      "caseIndex": 264,
+      "name": "Pi 37",
+      "pattern": 850908524517390
+    },
+    {
+      "caseIndex": 265,
+      "name": "Pi 18",
+      "pattern": 855609430698900
+    },
+    {
+      "caseIndex": 266,
+      "name": "Pi 17",
+      "pattern": 836802142458006
+    },
+    {
+      "caseIndex": 267,
+      "name": "Pi 20",
+      "pattern": 839153016712686
+    },
+    {
+      "caseIndex": 268,
+      "name": "Pi 19",
+      "pattern": 850907681909820
+    },
+    {
+      "caseIndex": 269,
+      "name": "Pi 24",
+      "pattern": 868383308719620
+    },
+    {
+      "caseIndex": 270,
+      "name": "Pi 23",
+      "pattern": 868148220722280
+    },
+    {
+      "caseIndex": 271,
+      "name": "Pi 22",
+      "pattern": 850829680270830
+    },
+    {
+      "caseIndex": 272,
+      "name": "Pi 21",
+      "pattern": 836724140803476
+    },
+    {
+      "caseIndex": 273,
+      "name": "Pi 14",
+      "pattern": 867835061909820
+    },
+    {
+      "caseIndex": 274,
+      "name": "Pi 16",
+      "pattern": 867677975823420
+    },
+    {
+      "caseIndex": 275,
+      "name": "Pi 15",
+      "pattern": 839153739219516
+    },
+    {
+      "caseIndex": 276,
+      "name": "Pi 13",
+      "pattern": 836802864405396
+    },
+    {
+      "caseIndex": 277,
+      "name": "Pi 6",
+      "pattern": 839157350394126
+    },
+    {
+      "caseIndex": 278,
+      "name": "Pi 5",
+      "pattern": 867846978785550
+    },
+    {
+      "caseIndex": 279,
+      "name": "Pi 8",
+      "pattern": 868174582294980
+    },
+    {
+      "caseIndex": 280,
+      "name": "Pi 7",
+      "pattern": 835790361374916
+    },
+    {
+      "caseIndex": 281,
+      "name": "Pi 12",
+      "pattern": 867690975779100
+    },
+    {
+      "caseIndex": 282,
+      "name": "Pi 11",
+      "pattern": 850921404372750
+    },
+    {
+      "caseIndex": 283,
+      "name": "Pi 10",
+      "pattern": 868408586940840
+    },
+    {
+      "caseIndex": 284,
+      "name": "Pi 9",
+      "pattern": 839158072356636
+    },
+    {
+      "caseIndex": 285,
+      "name": "Pi 2",
+      "pattern": 852723380125980
+    },
+    {
+      "caseIndex": 286,
+      "name": "Pi 4",
+      "pattern": 835790723037096
+    },
+    {
+      "caseIndex": 287,
+      "name": "Pi 3",
+      "pattern": 835788124678926
+    },
+    {
+      "caseIndex": 288,
+      "name": "Pi 1",
+      "pattern": 850842680770830
+    },
+    {
+      "caseIndex": 289,
+      "name": "H 40",
+      "pattern": 835812028965636
+    },
+    {
+      "caseIndex": 290,
+      "name": "H 39",
+      "pattern": 869729552592366
+    },
+    {
+      "caseIndex": 291,
+      "name": "H 38",
+      "pattern": 855600764167830
+    },
+    {
+      "caseIndex": 292,
+      "name": "H 37",
+      "pattern": 869744067553896
+    },
+    {
+      "caseIndex": 293,
+      "name": "H 34",
+      "pattern": 855601486115220
+    },
+    {
+      "caseIndex": 294,
+      "name": "H 36",
+      "pattern": 835812389539176
+    },
+    {
+      "caseIndex": 295,
+      "name": "H 33",
+      "pattern": 869730997334076
+    },
+    {
+      "caseIndex": 296,
+      "name": "H 35",
+      "pattern": 835798957929966
+    },
+    {
+      "caseIndex": 297,
+      "name": "H 28",
+      "pattern": 852703950048360
+    },
+    {
+      "caseIndex": 298,
+      "name": "H 27",
+      "pattern": 869706011366460
+    },
+    {
+      "caseIndex": 299,
+      "name": "H 29",
+      "pattern": 836817309102996
+    },
+    {
+      "caseIndex": 300,
+      "name": "H 30",
+      "pattern": 869709331959300
+    },
+    {
+      "caseIndex": 301,
+      "name": "H 31",
+      "pattern": 836818031625366
+    },
+    {
+      "caseIndex": 302,
+      "name": "H 32",
+      "pattern": 836739308023446
+    },
+    {
+      "caseIndex": 303,
+      "name": "H 26",
+      "pattern": 869707094446830
+    },
+    {
+      "caseIndex": 304,
+      "name": "H 25",
+      "pattern": 852701713351740
+    },
+    {
+      "caseIndex": 305,
+      "name": "H 6",
+      "pattern": 836752729555176
+    },
+    {
+      "caseIndex": 306,
+      "name": "H 5",
+      "pattern": 869707215099030
+    },
+    {
+      "caseIndex": 307,
+      "name": "H 7",
+      "pattern": 852704250964020
+    },
+    {
+      "caseIndex": 308,
+      "name": "H 8",
+      "pattern": 836818071655566
+    },
+    {
+      "caseIndex": 309,
+      "name": "H 11",
+      "pattern": 869706071272980
+    },
+    {
+      "caseIndex": 310,
+      "name": "H 10",
+      "pattern": 869710364923350
+    },
+    {
+      "caseIndex": 311,
+      "name": "H 9",
+      "pattern": 836830369804776
+    },
+    {
+      "caseIndex": 312,
+      "name": "H 12",
+      "pattern": 855603784116960
+    },
+    {
+      "caseIndex": 313,
+      "name": "H 1",
+      "pattern": 852701773258260
+    },
+    {
+      "caseIndex": 314,
+      "name": "H 2",
+      "pattern": 836739348053646
+    },
+    {
+      "caseIndex": 315,
+      "name": "H 4",
+      "pattern": 836817339615156
+    },
+    {
+      "caseIndex": 316,
+      "name": "H 3",
+      "pattern": 869709271213620
+    },
+    {
+      "caseIndex": 317,
+      "name": "H 18",
+      "pattern": 855603662905320
+    },
+    {
+      "caseIndex": 318,
+      "name": "H 17",
+      "pattern": 836830400316936
+    },
+    {
+      "caseIndex": 319,
+      "name": "H 19",
+      "pattern": 869755684329816
+    },
+    {
+      "caseIndex": 320,
+      "name": "H 20",
+      "pattern": 835798977805206
+    },
+    {
+      "caseIndex": 321,
+      "name": "H 23",
+      "pattern": 869744077911096
+    },
+    {
+      "caseIndex": 322,
+      "name": "H 22",
+      "pattern": 869742613270836
+    },
+    {
+      "caseIndex": 323,
+      "name": "H 21",
+      "pattern": 855601607326860
+    },
+    {
+      "caseIndex": 324,
+      "name": "H 24",
+      "pattern": 836752760067336
+    },
+    {
+      "caseIndex": 325,
+      "name": "H 13",
+      "pattern": 835812399896376
+    },
+    {
+      "caseIndex": 326,
+      "name": "H 14",
+      "pattern": 855605117724720
+    },
+    {
+      "caseIndex": 327,
+      "name": "H 16",
+      "pattern": 869731006852116
+    },
+    {
+      "caseIndex": 328,
+      "name": "H 15",
+      "pattern": 835812018608436
+    },
+    {
+      "caseIndex": 329,
+      "name": "S 72",
+      "pattern": 833931450262686
+    },
+    {
+      "caseIndex": 330,
+      "name": "S 71",
+      "pattern": 868397531700336
+    },
+    {
+      "caseIndex": 331,
+      "name": "S 69",
+      "pattern": 840217407823908
+    },
+    {
+      "caseIndex": 332,
+      "name": "S 70",
+      "pattern": 868424614948476
+    },
+    {
+      "caseIndex": 333,
+      "name": "S 68",
+      "pattern": 856830615651108
+    },
+    {
+      "caseIndex": 334,
+      "name": "S 66",
+      "pattern": 839194567021746
+    },
+    {
+      "caseIndex": 335,
+      "name": "S 62",
+      "pattern": 839174895358956
+    },
+    {
+      "caseIndex": 336,
+      "name": "S 63",
+      "pattern": 834022451577636
+    },
+    {
+      "caseIndex": 337,
+      "name": "S 67",
+      "pattern": 857143343354148
+    },
+    {
+      "caseIndex": 338,
+      "name": "S 64",
+      "pattern": 834010173864606
+    },
+    {
+      "caseIndex": 339,
+      "name": "S 61",
+      "pattern": 839173501557606
+    },
+    {
+      "caseIndex": 340,
+      "name": "S 65",
+      "pattern": 839182178454066
+    },
+    {
+      "caseIndex": 341,
+      "name": "S 53",
+      "pattern": 833855633532162
+    },
+    {
+      "caseIndex": 342,
+      "name": "S 54",
+      "pattern": 868427902260018
+    },
+    {
+      "caseIndex": 343,
+      "name": "S 55",
+      "pattern": 839103272917506
+    },
+    {
+      "caseIndex": 344,
+      "name": "S 56",
+      "pattern": 868402262906658
+    },
+    {
+      "caseIndex": 345,
+      "name": "S 52",
+      "pattern": 840187519057596
+    },
+    {
+      "caseIndex": 346,
+      "name": "S 50",
+      "pattern": 839181996519426
+    },
+    {
+      "caseIndex": 347,
+      "name": "S 49",
+      "pattern": 839194324908426
+    },
+    {
+      "caseIndex": 348,
+      "name": "S 51",
+      "pattern": 834011275148802
+    },
+    {
+      "caseIndex": 349,
+      "name": "S 59",
+      "pattern": 839187955804116
+    },
+    {
+      "caseIndex": 350,
+      "name": "S 60",
+      "pattern": 834025358736522
+    },
+    {
+      "caseIndex": 351,
+      "name": "S 57",
+      "pattern": 850950572031882
+    },
+    {
+      "caseIndex": 352,
+      "name": "S 58",
+      "pattern": 850939016266242
+    },
+    {
+      "caseIndex": 353,
+      "name": "S 42",
+      "pattern": 839930319459528
+    },
+    {
+      "caseIndex": 354,
+      "name": "S 41",
+      "pattern": 839147379640806
+    },
+    {
+      "caseIndex": 355,
+      "name": "S 44",
+      "pattern": 856779336975048
+    },
+    {
+      "caseIndex": 356,
+      "name": "S 43",
+      "pattern": 839194446120066
+    },
+    {
+      "caseIndex": 357,
+      "name": "S 46",
+      "pattern": 839148773714316
+    },
+    {
+      "caseIndex": 358,
+      "name": "S 45",
+      "pattern": 872800346087586
+    },
+    {
+      "caseIndex": 359,
+      "name": "S 48",
+      "pattern": 840213158675556
+    },
+    {
+      "caseIndex": 360,
+      "name": "S 47",
+      "pattern": 840165045795528
+    },
+    {
+      "caseIndex": 361,
+      "name": "S 39",
+      "pattern": 872765607717606
+    },
+    {
+      "caseIndex": 362,
+      "name": "S 37",
+      "pattern": 839182118010786
+    },
+    {
+      "caseIndex": 363,
+      "name": "S 38",
+      "pattern": 839068656038886
+    },
+    {
+      "caseIndex": 364,
+      "name": "S 40",
+      "pattern": 857092064678088
+    },
+    {
+      "caseIndex": 365,
+      "name": "S 30",
+      "pattern": 839194325460306
+    },
+    {
+      "caseIndex": 366,
+      "name": "S 29",
+      "pattern": 850939016273382
+    },
+    {
+      "caseIndex": 367,
+      "name": "S 32",
+      "pattern": 834025358728332
+    },
+    {
+      "caseIndex": 368,
+      "name": "S 31",
+      "pattern": 840187519336686
+    },
+    {
+      "caseIndex": 369,
+      "name": "S 34",
+      "pattern": 839181996806706
+    },
+    {
+      "caseIndex": 370,
+      "name": "S 33",
+      "pattern": 868402262921568
+    },
+    {
+      "caseIndex": 371,
+      "name": "S 36",
+      "pattern": 850950572023692
+    },
+    {
+      "caseIndex": 372,
+      "name": "S 35",
+      "pattern": 868427902244268
+    },
+    {
+      "caseIndex": 373,
+      "name": "S 27",
+      "pattern": 839103273204786
+    },
+    {
+      "caseIndex": 374,
+      "name": "S 25",
+      "pattern": 839187956332896
+    },
+    {
+      "caseIndex": 375,
+      "name": "S 26",
+      "pattern": 833855633539302
+    },
+    {
+      "caseIndex": 376,
+      "name": "S 28",
+      "pattern": 834011275155942
+    },
+    {
+      "caseIndex": 377,
+      "name": "S 6",
+      "pattern": 839174895662196
+    },
+    {
+      "caseIndex": 378,
+      "name": "S 5",
+      "pattern": 839182177924866
+    },
+    {
+      "caseIndex": 379,
+      "name": "S 8",
+      "pattern": 856830615674208
+    },
+    {
+      "caseIndex": 380,
+      "name": "S 7",
+      "pattern": 834010173585096
+    },
+    {
+      "caseIndex": 381,
+      "name": "S 10",
+      "pattern": 868424615508126
+    },
+    {
+      "caseIndex": 382,
+      "name": "S 9",
+      "pattern": 839173501308756
+    },
+    {
+      "caseIndex": 383,
+      "name": "S 12",
+      "pattern": 868397531140686
+    },
+    {
+      "caseIndex": 384,
+      "name": "S 11",
+      "pattern": 839194566764706
+    },
+    {
+      "caseIndex": 385,
+      "name": "S 3",
+      "pattern": 834022451857776
+    },
+    {
+      "caseIndex": 386,
+      "name": "S 1",
+      "pattern": 840217407847008
+    },
+    {
+      "caseIndex": 387,
+      "name": "S 2",
+      "pattern": 857143343377248
+    },
+    {
+      "caseIndex": 388,
+      "name": "S 4",
+      "pattern": 833931449983176
+    },
+    {
+      "caseIndex": 389,
+      "name": " ",
+      "pattern": 857092064700978
+    },
+    {
+      "caseIndex": 390,
+      "name": "S 17",
+      "pattern": 840213158394996
+    },
+    {
+      "caseIndex": 391,
+      "name": "S 20",
+      "pattern": 839148774002016
+    },
+    {
+      "caseIndex": 392,
+      "name": "S 19",
+      "pattern": 839182117708386
+    },
+    {
+      "caseIndex": 393,
+      "name": "S 22",
+      "pattern": 840165045818418
+    },
+    {
+      "caseIndex": 394,
+      "name": "S 21",
+      "pattern": 839930319482418
+    },
+    {
+      "caseIndex": 395,
+      "name": "S 24",
+      "pattern": 872765608269696
+    },
+    {
+      "caseIndex": 396,
+      "name": "S 23",
+      "pattern": 856779336997938
+    },
+    {
+      "caseIndex": 397,
+      "name": "S 15",
+      "pattern": 839147380192896
+    },
+    {
+      "caseIndex": 398,
+      "name": "S 13",
+      "pattern": 839068656590976
+    },
+    {
+      "caseIndex": 399,
+      "name": "S 14",
+      "pattern": 839194446369546
+    },
+    {
+      "caseIndex": 400,
+      "name": "S 16",
+      "pattern": 872800345785186
+    },
+    {
+      "caseIndex": 401,
+      "name": "AS 72",
+      "pattern": 856100066407932
+    },
+    {
+      "caseIndex": 402,
+      "name": "AS 71",
+      "pattern": 868143817048620
+    },
+    {
+      "caseIndex": 403,
+      "name": "AS 69",
+      "pattern": 850904120571780
+    },
+    {
+      "caseIndex": 404,
+      "name": "AS 70",
+      "pattern": 839175575355012
+    },
+    {
+      "caseIndex": 405,
+      "name": "AS 68",
+      "pattern": 850823641763580
+    },
+    {
+      "caseIndex": 406,
+      "name": "AS 66",
+      "pattern": 850864788995490
+    },
+    {
+      "caseIndex": 407,
+      "name": "AS 62",
+      "pattern": 839172325290492
+    },
+    {
+      "caseIndex": 408,
+      "name": "AS 63",
+      "pattern": 839016683673852
+    },
+    {
+      "caseIndex": 409,
+      "name": "AS 67",
+      "pattern": 868139945518620
+    },
+    {
+      "caseIndex": 410,
+      "name": "AS 64",
+      "pattern": 867879599734530
+    },
+    {
+      "caseIndex": 411,
+      "name": "AS 61",
+      "pattern": 867829694984580
+    },
+    {
+      "caseIndex": 412,
+      "name": "AS 65",
+      "pattern": 856100788650372
+    },
+    {
+      "caseIndex": 413,
+      "name": "AS 53",
+      "pattern": 850904151061260
+    },
+    {
+      "caseIndex": 414,
+      "name": "AS 54",
+      "pattern": 839959200168732
+    },
+    {
+      "caseIndex": 415,
+      "name": "AS 55",
+      "pattern": 856807134331932
+    },
+    {
+      "caseIndex": 416,
+      "name": "AS 56",
+      "pattern": 867828682712460
+    },
+    {
+      "caseIndex": 417,
+      "name": "AS 52",
+      "pattern": 868139955868260
+    },
+    {
+      "caseIndex": 418,
+      "name": "AS 50",
+      "pattern": 850823662462860
+    },
+    {
+      "caseIndex": 419,
+      "name": "AS 49",
+      "pattern": 857119500917532
+    },
+    {
+      "caseIndex": 420,
+      "name": "AS 51",
+      "pattern": 840193926504732
+    },
+    {
+      "caseIndex": 421,
+      "name": "AS 59",
+      "pattern": 867877423208820
+    },
+    {
+      "caseIndex": 422,
+      "name": "AS 60",
+      "pattern": 850860435975150
+    },
+    {
+      "caseIndex": 423,
+      "name": "AS 57",
+      "pattern": 868168032328680
+    },
+    {
+      "caseIndex": 424,
+      "name": "AS 58",
+      "pattern": 840114841785372
+    },
+    {
+      "caseIndex": 425,
+      "name": "AS 42",
+      "pattern": 839952338968452
+    },
+    {
+      "caseIndex": 426,
+      "name": "AS 41",
+      "pattern": 868163678771790
+    },
+    {
+      "caseIndex": 427,
+      "name": "AS 44",
+      "pattern": 850823652105660
+    },
+    {
+      "caseIndex": 428,
+      "name": "AS 43",
+      "pattern": 856800995366532
+    },
+    {
+      "caseIndex": 429,
+      "name": "AS 46",
+      "pattern": 840186704187012
+    },
+    {
+      "caseIndex": 430,
+      "name": "AS 45",
+      "pattern": 867829705598820
+    },
+    {
+      "caseIndex": 431,
+      "name": "AS 48",
+      "pattern": 868143837460620
+    },
+    {
+      "caseIndex": 432,
+      "name": "AS 47",
+      "pattern": 850858259208360
+    },
+    {
+      "caseIndex": 433,
+      "name": "AS 39",
+      "pattern": 840109425054852
+    },
+    {
+      "caseIndex": 434,
+      "name": "AS 37",
+      "pattern": 850904131186020
+    },
+    {
+      "caseIndex": 435,
+      "name": "AS 38",
+      "pattern": 857114084187012
+    },
+    {
+      "caseIndex": 436,
+      "name": "AS 40",
+      "pattern": 867828672355260
+    },
+    {
+      "caseIndex": 437,
+      "name": "AS 30",
+      "pattern": 850823661926100
+    },
+    {
+      "caseIndex": 438,
+      "name": "AS 29",
+      "pattern": 867877423504290
+    },
+    {
+      "caseIndex": 439,
+      "name": "AS 32",
+      "pattern": 840193926535182
+    },
+    {
+      "caseIndex": 440,
+      "name": "AS 31",
+      "pattern": 868168031792130
+    },
+    {
+      "caseIndex": 441,
+      "name": "AS 34",
+      "pattern": 856807134362382
+    },
+    {
+      "caseIndex": 442,
+      "name": "AS 33",
+      "pattern": 840114841815822
+    },
+    {
+      "caseIndex": 443,
+      "name": "AS 36",
+      "pattern": 839959200199182
+    },
+    {
+      "caseIndex": 444,
+      "name": "AS 35",
+      "pattern": 868139955611220
+    },
+    {
+      "caseIndex": 445,
+      "name": "AS 27",
+      "pattern": 857119500947982
+    },
+    {
+      "caseIndex": 446,
+      "name": "AS 25",
+      "pattern": 867828682175700
+    },
+    {
+      "caseIndex": 447,
+      "name": "AS 26",
+      "pattern": 850860435718530
+    },
+    {
+      "caseIndex": 448,
+      "name": "AS 28",
+      "pattern": 850904150796660
+    },
+    {
+      "caseIndex": 449,
+      "name": "AS 6",
+      "pattern": 850858258656270
+    },
+    {
+      "caseIndex": 450,
+      "name": "AS 5",
+      "pattern": 857114084156142
+    },
+    {
+      "caseIndex": 451,
+      "name": "AS 8",
+      "pattern": 867829705341780
+    },
+    {
+      "caseIndex": 452,
+      "name": "AS 7",
+      "pattern": 840109425023982
+    },
+    {
+      "caseIndex": 453,
+      "name": "AS 10",
+      "pattern": 868163678507400
+    },
+    {
+      "caseIndex": 454,
+      "name": "AS 9",
+      "pattern": 868143836923860
+    },
+    {
+      "caseIndex": 455,
+      "name": "AS 12",
+      "pattern": 850823652400500
+    },
+    {
+      "caseIndex": 456,
+      "name": "AS 11",
+      "pattern": 850904130928980
+    },
+    {
+      "caseIndex": 457,
+      "name": "AS 3",
+      "pattern": 867828672650100
+    },
+    {
+      "caseIndex": 458,
+      "name": "AS 1",
+      "pattern": 839952338937582
+    },
+    {
+      "caseIndex": 459,
+      "name": "AS 2",
+      "pattern": 840186704156142
+    },
+    {
+      "caseIndex": 460,
+      "name": "AS 4",
+      "pattern": 856800995335662
+    },
+    {
+      "caseIndex": 461,
+      "name": "AS 18",
+      "pattern": 839016683680782
+    },
+    {
+      "caseIndex": 462,
+      "name": "AS 17",
+      "pattern": 867829695536460
+    },
+    {
+      "caseIndex": 463,
+      "name": "AS 20",
+      "pattern": 868139945254020
+    },
+    {
+      "caseIndex": 464,
+      "name": "AS 19",
+      "pattern": 850864789259880
+    },
+    {
+      "caseIndex": 465,
+      "name": "AS 22",
+      "pattern": 839172325297422
+    },
+    {
+      "caseIndex": 466,
+      "name": "AS 21",
+      "pattern": 850904121123660
+    },
+    {
+      "caseIndex": 467,
+      "name": "AS 24",
+      "pattern": 867879600271080
+    },
+    {
+      "caseIndex": 468,
+      "name": "AS 23",
+      "pattern": 868143817313220
+    },
+    {
+      "caseIndex": 469,
+      "name": "AS 15",
+      "pattern": 839175575346612
+    },
+    {
+      "caseIndex": 470,
+      "name": "AS 13",
+      "pattern": 856100788641972
+    },
+    {
+      "caseIndex": 471,
+      "name": "AS 14",
+      "pattern": 856100066414862
+    },
+    {
+      "caseIndex": 472,
+      "name": "AS 16",
+      "pattern": 850823642050860
+    }
+  ]
+}

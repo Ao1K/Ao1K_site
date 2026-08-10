@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef, useEffect, lazy, Suspense, useCallback } from 'react';
+import { useState, useRef, useEffect, lazy, Suspense, useCallback, useMemo, useSyncExternalStore } from 'react';
 import MovesTextEditor from "../../components/recon/MovesTextEditor";
 import SpeedDropdown from "../../components/recon/SpeedDropdown";
 
@@ -30,10 +30,14 @@ import { customDecodeURL } from '../../composables/recon/urlEncoding';
 import InfoPanel from '../../components/recon/InfoPanel';
 import IconStack, { computeLineIconData } from './IconStack';
 import SplitsStack, { SPLITS_WIDTH, splitsToURLParam } from './SplitsStack';
-import { ICON_SIZE_CONFIG, useCubeColors, useShowSplits } from '../../composables/useSettings';
+import { ICON_SIZE_CONFIG, useCubeColors, useShowSplits, useAlgsets, useHandedness, readSettingsFromCookie, type Handedness } from '../../composables/useSettings';
 import { SimpleCube, type CubeState } from '../../composables/recon/SimpleCube';
 import { SimpleCubeInterpreter } from '../../composables/recon/SimpleCubeInterpreter';
 import type { StepInfo, Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
+import type { Doc } from '../../composables/recon/ExactAlgSuggester';
+import type { CompiledLLAlg } from '../../composables/recon/LLsuggester';
+import { savedAlgKeys } from '../../composables/recon/suggestionRanking';
+import { readFavorites } from '../../composables/algs/algFavorites';
 import { getNewSteps } from '../../composables/recon/getLineStepInfo';
 import { ScreenshotManager, isSolveComplete } from '../../composables/recon/ScreenshotManager';
 import type { TwistyPlayerImperativeRef } from '../../components/recon/TwistyPlayer';
@@ -69,6 +73,27 @@ export interface ControllerRequestOptions {
 
 const TwistyPlayer = lazy(() => import("../../components/recon/TwistyPlayer"));
 
+type AlgsetModule = Promise<{ default: { algorithms: unknown[] } }>;
+
+const ALGSET_LOADERS: Record<string, (handedness: Handedness) => AlgsetModule> = {
+  f2l: () => import('../../public/recon/compiled-f2l-algs.json'),
+  oll: (handedness) => handedness === 'left'
+    ? import('../../public/recon/compiled-oll-lefty-algs.json')
+    : import('../../public/recon/compiled-oll-righty-algs.json'),
+  pll: (handedness) => handedness === 'left'
+    ? import('../../public/recon/compiled-pll-lefty-algs.json')
+    : import('../../public/recon/compiled-pll-righty-algs.json'),
+  zbls: () => import('../../public/recon/compiled-zbls-algs.json'),
+  zbll: (handedness) => handedness === 'left'
+    ? import('../../public/recon/compiled-zbll-lefty-algs.json')
+    : import('../../public/recon/compiled-zbll-righty-algs.json'),
+};
+
+const HANDED_ALGSETS = new Set(['oll', 'pll', 'zbll']);
+
+const algsetVariant = (name: string, handedness: Handedness): string | undefined =>
+  HANDED_ALGSETS.has(name) ? handedness : undefined;
+
 let currentSpeed = 30;
 const calcCubeSpeedLocal = (speed: number) =>
   speed === 100 ? 1000 : 1.5 ** (speed / 15) - 0.6;
@@ -78,13 +103,21 @@ const isRotationOnlyLine = (moves: string[]) =>
 
 const MAX_EDITOR_HISTORY = 100;
 
+const noopSubscribe = () => () => {};
+const getCtrlKeySnapshot = () => (/Mac|iPod|iPhone|iPad/.test(navigator.userAgent) ? '⌘' : 'Ctrl');
+const getCtrlKeyServerSnapshot = () => 'Ctrl';
+
 export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScramble?: string, infoPanelSlot?: React.ReactNode }) {
   const solutionLineHeight = ICON_SIZE_CONFIG['medium'].lineHeight;
   const [cubeColors] = useCubeColors();
   const [showSplitsSetting] = useShowSplits();
+  const [algsets] = useAlgsets();
+  const [handedness] = useHandedness();
+  const enabledAlgsets = useMemo(() => new Set(Object.values(algsets).flat()), [algsets]);
 
   const allMovesRef = useRef<string[][][]>([[[]], [[]]]);
   const moveLocation = useRef<[number, number, number]>([0, 0, 0]);
+  const trueCaretRef = useRef<[number, number]>([0, 0]);
 
   const [speed, setSpeed] = useState<number>(30);
   currentSpeed = speed;
@@ -94,7 +127,6 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   const [topButtonAlert, setTopButtonAlert] = useState<{ id: string; message: string; messageType: 'info' | 'warn' }>({ id: "", message: "", messageType: 'info' });
   const [isShowingToolbar, setIsShowingToolbar] = useState<boolean>(true);
   const [lineSteps, setLineSteps] = useState<{ moveLine: string; stepInfo: StepInfo[] }[]>([]);
-  const lineStepsRef = useRef(lineSteps); // keep latest lineSteps accessible inside stable callbacks
 
   const [scrambleHTML, setScrambleHTML] = useState<string>('');
   const [solutionHTML, setSolutionHTML] = useState<string>('');
@@ -103,22 +135,8 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   const [htmlImageData, setHtmlImageData] = useState<{ cubeState: CubeState; setupMovesForFilename: string } | null>(null);
 
   const [playerParams, setPlayerParams] = useState<PlayerParams>({ animationTimes: [], solution: '', scramble: '' });
-  const suggestionsRef = useRef<Suggestion[]>([]);
-  // the line index the current suggestions were generated for. suggestions are computed only
-  // for an empty line's position, so they're only valid while the caret stays on that line.
-  // returning to a different line (e.g. via backspace) must not reuse them.
-  const suggestionLineIndexRef = useRef<number | null>(null);
-
-  // TODO: check if these are needed any more
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const updateSuggestions = useCallback((next: Suggestion[], lineIndex: number | null) => {
-    suggestionsRef.current = next;
-    suggestionLineIndexRef.current = lineIndex;
-    setSuggestions(next);
-  }, []);
 
   const [splits, setSplits] = useState<string[]>([]);
-  const splitsRef = useRef<string[]>([]);
   const [committedSplits, setCommittedSplits] = useState<string[]>([]);
   const committedSplitsRef = useRef<string[]>([]);
 
@@ -143,7 +161,6 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     }
   }, []);
 
-  splitsRef.current = splits;
   committedSplitsRef.current = committedSplits;
 
   const totalMoves = allMovesRef.current[1].flat(2).filter(move => move.match(/[^xyz2']/g)).length
@@ -193,13 +210,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   const cubeInterpreter = useRef<SimpleCubeInterpreter | null>(null);
   const simpleCubeRef = useRef<SimpleCube>(new SimpleCube());
 
-  // Detect OS on client side only to avoid hydration mismatch
-  const [ctrlKey, setCtrlKey] = useState('Ctrl');
-
-  useEffect(() => {
-    const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.userAgent);
-    setCtrlKey(isMac ? '⌘' : 'Ctrl');
-  }, []);
+  const ctrlKey = useSyncExternalStore(noopSubscribe, getCtrlKeySnapshot, getCtrlKeyServerSnapshot);
 
   /**
    * Finds the first non-empty line at or before the given line index.
@@ -679,7 +690,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     return { fullLeft, stepLeft, stepRight, fullRight, playPause }
   };
 
-  const handleEmptyLineSuggestions = (solutionMoves: string[][], trueLineIndex: number) => {
+  const handleEmptyLineSuggestions = (solutionMoves: string[][], trueLineIndex: number, enabledAlgsets: Set<string>) => {
     if (!cubeInterpreter.current) {
       return;
     }
@@ -696,25 +707,48 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     const cubeState = simpleCubeRef.current.getCubeState(allMoves as any);
 
     const steps = cubeInterpreter.current!.getStepsCompleted(cubeState);
-    const newSuggestions: Suggestion[] = cubeInterpreter.current.getAlgSuggestions(steps);
+    const savedAlgs = savedAlgKeys(readFavorites());
+    const newSuggestions: Suggestion[] = cubeInterpreter.current.getAlgSuggestions(steps, { enabledAlgsets, handedness, savedAlgs });
 
-    const prevSuggestions = suggestionsRef.current;
+    solutionMethodsRef.current?.setSuggestions(newSuggestions, trueLineIndex);
+  };
 
-    const isSuggestionChange = prevSuggestions.length !== newSuggestions.length ||
-      newSuggestions.some((newSug, index) => newSug.alg !== (prevSuggestions[index]?.alg ?? ''));
+  const refreshCurrentLineSuggestions = (enabled: Set<string>) => {
+    const [idIndex, lineIndex] = trueCaretRef.current;
+    if (idIndex !== 1) return;
+    const moves = allMovesRef.current[1];
+    if (moves[lineIndex]?.length === 0) {
+      handleEmptyLineSuggestions(moves, lineIndex, enabled);
+    }
+  };
 
-    suggestionsRef.current = newSuggestions;
-    // even when the suggestion content is unchanged, the line they apply to may differ,
-    // so always retag before deciding whether a re-render is needed.
-    suggestionLineIndexRef.current = trueLineIndex;
+  const loadEnabledAlgsets = async (enabled: Set<string>, forHandedness: Handedness) => {
+    const interpreter = cubeInterpreter.current;
+    if (!interpreter) return;
 
-    if (!isSuggestionChange) {
-      return;
+    const toLoad = [...enabled].filter(name =>
+      ALGSET_LOADERS[name] && !interpreter.isAlgsetLoaded(name, algsetVariant(name, forHandedness))
+    );
+    if (toLoad.length > 0) {
+      await Promise.all(toLoad.map(async name => {
+        const mod = await ALGSET_LOADERS[name](forHandedness);
+        interpreter.addAlgset(name, mod.default.algorithms as Doc[] | CompiledLLAlg[], algsetVariant(name, forHandedness));
+      }));
     }
 
-    updateSuggestions(newSuggestions, trueLineIndex);
-
+    refreshCurrentLineSuggestions(enabled);
   };
+
+  useEffect(() => {
+    const handleSettingsChanged = () => {
+      const freshSettings = readSettingsFromCookie();
+      const freshEnabledAlgsets = new Set(Object.values(freshSettings.algsets).flat());
+      void loadEnabledAlgsets(freshEnabledAlgsets, freshSettings.handedness);
+    };
+    window.addEventListener('ao1kSettingsChanged', handleSettingsChanged);
+    return () => window.removeEventListener('ao1kSettingsChanged', handleSettingsChanged);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- listens once at mount; loadEnabledAlgsets only closes over refs
+  }, []);
 
   const trackMoves = useCallback(
     (
@@ -735,11 +769,13 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
         return;
       }
 
+      trueCaretRef.current = [idIndex, lineIndex];
+
       const isLineEmpty = moves[lineIndex]?.length === 0;
       if (isLineEmpty) {
 
         // only allowing suggestions on empty line simplifies logic and leads to more beautiful recons
-        idIndex === 0 ? null : handleEmptyLineSuggestions(moves, lineIndex);
+        idIndex === 0 ? null : handleEmptyLineSuggestions(moves, lineIndex, enabledAlgsets);
 
         // pretend caret is at end of the last line that has a move
         const adjustedLineIndex = findPrevNonEmptyLine(moves, lineIndex);
@@ -767,16 +803,14 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
 
       if (idIndex === 1) {
         const nonEmptyCount = moves.filter(line => line.length > 0).length;
-        const prev = splitsRef.current;
+        const prev = splits;
         if (prev.length !== nonEmptyCount) {
           if (prev.length < nonEmptyCount) {
             const padded = [...prev, ...Array(nonEmptyCount - prev.length).fill('')];
-            splitsRef.current = padded;
             setSplits(padded);
             setCommittedSplits(c => [...c, ...Array(nonEmptyCount - c.length).fill('')]);
           } else {
             const trimmed = prev.slice(0, nonEmptyCount);
-            splitsRef.current = trimmed;
             setSplits(trimmed);
             setCommittedSplits(c => c.slice(0, nonEmptyCount));
             updateURL('splits', splitsToURLParam(trimmed));
@@ -793,7 +827,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       let limitedTimes = findAnimationTimes(idIndex, lineIndex, moveIndex, moves);
       moveLocation.current = [idIndex, lineIndex, moveIndex];
 
-      const currentLineSteps = lineStepsRef.current;
+      const currentLineSteps = lineSteps;
 
       if (!isMoveLineContentSame) {
         updateLineSteps();
@@ -805,22 +839,13 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
 
       setPlayerParams({ animationTimes: limitedTimes, solution: sol, scramble: scram });
 
-      const validPlayPauseStatuses = ['play', 'pause', 'replay', 'disabled'];
-      const playPauseStatus =
-        (moveControllerStatus && validPlayPauseStatuses.includes(moveControllerStatus)) ?
-          moveControllerStatus : controllerButtonsStatus.playPause;
+      const playPauseStatus = moveControllerStatus === 'play' ? 'play' : 'pause';
 
       const controllerButtonsEnabled = getControllerButtonsStatus(idIndex, lineIndex, moveIndex, allMovesRef.current[idIndex], playPauseStatus);
       setControllerButtonsStatus(controllerButtonsEnabled)
 
-  }, [controllerButtonsStatus, suggestions]);
-
-  const memoizedSetScrambleHTML = useCallback((html: string) => {
-    setScrambleHTML(html);
-  }, []);
-  const memoizedSetSolutionHTML = useCallback((html: string) => {
-    setSolutionHTML(html);
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- the helper fns below only close over refs/params, not component state; listing them would force a new trackMoves identity every render
+  }, [splits, lineSteps, enabledAlgsets, handedness]);
 
   const memoizedUpdateHistoryBtns = useCallback(() => {
     handleHistoryBtnUpdate();
@@ -881,7 +906,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     }
   }
 
-  const handleHistoryBtnUpdate = () => {
+  function handleHistoryBtnUpdate() {
     const isAtEnd = moveHistory.current.index === moveHistory.current.history.length - 1;
     const isAtStart = moveHistory.current.index === 0;
 
@@ -903,7 +928,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
         ref.current.classList.add("text-primary-100");
       }
     });
-  };
+  }
 
   const getWholeTextboxRange = (textboxName: 'scramble' | 'solution'): Range => {
 
@@ -971,7 +996,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     setSplits([]);
     setCommittedSplits([]);
     setLineSteps([]);
-    updateSuggestions([], null);
+    solutionMethodsRef.current?.setSuggestions([], null);
 
     // don't clear moveHistory
 
@@ -1282,7 +1307,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     }
   };
 
-  const hasLineStepSpaceChanges = (moves: string[][], currentLineSteps: { moveLine: string; stepInfo: StepInfo[] }[]): boolean => {
+  function hasLineStepSpaceChanges(moves: string[][], currentLineSteps: { moveLine: string; stepInfo: StepInfo[] }[]): boolean {
     let hasAddedScramble = false;
     for (let idx = 0; idx < moves.length; idx++) {
       const line = moves[idx];
@@ -1294,13 +1319,12 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       if (lineStepEntry.moveLine !== lineAndScram.join(' ')) return true;
     }
     return false;
-  };
+  }
 
-  const respaceLineSteps = () => {
+  function respaceLineSteps() {
     const respacedSteps: { moveLine: string, stepInfo: StepInfo[] }[] = [];
     const solutionMoves = allMovesRef.current[1];
-    const currentLineSteps = lineStepsRef.current;
-    const filteredLineSteps = currentLineSteps.filter(item => item.moveLine.trim() !== '');
+    const filteredLineSteps = lineSteps.filter(item => item.moveLine.trim() !== '');
     let hasStepsCount = 0;
     let hasAddedScramble = false;
     for (let lineIdx = 0; lineIdx < solutionMoves.length; lineIdx++) {
@@ -1321,16 +1345,15 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
         respacedSteps.push({ moveLine: flatLine, stepInfo: [] });
       }
     };
-    lineStepsRef.current = respacedSteps;
     setLineSteps(respacedSteps);
-  };
+  }
 
-  const updateLineSteps = () => {
+  function updateLineSteps() {
     if (!cubeInterpreter.current) {
       return;
     }
     const updatedSteps: { moveLine: string, stepInfo: StepInfo[] }[] = [];
-    const previousLineSteps = lineStepsRef.current;
+    const previousLineSteps = lineSteps;
 
     const getStepsForLine = (lineIdx: number): StepInfo[] => {
       if (!cubeInterpreter.current) {
@@ -1416,13 +1439,13 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       }
     };
 
-    lineStepsRef.current = updatedSteps;
     setLineSteps(updatedSteps);
-  };
+  }
 
   const initializeCubeInterpreter = async () => {
-    const algDoc = await import('../../public/recon/compiled-exact-algs.json');
-    cubeInterpreter.current = new SimpleCubeInterpreter(algDoc.default.algorithms);
+    cubeInterpreter.current = new SimpleCubeInterpreter();
+    const initialSettings = readSettingsFromCookie();
+    await loadEnabledAlgsets(new Set(Object.values(initialSettings.algsets).flat()), initialSettings.handedness);
     updateLineSteps();
 
     // initialize screenshot manager and warm up renderer
@@ -1442,6 +1465,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
 
   useEffect(() => {
     initializeCubeInterpreter();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- must run exactly once at mount; re-running on every lineSteps change would re-initialize the interpreter
   }, []);
 
   useEffect(() => {
@@ -1451,6 +1475,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     if (time) {
       const parsedTime = parseFloat(time);
       if (!isNaN(parsedTime)) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrating from the URL query string, which only exists client-side; must run once at mount
         setSolveTime(parsedTime);
       }
     }
@@ -1499,6 +1524,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     };
 
     // may create screenshot, so handleStoreSelection needs current values.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- deliberately re-subscribes only on scramble/solution changes, not every value handleStoreSelection reads
   }, [scrambleHTML, solutionHTML]);
 
   const windowsToolbarButtons = [
@@ -1648,7 +1674,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
             moveHistory={moveHistory}
             updateHistoryBtns={memoizedUpdateHistoryBtns}
             html={scrambleHTML}
-            setHTML={memoizedSetScrambleHTML}
+            setHTML={setScrambleHTML}
             initialContent={solutionHTML ? '' : dailyScramble}
           />
         </div>
@@ -1735,10 +1761,9 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
                 moveHistory={moveHistory}
                 updateHistoryBtns={memoizedUpdateHistoryBtns}
                 html={solutionHTML}
-                setHTML={memoizedSetSolutionHTML}
-                suggestionsRef={suggestionsRef}
-                suggestionLineIndexRef={suggestionLineIndexRef}
+                setHTML={setSolutionHTML}
                 lineHeight={solutionLineHeight}
+                iconColumnWidth={hasIcons ? ICON_SIZE_CONFIG['medium'].iconWidth : 0}
               />
             </div>
             {showSplitsColumn && (

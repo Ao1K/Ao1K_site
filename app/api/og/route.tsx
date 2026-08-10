@@ -9,21 +9,20 @@ import parseText from '../../../composables/recon/validateTextInput';
 import validationToArray from '../../../composables/recon/validationToMoves';
 import { getLineStepInfo, getNewSteps } from '../../../composables/recon/getLineStepInfo';
 import { fetchDailyScramble } from '../../../utils/fetchDailyScramble';
-import { editorAliases } from '../../../utils/sharedConstants';
+import { editorAliases, OG_PREVIEW_SCALE, OG_PREVIEW_SIZE } from '../../../utils/sharedConstants';
 import React from 'react';
 import fs from 'fs';
 import path from 'path';
 
 export const runtime = 'nodejs';
 
-const PREVIEW_SCALE = 0.7; // full size = 1
+const PREVIEW_SCALE = OG_PREVIEW_SCALE; // full size = 1
 
 
 // load Rubik font data from bundled files for Satori rendering
 let rubikRegularData: Buffer | null = null;
 let rubikBoldData: Buffer | null = null;
 let dailyScramble: { date: string; scramble: string } | null = null;
-
 function getRubikFonts(): { regular: Buffer; bold: Buffer } {
   if (rubikRegularData && rubikBoldData) return { regular: rubikRegularData, bold: rubikBoldData };
   const fontsDir = path.join(process.cwd(), 'app/api/og/fonts');
@@ -120,7 +119,7 @@ function renderColoredText(text: string): React.ReactNode {
 
 export async function GET(request: Request) {
   try {
-    const { searchParams, origin } = new URL(request.url);
+    const { searchParams } = new URL(request.url);
     
     // Decode params (support aliases: 'setup' for scramble, 'alg' for solution)
     const getRawParam = (name: string) => {
@@ -152,35 +151,10 @@ export async function GET(request: Request) {
     }
 
     if (!scramble || !solution) {
-      return new ImageResponse(
-        (
-          <div
-            style={{
-              height: '100%',
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: '#161018',
-            }}
-          >
-            <img
-              src={`${origin}/Ao1K-Logo-v2.svg`}
-              style={{ width: '100%', height: '100%' }}
-            />
-          </div>
-        ),
-        {
-          width: 143,
-          height: 74,
-        }
-      );
+      return new Response('Missing scramble or solution', { status: 400 });
     }
 
-    const imageOptions = {
-      width: 1200 * PREVIEW_SCALE,
-      height: 630 * PREVIEW_SCALE,
-    };
+    const imageOptions = OG_PREVIEW_SIZE;
 
     // Scramble processing
     // Parse lines separately to handle comments correctly, then merge valid parts

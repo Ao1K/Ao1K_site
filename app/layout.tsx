@@ -5,18 +5,23 @@ import "./globals.css";
 import Header from "../components/Header";
 import { versionList } from "../utils/sharedConstants";
 import SidebarAutoClose from "../components/SidebarAutoClose";
+import ToastContainer from "../components/ToastContainer";
 import HeaderNavLink from "../components/HeaderNavLink";
 import WriteIcon from "../components/icons/write";
 import BulletListIcon from "../components/icons/bulletList";
 import GlassesIcon from "../components/icons/glasses";
+import DatabaseIcon from "../components/icons/database";
 
 import type { Metadata } from "next";
 import { Rubik } from "next/font/google";
 
 import { Amplify } from 'aws-amplify';
-import outputs from "../amplify_outputs.json"
+import { getAmplifyOutputs } from "../utils/amplifyOutputs";
 
-Amplify.configure(outputs);
+const amplifyOutputs = getAmplifyOutputs();
+if (amplifyOutputs) {
+  Amplify.configure(amplifyOutputs);
+}
 
 const rubik = Rubik({
   subsets: ['latin'],
@@ -29,21 +34,16 @@ const rubik = Rubik({
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'),
-  title: "Ao1K – Reconstruction",
-  description: "Statisically significant speedcube analysis",
+  title: {
+    default: "Ao1K",
+    template: "Ao1K – %s",
+  },
+  description: "Statistically significant speedcube analysis",
   icons: {
     icon: "/Ao1K-Logo-Icon.png",
   },
   openGraph: {
-    title: "Ao1K – Reconstruction",
-    description: "Statisically significant speedcube analysis",
-    images: ['/api/og'],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: "Ao1K – Reconstruction",
-    description: "Statisically significant speedcube analysis",
-    images: ['/api/og'],
+    siteName: "Ao1K",
   },
 }
 
@@ -74,10 +74,14 @@ export default async function RootLayout({
             <HeaderNavLink href="/recon" title="Reconstruct" icon={<WriteIcon />} version={versionList["recon"]} />
           </label>
           <label htmlFor="sidebar-toggle" className="whitespace-nowrap cursor-pointer">
+            <HeaderNavLink href="/algs/" title="Algs" icon={<DatabaseIcon />} version={versionList["algs"]} />
+          </label>
+          <label htmlFor="sidebar-toggle" className="whitespace-nowrap cursor-pointer">
             <HeaderNavLink href="/changeblog/" title="Changeblog" icon={<BulletListIcon />} version={versionList["changeblog"]} />
           </label>
         </div>
         {children}
+        <ToastContainer />
       </body>
     </html>
   );

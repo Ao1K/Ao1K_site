@@ -3,13 +3,15 @@
  * Returns a meaningless number. Lower is better.
  * May be improved in the future.
  */
+import type { Handedness } from '../useSettings';
+
 export default class AlgSpeedEstimator {
 
   private readonly speedMap: Record<string, number> = {
     // numbers are arbitrary
     "U": 1,
     "D": 1.05,
-    "L": 1.05, // assume slight righty bias
+    "L": 1.05,
     "R": 1,
     "F": 1.5,
     "B": 1.3,
@@ -37,6 +39,15 @@ export default class AlgSpeedEstimator {
   }
 
   private readonly eoRegex = new RegExp(["F", "B", "r","l", "u", "d", "f", "b", "M", "E", "S", "x", "y", "z"].join("|"));
+
+  constructor(handedness: Handedness = 'right') {
+    this.setHandedness(handedness);
+  }
+
+  public setHandedness(handedness: Handedness): void {
+    this.speedMap["L"] = handedness === 'right' ? 1.05 : 1;
+    this.speedMap["R"] = handedness === 'right' ? 1 : 1.05;
+  }
 
   /**
   * naive check for moves that could theoretically change the orientation of an edge

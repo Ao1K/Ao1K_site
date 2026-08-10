@@ -17,7 +17,6 @@ import { colorDict, highlightClass, editorAliases } from '../../utils/sharedCons
 import {
   SuggestionManager,
   type SuggestionManagerHandle,
-  type SuggestionFilterClasses,
 } from './SuggestionManager';
 
 interface HTMLUpdateItem {
@@ -36,15 +35,15 @@ interface EditorProps {
   name: string;
   trackMoves: (idIndex: number, lineIndex: number, caretIndex: number, moves: string[][]) => void;
   autofocus: boolean;
-  moveHistory: React.MutableRefObject<any>;
+  moveHistory: React.RefObject<any>;
   updateHistoryBtns: () => void;
   html: string;
   setHTML: (html: string) => void;
   ref?: React.Ref<ImperativeRef>;
-  suggestionsRef?: React.MutableRefObject<Suggestion[] | undefined>;
-  suggestionLineIndexRef?: React.MutableRefObject<number | null>;
   initialContent?: string;
   lineHeight?: number;
+  simpleInput?: boolean;
+  iconColumnWidth?: number;
 }
 
 export interface ImperativeRef {
@@ -55,6 +54,7 @@ export interface ImperativeRef {
   removeHighlight: () => void;
   getElement: () => HTMLDivElement | null;
   flushURLUpdate: () => void;
+  setSuggestions: (suggestions: Suggestion[], lineIndex: number | null) => void;
 }
 
 function MovesTextEditor({
@@ -66,18 +66,17 @@ function MovesTextEditor({
   html,
   setHTML,
   ref,
-  suggestionsRef,
-  suggestionLineIndexRef,
   initialContent,
   lineHeight,
+  simpleInput = false,
+  iconColumnWidth = 0,
 }: EditorProps) {
 
-  const suggestions = suggestionsRef?.current;
-  const suggestionLineIndex = suggestionLineIndexRef?.current ?? null;
   const contentEditableRef = useRef<HTMLDivElement>(null);
+  const editorWrapperRef = useRef<HTMLDivElement>(null);
   const moveOffsetRef = useRef<number>(0); // number of moves before and at the caret. 0 is at the start of the line before any moves.
   const lineOffsetRef = useRef<number>(0);
-  const textboxMovesRef = useRef<string[][]>([['']]); // inner array for line of moves, outer array for all lines in textbox 
+  const textboxMovesRef = useRef<string[][]>([['']]); // inner array for line of moves, outer array for all lines in textbox
   const suggestionManagerRef = useRef<SuggestionManagerHandle | null>(null);
   const restoreFrameRef = useRef<number | null>(null);
 
@@ -97,16 +96,6 @@ function MovesTextEditor({
   };
 
   const localColorDict = useRef(JSON.parse(JSON.stringify(colorDict)));
-
-  /**
-   * Helper function. Should show as unused when deploying.
-   */
-  const log = (...args: any[]) => {
-
-    const ONLY_LOG_SOLUTION = true;
-
-    if (ONLY_LOG_SOLUTION && idIndex === 0) return;
-  }
 
   const handleInput = (shouldUpdateURL = true) => {
     if (!contentEditableRef.current) return;
@@ -143,6 +132,14 @@ function MovesTextEditor({
 
     let lines = splitHTMLintoLines(html);
     lines = cleanLines(lines);
+
+    // simpleInput disables multi-line input
+    if (simpleInput && lines.length > 1) {
+      const merged = lines
+        .map((line) => line.replace(/^<div>/, '').replace(/<br><\/div>$/, ''))
+        .join(' ');
+      lines = cleanLines([merged]);
+    }
 
     return lines;
   }
@@ -222,7 +219,7 @@ function MovesTextEditor({
     
     // Convert X2X into X3 for r and l moves only. 
     // Other moves can't really be fingertricked as X3.
-    { pattern: /([LRlr])2(?!\s)\1/g, replacement: (match: string, move: string) => {
+    { pattern: /([LRlr])2(?!\s)\1/g, replacement: (_match: string, move: string) => {
       const face = move.charAt(0);
       return `${face}3`;
     } },
@@ -236,14 +233,14 @@ function MovesTextEditor({
     { pattern: /D('?)(?!2)U('?)(?!2)\s/g, replacement: '(U$2 D$1) ' },
     
     // Xw → x conversion
-    { pattern: /([UDFBLR])w('?)(?!2)/g, 
-      replacement: (match: string, face: string, prime: string) => 
+    { pattern: /([UDFBLR])[wW]('?)(?!2)/g, 
+      replacement: (_match: string, face: string, prime: string) =>
         `${face.toLowerCase()}${prime} ` 
     },
     
     // X -> x conversion
     { pattern: /([XYZ])/g,
-      replacement: (match: string, axis: string) => axis.toLowerCase()
+      replacement: (_match: string, axis: string) => axis.toLowerCase()
     },
 
 
@@ -668,11 +665,22 @@ function MovesTextEditor({
     // 6
     setHTML(newHTMLlines);
 
+    // in case live DOM and painted HTML are out of sync, update the live DOM and restore caret position
+    if (newHTMLlines === html && contentEditableRef.current!.innerHTML !== newHTMLlines) {
+      contentEditableRef.current!.innerHTML = newHTMLlines;
+      setCaretToCaretSpan();
+    }
+
     // 7
     trackMoves(idIndex, lineOffsetRef.current, moveOffsetRef.current, textboxMovesRef.current);
   };
 
   const cleanLines = (lines: string[]) => {
+
+    // Keep an empty line around in the code to match the behavior of the contentEditable div, 
+    // which always has at least one line.
+    // Useful for handleEmptyLineSuggestions.
+    lines = lines.length === 0 ? [''] : lines;
 
     lines = lines
       .map((line: string) => line.replace(/<\/?div>|<br>/g, ""))
@@ -686,8 +694,6 @@ function MovesTextEditor({
    * Sets the caret span (span with id=caretNode) to the current caret position
    */
   const setCaretSpanToCaret = () => {
-    // if (document.activeElement !== contentEditableRef.current) return;
-    const isCaretSpan = !!contentEditableRef.current?.querySelector('#caretNode');
     if (!contentEditableRef.current) {
       return;
     }
@@ -806,7 +812,7 @@ function MovesTextEditor({
 
       // this probably has some unfortunate edge cases with comments, 
       // but people shouldn't be making comments anyway
-      .replace(/([UDFBLR])w/g, (match, p1) => p1.toLowerCase());
+      .replace(/([UDFBLR])w/g, (_match, p1) => p1.toLowerCase());
 
     const selection = window.getSelection();
     if (selection && contentEditableRef.current) {
@@ -954,12 +960,16 @@ function MovesTextEditor({
     let moveTokens = tokens.filter((token) => token.type === 'move').map((token) => token.value);
     moveOffsetRef.current = moveTokens.length;
 
-    // simplify regex test by removing caret span
-    const caretlessHTML = element.innerHTML.replace(/<span id="caretNode">.*?<\/span>/i, '');
-    const hasStyling = /<span class="[^"]+">[^<]+<\/span>/.test(caretlessHTML);
-    // if no styling, we assume that the html is still being loaded and parsed by onInputChange
-    // otherwise we'd get a race condition
-    if (hasStyling) {
+    // text outside a painted span means the html is still being loaded and parsed by
+    // onInputChange. Setting it now would cause a race condition.
+    const unpaintedText = element.innerHTML
+      .replace(/<span id="caretNode">.*?<\/span>/i, '')
+      .replace(/<span class="[^"]+">[^<]*<\/span>/g, '')
+      .replace(/<[^>]+>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .trim();
+
+    if (!unpaintedText) {
       // Clean html for case where user changed caret during move replay
       const noHighlightHTML = element.innerHTML.replace(new RegExp(`<span class="${highlightClass}">`, 'g'), '<span class="text-primary-100">');
       setHTML(noHighlightHTML);
@@ -978,17 +988,17 @@ function MovesTextEditor({
 
   /**
    * Positions the ghost preview at the end of the active line's typed text, relative to the
-   * suggestion overlay. The ghost continues the whole line, so it anchors to the end of the
+   * editor itself. The ghost continues the whole line, so it anchors to the end of the
    * text rather than the live caret — moving the caret back into the line (arrow keys) must
-   * not drag the ghost left with it. Vertical scroll is normalized out (the overlay re-applies
-   * it via --solution-scroll-top). A collapsed Range at the end of the last text node gives the
+   * not drag the ghost left with it. The box is measured against the editor's own wrapper, which
+   * the icon column slides and the solution list scrolls, so the anchor stays valid through both
+   * without being remeasured. A collapsed Range at the end of the last text node gives the
    * x just past the final character; the last painted span's right edge is the fallback.
    */
   const measureCaretRect = () => {
     const editor = contentEditableRef.current;
-    const scroller = editor?.closest('#solution') as HTMLElement | null;
-    const overlay = scroller?.parentElement ?? null;
-    if (!editor || !overlay) return;
+    const wrapper = editorWrapperRef.current;
+    if (!editor || !wrapper) return;
 
     const lineDivs = Array.from(editor.children).filter(
       (child): child is HTMLDivElement => child instanceof HTMLDivElement,
@@ -1018,15 +1028,14 @@ function MovesTextEditor({
       rect = new DOMRect(lastSpan ? box.right : box.left, box.top, 0, box.height);
     }
 
-    const overlayRect = overlay.getBoundingClientRect();
-    const scrollTop = scroller?.scrollTop ?? 0;
+    const wrapperRect = wrapper.getBoundingClientRect();
     // push to the manager imperatively. updating editor state here would re-render the
     // contentEditable and reset the caret (React re-applies dangerouslySetInnerHTML).
     // height is the caret box height so the ghost text aligns to the typed text, not the full
     // line box (which would center the smaller glyphs lower than the typed text).
     suggestionManagerRef.current?.updateCaretRect(
-      rect.left - overlayRect.left,
-      rect.top - overlayRect.top + scrollTop,
+      rect.left - wrapperRect.left,
+      rect.top - wrapperRect.top,
       rect.height,
     );
   };
@@ -1039,6 +1048,18 @@ function MovesTextEditor({
     const state = parseCaretState();
     if (!state) return;
     setCaretState(state);
+    measureCaretRect();
+  };
+
+  // focusing without moving the caret span leaves parseCaretState a no-op, so suggestions for
+  // the line the caret already sits on would never be generated.
+  const handleFocus = () => {
+    const state = parseCaretState();
+    if (state) {
+      setCaretState(state);
+    } else {
+      trackMoves(idIndex, lineOffsetRef.current, moveOffsetRef.current, textboxMovesRef.current);
+    }
     measureCaretRect();
   };
 
@@ -1144,7 +1165,7 @@ function MovesTextEditor({
       handleRedo();
     }
 
-    if (suggestions && suggestions.length > 0 && suggestionManagerRef.current?.isShowing()) {
+    if (suggestionManagerRef.current?.isShowing()) {
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault();
       }
@@ -1203,6 +1224,8 @@ function MovesTextEditor({
     const remaining = suggestionManagerRef.current?.getAcceptText();
     if (!remaining) return;
 
+    const targetLineIndex = lineOffsetRef.current;
+
     runAfterFocus(() => {
       const root = contentEditableRef.current;
       if (!root) return;
@@ -1213,7 +1236,7 @@ function MovesTextEditor({
       const lineDivs = Array.from(root.children).filter(
         (child): child is HTMLDivElement => child instanceof HTMLDivElement,
       );
-      const lineDiv = lineDivs[lineOffsetRef.current] ?? lineDivs[lineDivs.length - 1];
+      const lineDiv = lineDivs[targetLineIndex] ?? lineDivs[lineDivs.length - 1];
       if (!lineDiv) return;
 
       root.querySelectorAll('#caretNode').forEach((node) => node.remove());
@@ -1238,7 +1261,45 @@ function MovesTextEditor({
     }
   };
 
+  const simpleRestore = (html: string) => {
+    contentEditableRef.current!.innerHTML = html;
+    updateHistoryBtns();
+    setCaretToCaretSpan();
+    moveHistory.current.status = 'in_progress_one';
+    handleInput();
+    moveHistory.current.status = 'ready';
+  };
+
+  const simpleUndo = () => {
+    const history = moveHistory.current.history;
+    let index = moveHistory.current.index;
+    if (index < 1) return;
+    moveHistory.current.index = --index;
+
+    let prevHTML = history[index][idIndex];
+    while (prevHTML === '<unchanged>' && index > 0) {
+      prevHTML = history[--index][idIndex];
+    }
+
+    simpleRestore(prevHTML);
+  };
+
+  const simpleRedo = () => {
+    const history = moveHistory.current.history;
+    let index = moveHistory.current.index;
+    if (index + 1 > moveHistory.current.MAX_HISTORY || index + 1 >= history.length) return;
+    moveHistory.current.index = ++index;
+
+    let nextHTML = history[index][idIndex];
+    while (nextHTML === '<unchanged>' && index + 1 < history.length) {
+      nextHTML = history[++index][idIndex];
+    }
+
+    simpleRestore(nextHTML);
+  };
+
   const handleUndo = () => {
+    if (simpleInput) return simpleUndo();
 
     const startStatus = statusTransitions[moveHistory.current.status]?.start;
     if (startStatus) {
@@ -1288,6 +1349,7 @@ function MovesTextEditor({
 
 
   const handleRedo = () => {
+    if (simpleInput) return simpleRedo();
 
     const startStatus = statusTransitions[moveHistory.current.status]?.start;
     if (startStatus) {
@@ -1447,7 +1509,7 @@ function MovesTextEditor({
   const solutionScrollElement = contentEditableRef.current?.closest('#solution') as HTMLDivElement | null;
   const suggestionOverlayElement = solutionScrollElement?.parentElement ?? null;
   const suggestionTopOffset = getMeasuredSuggestionTopOffset();
-  const suggestionLeftOffset = solutionScrollElement?.offsetLeft ?? 0;
+  const suggestionLeftOffset = iconColumnWidth;
 
   useImperativeHandle(ref, () => ({
     undo: () => {
@@ -1480,6 +1542,10 @@ function MovesTextEditor({
         updateURLTimeout.current = null;
       }
       passURLupdate();
+    },
+
+    setSuggestions: (nextSuggestions: Suggestion[], lineIndex: number | null) => {
+      suggestionManagerRef.current?.setSuggestions(nextSuggestions, lineIndex);
     }
   }));
 
@@ -1578,10 +1644,6 @@ function MovesTextEditor({
     };
   }, []);
 
-  const logCaretRestoreExit = (reason: string) => {
-    // log('caret restore exit:', reason);
-  };
-
   const queueCaretRestore = (origin: string, retries = 0) => {
     restoreFrameRef.current = requestAnimationFrame(() => {
       restoreFrameRef.current = null;
@@ -1643,11 +1705,12 @@ function MovesTextEditor({
   // new suggestion text is computed, before the browser paints, so the ghost doesn't flutter
   // sideways for a frame while the anchor catches up to the typed character.
   useIsomorphicLayoutEffect(() => {
+    // eslint-disable-next-line react-hooks/rules-of-hooks -- useIsomorphicLayoutEffect is a real effect at runtime; the lint rule can't see through the indirection.
     syncSuggestionOverlay();
   }, [html]);
 
   return (
-    <div className="relative">
+    <div className="relative" ref={editorWrapperRef}>
       <div
         contentEditable
         ref={contentEditableRef}
@@ -1661,23 +1724,21 @@ function MovesTextEditor({
         onInput={() => handleInput(true)}
         onCopy={handleCopy}
         onPaste={handlePaste}
+        onFocus={handleFocus}
         onBlur={() => passURLupdate()}
         dangerouslySetInnerHTML={{ __html: html }}
         spellCheck={false}
         inputMode="text"
         role="textbox"
         autoCorrect="off"
-        autoCapitalize="characters" // annoying for comments and rotations. Could implement custom fix.
-        tabIndex={idIndex === 0 ? 1 : 3}
+        autoCapitalize="characters"
+        tabIndex={simpleInput ? undefined : (idIndex === 0 ? 1 : 3)}
       />
       <SuggestionManager
         ref={suggestionManagerRef}
         name={name}
-        suggestions={suggestions}
-        suggestionLineIndex={suggestionLineIndex}
         activeLineIndex={lineOffsetRef.current}
-        activeLineHtml={oldHTMLlinesRef.current[lineOffsetRef.current]}
-        activeLineMoves={textboxMovesRef.current[lineOffsetRef.current]}
+        lines={oldHTMLlinesRef.current}
         overlayElement={suggestionOverlayElement}
         topOffset={suggestionTopOffset}
         leftOffset={suggestionLeftOffset}
