@@ -5,7 +5,7 @@ import InfoPanelContent from '../../components/recon/InfoPanelContent';
 
 const PageContent = lazy(() => import('../../components/recon/_PageContent'));
 import { fetchDailyScramble } from '../../utils/fetchDailyScramble';
-import { editorAliases, OG_PREVIEW_SIZE, OG_LOGO_SIZE } from '../../utils/sharedConstants';
+import { editorAliases, OG_PREVIEW_SIZE } from '../../utils/sharedConstants';
 
 type Props = {
   params: Promise<{ id: string }>
@@ -33,14 +33,23 @@ export async function generateMetadata(
   if (searchParams.preview !== undefined) sp.set('preview', searchParams.preview as string);
 
   const qs = sp.toString();
-  const ogUrl = qs ? `/api/og?${qs}` : '/api/og';
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
   const canonicalUrl = qs ? `${baseUrl}/recon?${qs}` : `${baseUrl}/recon`;
-  
+
   let pageTitle = "Reconstruction";
 
-  const ogSize = getParam('scramble') && getParam('solution') ? OG_PREVIEW_SIZE : OG_LOGO_SIZE;
-  const ogImage = { url: ogUrl, ...ogSize };
+  const hasPreview = Boolean(getParam('scramble') && getParam('solution')) && searchParams.preview !== '0';
+
+  if (!hasPreview) {
+    return {
+      title: pageTitle,
+      alternates: {
+        canonical: canonicalUrl,
+      },
+    }
+  }
+
+  const ogImage = { url: `/api/og?${qs}`, ...OG_PREVIEW_SIZE };
 
   return {
     title: pageTitle,
@@ -51,6 +60,7 @@ export async function generateMetadata(
       images: [ogImage],
     },
     twitter: {
+      card: 'summary_large_image',
       images: [ogImage],
     },
   }

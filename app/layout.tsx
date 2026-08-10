@@ -3,7 +3,7 @@ import React from "react";
 import "./globals.css";
 
 import Header from "../components/Header";
-import { versionList, OG_LOGO_SIZE } from "../utils/sharedConstants";
+import { versionList } from "../utils/sharedConstants";
 import SidebarAutoClose from "../components/SidebarAutoClose";
 import ToastContainer from "../components/ToastContainer";
 import HeaderNavLink from "../components/HeaderNavLink";
@@ -44,11 +44,6 @@ export const metadata: Metadata = {
   },
   openGraph: {
     siteName: "Ao1K",
-    images: [{ url: '/api/og', ...OG_LOGO_SIZE }],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    images: [{ url: '/api/og', ...OG_LOGO_SIZE }],
   },
 }
 

@@ -9,7 +9,7 @@ import parseText from '../../../composables/recon/validateTextInput';
 import validationToArray from '../../../composables/recon/validationToMoves';
 import { getLineStepInfo, getNewSteps } from '../../../composables/recon/getLineStepInfo';
 import { fetchDailyScramble } from '../../../utils/fetchDailyScramble';
-import { editorAliases, OG_PREVIEW_SCALE, OG_PREVIEW_SIZE, OG_LOGO_SIZE } from '../../../utils/sharedConstants';
+import { editorAliases, OG_PREVIEW_SCALE, OG_PREVIEW_SIZE } from '../../../utils/sharedConstants';
 import React from 'react';
 import fs from 'fs';
 import path from 'path';
@@ -23,15 +23,6 @@ const PREVIEW_SCALE = OG_PREVIEW_SCALE; // full size = 1
 let rubikRegularData: Buffer | null = null;
 let rubikBoldData: Buffer | null = null;
 let dailyScramble: { date: string; scramble: string } | null = null;
-let logoDataUri: string | null = null;
-
-function getLogoDataUri(): string {
-  if (logoDataUri) return logoDataUri;
-  const svg = fs.readFileSync(path.join(process.cwd(), 'public/Ao1K-Logo-v2.svg'));
-  logoDataUri = `data:image/svg+xml;base64,${svg.toString('base64')}`;
-  return logoDataUri;
-}
-
 function getRubikFonts(): { regular: Buffer; bold: Buffer } {
   if (rubikRegularData && rubikBoldData) return { regular: rubikRegularData, bold: rubikBoldData };
   const fontsDir = path.join(process.cwd(), 'app/api/og/fonts');
@@ -160,31 +151,7 @@ export async function GET(request: Request) {
     }
 
     if (!scramble || !solution) {
-      return new ImageResponse(
-        (
-          <div
-            style={{
-              height: '100%',
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: '#161018',
-            }}
-          >
-            <img
-              src={getLogoDataUri()}
-              style={{ width: '100%', height: '100%' }}
-            />
-          </div>
-        ),
-        {
-          ...OG_LOGO_SIZE,
-          headers: {
-            'Cache-Control': 'public, max-age=2592000',
-          },
-        }
-      );
+      return new Response('Missing scramble or solution', { status: 400 });
     }
 
     const imageOptions = OG_PREVIEW_SIZE;
