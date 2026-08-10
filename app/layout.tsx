@@ -5,18 +5,23 @@ import "./globals.css";
 import Header from "../components/Header";
 import { versionList } from "../utils/sharedConstants";
 import SidebarAutoClose from "../components/SidebarAutoClose";
+import ToastContainer from "../components/ToastContainer";
 import HeaderNavLink from "../components/HeaderNavLink";
 import WriteIcon from "../components/icons/write";
 import BulletListIcon from "../components/icons/bulletList";
 import GlassesIcon from "../components/icons/glasses";
+import DatabaseIcon from "../components/icons/database";
 
 import type { Metadata } from "next";
 import { Rubik } from "next/font/google";
 
 import { Amplify } from 'aws-amplify';
-import outputs from "../amplify_outputs.json"
+import { getAmplifyOutputs } from "../utils/amplifyOutputs";
 
-Amplify.configure(outputs);
+const amplifyOutputs = getAmplifyOutputs();
+if (amplifyOutputs) {
+  Amplify.configure(amplifyOutputs);
+}
 
 const rubik = Rubik({
   subsets: ['latin'],
@@ -74,10 +79,14 @@ export default async function RootLayout({
             <HeaderNavLink href="/recon" title="Reconstruct" icon={<WriteIcon />} version={versionList["recon"]} />
           </label>
           <label htmlFor="sidebar-toggle" className="whitespace-nowrap cursor-pointer">
+            <HeaderNavLink href="/algs/" title="Algs" icon={<DatabaseIcon />} version={versionList["algs"]} />
+          </label>
+          <label htmlFor="sidebar-toggle" className="whitespace-nowrap cursor-pointer">
             <HeaderNavLink href="/changeblog/" title="Changeblog" icon={<BulletListIcon />} version={versionList["changeblog"]} />
           </label>
         </div>
         {children}
+        <ToastContainer />
       </body>
     </html>
   );

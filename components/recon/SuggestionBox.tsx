@@ -1,6 +1,5 @@
 'use client';
 
-// order cards first by steps, then colors, then speed
 import type { Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
 import SuggestionCard from './SuggestionCard';
 import { useEffect, useRef } from 'react';
@@ -12,6 +11,7 @@ interface SuggestionBoxSuggestion {
 
 interface SuggestionBoxProps {
   suggestions: SuggestionBoxSuggestion[];
+  selectedOriginalIndex: number | null;
   topOffset: number;
   leftOffset: number;
   handleSuggestionRequest: (index: number) => void;
@@ -19,85 +19,40 @@ interface SuggestionBoxProps {
   handleSuggestionReject: () => void;
 }
 
-const sortSuggestions = (items: SuggestionBoxSuggestion[]) => {
-  // 1. group by unique (name, step)
-  const groups = new Map<string, SuggestionBoxSuggestion[]>()
+export const SuggestionBox = ({suggestions, selectedOriginalIndex, topOffset, leftOffset, handleSuggestionRequest, handleSuggestionAccept, handleSuggestionReject }: SuggestionBoxProps) => {
+  const foundIndex = suggestions.findIndex((item) => item.originalIndex === selectedOriginalIndex);
+  const selectedIndex = foundIndex === -1 ? 0 : foundIndex;
 
-  for (const item of items) {
-    const step = item.suggestion.steps[0] || '';
-    const name = item.suggestion.name ?? "";
-    const key = `${name}:::${step}`
-    if (!groups.has(key)) groups.set(key, [])
-    groups.get(key)!.push(item)
-  }
-
-  // 2. sort each group by originalIndex to preserve logic-layer ordering (frequency for LL, time for F2L)
-  const sortedGroups = Array.from(groups.values()).map(group =>
-    group.sort((a, b) => a.originalIndex - b.originalIndex)
-  )
-
-  // 3. sort the groups by the originalIndex of their first element
-  sortedGroups.sort((a, b) => a[0].originalIndex - b[0].originalIndex)
-
-  return sortedGroups.flat()
-};
-
-export const SuggestionBox = ({suggestions, topOffset, leftOffset, handleSuggestionRequest, handleSuggestionAccept, handleSuggestionReject }: SuggestionBoxProps) => {
-  const sortedSuggestions = sortSuggestions(suggestions);
-  const selectedCardRef = useRef<number | null>(null);
-  
-  const selectCard = (index: number) => {
-    // selection is purely visual (drives isFocused), so the editor keeps real DOM focus and the
-    // user can keep typing while arrowing through suggestions. the highlight re-renders because
-    // every navigation path also calls handleSuggestionRequest.
-    selectedCardRef.current = index;
-  }
-  if (selectedCardRef.current === null && sortedSuggestions.length > 0) {
-    selectCard(0);
-  }
-  
-  const handleKeyDown = (event: KeyboardEvent) => {
-
-    // tab event handled by parent component
-    if (!sortedSuggestions.length) return;
-
-    if (event.key === 'ArrowDown') {
-      event.preventDefault();
-      const current = selectedCardRef.current ?? -1;
-      const nextIndex = (current + 1) % sortedSuggestions.length;
-      selectCard(nextIndex);
-      handleSuggestionRequest(sortedSuggestions[nextIndex].originalIndex);
-    }
-    if (event.key === 'ArrowUp') {
-      event.preventDefault();
-      const current = selectedCardRef.current ?? 0;
-      const prevIndex = (current - 1 + sortedSuggestions.length) % sortedSuggestions.length;
-      selectCard(prevIndex);
-      handleSuggestionRequest(sortedSuggestions[prevIndex].originalIndex);
-    }
-  };
+  const navigationStateRef = useRef({ suggestions, selectedIndex, handleSuggestionRequest });
+  navigationStateRef.current = { suggestions, selectedIndex, handleSuggestionRequest };
 
   const focusHoveredElement = (index: number) => {
-    if (!sortedSuggestions[index]) return;
-    selectCard(index);
-    handleSuggestionRequest(sortedSuggestions[index].originalIndex);
+    if (!suggestions[index]) return;
+    handleSuggestionRequest(suggestions[index].originalIndex);
   }
 
   useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // tab event handled by parent component
+      const { suggestions: current, selectedIndex: currentIndex, handleSuggestionRequest: request } = navigationStateRef.current;
+      if (!current.length) return;
+
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        request(current[(currentIndex + 1) % current.length].originalIndex);
+      }
+      if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        request(current[(currentIndex - 1 + current.length) % current.length].originalIndex);
+      }
+    };
+
     document.addEventListener('keydown', handleKeyDown);
-    if (sortedSuggestions.length > 0) {
-      handleSuggestionRequest(sortedSuggestions[0].originalIndex);
-    }
-    if (selectedCardRef.current === null && sortedSuggestions.length > 0) {
-      selectCard(0);
-    }
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
-
-  if (selectedCardRef.current === null) selectedCardRef.current = 0;
 
   const isTouchScreen = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0;
 
@@ -106,15 +61,14 @@ export const SuggestionBox = ({suggestions, topOffset, leftOffset, handleSuggest
       id="suggestion-box"
       className="absolute z-40 flex flex-col"
       style={{
-        top: topOffset,
+        top: `min(calc(${topOffset}px - var(--solution-scroll-top, 0px)), 100%)`,
         left: leftOffset,
-        transform: 'translateY(calc(0px - var(--solution-scroll-top, 0px)))',
       }}
     >
     {
-      sortedSuggestions.map((item, index) => {
-        const isLast = index === sortedSuggestions.length - 1;
-        const isOnly = sortedSuggestions.length === 1;
+      suggestions.map((item, index) => {
+        const isLast = index === suggestions.length - 1;
+        const isOnly = suggestions.length === 1;
         let placement = `${index}`;
         if (isOnly) {
           placement = 'only';
@@ -126,17 +80,18 @@ export const SuggestionBox = ({suggestions, topOffset, leftOffset, handleSuggest
             key={index}
             id={`suggestion-card-${index}`}
             placement={placement}
-            isFocused={selectedCardRef.current === index}
+            isFocused={selectedIndex === index}
             alg={item.suggestion.alg}
             steps={item.suggestion.steps}
             hasEOsolved={item.suggestion.hasEOsolved}
+            algset={item.suggestion.algset}
             handleSuggestionRequest={() => focusHoveredElement(index)}
             handleSuggestionAccept={handleSuggestionAccept}
           />
         )
       })
     }
-    { sortedSuggestions.length < 1 ?
+    { suggestions.length < 1 ?
       null :
       <div className={`
         hover:bg-primary-200 hover:shadow-md

@@ -73,6 +73,40 @@ export default class AlgSuggester {
   }
 
   /**
+   * Incrementally add documents to an existing index, preserving already-indexed docs.
+   * Builds a fresh index if none exists yet.
+   */
+  addDocs(docs: Doc[]): void {
+    if (!this.indexData) {
+      this.buildIndex(docs);
+      return;
+    }
+
+    const { index, docs: idToDoc } = this.indexData;
+    for (let k = 0; k < docs.length; k++) {
+      const d = docs[k];
+      const i = idToDoc.length;
+      idToDoc.push(d);
+      const h = d.hash ?? '';
+      this.indexData.maxLen = Math.max(this.indexData.maxLen, h.length);
+      for (let pos = 0; pos < h.length; pos++) {
+        const char = h[pos];
+        let posMap = index.get(pos);
+        if (!posMap) {
+          posMap = new Map();
+          index.set(pos, posMap);
+        }
+        let setForChar = posMap.get(char);
+        if (!setForChar) {
+          setForChar = new Set();
+          posMap.set(char, setForChar);
+        }
+        setForChar.add(i);
+      }
+    }
+  }
+
+  /**
    * Convert string or string array to CharSet
    */
   private toCharSet(x?: string | string[]): CharSet | undefined {
@@ -187,7 +221,7 @@ export default class AlgSuggester {
 
     results.sort((a, b) => b.score - a.score);
     const limit = q.limit ?? 100;
-    return results.slice(0, limit).map(r => ({ id: r.doc.alg, hash: r.doc.hash, eoValue: r.doc.eoValue as number | undefined, score: r.score, matches: r.matches }));
+    return results.slice(0, limit).map(r => ({ id: r.doc.alg, hash: r.doc.hash, eoValue: r.doc.eoValue as number | undefined, step: r.doc.step as string | undefined, score: r.score, matches: r.matches }));
   }
 
   /**
