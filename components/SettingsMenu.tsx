@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { HexColorPicker } from 'react-colorful';
 import PhGear, { PhGearFill } from './icons/settings';
-import { useCubeColors, useShowControls, useShowSplits, useHintFaceletsElevation, useAlgsets, useHandedness, ALGSET_OPTIONS, DEFAULT_HINT_FACELETS_ELEVATION, DEFAULT_CUBE_COLORS, type CubeColors, type AlgsetDict } from '../composables/useSettings';
+import { useCubeColors, useShowControls, useShowSplits, useHintFaceletsElevation, useAlgsets, useHandedness, useShowEOStep, ALGSET_OPTIONS, DEFAULT_HINT_FACELETS_ELEVATION, DEFAULT_CUBE_COLORS, type CubeColors, type AlgsetDict } from '../composables/useSettings';
 
 const FACE_LABELS: { key: keyof CubeColors; label: string }[] = [
   { key: 'up', label: 'Up' },
@@ -28,6 +28,7 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
   const [elevation, setElevation] = useHintFaceletsElevation();
   const [algsets, setAlgsets] = useAlgsets();
   const [handedness, setHandedness] = useHandedness();
+  const [showEOStep, setShowEOStep] = useShowEOStep();
   const menuRef = useRef<HTMLDivElement>(null);
 
   const handleClickOutside = (event: MouseEvent | TouchEvent) => {
@@ -190,6 +191,21 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
             </div>
           </div>
           </>
+          )}
+
+          {page === 'algs' && (
+            <div className="px-3 py-2 border-b border-primary-200">
+              <span className="text-sm font-semibold text-light_accent">Visual F2L Search</span>
+              <label className="mt-2 flex items-center justify-between cursor-pointer">
+                <span className="text-xs text-primary-600">Show EO (ZBLS) Step</span>
+                <input
+                  type="checkbox"
+                  checked={showEOStep}
+                  onChange={() => setShowEOStep(!showEOStep)}
+                  className="ml-2 w-4 h-4 cursor-pointer"
+                />
+              </label>
+            </div>
           )}
 
           {/* Hint Facelets Elevation Slider — shown on both the recon and algs cubes */}

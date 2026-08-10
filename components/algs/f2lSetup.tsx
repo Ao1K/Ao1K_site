@@ -163,10 +163,12 @@ function isStepComplete(config: F2lCaseConfig, i: number): boolean {
 interface F2lSetupProps {
   config: F2lCaseConfig;
   onConfigChange: (config: F2lCaseConfig) => void;
+  showEO: boolean;
 }
 
-const F2lSetup = ({ config, onConfigChange }: F2lSetupProps) => {
-  const stepCount = STEPS.length;
+const F2lSetup = ({ config, onConfigChange, showEO }: F2lSetupProps) => {
+  const steps = showEO ? STEPS : STEPS.slice(0, STEP.EO);
+  const stepCount = steps.length;
   const locked = !isF2lConfigured(config);
   const lastStep = locked ? STEP.F2L : stepCount - 1;
   const atStart = config.step <= 0;
@@ -232,7 +234,7 @@ const F2lSetup = ({ config, onConfigChange }: F2lSetupProps) => {
   return (
     <div className="flex flex-col w-full bg-dark rounded-b-sm">
       <div className="relative flex w-full h-5 overflow-hidden bg-dark">
-        {STEPS.map((_, i) => {
+        {steps.map((step, i) => {
           const active = i === config.step;
           const complete = isStepComplete(config, i);
           const disabled = locked && i > STEP.F2L;
@@ -252,7 +254,7 @@ const F2lSetup = ({ config, onConfigChange }: F2lSetupProps) => {
                   active || complete ? 'text-dark' : disabled ? 'text-dark_accent/25' : 'text-dark_accent/60'
                 }`}
               >
-                {STEPS[i].name}
+                {step.name}
               </span>
             </button>
           );

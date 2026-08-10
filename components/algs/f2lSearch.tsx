@@ -34,6 +34,7 @@ import {
   type EdgeOrientation,
 } from '../../composables/algs/cubePaint';
 import { configToRaw, encodePrefixFromState } from '../../composables/algs/f2lCaseId';
+import { useShowEOStep } from '../../composables/useSettings';
 
 const DEFAULT_PAIR = pairsForCross('up')[0];
 
@@ -72,6 +73,8 @@ const F2lSearch = ({ cross, setCross, pair, setPair, config, setConfig, suggesti
   const twistyRef = useRef<TwistyClickableHandle>(null);
   const [playingAlg, setPlayingAlg] = useState<string | null>(null);
   const [highlightedMove, setHighlightedMove] = useState(-1);
+  const [showEOStep] = useShowEOStep();
+  const showEO = showEOStep || config.fullEO != null;
 
   // drops any running alg and returns the cube to the case it was showing beforehand
   const stopPlayback = () => {
@@ -239,7 +242,7 @@ const F2lSearch = ({ cross, setCross, pair, setPair, config, setConfig, suggesti
               </div>
             )}
           </div>
-          <F2lSetup config={config} onConfigChange={commitConfig} />
+          <F2lSetup config={config} onConfigChange={commitConfig} showEO={showEO} />
         </div>
 
         {/* Disabled. Works, but doesn't seem very useful in testing */}

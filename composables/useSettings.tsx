@@ -50,6 +50,7 @@ export interface AppSettings {
   showSplits: boolean;
   algsets: AlgsetDict;
   handedness: Handedness;
+  showEOStep: boolean;
 }
 
 const SETTINGS_COOKIE_KEY = 'ao1kSettings';
@@ -68,6 +69,7 @@ export function readSettingsFromCookie(): AppSettings {
         showSplits: parsed.showSplits ?? false,
         algsets: { ...DEFAULT_ALGSETS, ...parsed.algsets },
         handedness: parsed.handedness === 'left' ? 'left' : DEFAULT_HANDEDNESS,
+        showEOStep: parsed.showEOStep ?? false,
       };
       return result;
     } catch (e) {
@@ -81,6 +83,7 @@ export function readSettingsFromCookie(): AppSettings {
     showSplits: false,
     algsets: DEFAULT_ALGSETS,
     handedness: DEFAULT_HANDEDNESS,
+    showEOStep: false,
   };
 }
 
@@ -93,6 +96,7 @@ export function useSyncedSettings() {
     showSplits: false,
     algsets: DEFAULT_ALGSETS,
     handedness: DEFAULT_HANDEDNESS,
+    showEOStep: false,
   });
 
   useEffect(() => {
@@ -211,6 +215,19 @@ export function useHandedness(): [Handedness, (value: Handedness) => void] {
   }, [settings, updateSettings]);
 
   return [settings.handedness, setHandedness] as const;
+}
+
+export function useShowEOStep(): [boolean, (value: boolean) => void] {
+  const { settings, updateSettings } = useSyncedSettings();
+
+  const setShowEOStep = useCallback((value: boolean) => {
+    updateSettings({
+      ...settings,
+      showEOStep: value,
+    });
+  }, [settings, updateSettings]);
+
+  return [settings.showEOStep, setShowEOStep] as const;
 }
 
 export function useAlgsets(): [AlgsetDict, (value: AlgsetDict) => void] {

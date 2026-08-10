@@ -25,3 +25,10 @@ Roux icons in YourAlgsList
 
 Wack suggestion
 http://localhost:3000/algs/?a=f2l&c=y3022000000000000
+
+Create custom OG previews of different F2L cases on the Algs page:
+- Description: How to solve this case
+- Logo:
+  - [Case image]
+  - Top 3 solutions, or however many fit.
+  - "Click link for more info"
