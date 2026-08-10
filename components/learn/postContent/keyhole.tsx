@@ -9,7 +9,7 @@ import TitleBar from "../TitleBar";
 export default function Keyhole() {
   return (
     <>
-    <TitleBar title="Keyhole" subtitle=""></TitleBar>
+    <TitleBar title="Keyhole" subtitle="" seconds={50}></TitleBar>
     <LessonBody>
       <p>{`Keyhole is a technique. It lets you solve certain F2L cases quickly and without much risk.`}</p>
       <p>{`Sometimes, a quick example or two is enough to understand a concept. Here's a couple solutions that use keyhole:`}</p>

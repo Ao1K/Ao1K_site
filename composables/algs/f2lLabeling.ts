@@ -5,6 +5,7 @@ import {
   applyMove,
   crossSolved,
   flattenState,
+  pairEdgeOriented,
   type Facelets,
   type F2lPairInfo,
 } from '../recon/f2lIntuitiveDetection';
@@ -60,7 +61,6 @@ const amountOf = (token: string): number => {
 };
 
 const ROTATIONS = new Set(['x', 'y', 'z']);
-const RULD = new Set(['R', 'U', 'L', 'D', 'r', 'u', 'l', 'd']);
 const SPLITTABLE = new Set(['R', 'r', 'L', 'l']);
 
 const isU = (token: string): boolean => baseOf(token) === 'U';
@@ -76,23 +76,25 @@ const PLAIN_ROTATION_LABEL = 'Rotate';
 
 export const UNINFORMATIVE_LABELS: ReadonlySet<string> = new Set([EO_ROTATION_LABEL, PLAIN_ROTATION_LABEL]);
 
-const rotationLabel = (rest: string[]): string =>
-  rest.every((token) => RULD.has(baseOf(token))) ? EO_ROTATION_LABEL : PLAIN_ROTATION_LABEL;
-
-const countLeadingRotations = (tokens: string[]): number => {
-  let lead = 0;
-  while (lead < tokens.length && isRotation(tokens[lead])) lead++;
-  return lead;
+// a rotation is based on EO only when it turns the pair edge from bad into good
+const rotationLabel = (
+  before?: Facelets | null,
+  after?: Facelets | null,
+  pairColors?: [Color, Color] | null,
+): string => {
+  if (!before || !after || !pairColors) return PLAIN_ROTATION_LABEL;
+  const wasBad = pairEdgeOriented(before, pairColors) === false;
+  const isGood = pairEdgeOriented(after, pairColors) === true;
+  return wasBad && isGood ? EO_ROTATION_LABEL : PLAIN_ROTATION_LABEL;
 };
 
-function bodyStates(tokens: string[], lead: number, start?: Facelets | null): (Facelets | null)[] {
-  const states: (Facelets | null)[] = tokens.slice(lead).map(() => null);
+function bodyStates(tokens: string[], start?: Facelets | null): (Facelets | null)[] {
+  const states: (Facelets | null)[] = tokens.map(() => null);
   if (!start) return states;
 
   let state = start;
-  for (let i = 0; i < lead; i++) state = applyMove(state, tokens[i]);
-  for (let i = lead; i < tokens.length; i++) {
-    states[i - lead] = state;
+  for (let i = 0; i < tokens.length; i++) {
+    states[i] = state;
     state = applyMove(state, tokens[i]);
   }
   return states;
@@ -117,16 +119,13 @@ function labelSlice(
   return [{ label: plainLabel(moves), moves }];
 }
 
-// spans tile the rotation-stripped body; the ones a detector left unlabeled are filled in here
+// spans tile the run; the ones a detector left unlabeled are filled in here
 function expandSpans(
-  tokens: string[],
-  lead: number,
   states: (Facelets | null)[],
   spans: TaggedSegment[],
   pairColors?: [Color, Color] | null,
 ): TaggedSegment[] {
   const segments: TaggedSegment[] = [];
-  if (lead > 0) segments.push({ label: rotationLabel(tokens.slice(lead)), moves: tokens.slice(0, lead) });
 
   let offset = 0;
   for (const span of spans) {
@@ -169,14 +168,11 @@ function findKeyholeWindows(tokens: string[], states: (Facelets | null)[]): numb
 }
 
 function labelKeyhole(
-  tokens: string[],
+  body: string[],
   start?: Facelets | null,
   pairColors?: [Color, Color] | null,
 ): TaggedSegment[] | null {
-  const lead = countLeadingRotations(tokens);
-  const body = tokens.slice(lead);
-
-  const states = bodyStates(tokens, lead, start);
+  const states = bodyStates(body, start);
   const windows = findKeyholeWindows(body, states);
   if (!windows.length) return null;
 
@@ -195,7 +191,7 @@ function labelKeyhole(
 
   if (cursor < body.length) spans.push({ moves: body.slice(cursor) });
 
-  return expandSpans(tokens, lead, states, spans, pairColors);
+  return expandSpans(states, spans, pairColors);
 }
 
 const RUD = new Set(['R', 'U', 'D']);
@@ -266,13 +262,10 @@ const restoreLabel = (moves: string[]): string => {
 };
 
 function labelCommutatorOrConjugate(
-  tokens: string[],
+  body: string[],
   start?: Facelets | null,
   pairColors?: [Color, Color] | null,
 ): TaggedSegment[] | null {
-  const lead = countLeadingRotations(tokens);
-  const body = tokens.slice(lead);
-
   // if just (y)RU or (y)LU, can be explained in other ways, skip
   if (!body.join('').includes('D')) return null;
 
@@ -315,7 +308,7 @@ function labelCommutatorOrConjugate(
   if (cursor < body.length) spans.push({ moves: body.slice(cursor) });
 
   // join labels and return
-  return expandSpans(tokens, lead, bodyStates(tokens, lead, start), spans, pairColors);
+  return expandSpans(bodyStates(body, start), spans, pairColors);
 }
 
 // a double or triple outer-slice turn can pass through cross-solved on its way, so the paths
@@ -439,9 +432,9 @@ const LONG_INSERTS = new Set<string>([
 ]);
 
 const isValidInsert = (moves: string[]): boolean => {
-  let lead = 0;
-  while (lead < moves.length && (isU(moves[lead]) || isRotation(moves[lead]))) lead++;
-  const insert = moves.slice(lead);
+  let auf = 0;
+  while (auf < moves.length && isU(moves[auf])) auf++;
+  const insert = moves.slice(auf);
   return insert.length === 3 || LONG_INSERTS.has(insert.join(' '));
 };
 
@@ -477,17 +470,11 @@ function transitionLabel(before: F2lPairInfo, after: F2lPairInfo, moves: string[
   return undefined;
 }
 
-function labelStandard(tokens: string[], start: Facelets, pairColors: [Color, Color]): F2lSegment[] | null {
-  const lead = countLeadingRotations(tokens);
-  let state = start;
-  for (let i = 0; i < lead; i++) state = applyMove(state, tokens[i]);
-
+function labelStandard(body: string[], start: Facelets, pairColors: [Color, Color]): F2lSegment[] | null {
   const segments: F2lSegment[] = [];
-  if (lead > 0) segments.push({ label: rotationLabel(tokens.slice(lead)), moves: tokens.slice(0, lead) });
+  const groups = splitAtCrossSolved(start, body);
 
-  const groups = splitAtCrossSolved(state, tokens.slice(lead));
-
-  let before = analyzeF2lPair(state, pairColors);
+  let before = analyzeF2lPair(start, pairColors);
   if (!before) return null;
 
   for (const group of groups) {
@@ -498,6 +485,47 @@ function labelStandard(tokens: string[], start: Facelets, pairColors: [Color, Co
   }
 
   return segments.some((segment) => segment.label) ? segments : null;
+}
+
+interface Run {
+  moves: string[];
+  rotation: boolean;
+  start: Facelets | null;
+  end: Facelets | null;
+}
+
+// rotations stand on their own, so the alg is cut into alternating rotation and move runs and
+// each run is read in the single frame it lives in
+function splitAtRotations(tokens: string[], start: Facelets | null): Run[] {
+  const runs: Run[] = [];
+  let state = start;
+  let index = 0;
+
+  while (index < tokens.length) {
+    const rotation = isRotation(tokens[index]);
+    const from = index;
+    while (index < tokens.length && isRotation(tokens[index]) === rotation) index++;
+
+    const moves = tokens.slice(from, index);
+    let end = state;
+    if (end) for (const token of moves) end = applyMove(end, token);
+    runs.push({ moves, rotation, start: state, end });
+    state = end;
+  }
+
+  return runs;
+}
+
+function labelRun(run: Run, pairColors?: [Color, Color] | null): TaggedSegment[] {
+  if (run.rotation) return [{ label: rotationLabel(run.start, run.end, pairColors), moves: run.moves }];
+
+  const keyhole = labelKeyhole(run.moves, run.start, pairColors);
+  if (keyhole) return keyhole;
+
+  const commutator = labelCommutatorOrConjugate(run.moves, run.start, pairColors);
+  if (commutator) return commutator;
+
+  return labelSlice(run.moves, run.start, pairColors);
 }
 
 /**
@@ -516,13 +544,22 @@ export function labelF2lAlg(
   const start = caseState ? flattenState(caseState) : null;
   const tokens = start ? expandTurns(start, raw) : raw;
 
-  const keyhole = labelKeyhole(tokens, start, pairColors);
-  if (keyhole) return groupRows(withRawIndices(keyhole, raw));
+  const segments: TaggedSegment[] = [];
+  let groupOffset = 0;
 
-  const commutator = labelCommutatorOrConjugate(tokens, start, pairColors);
-  if (commutator) return groupRows(withRawIndices(commutator, raw));
+  for (const run of splitAtRotations(tokens, start)) {
+    let maxId = -1;
+    for (const segment of labelRun(run, pairColors)) {
+      if (segment.groupId === undefined) {
+        segments.push(segment);
+        continue;
+      }
+      maxId = Math.max(maxId, segment.groupId);
+      segments.push({ ...segment, groupId: segment.groupId + groupOffset });
+    }
+    groupOffset += maxId + 1;
+  }
 
-  if (!start || !pairColors) return null;
-  const standard = labelStandard(tokens, start, pairColors);
-  return standard && groupRows(withRawIndices(standard, raw));
+  if (!segments.some((segment) => segment.label)) return null;
+  return groupRows(withRawIndices(segments, raw));
 }
