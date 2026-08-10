@@ -23,6 +23,14 @@ const PREVIEW_SCALE = OG_PREVIEW_SCALE; // full size = 1
 let rubikRegularData: Buffer | null = null;
 let rubikBoldData: Buffer | null = null;
 let dailyScramble: { date: string; scramble: string } | null = null;
+let logoDataUri: string | null = null;
+
+function getLogoDataUri(): string {
+  if (logoDataUri) return logoDataUri;
+  const svg = fs.readFileSync(path.join(process.cwd(), 'public/Ao1K-Logo-v2.svg'));
+  logoDataUri = `data:image/svg+xml;base64,${svg.toString('base64')}`;
+  return logoDataUri;
+}
 
 function getRubikFonts(): { regular: Buffer; bold: Buffer } {
   if (rubikRegularData && rubikBoldData) return { regular: rubikRegularData, bold: rubikBoldData };
@@ -120,7 +128,7 @@ function renderColoredText(text: string): React.ReactNode {
 
 export async function GET(request: Request) {
   try {
-    const { searchParams, origin } = new URL(request.url);
+    const { searchParams } = new URL(request.url);
     
     // Decode params (support aliases: 'setup' for scramble, 'alg' for solution)
     const getRawParam = (name: string) => {
@@ -165,7 +173,7 @@ export async function GET(request: Request) {
             }}
           >
             <img
-              src={`${origin}/Ao1K-Logo-v2.svg`}
+              src={getLogoDataUri()}
               style={{ width: '100%', height: '100%' }}
             />
           </div>
