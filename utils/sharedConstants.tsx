@@ -16,9 +16,11 @@ export const OG_PREVIEW_SIZE = {
   height: 630 * OG_PREVIEW_SCALE,
 };
 
+export const OG_LOGO_SCALE = 8;
+
 export const OG_LOGO_SIZE = {
-  width: 143,
-  height: 74,
+  width: 143 * OG_LOGO_SCALE,
+  height: 74 * OG_LOGO_SCALE,
 };
 
 export const editorAliases: Record<string, string[]> = {

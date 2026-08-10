@@ -170,7 +170,12 @@ export async function GET(request: Request) {
             />
           </div>
         ),
-        OG_LOGO_SIZE
+        {
+          ...OG_LOGO_SIZE,
+          headers: {
+            'Cache-Control': 'public, max-age=2592000',
+          },
+        }
       );
     }
 
