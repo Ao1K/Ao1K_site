@@ -9,14 +9,14 @@ import parseText from '../../../composables/recon/validateTextInput';
 import validationToArray from '../../../composables/recon/validationToMoves';
 import { getLineStepInfo, getNewSteps } from '../../../composables/recon/getLineStepInfo';
 import { fetchDailyScramble } from '../../../utils/fetchDailyScramble';
-import { editorAliases } from '../../../utils/sharedConstants';
+import { editorAliases, OG_PREVIEW_SCALE, OG_PREVIEW_SIZE, OG_LOGO_SIZE } from '../../../utils/sharedConstants';
 import React from 'react';
 import fs from 'fs';
 import path from 'path';
 
 export const runtime = 'nodejs';
 
-const PREVIEW_SCALE = 0.7; // full size = 1
+const PREVIEW_SCALE = OG_PREVIEW_SCALE; // full size = 1
 
 
 // load Rubik font data from bundled files for Satori rendering
@@ -170,17 +170,11 @@ export async function GET(request: Request) {
             />
           </div>
         ),
-        {
-          width: 143,
-          height: 74,
-        }
+        OG_LOGO_SIZE
       );
     }
 
-    const imageOptions = {
-      width: 1200 * PREVIEW_SCALE,
-      height: 630 * PREVIEW_SCALE,
-    };
+    const imageOptions = OG_PREVIEW_SIZE;
 
     // Scramble processing
     // Parse lines separately to handle comments correctly, then merge valid parts

@@ -9,6 +9,18 @@ export const versionList = {
 
 export const highlightClass = 'text-dark bg-primary-100 backdrop-blur-xs caret-dark';
 
+export const OG_PREVIEW_SCALE = 0.7;
+
+export const OG_PREVIEW_SIZE = {
+  width: 1200 * OG_PREVIEW_SCALE,
+  height: 630 * OG_PREVIEW_SCALE,
+};
+
+export const OG_LOGO_SIZE = {
+  width: 143,
+  height: 74,
+};
+
 export const editorAliases: Record<string, string[]> = {
   solution: ['alg'],
   scramble: ['setup'],

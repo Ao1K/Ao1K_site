@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { posts } from "../../../components/changeblog/posts";
 import AlgsV01 from "../../../components/changeblog/postContent/AlgsV01";
@@ -20,6 +21,20 @@ const postComponents: Record<string, React.ComponentType> = {
 
 export function generateStaticParams() {
   return posts.map((post) => ({ slug: post.slug }));
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const post = posts.find((p) => p.slug === slug);
+
+  return {
+    title: post?.title ?? "Changeblog",
+    description: post ? `Changes in ${post.title}` : "Changes to Ao1K",
+  };
 }
 
 export default async function ChangelogPost({

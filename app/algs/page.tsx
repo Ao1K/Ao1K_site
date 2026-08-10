@@ -5,7 +5,10 @@ import { configFromParams } from "../../composables/algs/f2lCaseId";
 
 export const metadata: Metadata = {
   title: "Algs",
-  description: "Find and practice algorithms",
+  description: "Visually search for F2L solutions, keep track of your algs",
+  alternates: {
+    canonical: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/algs`,
+  },
 };
 
 const firstParam = (value: string | string[] | undefined): string | undefined =>

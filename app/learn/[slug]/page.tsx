@@ -21,9 +21,11 @@ export async function generateMetadata({
   const { slug } = await params;
   const lesson = lessons.find((l) => l.slug === slug);
 
+  const lessonTitle = lesson?.title ? lesson.title + " lesson" : "Lesson" 
+
   return {
-    title: "Ao1K – Lesson",
-    description: lesson?.title ?? "Learn to cube",
+    title: lessonTitle,
+    description: lesson?.description ?? "Learn to cube",
   };
 }
 

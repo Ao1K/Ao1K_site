@@ -30,6 +30,7 @@ const TransferMenu = ({ favorites, filtered, onImport, onImportError, open, onTo
   const inputRef = useRef<HTMLInputElement>(null);
 
   const exported = filteredOnly ? filtered : favorites;
+  const nothingToExport = exported.length === 0;
   const exportCsv = () => { downloadFavoritesCsv(exported); onClose(); };
   const exportPdf = () => { downloadFavoritesPdf(exported, cubeColors); onClose(); };
 
@@ -52,6 +53,7 @@ const TransferMenu = ({ favorites, filtered, onImport, onImportError, open, onTo
 
   // items indent past the category icon so their labels line up with the category name
   const itemClass = 'block w-full pl-9 pr-3 py-1.5 text-left text-sm text-primary-100 hover:bg-neutral-700 transition-colors';
+  const disabledItemClass = 'block w-full pl-9 pr-3 py-1.5 text-left text-sm text-neutral-600 cursor-default';
   const categoryClass = 'flex items-center gap-2 px-3 text-sm tracking-wide text-dark_accent';
 
   return (
@@ -100,10 +102,10 @@ const TransferMenu = ({ favorites, filtered, onImport, onImportError, open, onTo
             <span className="w-4 shrink-0" />
             as
           </div>
-          <button type="button" onClick={exportCsv} className={itemClass}>
+          <button type="button" onClick={exportCsv} disabled={nothingToExport} className={nothingToExport ? disabledItemClass : itemClass}>
             CSV
           </button>
-          <button type="button" onClick={exportPdf} className={itemClass}>
+          <button type="button" onClick={exportPdf} disabled={nothingToExport} className={nothingToExport ? disabledItemClass : itemClass}>
             PDF
           </button>
         </div>

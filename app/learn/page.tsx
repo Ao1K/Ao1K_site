@@ -5,7 +5,7 @@ import { lessons } from "../../components/learn/lessons";
 import TitleBar from "../../components/learn/TitleBar";
 
 export const metadata: Metadata = {
-  title: "Ao1K – Lesson",
+  title: "Lessons",
   description: "Learn to cube",
 };
 

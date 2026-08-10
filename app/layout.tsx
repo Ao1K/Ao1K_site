@@ -3,7 +3,7 @@ import React from "react";
 import "./globals.css";
 
 import Header from "../components/Header";
-import { versionList } from "../utils/sharedConstants";
+import { versionList, OG_LOGO_SIZE } from "../utils/sharedConstants";
 import SidebarAutoClose from "../components/SidebarAutoClose";
 import ToastContainer from "../components/ToastContainer";
 import HeaderNavLink from "../components/HeaderNavLink";
@@ -34,21 +34,21 @@ const rubik = Rubik({
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'),
-  title: "Ao1K – Reconstruction",
-  description: "Statisically significant speedcube analysis",
+  title: {
+    default: "Ao1K",
+    template: "Ao1K – %s",
+  },
+  description: "Statistically significant speedcube analysis",
   icons: {
     icon: "/Ao1K-Logo-Icon.png",
   },
   openGraph: {
-    title: "Ao1K – Reconstruction",
-    description: "Statisically significant speedcube analysis",
-    images: ['/api/og'],
+    siteName: "Ao1K",
+    images: [{ url: '/api/og', ...OG_LOGO_SIZE }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: "Ao1K – Reconstruction",
-    description: "Statisically significant speedcube analysis",
-    images: ['/api/og'],
+    images: [{ url: '/api/og', ...OG_LOGO_SIZE }],
   },
 }
 
