@@ -9,12 +9,20 @@ export type SvgPolygon = { type: 'polygon'; points: string; fill: string };
 export type SvgCircle = { type: 'circle'; cx: number; cy: number; r: number; fill: string };
 export type SvgShape = SvgRect | SvgPolygon | SvgCircle;
 
+// a case name drawn over the icon, centered on the viewBox. fontSize is in viewBox units.
+export interface IconLabel {
+  text: string;
+  color: string;
+  fontSize: number;
+  fontWeight: number;
+}
+
 export interface IconDescriptor {
   viewBox: string;
   shapes: SvgShape[];
   eoBorderColor?: string;
   name?: string;
-  nameColor?: string;
+  label?: IconLabel;
   transparentBg?: boolean;
   strokeWidth?: number;
   enlarge?: boolean;
@@ -37,7 +45,13 @@ export interface IconOptions {
   // if not provided, darkBg is used
   getCrossBg?: (crossColor: string) => string;
   eoColor?: string;
+  grout?: boolean;
+  // zbll case names are too long to read at the recon page's icon size, so only surfaces with
+  // room to spare draw them. The others still carry the name as hover text.
+  zbllLabel?: boolean;
 }
+
+const GROUT_GAP = 0.6;
 
 // hardcoded colors for OG/Satori backend rendering
 export const OG_COLOR_CONFIG: ColorConfig = {
@@ -50,8 +64,6 @@ export const OG_COLOR_CONFIG: ColorConfig = {
   gray: '#888888',
   darkBg: '#161018',
 };
-
-const GROUT_GAP = 0.6;
 
 const owlIcon: IconDescriptor = {
   viewBox: '0 0 24 24',
@@ -394,7 +406,8 @@ function multislotIcon(
   };
 }
 
-function lastLayerIcon(pattern: Grid, config: ColorConfig, name?: string, nameType?: 'oll' | 'pll'): IconDescriptor {
+function lastLayerIcon(pattern: Grid, config: ColorConfig, name?: string, nameType?: CompilableLLStep, options?: IconOptions): IconDescriptor {
+  const grout = options?.grout;
   const colorMap = gridColorMap(config);
   const getCellColor = (row: number, col: number): string => {
     if (!pattern[row] || pattern[row][col] === undefined) return config.darkBg;
@@ -408,27 +421,58 @@ function lastLayerIcon(pattern: Grid, config: ColorConfig, name?: string, nameTy
   const getPos = (i: number) => i === 0 ? 0 : i === 4 ? 21 : edgeSize + (i - 1) * cellSize;
   const getSize = (i: number) => (i === 0 || i === 4) ? edgeSize : cellSize;
 
-  const isPll = Boolean(name && nameType === 'pll');
+  // pll clears the whole U face to write on. zbll clears only the U face cross, which is all LL
+  // color once EO is solved and so shows nothing; the U face corners and the side stickers around
+  // the outside stay, and those are what identify the case
+  const labels = nameType === 'pll' || (nameType === 'zbll' && options?.zbllLabel);
+  const labelled = name && labels ? { kind: nameType, text: name } : undefined;
+  const gap = grout ? GROUT_GAP : 0;
   const shapes: SvgShape[] = [{ type: 'rect', x: 0, y: 0, width: 24, height: 24, fill: config.darkBg }];
   const pushSticker = (x: number, y: number, w: number, h: number, fill: string) => {
     if (fill === config.darkBg) return;
-    shapes.push({ type: 'rect', x: x + GROUT_GAP, y: y + GROUT_GAP, width: w - 2 * GROUT_GAP, height: h - 2 * GROUT_GAP, fill });
+    shapes.push({ type: 'rect', x: x + gap, y: y + gap, width: w - 2 * gap, height: h - 2 * gap, fill });
+  };
+  const isBlotted = (row: number, col: number) => {
+    if (!labelled || row < 1 || row > 3 || col < 1 || col > 3) return false;
+    return labelled.kind === 'pll' || row === 2 || col === 2;
   };
 
   for (let row = 0; row < 5; row++) {
     for (let col = 0; col < 5; col++) {
-      if (isPll && row >= 1 && row <= 3 && col >= 1 && col <= 3) continue;
+      if (isBlotted(row, col)) continue;
       pushSticker(getPos(col), getPos(row), getSize(col), getSize(row), getCellColor(row, col));
     }
   }
 
-  if (isPll) {
+  if (labelled) {
+    const isPll = labelled.kind === 'pll';
     const centerColor = getCellColor(2, 2);
-    shapes.push({ type: 'rect', x: 3 + GROUT_GAP, y: 3 + GROUT_GAP, width: 18 - 2 * GROUT_GAP, height: 18 - 2 * GROUT_GAP, fill: centerColor });
-    return { viewBox: '0 0 24 24', shapes, name, nameColor: isColorDark(centerColor) ? '#FFFFFF' : '#000000', transparentBg: true, strokeWidth: 0 };
+    if (isPll) {
+      shapes.push({ type: 'rect', x: 3 + gap, y: 3 + gap, width: 18 - 2 * gap, height: 18 - 2 * gap, fill: centerColor });
+    } else {
+      const lo = 3 + gap, a = 9 + gap, b = 15 - gap, hi = 21 - gap;
+      shapes.push({
+        type: 'polygon',
+        points: `${a},${lo} ${b},${lo} ${b},${a} ${hi},${a} ${hi},${b} ${b},${b} ${b},${hi} ${a},${hi} ${a},${b} ${lo},${b} ${lo},${a} ${a},${a}`,
+        fill: centerColor,
+      });
+    }
+    return {
+      viewBox: '0 0 24 24',
+      shapes,
+      name,
+      label: {
+        text: labelled.text,
+        color: isColorDark(centerColor) ? '#FFFFFF' : '#000000',
+        fontSize: isPll ? (labelled.text.length <= 2 ? 10 : 8) : 5,
+        fontWeight: isPll ? 700 : 600,
+      },
+      transparentBg: true,
+      strokeWidth: grout ? 0 : undefined,
+    };
   }
 
-  return { viewBox: '0 0 24 24', shapes, name, transparentBg: true, strokeWidth: 0 };
+  return { viewBox: '0 0 24 24', shapes, name, transparentBg: true, strokeWidth: grout ? 0 : undefined };
 }
 
 // cmll icon - 5x5 LL grid but only corners are colored, edges/center greyed out
@@ -688,7 +732,7 @@ export function getStepIconDescriptor(
   }
 
   if ((data.type === 'last layer' || data.type === 'solved') && data.gridPattern && data.gridPattern.length > 0) {
-    return lastLayerIcon(data.gridPattern, config, data.name, data.nameType);
+    return lastLayerIcon(data.gridPattern, config, data.name, data.nameType, options);
   }
 
   // cmll - corners-only LL grid

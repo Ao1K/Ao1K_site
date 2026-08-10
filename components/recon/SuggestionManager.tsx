@@ -206,20 +206,24 @@ export function SuggestionManager({
     },
   }));
 
-  if (!overlayElement || !shouldShow || !filteredSuggestions) {
+  if (!shouldShow || !filteredSuggestions) {
     return null;
   }
 
-  return createPortal(
+  return (
     <>
-      <SuggestionBox
-        suggestions={filteredSuggestions}
-        topOffset={topOffset}
-        leftOffset={leftOffset}
-        handleSuggestionRequest={(index) => setSelectedOriginalIndex(index)}
-        handleSuggestionAccept={onAcceptSuggestion}
-        handleSuggestionReject={onRejectSuggestion}
-      />
+      {overlayElement && createPortal(
+        <SuggestionBox
+          suggestions={filteredSuggestions}
+          selectedOriginalIndex={selectedItem?.originalIndex ?? null}
+          topOffset={topOffset}
+          leftOffset={leftOffset}
+          handleSuggestionRequest={(index) => setSelectedOriginalIndex(index)}
+          handleSuggestionAccept={onAcceptSuggestion}
+          handleSuggestionReject={onRejectSuggestion}
+        />,
+        overlayElement,
+      )}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <SuggestionGhost
           remaining={remaining}
@@ -229,7 +233,6 @@ export function SuggestionManager({
           height={caretHeight}
         />
       </div>
-    </>,
-    overlayElement,
+    </>
   );
 }

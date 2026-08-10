@@ -11,6 +11,7 @@ export interface LLCaseInfo<S extends LLStep = LLStep> {
 }
 import ollPatterns from '../../public/recon/oll-patterns.json';
 import pllPatterns from '../../public/recon/pll-patterns.json';
+import zbllPatterns from '../../public/recon/zbll-patterns.json'
 
 export default class LLinterpreter {
 
@@ -30,6 +31,11 @@ export default class LLinterpreter {
     const pllP = pllPatterns.patterns;
     for (const entry of pllP) {
       this.pllMaps[entry.pattern] = { caseIndex: entry.caseIndex, name: entry.name };
+    }
+
+    const zbllP = zbllPatterns.patterns
+    for (const entry of zbllP) {
+      this.zbllMaps[entry.pattern] = { caseIndex: entry.caseIndex, name: entry.name };
     }
 
     //TODO: add index maps from a future user database
@@ -294,7 +300,7 @@ export default class LLinterpreter {
     return maskedPattern;
   }
 
-  public getStepInfo = (pattern: Grid, step: Step): {step: string, index: number, minMovements: number[], name: string} => {
+  public getStepInfo = <S extends Step>(pattern: Grid, step: S): LLCaseInfo<S> => {
 
     const { key: key, minMovements } = this.canonicalBase6Key(pattern, step);
 

@@ -73,6 +73,7 @@ function MovesTextEditor({
 }: EditorProps) {
 
   const contentEditableRef = useRef<HTMLDivElement>(null);
+  const editorWrapperRef = useRef<HTMLDivElement>(null);
   const moveOffsetRef = useRef<number>(0); // number of moves before and at the caret. 0 is at the start of the line before any moves.
   const lineOffsetRef = useRef<number>(0);
   const textboxMovesRef = useRef<string[][]>([['']]); // inner array for line of moves, outer array for all lines in textbox
@@ -987,17 +988,17 @@ function MovesTextEditor({
 
   /**
    * Positions the ghost preview at the end of the active line's typed text, relative to the
-   * suggestion overlay. The ghost continues the whole line, so it anchors to the end of the
+   * editor itself. The ghost continues the whole line, so it anchors to the end of the
    * text rather than the live caret — moving the caret back into the line (arrow keys) must
-   * not drag the ghost left with it. Vertical scroll is normalized out (the overlay re-applies
-   * it via --solution-scroll-top). A collapsed Range at the end of the last text node gives the
+   * not drag the ghost left with it. The box is measured against the editor's own wrapper, which
+   * the icon column slides and the solution list scrolls, so the anchor stays valid through both
+   * without being remeasured. A collapsed Range at the end of the last text node gives the
    * x just past the final character; the last painted span's right edge is the fallback.
    */
   const measureCaretRect = () => {
     const editor = contentEditableRef.current;
-    const scroller = editor?.closest('#solution') as HTMLElement | null;
-    const overlay = scroller?.parentElement ?? null;
-    if (!editor || !overlay) return;
+    const wrapper = editorWrapperRef.current;
+    if (!editor || !wrapper) return;
 
     const lineDivs = Array.from(editor.children).filter(
       (child): child is HTMLDivElement => child instanceof HTMLDivElement,
@@ -1027,16 +1028,14 @@ function MovesTextEditor({
       rect = new DOMRect(lastSpan ? box.right : box.left, box.top, 0, box.height);
     }
 
-    const overlayRect = overlay.getBoundingClientRect();
-    const scrollerRect = scroller?.getBoundingClientRect() ?? overlayRect;
-    const scrollTop = scroller?.scrollTop ?? 0;
+    const wrapperRect = wrapper.getBoundingClientRect();
     // push to the manager imperatively. updating editor state here would re-render the
     // contentEditable and reset the caret (React re-applies dangerouslySetInnerHTML).
     // height is the caret box height so the ghost text aligns to the typed text, not the full
     // line box (which would center the smaller glyphs lower than the typed text).
     suggestionManagerRef.current?.updateCaretRect(
-      rect.left - scrollerRect.left + iconColumnWidth,
-      rect.top - overlayRect.top + scrollTop,
+      rect.left - wrapperRect.left,
+      rect.top - wrapperRect.top,
       rect.height,
     );
   };
@@ -1711,7 +1710,7 @@ function MovesTextEditor({
   }, [html]);
 
   return (
-    <div className="relative">
+    <div className="relative" ref={editorWrapperRef}>
       <div
         contentEditable
         ref={contentEditableRef}

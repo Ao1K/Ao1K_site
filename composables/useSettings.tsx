@@ -25,7 +25,6 @@ export const DEFAULT_HANDEDNESS: Handedness = 'right';
 export const ALGSET_OPTIONS = {
   CFOP: ['f2l', 'oll', 'pll'],
   ZB: ['zbls', 'zbll'],
-  Roux: ['cmll', 'lse'],
 } as const;
 
 export type AlgsetDict = {
@@ -35,7 +34,6 @@ export type AlgsetDict = {
 export const DEFAULT_ALGSETS: AlgsetDict = {
   CFOP: ['f2l', 'oll', 'pll'],
   ZB: [],
-  Roux: [],
 };
 
 export const ICON_SIZE_CONFIG = {
@@ -68,7 +66,7 @@ export function readSettingsFromCookie(): AppSettings {
         showPlayerControls: parsed.showPlayerControls ?? true,
         hintFaceletsElevation: typeof parsed.hintFaceletsElevation === 'number' ? parsed.hintFaceletsElevation : DEFAULT_HINT_FACELETS_ELEVATION,
         showSplits: parsed.showSplits ?? false,
-        algsets: parsed.algsets ?? DEFAULT_ALGSETS,
+        algsets: { ...DEFAULT_ALGSETS, ...parsed.algsets },
         handedness: parsed.handedness === 'left' ? 'left' : DEFAULT_HANDEDNESS,
       };
       return result;

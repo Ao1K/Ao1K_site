@@ -1,6 +1,6 @@
 {
   "name": "ao1k",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "private": true,
   "packageManager": "pnpm@10.33.2",
   "scripts": {
@@ -11,9 +11,10 @@
     "sort-algs": "npx tsx scripts/sortAlgs.ts",
     "collapse-aufs": "npx tsx scripts/collapseAufVariants.ts",
     "trigger-combos": "npx tsx scripts/generateTriggerCombos.ts",
-    "five-movers": "npx tsx scripts/generateFiveMovers.ts",
     "y-move-algs": "npx tsx scripts/generateYMoveAlgs.ts",
-    "clean-zbls-brina": "npx tsx scripts/cleanZblsBrina.ts"
+    "ingest-zbll": "npx tsx scripts/ingestZBLL.ts",
+    "mirror-algs": "npx tsx scripts/mirrorAlgs.ts",
+    "compile-algs": "npx tsx scripts/compileAlgs.ts"
   },
   "dependencies": {
     "@aws-amplify/backend": "^1.22.0",

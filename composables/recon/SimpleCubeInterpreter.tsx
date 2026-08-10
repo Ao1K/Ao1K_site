@@ -22,6 +22,9 @@ import type { SavedAlgKeys } from './suggestionRanking';
 
 export type HashAlgset = 'f2l' | 'zbls';
 export type Algset = HashAlgset | SuggestableLLStep;
+
+const toHashAlgset = (step: string | undefined): HashAlgset => (step === 'zbls' ? 'zbls' : 'f2l');
+
 export interface Suggestion {
   alg: string;
   time: number;
@@ -29,7 +32,7 @@ export interface Suggestion {
   name?: string;
   hasEOsolved?: boolean;
   frequency?: number;
-  algset?: string;
+  algset?: Algset;
 }
 
 interface F2LPairQuery {
@@ -114,8 +117,8 @@ export interface StepInfo {
   type: 'cross' | 'f2l' | 'last layer' | 'solved' | 'none' | 'genericEO' | 'block' | 'genericBlock' | 'lse' | 'cmll' | 'eoLine' | 'apbBlock';
   colors: string[];
   caseIndex?: number;
-  name?: string; // Optional name for cases (OLL/PLL names)
-  nameType?: 'oll' | 'pll';
+  name?: string; // Optional name for cases (OLL/PLL/ZBLL names)
+  nameType?: CompilableLLStep;
   blockPattern?: BlockPattern;
   blockVolume?: number;
   blockMaxElevation?: number;
@@ -151,10 +154,14 @@ export class SimpleCubeInterpreter {
   private enabledAlgsets: AlgsetFilter = 'all';
   private handedness: Handedness = 'right';
   private savedAlgs: SavedAlgKeys | undefined = undefined;
-  private loadedAlgsets: Set<string> = new Set();
+  private loadedAlgsets: Map<string, string | undefined> = new Map();
 
   // algsets whose compiled algs are hash-searched via the position suggester
-  private static readonly hashAlgsets: ReadonlySet<string> = new Set(['f2l', 'zbls']);
+  private static readonly hashAlgsets: ReadonlySet<HashAlgset> = new Set<HashAlgset>(['f2l', 'zbls']);
+
+  private static isHashAlgset(name: string): name is HashAlgset {
+    return (SimpleCubeInterpreter.hashAlgsets as ReadonlySet<string>).has(name);
+  }
 
   // standard facelets mapping (face index to color name for solved cube)
   private readonly facelets: { faceIdx: number; colorName: string }[] = [
@@ -456,19 +463,20 @@ export class SimpleCubeInterpreter {
    * (f2l, zbls) extend the position suggester; case-based algsets (oll, pll) extend the LL
    * suggester. Loaded algsets stay in memory even when later disabled in settings, so
    * re-enabling one is instant. Enabling/disabling is handled separately by getAlgSuggestions.
+   * A variant (such as handedness) replaces the previously loaded algs of the same name.
    */
-  public addAlgset(name: string, algs: Doc[] | CompiledLLAlg[]): void {
-    if (this.loadedAlgsets.has(name)) {
+  public addAlgset(name: string, algs: Doc[] | CompiledLLAlg[], variant?: string): void {
+    if (this.isAlgsetLoaded(name, variant)) {
       return;
     }
 
-    if (SimpleCubeInterpreter.hashAlgsets.has(name)) {
+    if (SimpleCubeInterpreter.isHashAlgset(name)) {
       if (!this.algSuggester) {
         this.algSuggester = new AlgSuggester();
       }
       const taggedAlgs = (algs as Doc[]).map(alg => ({ ...alg, step: name }));
       this.algSuggester.addDocs(taggedAlgs);
-    } else if (name === 'oll' || name === 'pll') {
+    } else if (name === 'oll' || name === 'pll' || name === 'zbll') {
       if (!this.LLsuggester) {
         this.LLsuggester = new LLsuggester();
       }
@@ -478,11 +486,11 @@ export class SimpleCubeInterpreter {
       return;
     }
 
-    this.loadedAlgsets.add(name);
+    this.loadedAlgsets.set(name, variant);
   }
 
-  public isAlgsetLoaded(name: string): boolean {
-    return this.loadedAlgsets.has(name);
+  public isAlgsetLoaded(name: string, variant?: string): boolean {
+    return this.loadedAlgsets.has(name) && this.loadedAlgsets.get(name) === variant;
   }
 
   /**
@@ -2754,7 +2762,7 @@ export class SimpleCubeInterpreter {
     return steps;
   }
 
-  // annotate steps with LL case names (OLL/PLL) using pattern matching
+  // annotate steps with LL case names (OLL/PLL/ZBLL) using pattern matching
   private annotateLLCaseNames(steps: StepInfo[]): void {
     const llSteps = steps.filter(s => s.type === 'last layer');
     const llStepNames = new Set(llSteps.map(s => s.step));
@@ -2772,6 +2780,16 @@ export class SimpleCubeInterpreter {
           }
         }
         if (lastPair && ollInfo.name) { lastPair.name = ollInfo.name; lastPair.nameType = 'oll'; }
+      } catch { /* pattern not recognized */ }
+    }
+
+    // ZBLL name: EO solved but CO not → ZBLL case is visible. It goes on the eo step because the
+    // OLL branch above also fires in this state and claims the last pair's single name slot.
+    if (llStepNames.has('eo') && !llStepNames.has('co')) {
+      try {
+        const zbllInfo = this.LLinterpreter.getStepInfo(patternGrid, 'zbll');
+        const target = llSteps.find(s => s.step === 'eo');
+        if (target && zbllInfo.name) { target.name = zbllInfo.name; target.nameType = 'zbll'; }
       } catch { /* pattern not recognized */ }
     }
 
@@ -3199,6 +3217,14 @@ export class SimpleCubeInterpreter {
     return grid;
   }
 
+  public getLLcaseName(step: CompilableLLStep): string | undefined {
+    try {
+      return this.LLinterpreter.getStepInfo(this.getLLcoloring('pattern'), step).name;
+    } catch {
+      return undefined;
+    }
+  }
+
   public getLSEPattern(): LSEPattern {
     if (!this.cubeState) {
       return Array.from({ length: 6 }, () => Array(5).fill(0));
@@ -3247,13 +3273,13 @@ export class SimpleCubeInterpreter {
     return grid;
   }
 
-  private getAUFindex(): { step: string, index: number, minMovements: number[], name: string } {
+  private getAUFindex(): LLCaseInfo<'auf'> {
     const index = this.getReferencePieceLocation('green', 'white');
     const name = ['', "U'", "U2", "U"][index];
     return { step: 'auf', index, minMovements: [-1], name }
   }
 
-  private getLLindices(steps: StepInfo[], types: Set<StepInfo['type']>) {
+  private getLLindices(steps: StepInfo[], types: Set<StepInfo['type']>): LLCaseInfo<SuggestableLLStep>[] {
     if (typeof this.currentCubeRotation !== 'string') {
       console.warn('Current cube rotation not determined');
       return [];
@@ -3262,7 +3288,7 @@ export class SimpleCubeInterpreter {
       return [];
     }
 
-    let indices: { step: string, index: number, minMovements: number[], name: string }[] = [];
+    let indices: LLCaseInfo<SuggestableLLStep>[] = [];
     // co is covered by oll
     // ep covered by pll
 
@@ -3289,9 +3315,9 @@ export class SimpleCubeInterpreter {
           indices.push(this.LLinterpreter.getStepInfo(LLpattern, 'oll'));
         }
       }
-      if (hasEO && !hasCO && !hasEP && !hasCP) {
+      if (hasEO && !hasCO) {
         if (this.enabledAlgsets === 'all' || this.enabledAlgsets.has('zbll')) {
-          // zbllIndex = this.LLinterpreter.getStepInfo(LLpattern, 'zbll');
+          indices.push(this.LLinterpreter.getStepInfo(LLpattern, 'zbll'));
           // onelllIndex = this.LLinterpreter.getStepInfo(LLpattern, 'onelll');
         }
       }
@@ -3358,7 +3384,7 @@ export class SimpleCubeInterpreter {
   /**
    * Get state information of a last layer case. Used for building llAlgs.json
    */
-  public identifyLLcase(step: string, alg: string): { index: number, refPieceMovement: number, minMovements: number[] } {
+  public identifyLLcase(step: CompilableLLStep, alg: string): { index: number, refPieceMovement: number, minMovements: number[] } {
 
     // verify f2l solved
     if (this.getPairsSolved().length !== 4) {
@@ -3368,15 +3394,7 @@ export class SimpleCubeInterpreter {
     const refPieceMovement = this.getReferencePieceLocation('green', 'white', alg);
 
     const LLpattern: Grid = this.getLLcoloring('pattern');
-    let stepData: { step: string, index: number, minMovements: number[] } = { step: '', index: -1, minMovements: [-1] };
-    switch (step) {
-      case 'oll':
-        stepData = this.LLinterpreter.getStepInfo(LLpattern, 'oll');
-        break;
-      case 'pll':
-        stepData = this.LLinterpreter.getStepInfo(LLpattern, 'pll');
-        break;
-    }
+    const stepData = this.LLinterpreter.getStepInfo(LLpattern, step);
 
     return { index: stepData.index, refPieceMovement, minMovements: stepData.minMovements };
   }
@@ -3611,7 +3629,8 @@ export class SimpleCubeInterpreter {
       // if E layer EO is all good, or good except relevant pairs, then ZBLS algs are relevant even if not final pair
       // zbls never relevant if a piece is misslotted
       const algs = this.algSuggester!.searchByPosition(query)
-      .filter(alg => this.enabledAlgsets === 'all' || this.enabledAlgsets.has(alg.step ?? 'f2l'))
+      .map(alg => ({ ...alg, step: toHashAlgset(alg.step) }))
+      .filter(alg => this.enabledAlgsets === 'all' || this.enabledAlgsets.has(alg.step))
       .filter(alg => isZBLSrelevant || alg.step !== 'zbls');
 
       algs.forEach(alg => {
@@ -3637,7 +3656,7 @@ export class SimpleCubeInterpreter {
             time: speedEstimator.calcScore(finalAlg),
             steps: [pairLabel],
             hasEOsolved,
-            algset: alg.step ?? 'f2l',
+            algset: alg.step,
           });
         } else {
           // Algorithm already exists - add this step to the existing suggestion
@@ -3687,6 +3706,7 @@ export class SimpleCubeInterpreter {
 
     // Filter suggestions based on their pair's cutoff time
     const fastSuggestions = filteredSuggestions.filter(suggestion =>
+      suggestion.hasEOsolved ||
       suggestionRank(suggestion, this.savedAlgs) > 0 ||
       suggestion.steps.some(pairLabel => suggestion.time <= (cutoffTimes.get(pairLabel) || Infinity))
     );
@@ -3715,7 +3735,6 @@ export class SimpleCubeInterpreter {
   private getLLSuggestions(steps: StepInfo[], stepTypes: Set<StepInfo['type']>): Suggestion[] {
 
     // Calculate all 4 reference piece origins for different AUF positions
-    // preAUFidx 0: green-white, preAUFidx 1: white-red, preAUFidx 2: white-blue, preAUFidx 3: white-orange
     const refPieceOrigins = [
       this.getReferencePieceLocation('green', 'white'),  // preAUFidx 0
       this.getReferencePieceLocation('white', 'red'),    // preAUFidx 1
@@ -3724,13 +3743,9 @@ export class SimpleCubeInterpreter {
     ];
 
     const llIndices = this.getLLindices(steps, stepTypes);
-    const algs: { alg: string, name: string, steps: string[], frequency: number, algset: string }[] = [];
+    const algs: { alg: string, name: string, steps: string[], frequency: number, algset: SuggestableLLStep }[] = [];
 
     llIndices.forEach(index => {
-      if (index.step !== 'oll' && index.step !== 'pll' && index.step !== 'auf') {
-        console.warn(`LL suggestion for step ${index.step} not yet implemented.`);
-        return;
-      }
       const stepAlgs = this.LLsuggester!.getAlgsForStep(index.step, index.index, index.minMovements, refPieceOrigins);
       stepAlgs.forEach(({ alg, frequency }) => {
         algs.push({ alg, name: index.name, steps: [index.step], frequency, algset: index.step });
@@ -3749,8 +3764,11 @@ export class SimpleCubeInterpreter {
 
     // sort by frequency (high is better), then by speed estimation as tiebreaker (low is better)
     return rankSuggestions(
-      suggestions,
-      (a, b) => (b.frequency ?? 0) - (a.frequency ?? 0) || a.time - b.time,
+      dedupeByAlgsetPriority(suggestions),
+      (a, b) =>
+        algsetPriority(b.algset) - algsetPriority(a.algset) ||
+        (b.frequency ?? 0) - (a.frequency ?? 0) ||
+        a.time - b.time,
       this.savedAlgs,
     );
   }

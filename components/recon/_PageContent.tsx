@@ -30,7 +30,7 @@ import { customDecodeURL } from '../../composables/recon/urlEncoding';
 import InfoPanel from '../../components/recon/InfoPanel';
 import IconStack, { computeLineIconData } from './IconStack';
 import SplitsStack, { SPLITS_WIDTH, splitsToURLParam } from './SplitsStack';
-import { ICON_SIZE_CONFIG, useCubeColors, useShowSplits, useAlgsets, useHandedness, readSettingsFromCookie } from '../../composables/useSettings';
+import { ICON_SIZE_CONFIG, useCubeColors, useShowSplits, useAlgsets, useHandedness, readSettingsFromCookie, type Handedness } from '../../composables/useSettings';
 import { SimpleCube, type CubeState } from '../../composables/recon/SimpleCube';
 import { SimpleCubeInterpreter } from '../../composables/recon/SimpleCubeInterpreter';
 import type { StepInfo, Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
@@ -45,7 +45,7 @@ import type { TwistyPlayerImperativeRef } from '../../components/recon/TwistyPla
 // utility imports
 // import HtmlSceneDialog from "../../components/recon/HtmlSceneDialog";
 // import HtmlImageDialog from "../../components/recon/HtmlImageDialog";
-import { AlgCompiler } from '../../utils/AlgCompiler';
+// import { AlgCompiler } from '../../utils/AlgCompiler';
 // import ManualAlgVerifier from './ManualAlgVerifier';
 // import LLpatternBuilder from '../../utils/LLpatternBuilder';
 // import { highlightClass } from '../../utils/sharedConstants';
@@ -73,12 +73,26 @@ export interface ControllerRequestOptions {
 
 const TwistyPlayer = lazy(() => import("../../components/recon/TwistyPlayer"));
 
-const ALGSET_LOADERS: Record<string, () => Promise<{ default: { algorithms: unknown[] } }>> = {
+type AlgsetModule = Promise<{ default: { algorithms: unknown[] } }>;
+
+const ALGSET_LOADERS: Record<string, (handedness: Handedness) => AlgsetModule> = {
   f2l: () => import('../../public/recon/compiled-f2l-algs.json'),
-  oll: () => import('../../public/recon/compiled-oll-algs.json'),
-  pll: () => import('../../public/recon/compiled-pll-algs.json'),
+  oll: (handedness) => handedness === 'left'
+    ? import('../../public/recon/compiled-oll-lefty-algs.json')
+    : import('../../public/recon/compiled-oll-righty-algs.json'),
+  pll: (handedness) => handedness === 'left'
+    ? import('../../public/recon/compiled-pll-lefty-algs.json')
+    : import('../../public/recon/compiled-pll-righty-algs.json'),
   zbls: () => import('../../public/recon/compiled-zbls-algs.json'),
+  zbll: (handedness) => handedness === 'left'
+    ? import('../../public/recon/compiled-zbll-lefty-algs.json')
+    : import('../../public/recon/compiled-zbll-righty-algs.json'),
 };
+
+const HANDED_ALGSETS = new Set(['oll', 'pll', 'zbll']);
+
+const algsetVariant = (name: string, handedness: Handedness): string | undefined =>
+  HANDED_ALGSETS.has(name) ? handedness : undefined;
 
 let currentSpeed = 30;
 const calcCubeSpeedLocal = (speed: number) =>
@@ -708,15 +722,17 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     }
   };
 
-  const loadEnabledAlgsets = async (enabled: Set<string>) => {
+  const loadEnabledAlgsets = async (enabled: Set<string>, forHandedness: Handedness) => {
     const interpreter = cubeInterpreter.current;
     if (!interpreter) return;
 
-    const toLoad = [...enabled].filter(name => ALGSET_LOADERS[name] && !interpreter.isAlgsetLoaded(name));
+    const toLoad = [...enabled].filter(name =>
+      ALGSET_LOADERS[name] && !interpreter.isAlgsetLoaded(name, algsetVariant(name, forHandedness))
+    );
     if (toLoad.length > 0) {
       await Promise.all(toLoad.map(async name => {
-        const mod = await ALGSET_LOADERS[name]();
-        interpreter.addAlgset(name, mod.default.algorithms as Doc[] | CompiledLLAlg[]);
+        const mod = await ALGSET_LOADERS[name](forHandedness);
+        interpreter.addAlgset(name, mod.default.algorithms as Doc[] | CompiledLLAlg[], algsetVariant(name, forHandedness));
       }));
     }
 
@@ -725,8 +741,9 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
 
   useEffect(() => {
     const handleSettingsChanged = () => {
-      const freshEnabledAlgsets = new Set(Object.values(readSettingsFromCookie().algsets).flat());
-      void loadEnabledAlgsets(freshEnabledAlgsets);
+      const freshSettings = readSettingsFromCookie();
+      const freshEnabledAlgsets = new Set(Object.values(freshSettings.algsets).flat());
+      void loadEnabledAlgsets(freshEnabledAlgsets, freshSettings.handedness);
     };
     window.addEventListener('ao1kSettingsChanged', handleSettingsChanged);
     return () => window.removeEventListener('ao1kSettingsChanged', handleSettingsChanged);
@@ -1427,7 +1444,8 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
 
   const initializeCubeInterpreter = async () => {
     cubeInterpreter.current = new SimpleCubeInterpreter();
-    await loadEnabledAlgsets(enabledAlgsets);
+    const initialSettings = readSettingsFromCookie();
+    await loadEnabledAlgsets(new Set(Object.values(initialSettings.algsets).flat()), initialSettings.handedness);
     updateLineSteps();
 
     // initialize screenshot manager and warm up renderer
@@ -1546,7 +1564,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       </div> */}
 
       {/* utility for compiling list of alg hashes */}
-      <AlgCompiler />
+      {/* <AlgCompiler /> */}
 
       {/* utility for verifying manual algs */}
       {/* <ManualAlgVerifier

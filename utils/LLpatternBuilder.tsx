@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { ollCases, pllCases } from './llCases';
+import { ollCases, pllCases, zbllCases } from './llCases';
 import type { ExactAlg } from "./rawAlgs";
 import { SimpleCubeInterpreter } from "../composables/recon/SimpleCubeInterpreter";
 import { SimpleCube } from '../composables/recon/SimpleCube';
@@ -104,8 +104,7 @@ export default function LLpatternBuilder() {
         cubeInterpreter.getStepsCompleted(cube);
         const llPattern = cubeInterpreter.getLLcoloring('pattern');
 
-        if (algCase.step !== 'oll' && algCase.step !== 'pll') {
-          //&& algCase.step !== 'zbll' && algCase.step !== 'eo' && algCase.step !== 'onelll') {
+        if (algCase.step !== 'oll' && algCase.step !== 'pll' && algCase.step !== 'zbll') {
           throw new Error(`Algorithm step "${algCase.step}" is not supported for pattern generation.`);
         }
 
@@ -170,9 +169,9 @@ export default function LLpatternBuilder() {
 
     setIsGenerating(true);
     try {
-      generatePatterns(ollCases);
+      // generatePatterns(ollCases);
       // generatePatterns(pllCases);
-      // generatePatterns(zbllCases);
+      generatePatterns(zbllCases);
       // generatePatterns(eoCases);
       // generatePatterns(cpCases);
       // generatePatterns(onelllCases);

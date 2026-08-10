@@ -1,5 +1,5 @@
 import type { StepInfo, LSEPattern } from './SimpleCubeInterpreter';
-import type { Grid } from './LLinterpreter';
+import type { Grid, CompilableLLStep } from './LLinterpreter';
 
 const getCFOPStep = (currentSteps: StepInfo[], prevSteps: StepInfo[], prevGridPattern?: Grid): StepInfo | null => {
     // Check for complex LL combinations
@@ -9,16 +9,18 @@ const getCFOPStep = (currentSteps: StepInfo[], prevSteps: StepInfo[], prevGridPa
   const f2lSteps = currentSteps.filter(step => step.type === 'f2l');
   const crossSteps = currentSteps.filter(step => step.type === 'cross');
 
-  // get most recent name from previous steps (flows forward like prevGridPattern)
-  let prevName: string | undefined = undefined;
-  let prevNameType: 'oll' | 'pll' | undefined = undefined;
-  for (let i = prevSteps.length - 1; i >= 0; i--) {
-    if (prevSteps[i].name) {
-      prevName = prevSteps[i].name;
-      prevNameType = prevSteps[i].nameType;
-      break;
+  // most recent name of an accepted type from previous steps (flows forward like prevGridPattern).
+  // Scanned newest first so a name from an earlier line never outranks the case actually left on
+  // the cube by the previous line. A last layer with EO solved carries an OLL and a ZBLL name at
+  // once; each caller passes the sets its own step could have come from, and among those the
+  // later step wins.
+  const named = (...types: CompilableLLStep[]) => {
+    for (let i = prevSteps.length - 1; i >= 0; i--) {
+      const { name, nameType } = prevSteps[i];
+      if (name && nameType && types.includes(nameType)) return { name, nameType };
     }
-  }
+    return {};
+  };
 
   // for now, treat f2l + ll as just f2l
 
@@ -42,19 +44,19 @@ const getCFOPStep = (currentSteps: StepInfo[], prevSteps: StepInfo[], prevGridPa
   }
 
   if (llStepNames.includes('ep') && llStepNames.includes('cp') && llStepNames.includes('co') && llStepNames.includes('eo')) {
-    return { step: '1lll', type: 'last layer', colors: llSteps[0]?.colors || [], gridPattern: prevGridPattern, name: prevName, nameType: prevNameType };
+    return { step: '1lll', type: 'last layer', colors: llSteps[0]?.colors || [], gridPattern: prevGridPattern, ...named('zbll', 'pll', 'oll') };
   }
   if (llStepNames.includes('ep') && llStepNames.includes('cp') && llStepNames.includes('co')) {
-    return { step: 'zbll', type: 'last layer', colors: llSteps[0]?.colors || [], gridPattern: prevGridPattern };
+    return { step: 'zbll', type: 'last layer', colors: llSteps[0]?.colors || [], gridPattern: prevGridPattern, ...named('zbll') };
   }
   if (llStepNames.includes('eo') && llStepNames.includes('cp') && llStepNames.includes('co')) {
-    return { step: 'oll(cp)', type: 'last layer', colors: llSteps[0]?.colors || [], gridPattern: prevGridPattern, ...(prevNameType === 'oll' ? { name: prevName, nameType: prevNameType } : {}) };
+    return { step: 'oll(cp)', type: 'last layer', colors: llSteps[0]?.colors || [], gridPattern: prevGridPattern, ...named('oll') };
   }
   if (llStepNames.includes('eo') && llStepNames.includes('co')) {
-    return { step: 'oll', type: 'last layer', colors: llSteps[0]?.colors || [], gridPattern: prevGridPattern, ...(prevNameType === 'oll' ? { name: prevName, nameType: prevNameType } : {}) };
+    return { step: 'oll', type: 'last layer', colors: llSteps[0]?.colors || [], gridPattern: prevGridPattern, ...named('oll') };
   }
   if (llStepNames.includes('ep') && llStepNames.includes('cp')) {
-    return { step: 'pll', type: 'last layer', colors: llSteps[0]?.colors || [], gridPattern: prevGridPattern, ...(prevNameType === 'pll' ? { name: prevName, nameType: prevNameType } : {}) };
+    return { step: 'pll', type: 'last layer', colors: llSteps[0]?.colors || [], gridPattern: prevGridPattern, ...named('pll') };
   }
   if (llStepNames.includes('co') && llStepNames.includes('cp') && prevLLStepNames.includes('eo')) {
     return { step: 'coll', type: 'last layer', colors: llSteps[0]?.colors || [], gridPattern: prevGridPattern };
@@ -66,19 +68,19 @@ const getCFOPStep = (currentSteps: StepInfo[], prevSteps: StepInfo[], prevGridPa
     return { step: 'cll', type: 'last layer', colors: llSteps[0]?.colors || [], gridPattern: prevGridPattern };
   }
   if (llStepNames.includes('eo') && prevLLStepNames.includes('co')) {
-    return { step: 'oll', type: 'last layer', colors: llSteps[0]?.colors || [], gridPattern: prevGridPattern, ...(prevNameType === 'oll' ? { name: prevName, nameType: prevNameType } : {}) };
+    return { step: 'oll', type: 'last layer', colors: llSteps[0]?.colors || [], gridPattern: prevGridPattern, ...named('oll') };
   }
   if (llStepNames.includes('co') && prevLLStepNames.includes('eo')) {
-    return { step: 'oll', type: 'last layer', colors: llSteps[0]?.colors || [], gridPattern: prevGridPattern, ...(prevNameType === 'oll' ? { name: prevName, nameType: prevNameType } : {}) };
+    return { step: 'oll', type: 'last layer', colors: llSteps[0]?.colors || [], gridPattern: prevGridPattern, ...named('oll') };
   }
 
   // Individual LL steps
   if(currentSteps.length === 1 && llSteps.length === 1) {
     const step = llSteps[0];
-    if (step.step === 'eo') return { step: '1st look oll', type: 'last layer', colors: step.colors, gridPattern: prevGridPattern, ...(prevNameType === 'oll' ? { name: prevName, nameType: prevNameType } : {}) };
-    if (step.step === 'co') return { step: '2nd look oll', type: 'last layer', colors: step.colors, gridPattern: prevGridPattern, ...(prevNameType === 'oll' ? { name: prevName, nameType: prevNameType } : {}) };
-    if (step.step === 'cp') return { step: '1st look pll', type: 'last layer', colors: step.colors, gridPattern: prevGridPattern, ...(prevNameType === 'pll' ? { name: prevName, nameType: prevNameType } : {}) };
-    if (step.step === 'ep') return { step: '2nd look pll', type: 'last layer', colors: step.colors, gridPattern: prevGridPattern, ...(prevNameType === 'pll' ? { name: prevName, nameType: prevNameType } : {}) };
+    if (step.step === 'eo') return { step: '1st look oll', type: 'last layer', colors: step.colors, gridPattern: prevGridPattern, ...named('oll') };
+    if (step.step === 'co') return { step: '2nd look oll', type: 'last layer', colors: step.colors, gridPattern: prevGridPattern, ...named('oll') };
+    if (step.step === 'cp') return { step: '1st look pll', type: 'last layer', colors: step.colors, gridPattern: prevGridPattern, ...named('pll') };
+    if (step.step === 'ep') return { step: '2nd look pll', type: 'last layer', colors: step.colors, gridPattern: prevGridPattern, ...named('pll') };
   }
 
   if (currentSteps.some(step => step.type === 'solved')) {
@@ -98,9 +100,9 @@ const getCFOPStep = (currentSteps: StepInfo[], prevSteps: StepInfo[], prevGridPa
       gridPattern: prevGridPattern,
 
       // TODO: add support for other steps names
-      // In SimpleCubeInterpreter, stop just returning 'solved' as step. 
+      // In SimpleCubeInterpreter, stop just returning 'solved' as step.
       // Would need this richer data.
-      ...(prevNameType === 'pll' ? { name: prevName, nameType: prevNameType } : {}) };
+      ...named('zbll', 'pll', 'oll') };
   }
 
   // Cross
@@ -332,20 +334,22 @@ export function getNewSteps(previousSteps: StepInfo[] | undefined, steps: StepIn
     }
 
     if (previousSteps.some(prev => sameStepAndColors(prev, step))) {
-      if (step.name) { carriedName = step.name; carriedNameType = step.nameType; }
+      if (step.name && step.nameType) { carriedName = step.name; carriedNameType = step.nameType; }
       return false;
     }
     return true;
   });
 
-  // transfer carried annotation to the last new F2L pair
+  // transfer carried annotation to the last new F2L pair, or failing that any unnamed new last
+  // layer step. Without this the case a line leaves on the cube goes missing whenever its carrier
+  // step was already solved on an earlier line, and later lines fall back to a stale name.
   if (carriedName) {
-    for (let i = newSteps.length - 1; i >= 0; i--) {
-      if (newSteps[i].type === 'f2l' && newSteps[i].step === 'pair') {
-        newSteps[i].name = carriedName;
-        newSteps[i].nameType = carriedNameType;
-        break;
-      }
+    const target =
+      [...newSteps].reverse().find(step => step.type === 'f2l' && step.step === 'pair') ??
+      [...newSteps].reverse().find(step => step.type === 'last layer' && !step.name);
+    if (target) {
+      target.name = carriedName;
+      target.nameType = carriedNameType;
     }
   }
 

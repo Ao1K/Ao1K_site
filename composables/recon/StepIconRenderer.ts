@@ -13,7 +13,7 @@ function shapeToElement(shape: SvgShape, h: CreateElement): ReactNode {
   return h('circle', { cx: shape.cx, cy: shape.cy, r: shape.r, fill: shape.fill });
 }
 
-function descriptorToElements(desc: IconDescriptor, size: number, h: CreateElement, showNameAsText?: boolean): ReactNode {
+function descriptorToElements(desc: IconDescriptor, size: number, h: CreateElement): ReactNode {
   const children = desc.shapes.map(shape => shapeToElement(shape, h));
   // outer border rect for Satori rendering, sized to match viewBox
   const [vx, vy, vw, vh] = desc.viewBox.split(' ').map(Number);
@@ -22,7 +22,7 @@ function descriptorToElements(desc: IconDescriptor, size: number, h: CreateEleme
   children.push(h('rect', { x: vx, y: vy, width: vw, height: vh, fill: 'none', stroke: borderColor, 'stroke-width': borderWidth }));
   const svg = h('svg', { viewBox: desc.viewBox, width: size, height: size, stroke: '#52525b', 'stroke-width': 1, fill: 'none' }, ...children);
   // satori doesn't support SVG <text>, so overlay a positioned HTML div instead
-  if (desc.name && showNameAsText) {
+  if (desc.label) {
     return h('div', { style: { position: 'relative', width: size, height: size, flexShrink: 0, display: 'flex' } },
       svg,
       h('div', {
@@ -35,12 +35,12 @@ function descriptorToElements(desc: IconDescriptor, size: number, h: CreateEleme
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: desc.nameColor || '#ECE6EF',
-          fontSize: desc.name.length <= 2 ? size * 0.45 : size * 0.35,
-          fontWeight: 'bold',
+          color: desc.label.color,
+          fontSize: desc.label.fontSize * size / vw,
+          fontWeight: desc.label.fontWeight,
           fontFamily: 'Rubik, system-ui, sans-serif',
         },
-      }, desc.name)
+      }, desc.label.text)
     );
   }
   return svg;
@@ -57,7 +57,6 @@ export function createStepIcon(
   const descriptor = getStepIconDescriptor(OG_COLOR_CONFIG, data, { eoColor });
   // empty icon (no shapes, no EO border) — render blank, like IconStack does
   if (descriptor.shapes.length === 0 && !descriptor.eoBorderColor) return null;
-  const showNameAsText = data.nameType === 'pll';
-  return descriptorToElements(descriptor, size, createElement, showNameAsText);
+  return descriptorToElements(descriptor, size, createElement);
 }
 

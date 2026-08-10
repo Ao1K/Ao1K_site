@@ -4,8 +4,11 @@ export type SavedAlgKeys = ReadonlySet<string>;
 
 export type SuggestionComparator = (a: Suggestion, b: Suggestion) => number;
 
-const CASE_SPECIFIC_ALGSETS: ReadonlySet<string> = new Set(['oll', 'pll', 'zbls', 'zbll', 'cmll', 'lse']);
 export type CaseSpecificAlgset = Exclude<Algset, 'f2l' | 'auf'>;
+
+const isCaseSpecific = (algset?: Algset): algset is CaseSpecificAlgset =>
+  algset !== undefined && algset !== 'f2l' && algset !== 'auf';
+
 const ALGSET_PRIORITY: Partial<Record<Algset, number>> = {
   zbll: 2,
   oll: 1,
@@ -69,10 +72,6 @@ export const rankSuggestions = (
   compare: SuggestionComparator,
   savedAlgs?: SavedAlgKeys,
 ): Suggestion[] => {
-  if (!savedAlgs) {
-    return suggestions.sort(compare);
-  }
-
   const ranks = new Map<Suggestion, number>();
   suggestions.forEach((suggestion) => ranks.set(suggestion, suggestionRank(suggestion, savedAlgs)));
 
