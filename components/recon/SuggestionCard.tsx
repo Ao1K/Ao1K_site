@@ -14,8 +14,8 @@ interface SuggestionCardProps {
   isFocused: boolean;
   hasEOsolved?: boolean;
   algset?: Algset;
-  handleSuggestionRequest: () => void;
-  handleSuggestionAccept: () => void;
+  onSelect: () => void;
+  onAccept: () => void;
 }
 
 const extractF2LColors = (step: string, letterToColor: Record<string, string>): string[] => {
@@ -97,7 +97,7 @@ const renderStepIcon = (steps: string[], letterToColor: Record<string, string>, 
   return renderTextIcon(steps[0] || '?');
 };
 
-export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolved, algset, handleSuggestionRequest, handleSuggestionAccept }: SuggestionCardProps) => {
+export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolved, algset, onSelect, onAccept }: SuggestionCardProps) => {
   const { settings } = useSyncedSettings();
   const { cubeColors } = settings;
 
@@ -157,9 +157,9 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
         ${placement === 'only' ? 'rounded-t-sm rounded-br-sm' : ''}
         `
       }
-      onMouseOver={handleSuggestionRequest}
+      onMouseOver={onSelect}
       onMouseDown={(event) => event.preventDefault()}
-      onClick={handleSuggestionAccept}
+      onClick={onAccept}
       id={id}
       tabIndex={0}
     >

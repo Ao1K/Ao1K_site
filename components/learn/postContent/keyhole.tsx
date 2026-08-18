@@ -25,7 +25,7 @@ export default function Keyhole() {
       <Story storyParagraphs={[`There is a long road. Peaku has been walking all day in a light rain. He has just left the familiar behind. The path is rough and muddy, and that is to say nothing of the bugs.`, `The path turns steep. He slips through rocks and mud. He is in pain, and although he can stand easily, he does not.`, `A green bird lands on his mud-covered chest. A jewel in the rough. It screams out a mocking laugh.`,`What do you want, bird, Peaku says.`,`Watch you suffer! the bird says.`,`"What?"`,`The bird mocks him and flies off a short ways. It looks back at Peaku. Peaku stands and follows, weary of traps or evil creatures.`, `No such dangers appear. The bird perches on a dry log under a small rocky overhang. It hops, flutters the wet off its wings. Snack! it squawks.`, `Peaku drops his pack and sits down heavily. He offers the bird some nuts from his palm. It is a messy eater and finishes them off quickly.`,`Progress! Progress! it says.`, `Progress, Peaku agrees. 🦜`]}/>
       <p>{`Often, it can be hard to know when you're solving an F2L pair perfectly. When you get to use keyhole, you'll pretty much know you're making progress. Any other way you could solve it will almost always be worse.`}</p>
       <h1>When to use keyhole</h1>
-      <p>{`You can use keyhole whenever these three things are all true:`}</p>
+      <p>{`You can use keyhole whenever these things are true:`}</p>
       <LessonList items={["There is an F2L pair where one piece is solved and the other piece is in the top layer, and", "There is another slot that isn't solved"]}/>
       <p>{`A "slot" is the location where a corner and edge piece need to get solved in the first and second layer. There's usually four unsolved slots after you solve cross.`}</p>
       <p>{`Let's look at those keyhole examples again.`}</p>
@@ -65,7 +65,8 @@ export default function Keyhole() {
         </div>
       </div>
       <p>{`It's called keyhole because, well, it's like we're inserting a key into a hole. Imagine that.`}</p>
-      <p>{`One exception to be aware of. If the corner has the cross color facing up, keyhole doesn't really make the pair that much more efficient. You'd probably be better off solving something else.`}</p>
+      <p>{`I oversimplified earlier. Opinions differ on when to use keyhole. Solving corner cases with keyhole is typically not much better than solving with pure `}<code>RU</code> or <code>LU</code>{` moves. It's up to you to figure out which you prefer in the long term, but keyhole is perfectly okay to start off.`}</p>
+      <p>{`Additionally, if the cross color on the corner is facing up, using keyhole won't make the case much better. You'd probably be better off solving something else.`}</p>
       <h2>The edge case</h2>
       <p>{`Now we'll say the corner is the piece that's in the way. We need to move that corner out of the way, but this will put a different corner in the slot we're trying to solve the edge into. As long as we don't care about that corner, we're fine.`}</p>
       <p>{`The back right slot is unsolved here. Let's use that. We'll do`}<code>{`D'`}</code>{` to move its corner into the slot we care about. We'll also do`}<code>{`U`}</code>{` at the same time to set up for inserting the edge.`}</p>
@@ -77,6 +78,7 @@ export default function Keyhole() {
       <h1>{`That's it`}</h1>
       <p>{`You now know keyhole! Not much to this one, really. But that doesn't mean it won't take some getting used to. Do untimed solves so that you can get used to spotting these cases.`}</p>
       <p>{`The slot you're trying to solve doesn't have to be in the front. That was just easier to show in a tutorial. You could solve cases where all the relevant pieces are in the back, if you can manage to spot them.`}</p>
+      <p>{`Before you click play, try to spot the keyhole case.`}</p>
       <div className="flex flex-col gap-1 pb-4">
         <div className="w-80 h-80.5 border border-neutral-400 rounded-sm overflow-hidden">
           <iframe src="/learn/keyhole/hard.html" className="w-165 h-165 overflow-hidden scale-50 origin-top-left" />

@@ -14,6 +14,9 @@ A completely intuitive f2l guide
 
 Add roux algs
 Missing L' U' L2 U L2' U' L and mirrors, y2?
+L' U' L R' U2 R2 U R'
+why y' U R U' R2' U2' R U2 R' U R and not y' R U' R2' U2' R U2 R' U R?
+Free both pieces + Make pair = Free pair
 
 Think about function of solve review carefully. Form will follow.
 - Add breakdown into MovesTextEditor? Explore adding divs.
@@ -27,6 +30,13 @@ Roux icons in YourAlgsList
 Wack suggestion
 http://localhost:3000/algs/?a=f2l&c=y3022000000000000
 
+https://www.ao1k.com/algs/?a=f2l&p=WBO&c=y231001110
+Breakdown for U2 r' F' r R' D R U' R' D' R is bad, same for inverse above. F U' R U' R' U2 F' should be higher. 
+Can we explain F<R,U>F, better? Like F, pair, F'?
+Set up testing. We should set up a way to input algs and output breakdowns, then get a list of breakdowns that are correct.
+
+Canonicalization breaks unneeded AUF removal. Suggestion keeps AUF in original canonicalized form even when not needed. 
+
 Create custom OG previews of different F2L cases on the Algs page:
 - Description: How to solve this case
 - Logo:
@@ -34,3 +44,5 @@ Create custom OG previews of different F2L cases on the Algs page:
   - Top 3 solutions, or however many fit.
   - "Click link for more info"
 - Add a share button above Solutions
+
+Pasting in text should not trigger most text substitutions, only LW -> l and X/Y/Z -> x/y/z. Not NN -> N2, NM -> N M, or UD -> (U D).
