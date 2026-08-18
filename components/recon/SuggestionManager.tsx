@@ -54,8 +54,8 @@ interface SuggestionManagerProps {
   topOffset: number;
   leftOffset: number;
   showTabHint: boolean;
-  onAcceptSuggestion: () => void;
-  onRejectSuggestion: () => void;
+  onAccept: (acceptText: string) => void;
+  onReject: () => void;
   ref?: Ref<SuggestionManagerHandle>;
 }
 
@@ -126,8 +126,8 @@ export function SuggestionManager({
   topOffset,
   leftOffset,
   showTabHint,
-  onAcceptSuggestion,
-  onRejectSuggestion,
+  onAccept,
+  onReject,
   ref,
 }: SuggestionManagerProps) {
   const [{ suggestions, lineIndex: suggestionLineIndex }, setSuggestionState] = useState<SuggestionState>({
@@ -206,6 +206,16 @@ export function SuggestionManager({
     },
   }));
 
+  const acceptByOriginalIndex = (originalIndex: number) => {
+    const item = filteredSuggestions?.find((entry) => entry.originalIndex === originalIndex);
+    if (!item) return;
+
+    const acceptText = resolveRemaining(item.suggestion.alg, getLineText(activeLineHtml));
+    if (!acceptText) return;
+
+    onAccept(acceptText);
+  };
+
   if (!shouldShow || !filteredSuggestions) {
     return null;
   }
@@ -218,9 +228,9 @@ export function SuggestionManager({
           selectedOriginalIndex={selectedItem?.originalIndex ?? null}
           topOffset={topOffset}
           leftOffset={leftOffset}
-          handleSuggestionRequest={(index) => setSelectedOriginalIndex(index)}
-          handleSuggestionAccept={onAcceptSuggestion}
-          handleSuggestionReject={onRejectSuggestion}
+          onSelect={(index) => setSelectedOriginalIndex(index)}
+          onAccept={acceptByOriginalIndex}
+          onReject={onReject}
         />,
         overlayElement,
       )}

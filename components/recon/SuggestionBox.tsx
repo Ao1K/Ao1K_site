@@ -14,36 +14,36 @@ interface SuggestionBoxProps {
   selectedOriginalIndex: number | null;
   topOffset: number;
   leftOffset: number;
-  handleSuggestionRequest: (index: number) => void;
-  handleSuggestionAccept: () => void;
-  handleSuggestionReject: () => void;
+  onSelect: (originalIndex: number) => void;
+  onAccept: (originalIndex: number) => void;
+  onReject: () => void;
 }
 
-export const SuggestionBox = ({suggestions, selectedOriginalIndex, topOffset, leftOffset, handleSuggestionRequest, handleSuggestionAccept, handleSuggestionReject }: SuggestionBoxProps) => {
+export const SuggestionBox = ({suggestions, selectedOriginalIndex, topOffset, leftOffset, onSelect, onAccept, onReject }: SuggestionBoxProps) => {
   const foundIndex = suggestions.findIndex((item) => item.originalIndex === selectedOriginalIndex);
   const selectedIndex = foundIndex === -1 ? 0 : foundIndex;
 
-  const navigationStateRef = useRef({ suggestions, selectedIndex, handleSuggestionRequest });
-  navigationStateRef.current = { suggestions, selectedIndex, handleSuggestionRequest };
+  const navigationStateRef = useRef({ suggestions, selectedIndex, onSelect });
+  navigationStateRef.current = { suggestions, selectedIndex, onSelect };
 
-  const focusHoveredElement = (index: number) => {
+  const selectAtIndex = (index: number) => {
     if (!suggestions[index]) return;
-    handleSuggestionRequest(suggestions[index].originalIndex);
+    onSelect(suggestions[index].originalIndex);
   }
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       // tab event handled by parent component
-      const { suggestions: current, selectedIndex: currentIndex, handleSuggestionRequest: request } = navigationStateRef.current;
+      const { suggestions: current, selectedIndex: currentIndex, onSelect: select } = navigationStateRef.current;
       if (!current.length) return;
 
       if (event.key === 'ArrowDown') {
         event.preventDefault();
-        request(current[(currentIndex + 1) % current.length].originalIndex);
+        select(current[(currentIndex + 1) % current.length].originalIndex);
       }
       if (event.key === 'ArrowUp') {
         event.preventDefault();
-        request(current[(currentIndex - 1 + current.length) % current.length].originalIndex);
+        select(current[(currentIndex - 1 + current.length) % current.length].originalIndex);
       }
     };
 
@@ -85,8 +85,8 @@ export const SuggestionBox = ({suggestions, selectedOriginalIndex, topOffset, le
             steps={item.suggestion.steps}
             hasEOsolved={item.suggestion.hasEOsolved}
             algset={item.suggestion.algset}
-            handleSuggestionRequest={() => focusHoveredElement(index)}
-            handleSuggestionAccept={handleSuggestionAccept}
+            onSelect={() => selectAtIndex(index)}
+            onAccept={() => onAccept(item.originalIndex)}
           />
         )
       })
@@ -98,7 +98,7 @@ export const SuggestionBox = ({suggestions, selectedOriginalIndex, topOffset, le
         flex flex-row items-center gap-3 w-fit border-t-dark
         border rounded-b-sm border-neutral-400 bg-primary-300 text-dark text-md p-1
         ${isTouchScreen ? 'min-w-25 justify-center' : 'w-fit'}`}
-        onClick={handleSuggestionReject}>
+        onClick={onReject}>
           Cancel
         { !isTouchScreen ? (
         <img src="/esc.svg" alt="Esc" className='mb-0.5 border border-dark'/>

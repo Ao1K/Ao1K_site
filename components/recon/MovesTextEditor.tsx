@@ -1112,7 +1112,7 @@ function MovesTextEditor({
     });
   };
 
-  const handleSuggestionReject = () => {
+  const dismissSuggestion = () => {
     if (name === 'scramble') return;
     // the preview is an overlay, so dismissing is pure state — no HTML surgery.
     suggestionManagerRef.current?.dismissSuggestion();
@@ -1130,7 +1130,8 @@ function MovesTextEditor({
 
       e.preventDefault();
       if (canAcceptSuggestion) {
-        handleSuggestionAccept();
+        const acceptText = manager?.getAcceptText();
+        if (acceptText) insertAcceptedSuggestion(acceptText);
         return;
       }
       // re-show after the user previously dismissed with Esc
@@ -1138,7 +1139,7 @@ function MovesTextEditor({
     }
 
     if (e.key === 'Escape' && !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) {
-      handleSuggestionReject();
+      dismissSuggestion();
     }
 
     const isMac =
@@ -1215,14 +1216,11 @@ function MovesTextEditor({
   };
 
   /**
-   * Handle tab key confirmation of any suggested text.
+   * Insert confirmed suggestion text, from either the Tab key or a tap on a card.
    */
-  const handleSuggestionAccept = () => {
+  const insertAcceptedSuggestion = (remaining: string) => {
     if (!contentEditableRef.current) return;
     if (name === 'scramble') return; // no suggestions in scramble
-
-    const remaining = suggestionManagerRef.current?.getAcceptText();
-    if (!remaining) return;
 
     const targetLineIndex = lineOffsetRef.current;
 
@@ -1743,8 +1741,8 @@ function MovesTextEditor({
         topOffset={suggestionTopOffset}
         leftOffset={suggestionLeftOffset}
         showTabHint={supportsHardwareKeyboard}
-        onAcceptSuggestion={handleSuggestionAccept}
-        onRejectSuggestion={handleSuggestionReject}
+        onAccept={insertAcceptedSuggestion}
+        onReject={dismissSuggestion}
       />
     </div>
   );

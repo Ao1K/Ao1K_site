@@ -22,14 +22,14 @@ IMPORTANT: NEVER WRITE COMMENTS UNLESS ASKED. Code should be self descriptive. I
 Just fix issues. Don't write comments explaining the problem or solution.
 
 Example of good:
-[no comment at all]
+Code that describes itself without the need for comments.
 
 Example of good approved comment:
 // sentence one. Sentence two.
 
 ## State management style
 
-Remember: you might not need an effect. useEffect and similar is generally a lazy approach. Don't be lazy. Avoid useEffect by doing one or more of the following:
+Remember: you might not need an effect. useEffect and similar effect-based triggers are generally a lazy approach. Don't be lazy. Avoid using effects by doing one or more of the following:
 
 1. Trigger stateful changes through events
 2. Pass state in as props to a component
