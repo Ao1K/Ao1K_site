@@ -32,11 +32,11 @@ function renderShape(shape: SvgShape, i: number) {
   return <circle key={i} cx={shape.cx} cy={shape.cy} r={shape.r} fill={shape.fill} />;
 }
 
-function IconSvg({ descriptor, className = '' }: { descriptor: IconDescriptor; className?: string }) {
+export function IconSvg({ descriptor, className = 'w-9 h-9' }: { descriptor: IconDescriptor; className?: string }) {
   return (
     <svg
       viewBox={descriptor.viewBox}
-      className={`w-9 h-9 border border-neutral-600 shrink-0 ${className}`}
+      className={`border border-neutral-600 shrink-0 ${className}`}
       stroke="#52525b"
       strokeWidth="1"
       fill="none"
@@ -130,7 +130,7 @@ const F2lDefaults = ({ cross, pair, onCrossChange, onPairChange }: F2lDefaultsPr
               onClick={() => handleSelectCross(face)}
               className="py-2 px-3 hover:bg-neutral-700"
             >
-              <IconSvg descriptor={crossDescriptor(face)} className="" />
+              <IconSvg descriptor={crossDescriptor(face)} />
             </button>
           ))}
         </Dropdown>
@@ -148,7 +148,7 @@ const F2lDefaults = ({ cross, pair, onCrossChange, onPairChange }: F2lDefaultsPr
               onClick={() => handleSelectPair([a, b])}
               className="py-2 px-3 hover:bg-neutral-700"
             >
-              <IconSvg descriptor={pairDescriptor(a, b)} className="" />
+              <IconSvg descriptor={pairDescriptor(a, b)} />
             </button>
           ))}
         </Dropdown>

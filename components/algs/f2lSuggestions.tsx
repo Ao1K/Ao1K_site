@@ -5,12 +5,14 @@ import { type Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
 import { type FaceKey } from '../../composables/algs/cubePaint';
 import { buildF2lCubeState } from '../../composables/algs/f2lCubeState';
 import type { Color } from '../../composables/recon/SimpleCube';
-import { type ColorConfig } from '../../composables/recon/stepIconDescriptors';
+import { simplePairIcon, type ColorConfig } from '../../composables/recon/stepIconDescriptors';
+import ReplayIcon from '../icons/replay';
+import { IconSvg } from './f2lDefaults';
 import { useCubeColors } from '../../composables/useSettings';
 import { useAlgFavorites } from '../../composables/algs/algFavorites';
 import F2lAlgCard from './f2lAlgCard';
 import type { F2lCaseConfig } from './f2lSetup';
-import { isFullEOActive, isFullEOValid } from '../../composables/algs/f2lCaseId';
+import { isFullEOActive, isFullEOValid, isPairSolved } from '../../composables/algs/f2lCaseId';
 
 interface F2lSuggestionsProps {
   config: F2lCaseConfig;
@@ -50,6 +52,25 @@ function NoSolutionsDisclaimer() {
   )
 }
 
+function PairSolvedDisclaimer({ colorA, colorB }: { colorA: string; colorB: string }) {
+  const pairIcon = (
+    <IconSvg
+      descriptor={simplePairIcon(colorA, colorB)}
+      className="inline-block align-middle w-9 h-9 mx-1"
+    />
+  );
+  return (
+    <p className="text-dark_accent leading-11">
+      {`You've entered the solved case for the`}{pairIcon}{`pair. Change the piece placement. Or, if you want to mark the`}{pairIcon}
+      {`slot as solved, change the color settings next to the`}
+      <span className="inline-flex align-middle mx-1 h-9 w-9 items-center justify-center rounded-sm border border-neutral-600 text-dark_accent">
+        <ReplayIcon className="text-lg" />
+      </span>
+      {`button.`}
+    </p>
+  )
+}
+
 const F2lSuggestions = ({ config, cross, pair, suggestions, ready, playingAlg, highlightedMove = -1, onPlay }: F2lSuggestionsProps) => {
   const [cubeColors] = useCubeColors();
   const { isFavorite, toggleFavorite } = useAlgFavorites();
@@ -60,6 +81,7 @@ const F2lSuggestions = ({ config, cross, pair, suggestions, ready, playingAlg, h
   // with Full EO engaged, only show algs that also solve EO; an odd flip count is illegal
   const eoActive = isFullEOActive(config);
   const eoValid = isFullEOValid(config);
+  const pairSolved = isPairSolved(config, cross, pair);
   const shownSuggestions = useMemo(
     () => (eoActive && eoValid ? suggestions.filter((s) => s.hasEOsolved) : suggestions),
     [suggestions, eoActive, eoValid],
@@ -94,11 +116,14 @@ const F2lSuggestions = ({ config, cross, pair, suggestions, ready, playingAlg, h
       <div className="p-3">
         {!ready && <p className="text-dark_accent">Loading algorithms…</p>}
 
-        {ready && hasPair && eoActive && !eoValid && (
+        {ready && hasPair && pairSolved && (
+          <PairSolvedDisclaimer colorA={cubeColors[pair[0]]} colorB={cubeColors[pair[1]]} />
+        )}
+        {ready && hasPair && !pairSolved && eoActive && !eoValid && (
           <p className="text-dark_accent">Fix full EO to see solutions</p>
         )}
-        {ready && hasPair && (!eoActive || eoValid) && shownSuggestions.length === 0 && <NoSolutionsDisclaimer />}
-        {ready && hasPair && (!eoActive || eoValid) && shownSuggestions.length > 0 && (
+        {ready && hasPair && !pairSolved && (!eoActive || eoValid) && shownSuggestions.length === 0 && <NoSolutionsDisclaimer />}
+        {ready && hasPair && !pairSolved && (!eoActive || eoValid) && shownSuggestions.length > 0 && (
           <ul className="flex flex-col gap-2">
             {shownSuggestions.map((s, i) => (
               <li key={`${s.alg}-${i}`}>
