@@ -57,6 +57,26 @@ export const STEP = {
 export const isF2lConfigured = (config: F2lCaseConfig): boolean =>
   config.corner != null && config.edge != null;
 
+// the selected pair is already solved when both pieces sit in its home slot unflipped:
+// orientation 0 puts the cross color on the corner's vertical axis and the L/R pair color on
+// the edge's good face, which at the home slot is the solved arrangement
+export function isPairSolved(
+  config: F2lCaseConfig,
+  cross: FaceKey,
+  pair: [FaceKey, FaceKey],
+): boolean {
+  if (!config.corner || !config.edge) return false;
+  const home = f2lPairHomeSlot(cross, pair, config.yTurns);
+  if (!home) return false;
+  const pieces = F2L_SLOT_PIECES[home];
+  return (
+    config.corner.loc === pieces.corner &&
+    config.corner.orientation === 0 &&
+    config.edge.loc === pieces.edge &&
+    config.edge.orientation === 0
+  );
+}
+
 // a slot can hold a solved context pair unless it is the selected pair's home, or one of the
 // placed pair pieces already sits in it
 export function isSlotFillable(

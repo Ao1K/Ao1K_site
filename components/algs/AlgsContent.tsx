@@ -7,7 +7,7 @@ import { buildF2lCubeState } from '../../composables/algs/f2lCubeState';
 import { type FaceKey } from '../../composables/algs/cubePaint';
 import AlgsetSelector, { type AlgsetId } from './AlgsetSelector';
 import YourAlgsList from './YourAlgsList';
-import { isFullEOValid, type F2lCaseConfig } from '../../composables/algs/f2lCaseId';
+import { isFullEOValid, isPairSolved, type F2lCaseConfig } from '../../composables/algs/f2lCaseId';
 import Footer from '../Footer';
 
 const faceColorInitials: Record<FaceKey, string> = {
@@ -55,13 +55,15 @@ const AlgsContent = ({ initialCross, initialPair, initialConfig, initialAlgset }
     if (!ready || !interpreterRef.current || !hasPair) return [];
     // an odd number of flipped edges is an illegal cube; the UI warns instead of suggesting
     if (!isFullEOValid(config)) return [];
+    if (isPairSolved(config, cross, pair)) return [];
     const cubeState = buildF2lCubeState(config, cross, pair);
     const steps = interpreterRef.current.getStepsCompleted(cubeState);
 
     // restrict suggestions to the pair being built, so its algs aren't cut by the interpreter's
     // global top-N limit when other unsolved pairs have many faster algs.
     const f2lPair = pair.map((f) => faceColorNames[f]) as [string, string];
-    const allSuggestions = interpreterRef.current.getAlgSuggestions(steps, { f2lPair, enabledAlgsets: 'all' });
+    const enabledAlgsets = new Set(['f2l', 'zbls'])
+    const allSuggestions = interpreterRef.current.getAlgSuggestions(steps, { f2lPair, enabledAlgsets });
 
     // the interpreter labels the pair by its own slotColors order (e.g. "RG pair"), which can
     // be reversed from this component's pair order ("GR pair"), so match by color set.
