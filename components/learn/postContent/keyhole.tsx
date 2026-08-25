@@ -68,8 +68,8 @@ export default function Keyhole() {
       <p>{`I oversimplified earlier. Opinions differ on when to use keyhole. Solving corner cases with keyhole is typically not much better than solving with pure `}<code>RU</code> or <code>LU</code>{` moves. It's up to you to figure out which you prefer in the long term, but keyhole is perfectly okay to start off.`}</p>
       <p>{`Additionally, if the cross color on the corner is facing up, using keyhole won't make the case much better. You'd probably be better off solving something else.`}</p>
       <h2>The edge case</h2>
-      <p>{`Now we'll say the corner is the piece that's in the way. We need to move that corner out of the way, but this will put a different corner in the slot we're trying to solve the edge into. As long as we don't care about that corner, we're fine.`}</p>
-      <p>{`The back right slot is unsolved here. Let's use that. We'll do`}<code>{`D'`}</code>{` to move its corner into the slot we care about. We'll also do`}<code>{`U`}</code>{` at the same time to set up for inserting the edge.`}</p>
+      <p>{`Now let's say the corner is solved but the edge isn't. We need to move that corner out of the way, but doing so will put a different corner in the slot we're trying to solve the edge into. That's fine, as long as that corner doesn't come from a slot that is already solved.`}</p>
+      <p>{`The back right slot is unsolved here. Let's use that corner. We'll do`}<code>{`D'`}</code>{` to move the corner into the slot we care about. We'll also do`}<code>{`U`}</code>{` at the same time to set up for inserting the edge. After that, the procedure is the same as before. We insert then undo the`}<code>{`D`}</code>{` move.`}</p>
       <div className="flex flex-col gap-1 pb-4">
         <div className="w-80 h-80.5 border border-neutral-400 rounded-sm overflow-hidden">
           <iframe src="/learn/keyhole/edge.html" className="w-165 h-165 overflow-hidden scale-50 origin-top-left" />

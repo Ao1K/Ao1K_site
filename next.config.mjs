@@ -9,6 +9,9 @@ const nextConfig = {
     webpackMemoryOptimizations: true,
     memoryBasedWorkersCount: true,
   },
+  logging: {
+    browserToTerminal: true,
+  },
   reactStrictMode: true, // Optional but recommended
   // output: 'standalone', // Ensures it builds correctly for deployment
   trailingSlash: true, // Ensures Amplify correctly handles trailing slashes
