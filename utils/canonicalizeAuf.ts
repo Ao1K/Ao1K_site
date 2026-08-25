@@ -20,21 +20,21 @@ function stepTable(pieceType: F2LPieceType): Record<string, string> {
   return pieceType === 'edge' ? EDGE_STEP : CORNER_STEP;
 }
 
-function normalizeRotation(amount: number): number {
+function normalizeAufIndex(amount: number): number {
   return ((amount % 4) + 4) % 4;
 }
 
 /**
  * True when this character sits in a U-layer position (i.e. a single U turn actually moves it).
- * Matches isF2LPieceInTopLayer's per-character definition in docs/auf-canonical-search.md.
+ * Matches the U-layer character ranges tabulated in docs/auf-canonical-search.md section 1.
  */
 export function isTopLayerChar(pieceType: F2LPieceType, char: string): boolean {
   return stepTable(pieceType)[char] !== char;
 }
 
 /**
- * canonicalizeChar(pieceType, char) -> smallest character in char's own U-turn orbit, plus q,
- * the number of forward U turns needed to reach it. Non-U-layer characters are an identity map
+ * canonicalizeChar(pieceType, char) -> smallest of the four characters char cycles through under
+ * U turns, plus q, the AUF index that reaches it. Non-U-layer characters are an identity map
  * (q=0). Per docs/auf-canonical-search.md section 1, this is alg- and hash-position-independent.
  */
 export function canonicalizeChar(pieceType: F2LPieceType, char: string): { char: string; q: number } {
@@ -53,10 +53,10 @@ export function canonicalizeChar(pieceType: F2LPieceType, char: string): { char:
 }
 
 /**
- * A pair's corner and edge rotate together under a single physical AUF, so they share one q.
- * Rotates (cornerChar, edgeChar) together by q = 0..3 and keeps whichever q makes
+ * One U turn moves a pair's corner and edge at once, so they share one q. Steps
+ * (cornerChar, edgeChar) together through q = 0..3 and keeps whichever q makes
  * cornerChar + edgeChar lexicographically smallest, corner first — the same comparison
- * compileExactAlgorithms's pairChars does, just over character rotations instead of 4
+ * compileExactAlgorithms's pairChars does, just over stepped characters instead of 4
  * separately-simulated hashes. Verified against public/recon/compiled-f2l-algs.json via
  * scripts/verifyAufReconstruction.ts.
  */
@@ -88,29 +88,29 @@ export function aufTokenToVal(token: string): number {
 }
 
 export function aufValToToken(val: number): AufToken {
-  return AUF_VAL_TO_TOKEN[normalizeRotation(val)];
+  return AUF_VAL_TO_TOKEN[normalizeAufIndex(val)];
 }
 
 /**
- * m = combine(q, c): the actual AUF to prepend when executing a matched alg on the live cube.
- * q (query-side canonicalization turns) and c (the matched alg's own stored leading rotation)
- * are both forward-U-turn counts in the same convention as EDGE_STEP/CORNER_STEP, so they
- * simply add mod 4 (turns compose). Verified against compiled-f2l-algs.json with zero
- * counterexamples across 1800+ cleanly-collapsed cases in scripts/verifyAufReconstruction.ts;
- * the subtraction convention fails ~27% of those.
+ * m = combine(q, c): the preAUF to prepend when executing a matched alg on the live cube.
+ * q (the canonicalizing turn that puts the live pair in its canonical position) and c (the
+ * matched entry's own canonical preAUF) are both AUF indices in the same convention as
+ * EDGE_STEP/CORNER_STEP, so they simply add mod 4. Verified against compiled-f2l-algs.json
+ * with zero counterexamples across 1800+ cleanly-collapsed cases in
+ * scripts/verifyAufReconstruction.ts; the subtraction convention fails ~27% of those.
  */
 export function combineAuf(q: number, c: number): number {
-  return normalizeRotation(q + c);
+  return normalizeAufIndex(q + c);
 }
 
 /**
- * Rotate the low 4 bits (U-layer edges) of a 12-bit eoValue by q forward U turns; bits 4-11
- * (D/E-layer edges) never move under a U turn. Uses the same rotation direction as EDGE_STEP,
- * verified empirically to match in scripts/verifyAufReconstruction.ts (bit j after one U turn
- * always equals the old bit (j+1) mod 4).
+ * Cycle the low 4 bits (U-layer edge positions) of a 12-bit eoValue by AUF index q; bits 4-11
+ * (D- and E-layer edges) never move under a U turn, and no U turn flips an edge. Uses the same
+ * direction as EDGE_STEP, verified empirically to match in scripts/verifyAufReconstruction.ts
+ * (bit j after one U turn always equals the old bit (j+1) mod 4).
  */
 export function rotateEOBits(eoValue: number, q: number): number {
-  const amount = normalizeRotation(q);
+  const amount = normalizeAufIndex(q);
   const high = eoValue & ~0b1111;
   let low = eoValue & 0b1111;
   for (let i = 0; i < amount; i++) {

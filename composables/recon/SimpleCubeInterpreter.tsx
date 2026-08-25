@@ -2977,9 +2977,9 @@ export class SimpleCubeInterpreter {
       if (typeof edgePosition !== 'string') return;
 
       // canonicalize this pair's own two characters so a single exact-match search works
-      // regardless of which U-layer orientation the live piece is currently in (see
-      // docs/auf-canonical-search.md section 3). Cross and solved-pair indices are never
-      // U-layer values, so they don't need this.
+      // regardless of which of the four U-layer positions the live pair is in (see
+      // docs/auf-canonical-search.md section 4). Cross and solved-pair pieces sit in the E and D
+      // layers, so no U turn moves them and they don't need this.
       const isTopLayer = isTopLayerChar('corner', cornerPosition) || isTopLayerChar('edge', edgePosition);
       const { cornerChar: canonicalCorner, edgeChar: canonicalEdge, q } = canonicalizePair(cornerPosition, edgePosition);
 
@@ -3526,10 +3526,10 @@ export class SimpleCubeInterpreter {
   }
 
   /**
-   * Reconstructs the AUF-correct alg text and EO-solved signal for a matched compiled alg, per
-   * the four cases in docs/auf-canonical-search.md. `algText`/`algEOvalue` are the matched
-   * compiled entry's own stored alg text and eoValue; `q` is this pair's canonicalization
-   * rotation from getQueriesForF2L.
+   * Reconstructs the preAUF-correct alg text and EO-solved signal for a matched compiled alg,
+   * per the two cases in docs/auf-canonical-search.md section 5. `algText`/`algEOvalue` are the
+   * matched compiled entry's own stored alg text and eoValue; `q` is this pair's canonicalizing
+   * turn from getQueriesForF2L.
    */
   private reconstructF2LAlg(
     algText: string,
@@ -3559,19 +3559,26 @@ export class SimpleCubeInterpreter {
       return { alg, hasEOsolved: eoSolvedAt(q) };
     }
 
-    // the piece isn't in the U layer, so no AUF is needed to solve the pair itself. When
-    // we want EO ranking, a leading AUF may still be worth adding purely to also solve EO. Try
-    // smallest AUF first ('', U, U', U2); a currentEO whose low 4 bits are all-0 or all-1 is
+    // neither of this pair's pieces is in the U layer, so no AUF is needed to solve the pair
+    // itself: the matched entry's own leading AUF only distinguished other pairs during
+    // canonicalization, so drop it and shift its effect out of the stored eoValue. When we want
+    // EO ranking, a leading AUF may still be worth adding purely to also solve EO. Try smallest
+    // AUF first ('', U, U', U2); a currentEO whose low 4 bits are all-0 or all-1 is
     // rotation-invariant and could match more than one candidate, so order matters there.
+    const { coreKey, aufPart } = splitLeadingAuf(algText);
+    const coreEOsolvedAt = (m: number): boolean =>
+      algEOvalue !== undefined && currentEO >= 0
+      && rotateEOBits(currentEO, m) === rotateEOBits(algEOvalue, aufTokenToVal(aufPart));
+
     if (wantsEORanking) {
       for (const candidateToken of ['', 'U', "U'", 'U2'] as const) {
-        if (eoSolvedAt(aufTokenToVal(candidateToken))) {
-          return { alg: prependAuf(candidateToken, algText), hasEOsolved: true };
+        if (coreEOsolvedAt(aufTokenToVal(candidateToken))) {
+          return { alg: prependAuf(candidateToken, coreKey), hasEOsolved: true };
         }
       }
     }
 
-    return { alg: algText, hasEOsolved: eoSolvedAt(0) };
+    return { alg: coreKey, hasEOsolved: coreEOsolvedAt(0) };
   }
 
   /**

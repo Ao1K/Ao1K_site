@@ -35,8 +35,6 @@ Breakdown for U2 r' F' r R' D R U' R' D' R is bad, same for inverse above. F U' 
 Can we explain F<R,U>F, better? Like F, pair, F'?
 Set up testing. We should set up a way to input algs and output breakdowns, then get a list of breakdowns that are correct.
 
-Canonicalization breaks unneeded AUF removal. Suggestion keeps AUF in original canonicalized form even when not needed. 
-
 Create custom OG previews of different F2L cases on the Algs page:
 - Description: How to solve this case
 - Logo:
@@ -54,5 +52,3 @@ Pasting in text should not trigger most text substitutions, only LW -> l and X/Y
  On page load, process Your Algs and add identified ones to known algsets
  - Also need to expose a module that adds one/several when the user adds them. Remember we have an import feature.
  - Add an add button to the Recon page? Direct people to the Algs page?
-
- 
