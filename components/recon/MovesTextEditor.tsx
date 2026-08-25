@@ -125,7 +125,7 @@ function MovesTextEditor({
     // (chrome)
     html = html.replace(/\n/g, '<br></div><div>');
     // (firefox)
-    html = html.replace(/>(<br>)<[^/]/g, '>$1</div><div><');
+    html = html.replace(/>(<br>)(?=<[^/])/g, '>$1</div><div>');
 
     // remove any old highlight spans and replace with primary text
     html = html.replace(new RegExp(`<span class="${highlightClass}">`, 'g'), '<span class="text-primary-100">');
@@ -714,8 +714,12 @@ function MovesTextEditor({
 
     const focusNode = selection.focusNode;
 
+    const focusIsEditorRoot = focusNode === contentEditableRef.current;
+    const focusIsBareLineBreak = focusIsEditorRoot
+      && contentEditableRef.current.childNodes[selection.focusOffset]?.nodeName === 'BR';
+
     // if focus is the outer contentEditable, keep the existing caret span
-    if (focusNode === contentEditableRef.current) {
+    if (focusIsEditorRoot && !focusIsBareLineBreak) {
       return;
     }
 
@@ -725,15 +729,7 @@ function MovesTextEditor({
     caretNode.id = 'caretNode';
 
     const range = document.createRange();
-    let node: Node | null = focusNode || null;
-
-    if (node === contentEditableRef.current
-      && contentEditableRef.current.firstChild
-      && contentEditableRef.current.firstChild.nodeType === Node.ELEMENT_NODE
-      && (contentEditableRef.current.firstChild as Element).tagName === 'DIV'
-    ) {
-      node = contentEditableRef.current.firstChild;
-    }
+    const node: Node | null = focusNode || null;
 
     // add new caretSpan, 
     // then remove old ones after to avoid any weird cleanup effects by browser
@@ -884,31 +880,89 @@ function MovesTextEditor({
     return isMulti
   };
 
-  /**
-   * Parses the current caret state and returns structured data.
-   * Returns null if the state is invalid or incomplete.
-   */
-  const parseCaretState = () => {
+  // counts one unit per character and one per <br>, so the same visual caret position gives the
+  // same number no matter how the DOM splits it into nodes. Empty spans count for nothing.
+  const countCaretUnits = (node: Node) => {
+    let units = 0;
+    const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
+    while (walker.nextNode()) {
+      const current = walker.currentNode;
+      if (current.nodeType === Node.TEXT_NODE) {
+        units += (current as Text).data.length;
+      } else if ((current as Element).tagName === 'BR') {
+        units += 1;
+      }
+    }
+    return units;
+  };
 
-    if (!contentEditableRef.current) return null;
-    if (isMultiSelect()) return null;
+  const caretUnitsBeforePoint = (node: Node, offset: number) => {
+    const root = contentEditableRef.current;
+    if (!root) return null;
 
-    const prevHTML = contentEditableRef.current.innerHTML;
-
-    setCaretSpanToCaret();
-
-    // check if insertion was a no-op
-    if (prevHTML === contentEditableRef.current.innerHTML) {
+    const range = document.createRange();
+    try {
+      range.setStart(root, 0);
+      range.setEnd(node, offset);
+    } catch {
       return null;
     }
+    return countCaretUnits(range.cloneContents());
+  };
 
-    // parse HTML into structured lines
-    const lines = htmlToLineArray(contentEditableRef.current.innerHTML);
+  const caretUnitsBeforeNode = (target: Node) => {
+    const root = contentEditableRef.current;
+    if (!root) return null;
+
+    const range = document.createRange();
+    try {
+      range.setStart(root, 0);
+      range.setEndBefore(target);
+    } catch {
+      return null;
+    }
+    return countCaretUnits(range.cloneContents());
+  };
+
+  const caretSpanNeedsMove = () => {
+    const root = contentEditableRef.current;
+    if (!root) return false;
+    if (moveHistory.current.undo_redo_done === false) return false;
+    if (isMultiSelect()) return false;
+
+    const selection = window.getSelection();
+    const focusNode = selection?.focusNode;
+    if (!focusNode || focusNode === root || !root.contains(focusNode)) return false;
+
+    if (focusNode.nodeType === Node.ELEMENT_NODE
+      && (focusNode as Element).tagName === 'DIV'
+      && !(focusNode as Element).querySelector('br')) {
+      return true;
+    }
+
+    const caretSpans = root.querySelectorAll('#caretNode');
+    if (caretSpans.length !== 1) return true;
+
+    const spanUnits = caretUnitsBeforeNode(caretSpans[0]);
+    const focusUnits = caretUnitsBeforePoint(focusNode, selection!.focusOffset);
+    if (spanUnits === null || focusUnits === null) return false;
+
+    return spanUnits !== focusUnits;
+  };
+
+  /**
+   * Reads the current caret state and returns structured data. Does not touch the DOM.
+   */
+  const readCaretState = () => {
+    const element = contentEditableRef.current;
+    if (!element) return null;
+
+    const html = element.innerHTML;
 
     return {
-      element: contentEditableRef.current,
-      lines,
-      html: contentEditableRef.current.innerHTML
+      element,
+      lines: htmlToLineArray(html),
+      html
     };
   };
 
@@ -916,7 +970,7 @@ function MovesTextEditor({
    * Updates refs and state based on parsed caret state.
    * Calculates move and line offsets, updates HTML and tracking.
    */
-  const setCaretState = (state: NonNullable<ReturnType<typeof parseCaretState>>) => {
+  const setCaretState = (state: NonNullable<ReturnType<typeof readCaretState>>) => {
     const { element, lines } = state;
     let caretLine = '';
     let caretOffset = 0;
@@ -1045,18 +1099,24 @@ function MovesTextEditor({
    * Gets moveOffset and lineOffset, validates text, and updates move history.
    */
   const handleCaretChange = () => {
-    const state = parseCaretState();
+    if (!caretSpanNeedsMove()) return;
+
+    setCaretSpanToCaret();
+
+    const state = readCaretState();
     if (!state) return;
     setCaretState(state);
     measureCaretRect();
   };
 
-  // focusing without moving the caret span leaves parseCaretState a no-op, so suggestions for
+  // focusing without moving the caret span leaves the caret span where it is, so suggestions for
   // the line the caret already sits on would never be generated.
   const handleFocus = () => {
-    const state = parseCaretState();
-    if (state) {
-      setCaretState(state);
+    if (caretSpanNeedsMove()) {
+      setCaretSpanToCaret();
+
+      const state = readCaretState();
+      if (state) setCaretState(state);
     } else {
       trackMoves(idIndex, lineOffsetRef.current, moveOffsetRef.current, textboxMovesRef.current);
     }
@@ -1547,6 +1607,12 @@ function MovesTextEditor({
     }
   }));
 
+  // useEffectEvent ensures up-to-date values are used in subsequent function calls even if they are 
+  // not in the parent useEffect().
+  //
+  // The useEffectEvent here makes sure that handleCaretChange uses an up-to-date copy of trackMoves(), 
+  // which _PageContent rebuilds. A frozen trackMoves would mean stale values, like reading splits as [], 
+  // leading to splits being set to ['', '', ...] every time the selection changes.
   const handleSelectionChangeEvent = useEffectEvent(() => {
     handleCaretChange();
   });
@@ -1647,19 +1713,16 @@ function MovesTextEditor({
       restoreFrameRef.current = null;
 
       if (!contentEditableRef.current) {
-        // logCaretRestoreExit(`callback missing contentEditableRef (${origin})`);
         return;
       }
 
       if (isMultiSelect()) {
         const selection = window.getSelection();
         if (selection && selection.rangeCount === 1 && retries < 2) {
-          // logCaretRestoreExit(`callback selection multi-range (${origin}); retrying`);
           queueCaretRestore(origin, retries + 1);
           return;
         }
 
-        // logCaretRestoreExit(`callback selection remained multi-range (${origin})`);
         return;
       }
 
@@ -1670,25 +1733,15 @@ function MovesTextEditor({
 
   const checkCaretRestore = () => {
     if (typeof window === 'undefined') {
-      // logCaretRestoreExit('window undefined');
-      // } else  if (restoreFrameRef.current !== null) {
-      //   logCaretRestoreExit('frame already scheduled');
     } else if (!contentEditableRef.current) {
-      // logCaretRestoreExit('missing contentEditableRef');
-      // } else if (document.activeElement !== contentEditableRef.current) {
-      //   logCaretRestoreExit('editor not focused');
     } else {
       if (isMultiSelect()) {
         const selection = window.getSelection();
         if (selection && selection.rangeCount === 1) {
-          // logCaretRestoreExit('selection is multi-range; retrying next frame');
           queueCaretRestore('multi-range-deferral');
         } else {
-          // logCaretRestoreExit('selection is multi-range');
         }
       } else {
-        // schedule caret restore after render so native selection follows caret span
-        // queueCaretRestore('initial');
         setCaretToCaretSpan();
       }
     }
