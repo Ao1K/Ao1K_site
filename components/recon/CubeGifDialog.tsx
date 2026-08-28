@@ -1274,7 +1274,7 @@ export default function CubeGifDialog({
           role="dialog"
           aria-modal="true"
           aria-label="Cube GIF preview"
-          className="max-h-[92vh] w-full max-w-4xl overflow-auto rounded-sm border border-neutral-700 bg-dark text-primary-100 shadow-2xl"
+          className="max-h-[80vh] w-full max-w-4xl overflow-auto rounded-sm border border-neutral-700 bg-dark text-primary-100 shadow-2xl"
         >
           <div className="sticky top-0 z-10 flex items-center justify-between border-b border-neutral-700 bg-primary-400 px-4 py-3 sm:px-6">
             <h2 className="text-lg font-semibold text-dark">Create Cube GIF</h2>

@@ -72,7 +72,7 @@ const renderTextIcon = (label: string): JSX.Element => (
   </div>
 );
 
-const renderStepIcon = (steps: string[], letterToColor: Record<string, string>, defaultPairColors: string[], defaultMultislotColors: string[], eoColor?: string): JSX.Element => {
+const renderStepIcon = (steps: string[], letterToColor: Record<string, string>, defaultPairColors: string[], defaultMultislotColors: string[], hasPair: boolean, hasMultislot: boolean, eoColor?: string): JSX.Element => {
   if (steps.length === 0) {
     return renderTextIcon('?');
   }
@@ -80,10 +80,6 @@ const renderStepIcon = (steps: string[], letterToColor: Record<string, string>, 
   // Extract all colors from all steps
   const allColors = steps.flatMap(step => extractF2LColors(step, letterToColor));
   const uniqueColors = allColors.filter((color, index) => allColors.indexOf(color) === index);
-
-  // Check if any step contains 'pair' or 'multislot'
-  const hasPair = steps.some(step => step.toLowerCase().includes('pair'));
-  const hasMultislot = steps.some(step => step.toLowerCase().includes('multislot'));
 
   if (hasMultislot || uniqueColors.length >= 3) {
     return renderMultislotIcon(uniqueColors.length >= 3 ? uniqueColors.slice(0, 4) : defaultMultislotColors, defaultMultislotColors);
@@ -143,8 +139,10 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
   const defaultPairColors: string[] = [cubeColors.front, cubeColors.left];
   const defaultMultislotColors: string[] = [cubeColors.front, cubeColors.back, cubeColors.right, cubeColors.left];
   const eoColor = hasEOsolved ? cubeColors.eo : undefined;
+  const hasPair = steps.some(step => step.toLowerCase().includes('pair'));
+  const hasMultislot = steps.some(step => step.toLowerCase().includes('multislot'));
 
-  const icon = renderStepIcon(steps, letterToColor, defaultPairColors, defaultMultislotColors, eoColor);
+  const icon = renderStepIcon(steps, letterToColor, defaultPairColors, defaultMultislotColors, hasPair, hasMultislot, eoColor);
 
   return (
     <div
@@ -163,9 +161,15 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
       id={id}
       tabIndex={0}
     >
-      <div className="w-fit min-w-6 h-6">
+      {hasPair || hasMultislot ? 
+      <div className="w-6 h-6">
         {icon}
       </div>
+      :
+      <div className="w-fit h-6">
+        {icon}
+      </div>
+      }
       <div className="grow">{alg}</div>
       <button
         type="button"
