@@ -15,6 +15,7 @@ A completely intuitive f2l guide
 Add roux algs
 Missing L' U' L2 U L2' U' L and mirrors, y2?
 L' U' L R' U2 R2 U R'
+L' U' L U' D L' U L D' and probably other mirrors, y2, of RUD/LUD
 why y' U R U' R2' U2' R U2 R' U R and not y' R U' R2' U2' R U2 R' U R?
 Free both pieces + Make pair = Free pair
 
@@ -35,14 +36,6 @@ Breakdown for U2 r' F' r R' D R U' R' D' R is bad, same for inverse above. F U' 
 Can we explain F<R,U>F, better? Like F, pair, F'?
 Set up testing. We should set up a way to input algs and output breakdowns, then get a list of breakdowns that are correct.
 
-Create custom OG previews of different F2L cases on the Algs page:
-- Description: How to solve this case
-- Logo:
-  - [Case image]
-  - Top 3 solutions, or however many fit.
-  - "Click link for more info"
-- Add a share button above Solutions
-
 Pasting in text should not trigger most text substitutions, only LW -> l and X/Y/Z -> x/y/z. Not NN -> N2, NM -> N M, or UD -> (U D).
  - Issue is that parsing text happens every render, not just on text diff
  - Would operating not just on diff be problematic? 
@@ -52,3 +45,12 @@ Pasting in text should not trigger most text substitutions, only LW -> l and X/Y
  On page load, process Your Algs and add identified ones to known algsets
  - Also need to expose a module that adds one/several when the user adds them. Remember we have an import feature.
  - Add an add button to the Recon page? Direct people to the Algs page?
+
+ Alg suggestions taken from favs should strip off the AUF. AUF does not need to match.
+ - There are many cases of "AUF tricks", including for F2L and LL, so we shouldn't just strip the AUF when the user favs
+ - Actually no. AUF trick algs mean no auf. So there's no need to keep the AUF when taking the alg off of Reconstruct.
+
+ Faved lefty algs should show even when righty is chosen. 
+ - We should perhaps add some lefty/righty algs back in to both lists, if popular, like lefty Jb for Ja, but rank wrong hand LL algs much lower.
+
+ XX creates x x not x2; update order wrong

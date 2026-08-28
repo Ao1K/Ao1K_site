@@ -36,13 +36,19 @@ const CHECKERBOARD_STYLE = {
 } as const;
 
 const BACKGROUND_PRESETS = [
-  { label: 'Black', value: '#000000ff' },
-  { label: 'Transparent', value: '#00000000' },
-  { label: 'Purplish', value: '#433149ff' },
+  { label: 'Purplish', value: '#433149' },
+  { label: 'Black', value: '#000000' },
   { label: 'Grey', value: '#73737380' },
+  { label: 'Transparent', value: '#00000000' },
 ];
 
-const FPS = 24;
+const DEFAULT_BACKGROUND = BACKGROUND_PRESETS.find((preset) => (preset.label === 'Purplish'))!.value
+
+const isFullyTransparent = (color: string) => color.toLowerCase().endsWith('00') && color.length === 9;
+
+const FRAME_DELAY_MS = 40; // must be multiple of 10
+const FPS = 1000 / FRAME_DELAY_MS; // 25 fps
+const END_HOLD_MS = 500;
 const MIN_TOTAL_DURATION = 0.5;
 const MAX_TOTAL_DURATION = 60;
 
@@ -82,6 +88,160 @@ function buildStickeringMask(highlighted: Set<string> | null, orbitNames: Record
     };
   }
   return { orbits };
+}
+
+type NeuQuantClass = typeof import('gif.js/src/TypedNeuQuant.js');
+type GIFEncoderInstance = InstanceType<typeof import('gif.js/src/GIFEncoder.js')>;
+
+const GIF_DISPOSE_LEAVE_IN_PLACE = 1;
+
+const PALETTE_SAMPLE_FRAMES = 16;
+const PALETTE_SAMPLE_STRIDE = 3;
+const PALETTE_PROGRESS_SHARE = 8;
+
+function compositeOverBlack(color: number, alpha: number): [number, number, number] {
+  return [
+    Math.round(((color >> 16) & 0xff) * alpha),
+    Math.round(((color >> 8) & 0xff) * alpha),
+    Math.round((color & 0xff) * alpha),
+  ];
+}
+
+// one palette for all frames. Quantizing each frame on its own shifts flat areas by a level
+// or two per frame, which services that re-encode the gif (Discord) turn into visible flicker.
+function buildSharedPalette(
+  NeuQuant: NeuQuantClass,
+  samples: Uint8ClampedArray[],
+  exactColor: [number, number, number],
+): { palette: number[]; spareIndex: number } {
+  let sampledPixels = 0;
+  for (const frame of samples) sampledPixels += Math.ceil((frame.length / 4) / PALETTE_SAMPLE_STRIDE);
+
+  const merged = new Uint8Array(sampledPixels * 3);
+  let out = 0;
+  samples.forEach((frame, frameIdx) => {
+    const pixelCount = frame.length / 4;
+    for (let i = frameIdx % PALETTE_SAMPLE_STRIDE; i < pixelCount; i += PALETTE_SAMPLE_STRIDE) {
+      const p = i * 4;
+      merged[out++] = frame[p];
+      merged[out++] = frame[p + 1];
+      merged[out++] = frame[p + 2];
+    }
+  });
+
+  const quantizer = new NeuQuant(merged.subarray(0, out), 10);
+  quantizer.buildColormap();
+  const palette = quantizer.getColormap().map(v => v & 0xff);
+
+  // quantization lands near the background color rather than on it. it covers most of the
+  // image, so overwrite its entry with the color the user actually picked.
+  const backgroundEntry = quantizer.lookupRGB(exactColor[0], exactColor[1], exactColor[2]);
+  palette[backgroundEntry * 3] = exactColor[0];
+  palette[backgroundEntry * 3 + 1] = exactColor[1];
+  palette[backgroundEntry * 3 + 2] = exactColor[2];
+
+  const entryCount = palette.length / 3;
+  const usage = new Uint32Array(entryCount);
+  for (let p = 0; p < out; p += 3) {
+    usage[quantizer.lookupRGB(merged[p], merged[p + 1], merged[p + 2])]++;
+  }
+  let spareIndex = backgroundEntry === 0 ? 1 : 0;
+  for (let i = 0; i < entryCount; i++) {
+    if (i !== backgroundEntry && usage[i] < usage[spareIndex]) spareIndex = i;
+  }
+
+  return { palette, spareIndex };
+}
+
+function closestPaletteIndex(
+  colorTab: number[],
+  r: number,
+  g: number,
+  b: number,
+  excluded: number,
+): number {
+  let best = excluded === 0 ? 1 : 0;
+  let bestDistance = Infinity;
+  for (let i = 0, index = 0; i < colorTab.length; index++) {
+    const dr = r - (colorTab[i++] & 0xff);
+    const dg = g - (colorTab[i++] & 0xff);
+    const db = b - (colorTab[i++] & 0xff);
+    if (index === excluded) continue;
+    const distance = dr * dr + dg * dg + db * db;
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      best = index;
+    }
+  }
+  return best;
+}
+
+// GIFEncoder scans all 256 entries per pixel for a palette it didn't build itself
+function cachePaletteLookups(encoder: GIFEncoderInstance, excludedIndex: number) {
+  const indexByColor = new Map<number, number>();
+  const scanPalette = encoder.findClosestRGB.bind(encoder);
+  encoder.findClosestRGB = (r: number, g: number, b: number, used?: boolean) => {
+    if (used) return scanPalette(r, g, b, used);
+    const key = (r << 16) | (g << 8) | b;
+    const cached = indexByColor.get(key);
+    if (cached !== undefined) return cached;
+    const index = closestPaletteIndex(encoder.colorTab!, r, g, b, excludedIndex);
+    indexByColor.set(key, index);
+    return index;
+  };
+}
+
+// unchanged pixels are only safe to drop under disposal 1, and gif.js forces disposal 2 on any
+// frame with a transparent index. its setDispose override path throws, so writeGraphicCtrlExt is
+// replaced outright alongside the pixel rewrite.
+function enableFrameDifferencing(encoder: GIFEncoderInstance, transparentIndex: number) {
+  const analyzePixels = encoder.analyzePixels.bind(encoder);
+  let previousIndexed: Uint8Array | null = null;
+
+  encoder.analyzePixels = () => {
+    analyzePixels();
+    encoder.transIndex = transparentIndex;
+
+    const indexed = encoder.indexedPixels!;
+    const previous = previousIndexed;
+    previousIndexed = indexed.slice();
+    if (!previous) return;
+    for (let i = 0; i < indexed.length; i++) {
+      if (indexed[i] === previous[i]) indexed[i] = transparentIndex;
+    }
+  };
+
+  encoder.writeGraphicCtrlExt = () => {
+    const out = encoder.out;
+    out.writeByte(0x21);
+    out.writeByte(0xf9);
+    out.writeByte(4);
+    out.writeByte((GIF_DISPOSE_LEAVE_IN_PLACE << 2) | 1);
+    encoder.writeShort(encoder.delay);
+    out.writeByte(encoder.transIndex);
+    out.writeByte(0);
+  };
+}
+
+function encodedBytes(encoder: GIFEncoderInstance): Uint8Array<ArrayBuffer> {
+  const stream = encoder.stream();
+  const pages: Uint8Array[] = stream.pages;
+  const pageSize = pages[0].length;
+  const bytes = new Uint8Array((pages.length - 1) * pageSize + stream.cursor);
+  pages.forEach((page, i) => {
+    const offset = i * pageSize;
+    if (i === pages.length - 1) bytes.set(page.subarray(0, stream.cursor), offset);
+    else bytes.set(page, offset);
+  });
+  return bytes;
+}
+
+function framesEqual(a: Uint8ClampedArray, b: Uint8ClampedArray): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
 }
 
 export interface GifSolveLine {
@@ -140,9 +300,9 @@ export default function CubeGifDialog({
   const isCapturingRef = useRef(false);
   const zoomFactorRef = useRef(1);
 
-  const [backgroundColor, setBackgroundColor] = useState('#161018ff');
-  const [backgroundInput, setBackgroundInput] = useState('#161018ff');
-  const [transparentBackground, setTransparentBackground] = useState(false);
+  const [backgroundColor, setBackgroundColor] = useState(DEFAULT_BACKGROUND);
+  const [backgroundInput, setBackgroundInput] = useState(DEFAULT_BACKGROUND);
+  const transparentBackground = isFullyTransparent(backgroundColor);
   const [includeFacelets, setIncludeFacelets] = useState(true);
   const [includeFaceLabels, setIncludeFaceLabels] = useState(true);
   const [resolution, setResolution] = useState(360);
@@ -421,14 +581,12 @@ export default function CubeGifDialog({
     setBackgroundInput(value);
     if (/^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$/.test(value)) {
       setBackgroundColor(value);
-      setTransparentBackground(value.toLowerCase().endsWith('00') && value.length === 9);
     }
   };
 
   const handlePresetClick = (value: string) => {
     setBackgroundColor(value);
     setBackgroundInput(value);
-    setTransparentBackground(value.toLowerCase().endsWith('00') && value.length === 9);
   };
 
   // total cube duration (sum of move durations across all entries)
@@ -911,10 +1069,8 @@ export default function CubeGifDialog({
     isCapturingRef.current = true;
 
     try {
-      // dynamic import of gif.js so SSR isn't affected; the package's "browser"
-      // field points at dist/gif.js which exposes the GIF class
-      const GIFmod: any = await import('gif.js');
-      const GIF = GIFmod.default || GIFmod;
+      const { default: GIFEncoder } = await import('gif.js/src/GIFEncoder.js');
+      const { default: NeuQuant } = await import('gif.js/src/TypedNeuQuant.js');
 
       // create offscreen renderer at target resolution
       const captureRenderer = new WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
@@ -938,55 +1094,115 @@ export default function CubeGifDialog({
       captureCamera.updateProjectionMatrix();
       captureCamera.updateMatrixWorld(true);
 
-      const gif = new GIF({
-        workers: 2,
-        workerScript: '/gif.worker.js',
-        quality: 10,
-        width: resolution,
-        height: resolution,
-        transparent: transparentBackground ? 0x000000 : null,
-        background: transparentBackground ? '#000000' : `#${bgColor.toString(16).padStart(6, '0')}`,
-      });
+      const readback = document.createElement('canvas');
+      readback.width = resolution;
+      readback.height = resolution;
+      const readbackCtx = readback.getContext('2d', { willReadFrequently: true })!;
 
-      const totalFrames = Math.max(1, Math.round(totalDuration * FPS)) + 1;
-      const frameDelay = Math.round(1000 / FPS);
-
-      for (let i = 0; i < totalFrames; i++) {
-        const tSec = (i / FPS);
-        const cubeT = realTimeToCubeTimestamp(tSec);
+      const seekTo = (tSec: number) => {
         try {
           // @ts-ignore - timestamp setter exists on the TwistyPlayer element
-          playerElRef.current.timestamp = cubeT;
+          playerElRef.current.timestamp = realTimeToCubeTimestamp(tSec);
         } catch {
           // ignore
         }
-
-        // apply per-line piece highlighting for this frame
         applyHighlightForLine(realTimeToLineIndex(tSec));
+      };
 
-        // double rAF — cubing schedules the puzzle update on one frame, applies on the next
-        await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
-        await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+      // double rAF — cubing schedules the puzzle update on one frame, applies on the next
+      const SETTLE_FRAMES = 2;
+      const waitAnimationFrames = async (count: number) => {
+        for (let i = 0; i < count; i++) {
+          await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+        }
+      };
 
+      const grabFrame = () => {
         captureRenderer.render(sceneRef.current!, captureCamera);
-        gif.addFrame(captureRenderer.domElement, { delay: frameDelay, copy: true });
-        setGenerationProgress(Math.round(((i + 1) / totalFrames) * 50));
+        // frames are composited over black, so translucent backgrounds land on a fixed color
+        // and the transparent preset leaves black wherever nothing was drawn.
+        readbackCtx.fillStyle = '#000000';
+        readbackCtx.fillRect(0, 0, resolution, resolution);
+        readbackCtx.drawImage(captureRenderer.domElement, 0, 0);
+        return readbackCtx.getImageData(0, 0, resolution, resolution).data;
+      };
+
+      const captureFrame = async (tSec: number) => {
+        seekTo(tSec);
+        await waitAnimationFrames(SETTLE_FRAMES);
+        return grabFrame();
+      };
+
+      const totalFrames = Math.max(1, Math.round(totalDuration * FPS)) + 1;
+
+      const sampleCount = Math.min(PALETTE_SAMPLE_FRAMES, totalFrames);
+      const samples: Uint8ClampedArray[] = [];
+      for (let i = 0; i < sampleCount; i++) {
+        const tSec = sampleCount === 1 ? 0 : (i / (sampleCount - 1)) * totalDuration;
+        samples.push(await captureFrame(tSec));
+        setGenerationProgress(Math.round(((i + 1) / sampleCount) * PALETTE_PROGRESS_SHARE));
       }
+      const { palette, spareIndex } = buildSharedPalette(
+        NeuQuant,
+        samples,
+        compositeOverBlack(bgColor, bgAlpha),
+      );
+      samples.length = 0;
+
+      // a gif has one transparent index. the transparent preset already spends it on "show the
+      // page", which leaves nothing to mean "same as the previous frame".
+      const differencing = !transparentBackground;
+
+      const encoder = new GIFEncoder(resolution, resolution);
+      encoder.setRepeat(0);
+      encoder.setTransparent(transparentBackground ? 0x000000 : null);
+      encoder.setGlobalPalette(palette);
+      encoder.writeHeader();
+      cachePaletteLookups(encoder, differencing ? spareIndex : -1);
+      if (differencing) enableFrameDifferencing(encoder, spareIndex);
+
+      let pendingFrame: Uint8ClampedArray | null = null;
+      let pendingDelayMs = 0;
+      const writePendingFrame = () => {
+        if (!pendingFrame) return;
+        encoder.setDelay(pendingDelayMs);
+        encoder.addFrame(pendingFrame);
+      };
+
+      const appendFrame = (frame: Uint8ClampedArray) => {
+        if (pendingFrame && framesEqual(pendingFrame, frame)) {
+          pendingDelayMs += FRAME_DELAY_MS;
+          return;
+        }
+        writePendingFrame();
+        pendingFrame = frame;
+        pendingDelayMs = FRAME_DELAY_MS;
+      };
+
+      for (let i = 0; i < totalFrames; i++) {
+        appendFrame(await captureFrame(i / FPS));
+        setGenerationProgress(
+          PALETTE_PROGRESS_SHARE +
+          Math.round(((i + 1) / totalFrames) * (100 - PALETTE_PROGRESS_SHARE))
+        );
+      }
+
+      // the loop's last sample can land just short of the end, and a seek that hasn't settled
+      // renders the state before it. Seeking to the exact end with extra settling time makes
+      // the last frame show the finished solve.
+      seekTo(totalDuration);
+      await waitAnimationFrames(SETTLE_FRAMES * 2);
+      appendFrame(grabFrame());
 
       // clear highlighting after capture so preview returns to normal
       applyHighlightForLine(-1);
 
-      // add a hidden 0.25s hold at the end; outside of duration/UI calculations
-      gif.addFrame(captureRenderer.domElement, { delay: 500, copy: true });
+      // hold the final frame; outside of duration/UI calculations
+      pendingDelayMs += END_HOLD_MS;
+      writePendingFrame();
+      encoder.finish();
 
-      const blob: Blob = await new Promise((resolve, reject) => {
-        gif.on('progress', (p: number) => {
-          setGenerationProgress(50 + Math.round(p * 50));
-        });
-        gif.on('finished', (b: Blob) => resolve(b));
-        gif.on('error', (e: any) => reject(e));
-        gif.render();
-      });
+      const blob = new Blob([encodedBytes(encoder)], { type: 'image/gif' });
 
       captureRenderer.dispose();
 
@@ -1097,7 +1313,7 @@ export default function CubeGifDialog({
                     <button
                       type="button"
                       onClick={() => {
-                        const next = Math.max(0.4, zoomFactorRef.current * 0.9);
+                        const next = Math.min(2.2, zoomFactorRef.current * 1.1);
                         zoomFactorRef.current = next;
                         updateCameraPosition();
                       }}
@@ -1110,7 +1326,7 @@ export default function CubeGifDialog({
                     <button
                       type="button"
                       onClick={() => {
-                        const next = Math.min(2.5, zoomFactorRef.current * 1.1);
+                        const next = Math.max(0.65, zoomFactorRef.current * 0.9);
                         zoomFactorRef.current = next;
                         updateCameraPosition();
                       }}
@@ -1185,7 +1401,7 @@ export default function CubeGifDialog({
             <section className="flex-1 min-w-72 space-y-4">
               <div className="rounded-sm border border-neutral-700 bg-primary-800 p-4">
                 <div className="mb-3 text-sm font-semibold text-primary-100">Pause before each step</div>
-                <span className="text-xs text-neutral-400 mb-3 block">This represents the percentage of total solve time spent pausing. Configure more precisely by checking "Custom".</span>
+                <span className="text-xs text-neutral-400 mb-3 block">{`This represents the percentage of total solve time spent pausing. Configure more precisely by checking "Custom".`}</span>
                 <div className="mb-4 flex items-center">
                   <input
                     id="gif-delay-range"

@@ -1237,48 +1237,53 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     // Use alt for most mac shortcuts because cmd+shift+Z is standard on mac for redo.
     const isModifier = (ctrlKey === '⌘' && e.altKey) || (ctrlKey === 'Ctrl' && e.shiftKey);
 
-    if (isCtrl && isModifier && e.key === 'M') {
+    // macOS treats alt as a glyph modifier, so e.key for cmd+alt+i is a dead circumflex rather than a letter. Fall back to the physical key in that case.
+    const letter = /^[a-z]$/i.test(e.key)
+      ? e.key.toLowerCase()
+      : e.code.replace(/^Key/, '').toLowerCase();
+
+    if (isCtrl && isModifier && letter === 'm') {
 
       e.preventDefault();
 
       handleMirrorM();
     }
 
-    if (isCtrl && isModifier && e.key === 'S') {
+    if (isCtrl && isModifier && letter === 's') {
 
       e.preventDefault();
 
       handleMirrorS();
     }
 
-    if (isCtrl && e.key === 's') {
+    if (isCtrl && !isModifier && letter === 's') {
 
       e.preventDefault();
       handleShare();
     }
 
-    if (isCtrl && isModifier && e.key === 'X') {
+    if (isCtrl && isModifier && letter === 'x') {
 
       e.preventDefault();
 
       handleRotateX();
     }
 
-    if (isCtrl && isModifier && e.key === 'Y') {
+    if (isCtrl && isModifier && letter === 'y') {
 
       e.preventDefault();
 
       handleRotateY();
     }
 
-    if (isCtrl && isModifier && e.key === 'Z') {
+    if (isCtrl && isModifier && letter === 'z') {
 
       e.preventDefault();
 
       handleRotateZ();
     }
 
-    if (isCtrl && e.key === 'i') {
+    if (isCtrl && isModifier && letter === 'i') {
 
       e.preventDefault();
 
@@ -1292,7 +1297,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       handleRemoveComments();
     }
 
-    if (isCtrl && e.key === 'q') {
+    if (isCtrl && letter === 'q') {
 
       e.preventDefault();
 
@@ -1535,7 +1540,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     { id: 'rotateX', text: 'Rotate X', shortcutHint: `Ctrl+Shift+X`, onClick: handleRotateX, iconText: "X" },
     { id: 'rotateY', text: 'Rotate Y', shortcutHint: `Ctrl+Shift+Y`, onClick: handleRotateY, iconText: "Y" },
     { id: 'rotateZ', text: 'Rotate Z', shortcutHint: `Ctrl+Shift+Z`, onClick: handleRotateZ, iconText: "Z" },
-    { id: 'invert', text: 'Invert', shortcutHint: `Ctrl+I`, onClick: handleInvert, icon: <InvertIcon /> },
+    { id: 'invert', text: 'Invert', shortcutHint: `Ctrl+Shift+I`, onClick: handleInvert, icon: <InvertIcon /> },
     { id: 'cat', text: 'Cat', shortcutHint: 'Cat', onClick: handleAddCat, icon: <CatIcon /> },
     { id: 'removeComments', text: 'Remove Comments', shortcutHint: `Ctrl+/ `, onClick: handleRemoveComments, iconText: '// ' },
   ];
@@ -1548,7 +1553,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     { id: 'rotateX', text: 'Rotate X', shortcutHint: `⌘+Alt+X`, onClick: handleRotateX, iconText: "X" },
     { id: 'rotateY', text: 'Rotate Y', shortcutHint: `⌘+Alt+Y`, onClick: handleRotateY, iconText: "Y" },
     { id: 'rotateZ', text: 'Rotate Z', shortcutHint: `⌘+Alt+Z`, onClick: handleRotateZ, iconText: "Z" },
-    { id: 'invert', text: 'Invert', shortcutHint: `⌘+I`, onClick: handleInvert, icon: <InvertIcon /> },
+    { id: 'invert', text: 'Invert', shortcutHint: `⌘+Alt+I`, onClick: handleInvert, icon: <InvertIcon /> },
     { id: 'cat', text: 'Cat', shortcutHint: 'Cat', onClick: handleAddCat, icon: <CatIcon /> },
     { id: 'removeComments', text: 'Remove Comments', shortcutHint: `⌘+/ `, onClick: handleRemoveComments, iconText: '// ' },
   ];
