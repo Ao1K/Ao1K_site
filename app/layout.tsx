@@ -59,6 +59,7 @@ export default async function RootLayout({
         <input type="checkbox" id="sidebar-toggle" className="peer sr-only" />
         <SidebarAutoClose />
         <Header />
+        <ToastContainer />
         {/* Overlay backdrop - sibling of checkbox so z-index is not trapped by header's stacking context */}
         <label
           htmlFor="sidebar-toggle"
@@ -81,7 +82,6 @@ export default async function RootLayout({
           </label>
         </div>
         {children}
-        <ToastContainer />
       </body>
     </html>
   );

@@ -102,6 +102,8 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
 
   const [animating, setAnimating] = useState(false);
 
+  const blockCardHoverSelect = (event: React.MouseEvent) => event.stopPropagation();
+
   const toggleFavorite = () => {
     if (favorited) {
       removeFavorite(alg);
@@ -147,8 +149,7 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
   return (
     <div
       className={
-        `group hover:bg-primary-100 hover:shadow-md
-        flex flex-row items-center gap-3 border text-dark text-md p-1
+        `group flex flex-row items-center gap-3 border text-dark text-md p-1
         ${isFocused ? 'bg-primary-100 shadow-md border-primary-100' : 'bg-primary-200 border-neutral-400'}
         ${placement === '0'  ? 'rounded-t-sm' : ''}
         ${placement === 'last' ? 'rounded-br-sm' : ''}
@@ -178,6 +179,7 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
         aria-pressed={favorited}
         className={`shrink-0 p-2 -m-2 text-neutral-500 hover:text-primary-800 transition-opacity
           group-hover:opacity-100 pointer-coarse:opacity-100 ${favorited ? 'opacity-100' : 'opacity-0'}`}
+        onMouseOver={blockCardHoverSelect}
         onClick={(event) => { event.stopPropagation(); toggleFavorite(); }}
       >
         <Parrot
