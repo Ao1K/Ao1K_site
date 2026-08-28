@@ -52,5 +52,3 @@ Pasting in text should not trigger most text substitutions, only LW -> l and X/Y
 
  Faved lefty algs should show even when righty is chosen. 
  - We should perhaps add some lefty/righty algs back in to both lists, if popular, like lefty Jb for Ja, but rank wrong hand LL algs much lower.
-
- XX creates x x not x2; update order wrong

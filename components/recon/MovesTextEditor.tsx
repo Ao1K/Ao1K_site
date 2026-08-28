@@ -214,11 +214,19 @@ function MovesTextEditor({
 
   // Auto-substitution patterns for automatic text replacement
   const autoSubstitutions = [
-    // Convert repeated moves to numbered notation (XX → X2)
+    // this substitutions are applied in order
+
+    // X -> x conversion
+    // placed high in this list because XX should become xx, then x2
+    { pattern: /([XYZ])/g,
+      replacement: (_match: string, axis: string) => axis.toLowerCase()
+    },
+    
+    // Convert repeated moves to numbered notation (NN → N2)
     { pattern: /([UDFBLRMESudfblrxyz])(?!\s)\1/g, replacement: '$12' },
     
-    // Convert X2X into X3 for r and l moves only. 
-    // Other moves can't really be fingertricked as X3.
+    // Convert N2N into N3 for r and l moves only. 
+    // Other moves can't really be fingertricked as N3.
     { pattern: /([LRlr])2(?!\s)\1/g, replacement: (_match: string, move: string) => {
       const face = move.charAt(0);
       return `${face}3`;
@@ -232,17 +240,11 @@ function MovesTextEditor({
     { pattern: /U('?)(?!2)D('?)(?!2)\s/g, replacement: '(U$1 D$2) ' },
     { pattern: /D('?)(?!2)U('?)(?!2)\s/g, replacement: '(U$2 D$1) ' },
     
-    // Xw → x conversion
+    // Nw → n conversion
     { pattern: /([UDFBLR])[wW]('?)(?!2)/g, 
       replacement: (_match: string, face: string, prime: string) =>
         `${face.toLowerCase()}${prime} ` 
     },
-    
-    // X -> x conversion
-    { pattern: /([XYZ])/g,
-      replacement: (_match: string, axis: string) => axis.toLowerCase()
-    },
-
 
     // Fix missing spaces between moves
     { pattern: /([UDFBLRMESudfblrxyz])([23]?)('?)([UDFBLRMESudfblrxyzfblr])/g,
