@@ -52,7 +52,6 @@ const AddAlgRow = ({ onAdd, onCancel }: AddAlgRowProps) => {
         <MovesTextEditor
           name="addAlg"
           autofocus={false}
-          updateHistoryBtns={() => {}}
           lineHeight={24}
           simpleInput
           {...draft.editorProps}

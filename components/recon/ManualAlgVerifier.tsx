@@ -72,10 +72,10 @@ export default function ManualAlgVerifier({ scrambleRef, solutionRef }: ManualAl
     const inverse = getAlgInverse(currentAlg);
     const applyAlgs = () => {
       if (scrambleRef.current) {
-        scrambleRef.current.transform(inverse);
+        scrambleRef.current.setContent(inverse);
       }
       if (solutionRef.current) {
-        solutionRef.current.transform(currentAlg);
+        solutionRef.current.setContent(currentAlg);
       }
     };
 

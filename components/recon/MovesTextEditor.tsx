@@ -36,7 +36,7 @@ interface EditorProps {
   trackMoves: (idIndex: number, lineIndex: number, caretIndex: number, moves: string[][]) => void;
   autofocus: boolean;
   moveHistory: React.RefObject<any>;
-  updateHistoryBtns: () => void;
+  onHistoryChange?: () => void;
   html: string;
   setHTML: (html: string) => void;
   ref?: React.Ref<ImperativeRef>;
@@ -49,7 +49,7 @@ interface EditorProps {
 export interface ImperativeRef {
   undo: () => void;
   redo: () => void;
-  transform: (html: string) => void;
+  setContent: (html: string) => void;
   highlightMove: (moveIndex: number, lineIndex: number) => void;
   removeHighlight: () => void;
   getElement: () => HTMLDivElement | null;
@@ -62,7 +62,7 @@ function MovesTextEditor({
   trackMoves,
   autofocus,
   moveHistory,
-  updateHistoryBtns,
+  onHistoryChange,
   html,
   setHTML,
   ref,
@@ -659,6 +659,7 @@ function MovesTextEditor({
     // 4
     const moveCountChanged = isQuantifiableMoveChange(oldLineMoveCounts.current, lineMoveCounts);
     updateMoveHistory(newHTMLlines, moveCountChanged);
+    onHistoryChange?.();
 
     // 5
     oldHTMLlinesRef.current = htmlLines;
@@ -1323,7 +1324,6 @@ function MovesTextEditor({
 
   const simpleRestore = (html: string) => {
     contentEditableRef.current!.innerHTML = html;
-    updateHistoryBtns();
     setCaretToCaretSpan();
     moveHistory.current.status = 'in_progress_one';
     handleInput();
@@ -1400,7 +1400,6 @@ function MovesTextEditor({
     }
 
     contentEditableRef.current!.innerHTML = prevHTML;
-    updateHistoryBtns();
     setCaretToCaretSpan(); // updating contentEditableRef causes refresh which misplaces caret
     handleInput(); // updates URL, oldlineCounts, oldHTMLlines, and moveAnimationTimes
 
@@ -1449,16 +1448,15 @@ function MovesTextEditor({
     }
 
     contentEditableRef.current!.innerHTML = nextHTML;
-    updateHistoryBtns();
     setCaretToCaretSpan();
     handleInput();
 
     incrementStatus('success');
   }
 
-  const handleTransform = (newHTML: string) => {
+  const handleSetContent = (newHTML: string) => {
     contentEditableRef.current!.innerHTML = newHTML;
-    oldLineMoveCounts.current = [-1]; // ensures that moveHistory contains transformed moves
+    oldLineMoveCounts.current = [-1]; // ensures that moveHistory contains the new moves
     setCaretToCaretSpan();
     handleInput();
   }
@@ -1580,8 +1578,8 @@ function MovesTextEditor({
       handleRedo();
     },
 
-    transform: (transformedHTML: string) => {
-      handleTransform(transformedHTML);
+    setContent: (newHTML: string) => {
+      handleSetContent(newHTML);
     },
 
     highlightMove: (moveIndex: number, lineIndex: number) => {
@@ -1659,7 +1657,8 @@ function MovesTextEditor({
       } catch {
         decodedText = customDecodeURL(editorText);
       }
-      const lines = decodedText.replace(/\n+/g, '\n').split('\n');
+      const safeText = sanitizeHtml(decodedText, sanitizeConf);
+      const lines = safeText.replace(/\n+/g, '\n').split('\n');
       const formattedHTML = lines.map(line => `<div>${line}<br></div>`).join('');
       contentEditableRef.current.innerHTML = formattedHTML;
 

@@ -29,7 +29,6 @@ export default function ReconstructV04() {
   const [editorHTML2, setEditorHTML2] = useState<string>("");
 
   const handleTrackMoves = () => {};
-  const handleUpdateHistory = () => {};
 
   const customMask: PNGVisualizerOptions = {
     puzzle: {
@@ -78,7 +77,6 @@ export default function ReconstructV04() {
           trackMoves={handleTrackMoves}
           autofocus={false}
           moveHistory={placeholderMoveHistory}
-          updateHistoryBtns={handleUpdateHistory}
           html={editorHTML}
           setHTML={setEditorHTML}
           initialContent={"<div>R U R' U' // this is a comment <span class=\"paste-marker\"></span><br></div><div>R U R' U' / this is not<span class=\"paste-marker\"></span><br></div><div>R U R' U' \\\\ you need to be banned<span class=\"paste-marker\"></span><br></div>"}
@@ -93,7 +91,6 @@ export default function ReconstructV04() {
           trackMoves={handleTrackMoves}
           autofocus={false}
           moveHistory={placeholderMoveHistory}
-          updateHistoryBtns={handleUpdateHistory}
           html={editorHTML2}
           setHTML={setEditorHTML2}
           initialContent={"<div>R2 M F 🏃‍♂️🛹🤘 S R r B // xcross + a sweet kickflip<span class=\"paste-marker\"></span><br></div>"}
