@@ -1,38 +1,31 @@
-declare module 'gif.js' {
-  interface GIFOptions {
-    workers?: number;
-    quality?: number;
-    width?: number;
-    height?: number;
-    workerScript?: string;
-    repeat?: number;
-    background?: string;
-    transparent?: number | null;
-    debug?: boolean;
-    dither?: boolean | string;
+declare module 'gif.js/src/GIFEncoder.js' {
+  class GIFEncoder {
+    constructor(width: number, height: number);
+    colorTab: number[] | null;
+    indexedPixels: Uint8Array | null;
+    setRepeat(repeat: number): void;
+    setDelay(milliseconds: number): void;
+    setQuality(quality: number): void;
+    setDither(dither: boolean | string): void;
+    setTransparent(color: number | null): void;
+    setGlobalPalette(palette: number[] | boolean): void;
+    findClosestRGB(r: number, g: number, b: number, used?: boolean): number;
+    writeHeader(): void;
+    addFrame(imageData: Uint8ClampedArray): void;
+    finish(): void;
+    stream(): { pages: Uint8Array[]; cursor: number };
   }
 
-  interface AddFrameOptions {
-    delay?: number;
-    copy?: boolean;
-    dispose?: number;
+  export = GIFEncoder;
+}
+
+declare module 'gif.js/src/TypedNeuQuant.js' {
+  class NeuQuant {
+    constructor(pixels: Uint8Array, sampleFactor: number);
+    buildColormap(): void;
+    getColormap(): number[];
+    lookupRGB(r: number, g: number, b: number): number;
   }
 
-  type GIFEvent = 'start' | 'finished' | 'progress' | 'abort' | 'error';
-
-  class GIF {
-    constructor(options?: GIFOptions);
-    addFrame(
-      element: HTMLCanvasElement | HTMLImageElement | CanvasRenderingContext2D | ImageData,
-      options?: AddFrameOptions,
-    ): void;
-    on(event: 'finished', cb: (blob: Blob) => void): void;
-    on(event: 'progress', cb: (progress: number) => void): void;
-    on(event: 'start' | 'abort', cb: () => void): void;
-    on(event: 'error', cb: (err: Error) => void): void;
-    render(): void;
-    abort(): void;
-  }
-
-  export default GIF;
+  export = NeuQuant;
 }

@@ -123,16 +123,16 @@ export default function InfoPanelContent() {
           </thead>
           <tbody>
             <tr className="bg-primary-850">
+              <td className="border border-primary-300 p-2">&quot;RF&quot;</td>
+              <td className="border border-primary-300 p-2">&quot;R F&quot;</td>
+            </tr>
+            <tr className="bg-primary-850">
               <td className="border border-primary-300 p-2">&quot;RR&quot;</td>
               <td className="border border-primary-300 p-2">&quot;R2&quot;</td>
             </tr>                    
             <tr>
               <td className="border border-primary-300 p-2">&quot;UD&quot; + space</td>
               <td className="border border-primary-300 p-2">&quot;(U D) &quot;</td>
-            </tr>
-            <tr className="bg-primary-850">
-              <td className="border border-primary-300 p-2">&quot;RF&quot;</td>
-              <td className="border border-primary-300 p-2">&quot;R F&quot;</td>
             </tr>
             <tr>
               <td className="border border-primary-300 p-2">&quot;Uw&quot;</td>
