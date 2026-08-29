@@ -3,8 +3,9 @@ import { useAlgFavorites } from '../../composables/algs/algFavorites';
 import type { Algset } from '../../composables/recon/SimpleCubeInterpreter';
 import { showToast } from '../../composables/toast';
 import Parrot from '../icons/parrot';
+import KeyboardKeeper from './KeyboardKeeper';
 import Link from 'next/link';
-import React, { JSX, useState } from 'react';
+import React, { JSX, useRef, useState } from 'react';
 
 interface SuggestionCardProps {
   alg: string;
@@ -72,7 +73,7 @@ const renderTextIcon = (label: string): JSX.Element => (
   </div>
 );
 
-const renderStepIcon = (steps: string[], letterToColor: Record<string, string>, defaultPairColors: string[], defaultMultislotColors: string[], eoColor?: string): JSX.Element => {
+const renderStepIcon = (steps: string[], letterToColor: Record<string, string>, defaultPairColors: string[], defaultMultislotColors: string[], hasPair: boolean, hasMultislot: boolean, eoColor?: string): JSX.Element => {
   if (steps.length === 0) {
     return renderTextIcon('?');
   }
@@ -80,10 +81,6 @@ const renderStepIcon = (steps: string[], letterToColor: Record<string, string>, 
   // Extract all colors from all steps
   const allColors = steps.flatMap(step => extractF2LColors(step, letterToColor));
   const uniqueColors = allColors.filter((color, index) => allColors.indexOf(color) === index);
-
-  // Check if any step contains 'pair' or 'multislot'
-  const hasPair = steps.some(step => step.toLowerCase().includes('pair'));
-  const hasMultislot = steps.some(step => step.toLowerCase().includes('multislot'));
 
   if (hasMultislot || uniqueColors.length >= 3) {
     return renderMultislotIcon(uniqueColors.length >= 3 ? uniqueColors.slice(0, 4) : defaultMultislotColors, defaultMultislotColors);
@@ -105,6 +102,30 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
   const favorited = isFavorite(alg);
 
   const [animating, setAnimating] = useState(false);
+  const keeperRef = useRef<HTMLSpanElement>(null);
+  const activationPointerType = useRef<string | null>(null);
+
+  const focusKeyboardKeeper = () => {
+    keeperRef.current?.focus();
+  };
+
+  const handleFavoritePointerDown = (event: React.PointerEvent) => {
+    activationPointerType.current = event.pointerType;
+  };
+
+  const handleFavoriteClick = (event: React.MouseEvent) => {
+    event.stopPropagation();
+
+    const pointerType = activationPointerType.current;
+    activationPointerType.current = null;
+    if (pointerType === 'touch' || pointerType === 'pen') {
+      focusKeyboardKeeper();
+    }
+
+    toggleFavorite();
+  };
+
+  const blockCardHoverSelect = (event: React.MouseEvent) => event.stopPropagation();
 
   const toggleFavorite = () => {
     if (favorited) {
@@ -143,14 +164,15 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
   const defaultPairColors: string[] = [cubeColors.front, cubeColors.left];
   const defaultMultislotColors: string[] = [cubeColors.front, cubeColors.back, cubeColors.right, cubeColors.left];
   const eoColor = hasEOsolved ? cubeColors.eo : undefined;
+  const hasPair = steps.some(step => step.toLowerCase().includes('pair'));
+  const hasMultislot = steps.some(step => step.toLowerCase().includes('multislot'));
 
-  const icon = renderStepIcon(steps, letterToColor, defaultPairColors, defaultMultislotColors, eoColor);
+  const icon = renderStepIcon(steps, letterToColor, defaultPairColors, defaultMultislotColors, hasPair, hasMultislot, eoColor);
 
   return (
     <div
       className={
-        `group hover:bg-primary-100 hover:shadow-md
-        flex flex-row items-center gap-3 border text-dark text-md p-1
+        `group relative flex flex-row items-center gap-3 border text-dark text-md p-1
         ${isFocused ? 'bg-primary-100 shadow-md border-primary-100' : 'bg-primary-200 border-neutral-400'}
         ${placement === '0'  ? 'rounded-t-sm' : ''}
         ${placement === 'last' ? 'rounded-br-sm' : ''}
@@ -163,9 +185,16 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
       id={id}
       tabIndex={0}
     >
-      <div className="w-fit min-w-6 h-6">
+      <KeyboardKeeper ref={keeperRef} />
+      {hasPair || hasMultislot ? 
+      <div className="w-6 h-6">
         {icon}
       </div>
+      :
+      <div className="w-fit h-6">
+        {icon}
+      </div>
+      }
       <div className="grow">{alg}</div>
       <button
         type="button"
@@ -174,7 +203,9 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
         aria-pressed={favorited}
         className={`shrink-0 p-2 -m-2 text-neutral-500 hover:text-primary-800 transition-opacity
           group-hover:opacity-100 pointer-coarse:opacity-100 ${favorited ? 'opacity-100' : 'opacity-0'}`}
-        onClick={(event) => { event.stopPropagation(); toggleFavorite(); }}
+        onMouseOver={blockCardHoverSelect}
+        onPointerDown={handleFavoritePointerDown}
+        onClick={handleFavoriteClick}
       >
         <Parrot
           filled={favorited}

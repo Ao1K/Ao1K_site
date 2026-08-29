@@ -63,7 +63,7 @@ export function useAlgDraft(initialAlg: string, onCommit: (alg: string) => void,
     setValue('');
     setConfirming(false);
     onChangeRef.current?.('');
-    editorRef.current?.transform('');
+    editorRef.current?.setContent('');
   };
 
   const commit = () => {

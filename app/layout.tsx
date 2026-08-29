@@ -12,7 +12,7 @@ import BulletListIcon from "../components/icons/bulletList";
 import GlassesIcon from "../components/icons/glasses";
 import DatabaseIcon from "../components/icons/database";
 
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Rubik } from "next/font/google";
 
 import { Amplify } from 'aws-amplify';
@@ -47,6 +47,12 @@ export const metadata: Metadata = {
   },
 }
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  interactiveWidget: "resizes-content",
+}
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -59,6 +65,7 @@ export default async function RootLayout({
         <input type="checkbox" id="sidebar-toggle" className="peer sr-only" />
         <SidebarAutoClose />
         <Header />
+        <ToastContainer />
         {/* Overlay backdrop - sibling of checkbox so z-index is not trapped by header's stacking context */}
         <label
           htmlFor="sidebar-toggle"
@@ -81,7 +88,6 @@ export default async function RootLayout({
           </label>
         </div>
         {children}
-        <ToastContainer />
       </body>
     </html>
   );

@@ -140,3 +140,4 @@ amplify_outputs*
 amplifyconfiguration*
 utils/sortedRawAlgs.tsx
 /.vscode/firefox-profile
+docs/lan-hot-reload-unreachable.md

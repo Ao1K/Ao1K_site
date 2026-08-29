@@ -18,6 +18,7 @@ import {
   SuggestionManager,
   type SuggestionManagerHandle,
 } from './SuggestionManager';
+import { KEYBOARD_KEEPER_SELECTOR } from './KeyboardKeeper';
 
 interface HTMLUpdateItem {
   html?: string;
@@ -31,12 +32,20 @@ const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffec
 const supportsHardwareKeyboard =
   typeof window !== 'undefined' && !window.matchMedia('(pointer: coarse)').matches;
 
+const suggestionNavigationKeys = new Set(['Tab', 'Escape', 'ArrowUp', 'ArrowDown']);
+const bareModifierKeys = new Set(['Shift', 'Control', 'Alt', 'Meta']);
+
+const keyLeavesFocusOnKeeper = (e: KeyboardEvent) =>
+  e.ctrlKey || e.metaKey || e.altKey
+  || suggestionNavigationKeys.has(e.key)
+  || bareModifierKeys.has(e.key);
+
 interface EditorProps {
   name: string;
   trackMoves: (idIndex: number, lineIndex: number, caretIndex: number, moves: string[][]) => void;
   autofocus: boolean;
   moveHistory: React.RefObject<any>;
-  updateHistoryBtns: () => void;
+  onHistoryChange?: () => void;
   html: string;
   setHTML: (html: string) => void;
   ref?: React.Ref<ImperativeRef>;
@@ -49,7 +58,7 @@ interface EditorProps {
 export interface ImperativeRef {
   undo: () => void;
   redo: () => void;
-  transform: (html: string) => void;
+  setContent: (html: string) => void;
   highlightMove: (moveIndex: number, lineIndex: number) => void;
   removeHighlight: () => void;
   getElement: () => HTMLDivElement | null;
@@ -62,7 +71,7 @@ function MovesTextEditor({
   trackMoves,
   autofocus,
   moveHistory,
-  updateHistoryBtns,
+  onHistoryChange,
   html,
   setHTML,
   ref,
@@ -214,11 +223,19 @@ function MovesTextEditor({
 
   // Auto-substitution patterns for automatic text replacement
   const autoSubstitutions = [
-    // Convert repeated moves to numbered notation (XX → X2)
+    // this substitutions are applied in order
+
+    // X -> x conversion
+    // placed high in this list because XX should become xx, then x2
+    { pattern: /([XYZ])/g,
+      replacement: (_match: string, axis: string) => axis.toLowerCase()
+    },
+    
+    // Convert repeated moves to numbered notation (NN → N2)
     { pattern: /([UDFBLRMESudfblrxyz])(?!\s)\1/g, replacement: '$12' },
     
-    // Convert X2X into X3 for r and l moves only. 
-    // Other moves can't really be fingertricked as X3.
+    // Convert N2N into N3 for r and l moves only. 
+    // Other moves can't really be fingertricked as N3.
     { pattern: /([LRlr])2(?!\s)\1/g, replacement: (_match: string, move: string) => {
       const face = move.charAt(0);
       return `${face}3`;
@@ -232,17 +249,11 @@ function MovesTextEditor({
     { pattern: /U('?)(?!2)D('?)(?!2)\s/g, replacement: '(U$1 D$2) ' },
     { pattern: /D('?)(?!2)U('?)(?!2)\s/g, replacement: '(U$2 D$1) ' },
     
-    // Xw → x conversion
+    // Nw → n conversion
     { pattern: /([UDFBLR])[wW]('?)(?!2)/g, 
       replacement: (_match: string, face: string, prime: string) =>
         `${face.toLowerCase()}${prime} ` 
     },
-    
-    // X -> x conversion
-    { pattern: /([XYZ])/g,
-      replacement: (_match: string, axis: string) => axis.toLowerCase()
-    },
-
 
     // Fix missing spaces between moves
     { pattern: /([UDFBLRMESudfblrxyz])([23]?)('?)([UDFBLRMESudfblrxyzfblr])/g,
@@ -657,6 +668,7 @@ function MovesTextEditor({
     // 4
     const moveCountChanged = isQuantifiableMoveChange(oldLineMoveCounts.current, lineMoveCounts);
     updateMoveHistory(newHTMLlines, moveCountChanged);
+    onHistoryChange?.();
 
     // 5
     oldHTMLlinesRef.current = htmlLines;
@@ -764,11 +776,7 @@ function MovesTextEditor({
   /**
    * Sets the caret to the location of the caret span (span with id=caretNode)
    */
-  const setCaretToCaretSpan = () => {
-    if (document && document.activeElement !== contentEditableRef.current) {
-      return;
-    }
-
+  const selectCaretSpan = () => {
     const existingCaretSpan = contentEditableRef.current?.querySelector('#caretNode');
     if (existingCaretSpan) {
       const selection = window.getSelection();
@@ -778,6 +786,14 @@ function MovesTextEditor({
       selection?.removeAllRanges();
       selection?.addRange(range);
     }
+  }
+
+  const setCaretToCaretSpan = () => {
+    if (document && document.activeElement !== contentEditableRef.current) {
+      return;
+    }
+
+    selectCaretSpan();
   }
 
   const handleCopy = (e: React.ClipboardEvent<HTMLDivElement>) => {
@@ -1178,7 +1194,34 @@ function MovesTextEditor({
     suggestionManagerRef.current?.dismissSuggestion();
   };
 
+  const keyboardKeeperHasFocus = () => {
+    const active = document.activeElement;
+    return active instanceof HTMLElement && active.matches(KEYBOARD_KEEPER_SELECTOR);
+  };
+
+  const resumeTypingInEditor = () => {
+    if (name !== 'solution') return false;
+    const editor = contentEditableRef.current;
+    if (!editor || !keyboardKeeperHasFocus()) return false;
+
+    selectCaretSpan();
+    editor.focus();
+    measureCaretRect();
+    return true;
+  };
+
+  const blockInputOnKeeper = (e: InputEvent) => {
+    if (!keyboardKeeperHasFocus()) return;
+
+    e.preventDefault();
+    resumeTypingInEditor();
+  };
+
   const handleCommand = (e: KeyboardEvent) => {
+    if (!keyLeavesFocusOnKeeper(e)) {
+      resumeTypingInEditor();
+    }
+
     if (e.key === 'Tab' && !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) {
       const manager = suggestionManagerRef.current;
       const canAcceptSuggestion = manager?.canAcceptSuggestion() ?? false;
@@ -1321,7 +1364,6 @@ function MovesTextEditor({
 
   const simpleRestore = (html: string) => {
     contentEditableRef.current!.innerHTML = html;
-    updateHistoryBtns();
     setCaretToCaretSpan();
     moveHistory.current.status = 'in_progress_one';
     handleInput();
@@ -1398,7 +1440,6 @@ function MovesTextEditor({
     }
 
     contentEditableRef.current!.innerHTML = prevHTML;
-    updateHistoryBtns();
     setCaretToCaretSpan(); // updating contentEditableRef causes refresh which misplaces caret
     handleInput(); // updates URL, oldlineCounts, oldHTMLlines, and moveAnimationTimes
 
@@ -1447,16 +1488,15 @@ function MovesTextEditor({
     }
 
     contentEditableRef.current!.innerHTML = nextHTML;
-    updateHistoryBtns();
     setCaretToCaretSpan();
     handleInput();
 
     incrementStatus('success');
   }
 
-  const handleTransform = (newHTML: string) => {
+  const handleSetContent = (newHTML: string) => {
     contentEditableRef.current!.innerHTML = newHTML;
-    oldLineMoveCounts.current = [-1]; // ensures that moveHistory contains transformed moves
+    oldLineMoveCounts.current = [-1]; // ensures that moveHistory contains the new moves
     setCaretToCaretSpan();
     handleInput();
   }
@@ -1578,8 +1618,8 @@ function MovesTextEditor({
       handleRedo();
     },
 
-    transform: (transformedHTML: string) => {
-      handleTransform(transformedHTML);
+    setContent: (newHTML: string) => {
+      handleSetContent(newHTML);
     },
 
     highlightMove: (moveIndex: number, lineIndex: number) => {
@@ -1625,6 +1665,14 @@ function MovesTextEditor({
     handleCommand(event);
   });
 
+  const handleBeforeInputEvent = useEffectEvent((event: InputEvent) => {
+    blockInputOnKeeper(event);
+  });
+
+  const handleCompositionStartEvent = useEffectEvent(() => {
+    resumeTypingInEditor();
+  });
+
   const cleanupEditorEffect = useEffectEvent(() => {
     if (updateURLTimeout.current) {
       clearTimeout(updateURLTimeout.current);
@@ -1657,7 +1705,8 @@ function MovesTextEditor({
       } catch {
         decodedText = customDecodeURL(editorText);
       }
-      const lines = decodedText.replace(/\n+/g, '\n').split('\n');
+      const safeText = sanitizeHtml(decodedText, sanitizeConf);
+      const lines = safeText.replace(/\n+/g, '\n').split('\n');
       const formattedHTML = lines.map(line => `<div>${line}<br></div>`).join('');
       contentEditableRef.current.innerHTML = formattedHTML;
 
@@ -1696,12 +1745,16 @@ function MovesTextEditor({
     document.addEventListener('selectionchange', handleSelectionChangeEvent);
     document.addEventListener('mouseup', handleMouseUpEvent);
     document.addEventListener('keydown', handleCommandEvent);
+    document.addEventListener('beforeinput', handleBeforeInputEvent);
+    document.addEventListener('compositionstart', handleCompositionStartEvent);
 
     return () => {
 
       document.removeEventListener('selectionchange', handleSelectionChangeEvent);
       document.removeEventListener('mouseup', handleMouseUpEvent);
       document.removeEventListener('keydown', handleCommandEvent);
+      document.removeEventListener('beforeinput', handleBeforeInputEvent);
+      document.removeEventListener('compositionstart', handleCompositionStartEvent);
 
       cleanupEditorEffect();
 

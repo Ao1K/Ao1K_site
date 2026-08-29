@@ -7,9 +7,11 @@ interface ButtonRowProps {
 }
 
 const ResponsiveButtonRow = ({ buttons, containerRef }: ButtonRowProps) => {
-  const [visibleButtons, setVisibleButtons] = useState(buttons);
-  const [overflowButtons, setOverflowButtons] = useState<ButtonProps[]>([]);
+  const [overflowIds, setOverflowIds] = useState<string[]>([]);
   const [overflowBtnVisibility, setOverflowBtnVisibility] = useState<boolean>(false);
+
+  const visibleButtons = buttons.filter(button => !overflowIds.includes(button.id));
+  const overflowButtons = buttons.filter(button => overflowIds.includes(button.id));
 
   const MIN_MORE_TOOLS_WIDTH = 80; // pixels
 
@@ -19,7 +21,6 @@ const ResponsiveButtonRow = ({ buttons, containerRef }: ButtonRowProps) => {
 
     let totalWidth = 0;
     let regButtonWidth = 40; // assumed width of a button
-    let visible: ButtonProps[] = [];
     let overflow: ButtonProps[] = [];
     let moreToolsBtnWidth = document.querySelector('#moreToolsBtn')?.clientWidth || MIN_MORE_TOOLS_WIDTH; // default needed for initial render
     let speedDropdownWidth = 68; 
@@ -42,13 +43,10 @@ const ResponsiveButtonRow = ({ buttons, containerRef }: ButtonRowProps) => {
       if (((totalWidth + moreToolsBtnWidth + speedDropdownWidth + 20) > (container.clientWidth )) && (isSubstantialCollapse || isCollapsing)) {
         overflow.push(button);
         isCollapsing = true;
-      } else {
-        visible.push(button);
       }
     }
 
-    setVisibleButtons(visible);
-    setOverflowButtons(overflow);
+    setOverflowIds(overflow.map(button => button.id));
   };
 
   const toggleOverflowBtnVisibility = () => {

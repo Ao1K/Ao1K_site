@@ -29,6 +29,7 @@ import CubeGifDialog from "../../components/recon/CubeGifDialog";
 import { customDecodeURL } from '../../composables/recon/urlEncoding';
 import InfoPanel from '../../components/recon/InfoPanel';
 import IconStack, { computeLineIconData } from './IconStack';
+import { showToast, dismissToast } from '../../composables/toast';
 import SplitsStack, { SPLITS_WIDTH, splitsToURLParam } from './SplitsStack';
 import { ICON_SIZE_CONFIG, useCubeColors, useShowSplits, useAlgsets, useHandedness, readSettingsFromCookie, type Handedness } from '../../composables/useSettings';
 import { SimpleCube, type CubeState } from '../../composables/recon/SimpleCube';
@@ -66,6 +67,21 @@ interface OldSelectionRef {
 
 export type PlayerParams = { animationTimes: number[]; solution: string; scramble: string };
 
+interface ClearedPageSnapshot {
+  scrambleHTML: string;
+  solutionHTML: string;
+  allMoves: string[][][];
+  moveLocation: [number, number, number];
+  playerParams: PlayerParams;
+  solveTime: number | string;
+  solveTitle: string;
+  splits: string[];
+  committedSplits: string[];
+  lineSteps: { moveLine: string; stepInfo: StepInfo[] }[];
+  moveHistory: { history: string[][]; index: number };
+  search: string;
+}
+
 
 export interface ControllerRequestOptions {
   type: 'fullLeft' | 'stepLeft' | 'pause' | 'play' | 'replay' | 'stepRight' | 'fullRight';
@@ -102,6 +118,7 @@ const isRotationOnlyLine = (moves: string[]) =>
   moves.length > 0 && moves.every(move => !/[^xyz2'3]/.test(move));
 
 const MAX_EDITOR_HISTORY = 100;
+const CLEAR_UNDO_DURATION = 8000;
 
 const noopSubscribe = () => () => {};
 const getCtrlKeySnapshot = () => (/Mac|iPod|iPhone|iPad/.test(navigator.userAgent) ? '⌘' : 'Ctrl');
@@ -126,6 +143,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   const [solveTitle, setSolveTitle] = useState<string>('');
   const [topButtonAlert, setTopButtonAlert] = useState<{ id: string; message: string; messageType: 'info' | 'warn' }>({ id: "", message: "", messageType: 'info' });
   const [isShowingToolbar, setIsShowingToolbar] = useState<boolean>(true);
+  const [historyPosition, setHistoryPosition] = useState<{ index: number; length: number }>({ index: 0, length: 1 });
   const [lineSteps, setLineSteps] = useState<{ moveLine: string; stepInfo: StepInfo[] }[]>([]);
 
   const [scrambleHTML, setScrambleHTML] = useState<string>('');
@@ -143,8 +161,6 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   const tpsRef = useRef<HTMLDivElement>(null!);
   const scrambleMethodsRef = useRef<ImperativeRef>(null);
   const solutionMethodsRef = useRef<ImperativeRef>(null);
-  const undoRef = useRef<HTMLButtonElement>(null!);
-  const redoRef = useRef<HTMLButtonElement>(null!);
   const iconScrollRef = useRef<HTMLDivElement>(null);
   const splitsScrollRef = useRef<HTMLDivElement>(null);
   const oldSelectionRef = useRef<OldSelectionRef>({ range: null, textbox: null, status: "init" });
@@ -154,6 +170,9 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   const screenshotManagerRef = useRef<ScreenshotManager | null>(null);
   const isWhiteSpaceLineRef = useRef<boolean[]>([]);
   const twistyPlayerRef = useRef<TwistyPlayerImperativeRef>(null);
+  const clearedPageRef = useRef<ClearedPageSnapshot | null>(null);
+  const clearedPageToastIdRef = useRef<number | null>(null);
+  const clearedPageTimeoutRef = useRef<number | null>(null);
   const clearLoopTimeout = useCallback(() => {
     if (loopTimeoutRef.current !== null) {
       clearTimeout(loopTimeoutRef.current);
@@ -847,10 +866,6 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   // eslint-disable-next-line react-hooks/exhaustive-deps -- the helper fns below only close over refs/params, not component state; listing them would force a new trackMoves identity every render
   }, [splits, lineSteps, enabledAlgsets, handedness]);
 
-  const memoizedUpdateHistoryBtns = useCallback(() => {
-    handleHistoryBtnUpdate();
-  }, []);
-
   const handleSplitsCommit = (newSplits: string[]) => {
     setCommittedSplits(newSplits);
     if (solveTime) return;
@@ -892,6 +907,16 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     updateURL('time', value);
   }
 
+  const canUndo = historyPosition.index > 0;
+  const canRedo = historyPosition.index < historyPosition.length - 1;
+
+  const publishHistoryPosition = useCallback(() => {
+    setHistoryPosition({
+      index: moveHistory.current.index,
+      length: moveHistory.current.history.length,
+    });
+  }, []);
+
   const handleUndo = () => {
     if (scrambleMethodsRef.current && solutionMethodsRef.current) {
       scrambleMethodsRef.current.undo();
@@ -904,30 +929,6 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       scrambleMethodsRef.current.redo();
       solutionMethodsRef.current.redo();
     }
-  }
-
-  function handleHistoryBtnUpdate() {
-    const isAtEnd = moveHistory.current.index === moveHistory.current.history.length - 1;
-    const isAtStart = moveHistory.current.index === 0;
-
-    const buttons = [
-      { ref: undoRef, condition: isAtStart },
-      { ref: redoRef, condition: isAtEnd }
-    ];
-
-    buttons.forEach(({ ref, condition }) => {
-      if (!ref.current) return;
-
-      if (condition) {
-        ref.current.setAttribute("disabled", "true");
-        ref.current.classList.remove("text-primary-100");
-        ref.current.classList.add("text-neutral-700", "pointer-events-none");
-      } else {
-        ref.current.removeAttribute("disabled");
-        ref.current.classList.remove("text-neutral-700", "pointer-events-none");
-        ref.current.classList.add("text-primary-100");
-      }
-    });
   }
 
   const getWholeTextboxRange = (textboxName: 'scramble' | 'solution'): Range => {
@@ -964,8 +965,8 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
 
     let newHTML = transformType(range, textbox!) ?? '';
     textbox === 'solution' ?
-      solutionMethodsRef.current!.transform(newHTML) : // can handle html or plaintext
-      scrambleMethodsRef.current!.transform(newHTML)
+      solutionMethodsRef.current!.setContent(newHTML) : // can handle html or plaintext
+      scrambleMethodsRef.current!.setContent(newHTML)
   }
 
   const handleTransform = (transformType: TransformHTMLprops) => {
@@ -985,12 +986,74 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
 
   const handleRemoveComments = () => handleTransform(removeComments);
 
+  const takePageSnapshot = (): ClearedPageSnapshot => ({
+    scrambleHTML,
+    solutionHTML,
+    allMoves: allMovesRef.current.map(textbox => textbox.map(line => [...line])),
+    moveLocation: [...moveLocation.current] as [number, number, number],
+    playerParams: { ...playerParams, animationTimes: [...playerParams.animationTimes] },
+    solveTime,
+    solveTitle,
+    splits: [...splits],
+    committedSplits: [...committedSplits],
+    lineSteps: [...lineSteps],
+    moveHistory: {
+      history: moveHistory.current.history.map(entry => [...entry]),
+      index: moveHistory.current.index,
+    },
+    search: window.location.search,
+  });
+
+  const discardClearedPage = () => {
+    if (clearedPageTimeoutRef.current !== null) {
+      clearTimeout(clearedPageTimeoutRef.current);
+      clearedPageTimeoutRef.current = null;
+    }
+    clearedPageRef.current = null;
+    clearedPageToastIdRef.current = null;
+  }
+
+  const handleUndoClearPage = () => {
+    const snapshot = clearedPageRef.current;
+    const toastId = clearedPageToastIdRef.current;
+    if (!snapshot) return;
+
+    discardClearedPage();
+    if (toastId !== null) dismissToast(toastId);
+
+    scrambleMethodsRef.current?.setContent(snapshot.scrambleHTML);
+    solutionMethodsRef.current?.setContent(snapshot.solutionHTML);
+
+    allMovesRef.current = snapshot.allMoves;
+    moveLocation.current = snapshot.moveLocation;
+    moveHistory.current.history = snapshot.moveHistory.history;
+    moveHistory.current.index = snapshot.moveHistory.index;
+
+    // status is a transient state machine flag, not content, so it is never snapshotted.
+    // Restoring a stale 'loading' would make the next keystroke wipe the history.
+    moveHistory.current.status = 'ready';
+    publishHistoryPosition();
+
+    setPlayerParams(snapshot.playerParams);
+    setSolveTime(snapshot.solveTime);
+    setSolveTitle(snapshot.solveTitle);
+    setSplits(snapshot.splits);
+    setCommittedSplits(snapshot.committedSplits);
+    setLineSteps(snapshot.lineSteps);
+
+    window.history.pushState({}, '', `${window.location.pathname}${snapshot.search}`);
+  }
+
   const handleClearPage = () => {
+    if (clearedPageRef.current) return;
+
+    const snapshot = takePageSnapshot();
+
     allMovesRef.current = [[[]], [[]]];
     moveLocation.current = [0, 0, 0];
     setPlayerParams({ animationTimes: [], solution: '', scramble: '' });
-    scrambleMethodsRef.current?.transform('');
-    solutionMethodsRef.current?.transform('');
+    scrambleMethodsRef.current?.setContent('');
+    solutionMethodsRef.current?.setContent('');
     setSolveTime('');
     setSolveTitle('');
     setSplits([]);
@@ -998,13 +1061,35 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     setLineSteps([]);
     solutionMethodsRef.current?.setSuggestions([], null);
 
-    // don't clear moveHistory
+    moveHistory.current.history = [['', '']];
+    moveHistory.current.index = 0;
+    moveHistory.current.status = 'ready';
+    publishHistoryPosition();
 
     updateURL('title', null);
     updateURL('time', null);
     updateURL('splits', null);
     updateURL('preview', null);
-    setTopButtonAlert({ id: "trash", message: "Page cleared! Undo with Ctrl+Z", messageType: 'info' });
+
+    clearedPageRef.current = snapshot;
+    clearedPageTimeoutRef.current = window.setTimeout(discardClearedPage, CLEAR_UNDO_DURATION);
+    clearedPageToastIdRef.current = showToast({
+      closable: false,
+      duration: CLEAR_UNDO_DURATION,
+      icon: <TrashIcon className="w-6 h-6 text-primary-800" />,
+      message: (
+        <span className="flex items-center justify-between gap-3">
+          <span>Page cleared</span>
+          <button
+            type="button"
+            onClick={handleUndoClearPage}
+            className="shrink-0 font-semibold text-primary-800 hover:underline"
+          >
+            Undo
+          </button>
+        </span>
+      ),
+    });
   }
 
   const handleAddCat = () => {
@@ -1533,8 +1618,8 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   }, [scrambleHTML, solutionHTML]);
 
   const windowsToolbarButtons = [
-    { id: 'undo', text: 'Undo', shortcutHint: `Ctrl+Z`, onClick: handleUndo, icon: <UndoIcon />, buttonRef: undoRef },
-    { id: 'redo', text: 'Redo', shortcutHint: `Ctrl+Y`, onClick: handleRedo, icon: <RedoIcon />, buttonRef: redoRef },
+    { id: 'undo', text: 'Undo', shortcutHint: `Ctrl+Z`, onClick: handleUndo, icon: <UndoIcon />, disabled: !canUndo },
+    { id: 'redo', text: 'Redo', shortcutHint: `Ctrl+Y`, onClick: handleRedo, icon: <RedoIcon />, disabled: !canRedo },
     { id: 'mirrorM', text: 'Mirror M', shortcutHint: `Ctrl+Shift+M`, onClick: handleMirrorM, iconText: 'M' },
     { id: 'mirrorS', text: 'Mirror S', shortcutHint: `Ctrl+Shift+S`, onClick: handleMirrorS, iconText: 'S' },
     { id: 'rotateX', text: 'Rotate X', shortcutHint: `Ctrl+Shift+X`, onClick: handleRotateX, iconText: "X" },
@@ -1546,8 +1631,8 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   ];
 
   const macToolbarButtons = [
-    { id: 'undo', text: 'Undo', shortcutHint: `⌘+Z`, onClick: handleUndo, icon: <UndoIcon />, buttonRef: undoRef },
-    { id: 'redo', text: 'Redo', shortcutHint: `⌘+Y`, onClick: handleRedo, icon: <RedoIcon />, buttonRef: redoRef },
+    { id: 'undo', text: 'Undo', shortcutHint: `⌘+Z`, onClick: handleUndo, icon: <UndoIcon />, disabled: !canUndo },
+    { id: 'redo', text: 'Redo', shortcutHint: `⌘+Y`, onClick: handleRedo, icon: <RedoIcon />, disabled: !canRedo },
     { id: 'mirrorM', text: 'Mirror M', shortcutHint: `⌘+Alt+M`, onClick: handleMirrorM, iconText: 'M' },
     { id: 'mirrorS', text: 'Mirror S', shortcutHint: `⌘+Alt+S`, onClick: handleMirrorS, iconText: 'S' },
     { id: 'rotateX', text: 'Rotate X', shortcutHint: `⌘+Alt+X`, onClick: handleRotateX, iconText: "X" },
@@ -1677,7 +1762,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
             trackMoves={trackMoves}
             autofocus={false}
             moveHistory={moveHistory}
-            updateHistoryBtns={memoizedUpdateHistoryBtns}
+            onHistoryChange={publishHistoryPosition}
             html={scrambleHTML}
             setHTML={setScrambleHTML}
             initialContent={solutionHTML ? '' : dailyScramble}
@@ -1764,7 +1849,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
                 trackMoves={trackMoves}
                 autofocus={infoPanelSlot == null}
                 moveHistory={moveHistory}
-                updateHistoryBtns={memoizedUpdateHistoryBtns}
+                onHistoryChange={publishHistoryPosition}
                 html={solutionHTML}
                 setHTML={setSolutionHTML}
                 lineHeight={solutionLineHeight}

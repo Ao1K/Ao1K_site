@@ -31,7 +31,6 @@ const AlgTextEditor = ({ alg, onCommit, onChange, onCancel }: AlgTextEditorProps
         <MovesTextEditor
           name="editAlg"
           autofocus={false}
-          updateHistoryBtns={() => {}}
           lineHeight={24}
           simpleInput
           {...draft.editorProps}

@@ -7,14 +7,18 @@ export interface ButtonProps {
   icon?: React.ReactNode;
   iconText?: string; // icon or iconText should be used, but not both
   isOverflow?: boolean;
+  disabled?: boolean;
 }
 
-export default function ToolbarButton({ id, text, shortcutHint, onClick, icon, iconText, buttonRef, isOverflow }: ButtonProps) {
+export default function ToolbarButton({ id, text, shortcutHint, onClick, icon, iconText, buttonRef, isOverflow, disabled }: ButtonProps) {
 
   return (
     <div id={id} className={`relative inline-block group`} >
       <button ref={buttonRef}
-        className="flex flex-row align-middle w-10 h-8 px-2 py-1 rounded-sm hover:bg-neutral-600 border border-neutral-600 text-primary-100 select-none"
+        disabled={disabled}
+        className={`flex flex-row align-middle w-10 h-8 px-2 py-1 rounded-sm hover:bg-neutral-600 border border-neutral-600 select-none ${
+          disabled ? 'text-neutral-700 pointer-events-none' : 'text-primary-100'
+        }`}
         onClick={onClick}
       >
         <div className="flex justify-center items-center w-full select-none">{icon || iconText}</div>

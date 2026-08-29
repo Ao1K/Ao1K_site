@@ -30,13 +30,24 @@
   100% { opacity: 0; }
 }
 
-@keyframes toast-enter {
+@keyframes toast-enter-down {
+  0% { opacity: 0; transform: translateY(-0.5rem); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes toast-enter-up {
   0% { opacity: 0; transform: translateY(0.5rem); }
   100% { opacity: 1; transform: translateY(0); }
 }
 
 .toast-enter {
-  animation: toast-enter 200ms ease-out;
+  animation: toast-enter-down 200ms ease-out;
+}
+
+@media (min-width: 40rem) {
+  .toast-enter {
+    animation-name: toast-enter-up;
+  }
 }
 
 @layer utilities {
