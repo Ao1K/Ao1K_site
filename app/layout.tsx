@@ -12,7 +12,7 @@ import BulletListIcon from "../components/icons/bulletList";
 import GlassesIcon from "../components/icons/glasses";
 import DatabaseIcon from "../components/icons/database";
 
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Rubik } from "next/font/google";
 
 import { Amplify } from 'aws-amplify';
@@ -45,6 +45,12 @@ export const metadata: Metadata = {
   openGraph: {
     siteName: "Ao1K",
   },
+}
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  interactiveWidget: "resizes-content",
 }
 
 export default async function RootLayout({
