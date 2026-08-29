@@ -5,6 +5,8 @@ export type Post = {
   category: string;
 };
 
+export const blogCategory = "Regular blog";
+
 export const posts: Post[] = [
   {
     slug: "algs-v0-1",
@@ -48,6 +50,14 @@ export const posts: Post[] = [
     date: "Nov 25th, 2025",
     category: "Reconstruct",
   },
+  {
+    slug: "not-another-timer",
+    title: "Not another timer",
+    date: "Aug 28th, 2026",
+    category: blogCategory,
+  },
 ];
 
-export const latestSlug = posts[0].slug;
+const latestChangelogPost = posts.find((post) => post.category !== blogCategory);
+
+export const latestSlug = latestChangelogPost?.slug ?? posts[0].slug;
