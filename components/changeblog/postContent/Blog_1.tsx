@@ -31,7 +31,7 @@ export default function Blog_1() {
           {`This is certainly not the only example. Talk to people. Search online. Spend some real time on it. You'll find a lot out there.`}
         </p>
         <p className="pt-6">
-          {`So please, let me know when you have something that doesn't already exist. Please make something unlike anything I've ever seen. Please, not another timer.`}
+          {`So please, let me know when you have something that doesn't already exist. Make something unlike anything I've ever seen. Please, not another timer.`}
         </p>
       </div>
     </>
