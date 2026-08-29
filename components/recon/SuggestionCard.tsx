@@ -3,8 +3,9 @@ import { useAlgFavorites } from '../../composables/algs/algFavorites';
 import type { Algset } from '../../composables/recon/SimpleCubeInterpreter';
 import { showToast } from '../../composables/toast';
 import Parrot from '../icons/parrot';
+import KeyboardKeeper from './KeyboardKeeper';
 import Link from 'next/link';
-import React, { JSX, useState } from 'react';
+import React, { JSX, useRef, useState } from 'react';
 
 interface SuggestionCardProps {
   alg: string;
@@ -101,6 +102,28 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
   const favorited = isFavorite(alg);
 
   const [animating, setAnimating] = useState(false);
+  const keeperRef = useRef<HTMLSpanElement>(null);
+  const activationPointerType = useRef<string | null>(null);
+
+  const focusKeyboardKeeper = () => {
+    keeperRef.current?.focus();
+  };
+
+  const handleFavoritePointerDown = (event: React.PointerEvent) => {
+    activationPointerType.current = event.pointerType;
+  };
+
+  const handleFavoriteClick = (event: React.MouseEvent) => {
+    event.stopPropagation();
+
+    const pointerType = activationPointerType.current;
+    activationPointerType.current = null;
+    if (pointerType === 'touch' || pointerType === 'pen') {
+      focusKeyboardKeeper();
+    }
+
+    toggleFavorite();
+  };
 
   const blockCardHoverSelect = (event: React.MouseEvent) => event.stopPropagation();
 
@@ -149,7 +172,7 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
   return (
     <div
       className={
-        `group flex flex-row items-center gap-3 border text-dark text-md p-1
+        `group relative flex flex-row items-center gap-3 border text-dark text-md p-1
         ${isFocused ? 'bg-primary-100 shadow-md border-primary-100' : 'bg-primary-200 border-neutral-400'}
         ${placement === '0'  ? 'rounded-t-sm' : ''}
         ${placement === 'last' ? 'rounded-br-sm' : ''}
@@ -162,6 +185,7 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
       id={id}
       tabIndex={0}
     >
+      <KeyboardKeeper ref={keeperRef} />
       {hasPair || hasMultislot ? 
       <div className="w-6 h-6">
         {icon}
@@ -180,7 +204,8 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
         className={`shrink-0 p-2 -m-2 text-neutral-500 hover:text-primary-800 transition-opacity
           group-hover:opacity-100 pointer-coarse:opacity-100 ${favorited ? 'opacity-100' : 'opacity-0'}`}
         onMouseOver={blockCardHoverSelect}
-        onClick={(event) => { event.stopPropagation(); toggleFavorite(); }}
+        onPointerDown={handleFavoritePointerDown}
+        onClick={handleFavoriteClick}
       >
         <Parrot
           filled={favorited}

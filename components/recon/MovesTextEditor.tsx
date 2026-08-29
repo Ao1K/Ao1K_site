@@ -18,6 +18,7 @@ import {
   SuggestionManager,
   type SuggestionManagerHandle,
 } from './SuggestionManager';
+import { KEYBOARD_KEEPER_SELECTOR } from './KeyboardKeeper';
 
 interface HTMLUpdateItem {
   html?: string;
@@ -30,6 +31,14 @@ const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffec
 
 const supportsHardwareKeyboard =
   typeof window !== 'undefined' && !window.matchMedia('(pointer: coarse)').matches;
+
+const suggestionNavigationKeys = new Set(['Tab', 'Escape', 'ArrowUp', 'ArrowDown']);
+const bareModifierKeys = new Set(['Shift', 'Control', 'Alt', 'Meta']);
+
+const keyLeavesFocusOnKeeper = (e: KeyboardEvent) =>
+  e.ctrlKey || e.metaKey || e.altKey
+  || suggestionNavigationKeys.has(e.key)
+  || bareModifierKeys.has(e.key);
 
 interface EditorProps {
   name: string;
@@ -767,11 +776,7 @@ function MovesTextEditor({
   /**
    * Sets the caret to the location of the caret span (span with id=caretNode)
    */
-  const setCaretToCaretSpan = () => {
-    if (document && document.activeElement !== contentEditableRef.current) {
-      return;
-    }
-
+  const selectCaretSpan = () => {
     const existingCaretSpan = contentEditableRef.current?.querySelector('#caretNode');
     if (existingCaretSpan) {
       const selection = window.getSelection();
@@ -781,6 +786,14 @@ function MovesTextEditor({
       selection?.removeAllRanges();
       selection?.addRange(range);
     }
+  }
+
+  const setCaretToCaretSpan = () => {
+    if (document && document.activeElement !== contentEditableRef.current) {
+      return;
+    }
+
+    selectCaretSpan();
   }
 
   const handleCopy = (e: React.ClipboardEvent<HTMLDivElement>) => {
@@ -1181,7 +1194,34 @@ function MovesTextEditor({
     suggestionManagerRef.current?.dismissSuggestion();
   };
 
+  const keyboardKeeperHasFocus = () => {
+    const active = document.activeElement;
+    return active instanceof HTMLElement && active.matches(KEYBOARD_KEEPER_SELECTOR);
+  };
+
+  const resumeTypingInEditor = () => {
+    if (name !== 'solution') return false;
+    const editor = contentEditableRef.current;
+    if (!editor || !keyboardKeeperHasFocus()) return false;
+
+    selectCaretSpan();
+    editor.focus();
+    measureCaretRect();
+    return true;
+  };
+
+  const blockInputOnKeeper = (e: InputEvent) => {
+    if (!keyboardKeeperHasFocus()) return;
+
+    e.preventDefault();
+    resumeTypingInEditor();
+  };
+
   const handleCommand = (e: KeyboardEvent) => {
+    if (!keyLeavesFocusOnKeeper(e)) {
+      resumeTypingInEditor();
+    }
+
     if (e.key === 'Tab' && !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) {
       const manager = suggestionManagerRef.current;
       const canAcceptSuggestion = manager?.canAcceptSuggestion() ?? false;
@@ -1625,6 +1665,14 @@ function MovesTextEditor({
     handleCommand(event);
   });
 
+  const handleBeforeInputEvent = useEffectEvent((event: InputEvent) => {
+    blockInputOnKeeper(event);
+  });
+
+  const handleCompositionStartEvent = useEffectEvent(() => {
+    resumeTypingInEditor();
+  });
+
   const cleanupEditorEffect = useEffectEvent(() => {
     if (updateURLTimeout.current) {
       clearTimeout(updateURLTimeout.current);
@@ -1697,12 +1745,16 @@ function MovesTextEditor({
     document.addEventListener('selectionchange', handleSelectionChangeEvent);
     document.addEventListener('mouseup', handleMouseUpEvent);
     document.addEventListener('keydown', handleCommandEvent);
+    document.addEventListener('beforeinput', handleBeforeInputEvent);
+    document.addEventListener('compositionstart', handleCompositionStartEvent);
 
     return () => {
 
       document.removeEventListener('selectionchange', handleSelectionChangeEvent);
       document.removeEventListener('mouseup', handleMouseUpEvent);
       document.removeEventListener('keydown', handleCommandEvent);
+      document.removeEventListener('beforeinput', handleBeforeInputEvent);
+      document.removeEventListener('compositionstart', handleCompositionStartEvent);
 
       cleanupEditorEffect();
 
