@@ -1,3 +1,5 @@
+import LeadParagraph from "./LeadParagraph";
+
 export default function Blog_1() {
   return (
     <>
@@ -7,9 +9,7 @@ export default function Blog_1() {
       </div>
       <div className="bg-primary-100 w-full h-1"></div>
       <div className="pt-6 gap-1 flex flex-col leading-loose">
-        <p className="pt-6">
-          {`Your idea for a website is probably very cool. I mean that earnestly. I have no reason to think otherwise. I don't know you.`}
-        </p>
+        <LeadParagraph slug="not-another-timer" />
         <p className="pt-6">
           {`The issue is, some of the stuff you've made already exists. There's already databases of algorithms and reconstructions. There's already recon tools, alg trainers, analysis engines, and most certainly timers.`}
         </p>
