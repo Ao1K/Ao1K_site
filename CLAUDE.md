@@ -11,7 +11,9 @@ This project is for a speed cubing website.
 ## Terminology
 
 Cubing terms or jargon may be used in user prompts. When this occurs, refer to `/docs/cubing-term-definitions.md`.
-If the jargon is not listed, make an entry in `/docs/papercuts.md`
+If the jargon is not listed, ask for a definition and then add it.
+
+The favorite button used throughout the site can also be called the parrot. It's not the "heart" or the "star".
 
 # Style
 

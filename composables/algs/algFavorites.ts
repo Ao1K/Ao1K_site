@@ -10,6 +10,7 @@
 
 import { useCallback, useSyncExternalStore } from 'react';
 import type { Algset } from '../recon/SimpleCubeInterpreter';
+import { splitLeadingAuf } from '../../utils/collapseAufVariants';
 
 export type AlgStatus = 'learning' | 'learned' | 'none';
 
@@ -124,10 +125,15 @@ const write = (favorites: FavoriteAlg[]) => {
   listeners.forEach((l) => l());
 };
 
-const toggle = (favorites: FavoriteAlg[], alg: string): FavoriteAlg[] =>
-  favorites.some((f) => f.alg === alg)
-    ? favorites.filter((f) => f.alg !== alg)
-    : [...favorites, { alg, status: DEFAULT_STATUS }];
+const aufFreeAlg = (alg: string): string => splitLeadingAuf(alg).coreKey || alg.trim();
+
+const toggle = (favorites: FavoriteAlg[], alg: string, sourceAlgset?: Algset): FavoriteAlg[] => {
+  const core = aufFreeAlg(alg);
+  const withoutVariants = favorites.filter((f) => aufFreeAlg(f.alg) !== core);
+  return withoutVariants.length === favorites.length
+    ? [...favorites, { alg: core, status: DEFAULT_STATUS, sourceAlgset }]
+    : withoutVariants;
+};
 
 const setStatus = (favorites: FavoriteAlg[], alg: string, status: AlgStatus): FavoriteAlg[] =>
   favorites.map((f) => (f.alg === alg ? { ...f, status } : f));
@@ -167,7 +173,10 @@ const merge = (favorites: FavoriteAlg[], incoming: FavoriteAlg[]): { favorites: 
 export function useAlgFavorites() {
   const favorites = useSyncExternalStore(subscribe, read, getServerSnapshot);
 
-  const toggleFavorite = useCallback((alg: string) => write(toggle(read(), alg)), []);
+  const toggleFavorite = useCallback(
+    (alg: string, sourceAlgset?: Algset) => write(toggle(read(), alg, sourceAlgset)),
+    [],
+  );
   // returns false when the alg is already saved, so callers can report the no-op
   const addFavorite = useCallback((alg: string, sourceAlgset?: Algset): boolean => {
     const current = read();
@@ -191,7 +200,10 @@ export function useAlgFavorites() {
     return added;
   }, []);
 
-  const isFavorite = useCallback((alg: string) => favorites.some((f) => f.alg === alg), [favorites]);
+  const isFavorite = useCallback(
+    (alg: string) => favorites.some((f) => aufFreeAlg(f.alg) === aufFreeAlg(alg)),
+    [favorites],
+  );
 
   return { favorites, isFavorite, toggleFavorite, addFavorite, setFavoriteStatus, setFavoriteAlgset, setFavoriteAlg, removeFavorite, mergeFavorites };
 }
