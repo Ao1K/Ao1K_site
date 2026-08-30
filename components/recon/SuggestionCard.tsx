@@ -2,6 +2,7 @@ import { useSyncedSettings } from '../../composables/useSettings';
 import { useAlgFavorites } from '../../composables/algs/algFavorites';
 import type { Algset } from '../../composables/recon/SimpleCubeInterpreter';
 import { showToast } from '../../composables/toast';
+import { splitLeadingAuf } from '../../utils/collapseAufVariants';
 import Parrot from '../icons/parrot';
 import KeyboardKeeper from './KeyboardKeeper';
 import Link from 'next/link';
@@ -98,8 +99,13 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
   const { settings } = useSyncedSettings();
   const { cubeColors } = settings;
 
-  const { isFavorite, addFavorite, setFavoriteStatus, removeFavorite } = useAlgFavorites();
-  const favorited = isFavorite(alg);
+  const { isFavorite, toggleFavorite } = useAlgFavorites();
+
+  // WARNING: This could cause problems if we ever have a step type where AUFs have significant meaning
+  // Would also need to change algFavorites.ts, since AUF is stripped out there as well
+  const favoriteAlg = splitLeadingAuf(alg).coreKey || alg;
+
+  const favorited = isFavorite(favoriteAlg);
 
   const [animating, setAnimating] = useState(false);
   const keeperRef = useRef<HTMLSpanElement>(null);
@@ -122,34 +128,27 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
       focusKeyboardKeeper();
     }
 
-    toggleFavorite();
+    toggleFavorite(favoriteAlg, algset);
+    if (favorited) return;
+
+    setAnimating(true);
+    showToast({
+      dismissKey: 'alg-added-to-your-algs',
+      addMethod: 'replace',
+      closable: false,
+      icon: <Parrot filled className="w-6 h-6 text-primary-800" />,
+      message: (
+        <span>
+          {favoriteAlg} added to{' '}
+          <Link href="/algs/" className="text-primary-800 underline hover:no-underline">
+            Your Algs
+          </Link>
+        </span>
+      ),
+    });
   };
 
   const blockCardHoverSelect = (event: React.MouseEvent) => event.stopPropagation();
-
-  const toggleFavorite = () => {
-    if (favorited) {
-      removeFavorite(alg);
-    } else {
-      addFavorite(alg, algset);
-      setFavoriteStatus(alg, 'learning');
-      setAnimating(true);
-      showToast({
-        dismissKey: 'alg-added-to-your-algs',
-        addMethod: 'replace',
-        closable: false,
-        icon: <Parrot filled className="w-6 h-6 text-primary-800" />,
-        message: (
-          <span>
-            {alg} added to{' '}
-            <Link href="/algs/" className="text-primary-800 underline hover:no-underline">
-              Your Algs
-            </Link>
-          </span>
-        ),
-      });
-    }
-  };
 
   // Create dynamic color mapping based on current cube colors
   const letterToColor: Record<string, string> = {

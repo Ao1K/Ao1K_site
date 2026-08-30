@@ -23,7 +23,7 @@ const postComponents: Record<string, React.ComponentType> = {
 
 function describePost(post: Post | undefined) {
   if (!post) return "Changes to Ao1K";
-  if (post.category === blogCategory) return `Ao1K blog: ${post.title}`;
+  if (post.category === blogCategory) return post.lead ?? `Blogpost`;
   return `Changes in ${post.title}`;
 }
 

@@ -3,6 +3,7 @@ export type Post = {
   title: string;
   date: string;
   category: string;
+  lead?: string;
 };
 
 export const blogCategory = "Regular blog";
@@ -55,6 +56,7 @@ export const posts: Post[] = [
     title: "Not another timer",
     date: "Aug 28th, 2026",
     category: blogCategory,
+    lead: "Your idea for a website is probably very cool. I mean that earnestly. I have no reason to think otherwise. I don't know you.",
   },
 ];
 

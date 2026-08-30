@@ -46,9 +46,9 @@ Pasting in text should not trigger most text substitutions, only LW -> l and X/Y
  - Also need to expose a module that adds one/several when the user adds them. Remember we have an import feature.
  - Add an add button to the Recon page? Direct people to the Algs page?
 
- Alg suggestions taken from favs should strip off the AUF. AUF does not need to match.
- - There are many cases of "AUF tricks", including for F2L and LL, so we shouldn't just strip the AUF when the user favs
- - Actually no. AUF trick algs mean no auf. So there's no need to keep the AUF when taking the alg off of Reconstruct.
-
  Faved lefty algs should show even when righty is chosen. 
  - We should perhaps add some lefty/righty algs back in to both lists, if popular, like lefty Jb for Ja, but rank wrong hand LL algs much lower.
+
+Idea: Alg packs, karma system. Algs can have fingertricks attached.
+
+utils/algCompilerCore.ts:811 removeAngleFromAlg is apparently broken
