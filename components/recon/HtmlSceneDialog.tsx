@@ -71,6 +71,29 @@ const moveDurationMs = (move: string) => {
   return 1000;
 };
 
+const SINGLE_U_TURN = /^U'?$/;
+const SINGLE_D_TURN = /^D'?$/;
+
+const isSimultaneousUDPair = (first: string, second: string) =>
+  (SINGLE_U_TURN.test(first) && SINGLE_D_TURN.test(second)) ||
+  (SINGLE_D_TURN.test(first) && SINGLE_U_TURN.test(second));
+
+const groupSimultaneousMoves = (moves: string[], combineUD: boolean): string[][] => {
+  const groups: string[][] = [];
+  for (let i = 0; i < moves.length; i++) {
+    const next = moves[i + 1];
+    if (combineUD && next !== undefined && isSimultaneousUDPair(moves[i], next)) {
+      groups.push([moves[i], next]);
+      i++;
+    } else {
+      groups.push([moves[i]]);
+    }
+  }
+  return groups;
+};
+
+const groupDurationMs = (group: string[]) => Math.max(...group.map(moveDurationMs));
+
 const renderShape = (shape: SvgShape, i: number) => {
   if (shape.type === 'rect') return <rect key={i} x={shape.x} y={shape.y} width={shape.width} height={shape.height} fill={shape.fill} />;
   if (shape.type === 'polygon') return <polygon key={i} points={shape.points} fill={shape.fill} />;
@@ -178,11 +201,13 @@ export default function HtmlSceneDialog({
   const [backgroundInput, setBackgroundInput] = useState('#00000000');
   const [shadeColor, setShadeColor] = useState('#000000b3');
   const [shadeInput, setShadeInput] = useState('#000000b3');
+  const [dimOpacityPercent, setDimOpacityPercent] = useState(60);
   const [includeFacelets, setIncludeFacelets] = useState(true);
   const [includeFaceLabels, setIncludeFaceLabels] = useState(false);
   const [showProgressBar, setShowProgressBar] = useState(true);
   const [standalone, setStandalone] = useState(true);
   const [loopPlayback, setLoopPlayback] = useState(true);
+  const [combineUD, setCombineUD] = useState(true);
   const [startHighlighted, setStartHighlighted] = useState(false);
   const [isCompiling, setIsCompiling] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -214,6 +239,13 @@ export default function HtmlSceneDialog({
     }
     return entries;
   }, [solutionLines]);
+
+  const hasCombinableUD = useMemo(
+    () => lineEntries.some(entry =>
+      groupSimultaneousMoves(entry.moves, true).some(group => group.length > 1)),
+    [lineEntries],
+  );
+  const combineUDActive = combineUD && hasCombinableUD;
 
   // piece highlighting — each line carries the set of currently-selected pieces.
   // "None" mode means every piece is selected (no filtering); "Auto" derives from solve steps.
@@ -593,17 +625,19 @@ export default function HtmlSceneDialog({
       const lineRealSec = ((percentages[i] ?? 0) / 100) * totalDuration;
       const delaySec = Math.min(effectiveDelays[i] ?? 0, lineRealSec);
       const playSec = Math.max(0, lineRealSec - delaySec);
-      const naturalSum = entry.moveDurations.reduce((a, b) => a + b, 0);
-      const moveDurationsMs = entry.moves.map((_, j) => {
-        if (naturalSum <= 0 || entry.moves.length === 0) return 0;
-        return Math.max(50, Math.round((entry.moveDurations[j] / naturalSum) * playSec * 1000));
+      const moveGroups = groupSimultaneousMoves(entry.moves, combineUDActive);
+      const groupDurations = moveGroups.map(groupDurationMs);
+      const naturalSum = groupDurations.reduce((a, b) => a + b, 0);
+      const moveDurationsMs = groupDurations.map(duration => {
+        if (naturalSum <= 0) return 0;
+        return Math.max(50, Math.round((duration / naturalSum) * playSec * 1000));
       });
       // a set covering every piece means "no filtering" — emit null so the compiled scene renders normally.
       const set = lineHighlights[i];
       const highlight: string[] | null =
         set && set.size < ALL_PIECE_NAMES.length ? Array.from(set) : null;
       return {
-        moves: entry.moves,
+        moveGroups,
         moveDurationsMs,
         delayMs: Math.round(delaySec * 1000),
         highlight,
@@ -630,6 +664,7 @@ export default function HtmlSceneDialog({
         loopPlayback,
         backgroundColor,
         shadeColor,
+        dimOpacity: dimOpacityPercent / 100,
         startHighlighted,
         standalone,
       });
@@ -785,7 +820,7 @@ export default function HtmlSceneDialog({
               <div className="rounded-sm border border-neutral-700 bg-primary-800 p-4">
                 <div className="mb-3 text-sm font-semibold text-primary-100">Unhighlighted piece shade</div>
                 <span className="text-xs text-neutral-400 mb-3 block">
-                  Pieces that aren&apos;t highlighted are shaded with this color. Adjust the alpha to control transparency.
+                  Pieces that aren&apos;t highlighted are muted toward this color. Adjust the alpha to control how heavily.
                 </span>
                 <div className="mb-3 flex flex-wrap gap-2">
                   {SHADE_PRESETS.map(preset => (
@@ -819,6 +854,25 @@ export default function HtmlSceneDialog({
                     className="w-full rounded-sm border border-neutral-600 bg-dark/40 px-3 py-2 font-mono text-sm text-primary-100 outline-none focus:border-primary-100"
                     placeholder="#000000b3"
                   />
+                </div>
+
+                <div className="mt-4 border-t border-neutral-600 pt-4">
+                  <div className="mb-3 text-sm font-semibold text-primary-100">Unhighlighted piece opacity</div>
+                  <span className="mb-3 block text-xs text-neutral-400">
+                    Unhighlighted pieces are also made see-through, so highlighted pieces on the far side of the cube stay readable.
+                  </span>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={dimOpacityPercent}
+                      onChange={e => setDimOpacityPercent(Number(e.target.value))}
+                      className="max-w-75 flex-1 cursor-pointer"
+                    />
+                    <span className="w-12 text-right font-mono text-sm text-primary-100">{dimOpacityPercent}%</span>
+                  </div>
                 </div>
               </div>
 
@@ -948,7 +1002,7 @@ export default function HtmlSceneDialog({
               </div>
 
               <div className="rounded-sm border border-neutral-700 bg-primary-800 p-4">
-                <label className="flex items-center justify-between gap-3 text-sm text-neutral-100">
+                <label className="mt-4 flex items-center justify-between gap-3 text-sm text-neutral-100">
                   <span>Include face direction labels</span>
                   <input
                     type="checkbox"
@@ -993,6 +1047,16 @@ export default function HtmlSceneDialog({
                     className="h-4 w-4 cursor-pointer"
                   />
                 </div>
+                <label className={`flex items-center justify-between gap-3 mt-4 text-sm ${hasCombinableUD ? 'cursor-pointer text-neutral-100' : 'cursor-not-allowed text-neutral-500'}`}>
+                  <span>Combine UD</span>
+                  <input
+                    type="checkbox"
+                    checked={combineUDActive}
+                    disabled={!hasCombinableUD}
+                    onChange={e => setCombineUD(e.target.checked)}
+                    className="h-4 w-4 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                  />
+                </label>
                 <div className="mt-4 flex items-center justify-between text-sm">
                   <span className="text-neutral-100">Standalone HTML file</span>
                   <input

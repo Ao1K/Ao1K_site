@@ -44,8 +44,8 @@ import { ScreenshotManager, isSolveComplete } from '../../composables/recon/Scre
 import type { TwistyPlayerImperativeRef } from '../../components/recon/TwistyPlayer';
 
 // utility imports
-// import HtmlSceneDialog from "../../components/recon/HtmlSceneDialog";
-// import HtmlImageDialog from "../../components/recon/HtmlImageDialog";
+import HtmlSceneDialog from "../../components/recon/HtmlSceneDialog";
+import HtmlImageDialog from "../../components/recon/HtmlImageDialog";
 // import { AlgCompiler } from '../../utils/AlgCompiler';
 // import ManualAlgVerifier from './ManualAlgVerifier';
 // import LLpatternBuilder from '../../utils/LLpatternBuilder';
@@ -1666,7 +1666,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       {/* <LLpatternBuilder /> */}
 
       {/* utility for HTML video of solve */}
-      {/* <button className="w-40 h-10 flex items-center justify-center z-50 bg-neutral-700 text-primary-100 px-3 py-1 text-sm rounded" onClick={() => setIsHtmlSceneDialogOpen(true)}>Create HTML Video</button>
+      <button className="w-40 h-10 flex items-center justify-center z-50 bg-neutral-700 text-primary-100 px-3 py-1 text-sm rounded" onClick={() => setIsHtmlSceneDialogOpen(true)}>Create HTML Video</button>
       {isHtmlSceneDialogOpen ? (
         <HtmlSceneDialog
           onClose={() => setIsHtmlSceneDialogOpen(false)}
@@ -1681,10 +1681,10 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
           onSplitsChange={setSplits}
           onSplitsCommit={handleSplitsCommit}
         />
-      ) : null} */}
+      ) : null}
 
       {/* utility for static HTML image of the cube */}
-      {/* <button
+      <button
         className="w-40 h-10 flex items-center justify-center z-50 bg-neutral-700 text-primary-100 px-3 py-1 text-sm rounded"
         onClick={() => {
           const [, lineIdx, moveIdx] = moveLocation.current;
@@ -1705,7 +1705,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
           cubeState={htmlImageData.cubeState}
           setupMovesForFilename={htmlImageData.setupMovesForFilename}
         />
-      ) : null} */}
+      ) : null}
 
       <InfoPanel initiallyDismissed={infoPanelSlot == null}>{infoPanelSlot}</InfoPanel>
       {isGifDialogOpen ? (

@@ -123,6 +123,7 @@ export default function HtmlImageDialog({
   const [backgroundInput, setBackgroundInput] = useState('#00000000');
   const [shadeColor, setShadeColor] = useState('#000000b3');
   const [shadeInput, setShadeInput] = useState('#000000b3');
+  const [dimOpacityPercent, setDimOpacityPercent] = useState(60);
   const [includeFacelets, setIncludeFacelets] = useState(true);
   const [includeFaceLabels, setIncludeFaceLabels] = useState(true);
   const [standalone, setStandalone] = useState(false);
@@ -292,6 +293,7 @@ export default function HtmlImageDialog({
         showFaceLabels: includeFaceLabels,
         backgroundColor,
         shadeColor,
+        dimOpacity: dimOpacityPercent / 100,
         standalone,
         highlight,
       });
@@ -447,7 +449,7 @@ export default function HtmlImageDialog({
                 <div className="mt-4 border-t border-neutral-600 pt-4">
                   <div className="mb-3 text-sm font-semibold text-primary-100">Unhighlighted piece shade</div>
                   <span className="mb-3 block text-xs text-neutral-400">
-                    Unselected pieces are shaded with this color. Adjust the alpha to control transparency.
+                    Unselected pieces are muted toward this color. Adjust the alpha to control how heavily.
                   </span>
                   <div className="mb-3 flex flex-wrap gap-2">
                     {SHADE_PRESETS.map(preset => (
@@ -481,6 +483,25 @@ export default function HtmlImageDialog({
                       className="w-full rounded-sm border border-neutral-600 bg-dark/40 px-3 py-2 font-mono text-sm text-primary-100 outline-none focus:border-primary-100"
                       placeholder="#000000b3"
                     />
+                  </div>
+
+                  <div className="mt-4 border-t border-neutral-600 pt-4">
+                    <div className="mb-3 text-sm font-semibold text-primary-100">Unhighlighted piece opacity</div>
+                    <span className="mb-3 block text-xs text-neutral-400">
+                      Unselected pieces are also made see-through, so highlighted pieces on the far side of the cube stay readable.
+                    </span>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={dimOpacityPercent}
+                        onChange={e => setDimOpacityPercent(Number(e.target.value))}
+                        className="max-w-75 flex-1 cursor-pointer"
+                      />
+                      <span className="w-12 text-right font-mono text-sm text-primary-100">{dimOpacityPercent}%</span>
+                    </div>
                   </div>
                 </div>
               </div>
