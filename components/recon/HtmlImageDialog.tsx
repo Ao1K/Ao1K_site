@@ -17,6 +17,9 @@ import {
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { useCubeColors, type CubeColors } from '../../composables/useSettings';
 import { compileStaticCubeImage } from '../../app/devActions';
+import { formatCubeImageJsx } from '../../utils/cubeSceneJsx';
+import { buildColorHex } from '../../utils/cubeSceneAuthoring';
+import { faceletsFromState } from '../../utils/cubeMoves';
 import type { CubeState } from '../../composables/recon/SimpleCube';
 import UnfoldedCube, { allHighlightSet } from './UnfoldedCube';
 
@@ -128,6 +131,7 @@ export default function HtmlImageDialog({
   const [includeFaceLabels, setIncludeFaceLabels] = useState(true);
   const [standalone, setStandalone] = useState(false);
   const [isCompiling, setIsCompiling] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewLoaded, setPreviewLoaded] = useState(false);
   const [highlightSelection, setHighlightSelection] = useState<Set<string>>(allHighlightSet);
@@ -274,6 +278,28 @@ export default function HtmlImageDialog({
   const handleShadePresetClick = (value: string) => {
     setShadeColor(value);
     setShadeInput(value);
+  };
+
+  const handleCopyJsx = async () => {
+    setError(null);
+    try {
+      const jsx = formatCubeImageJsx({
+        facelets: faceletsFromState(cubeState),
+        angles,
+        colors: buildColorHex(cubeColors),
+        shade: shadeColor,
+        dim: dimOpacityPercent / 100,
+        hints: includeFacelets,
+        labels: includeFaceLabels,
+        highlight: highlightSelection.size > 0 ? Array.from(highlightSelection) : null,
+      });
+      await navigator.clipboard.writeText(jsx);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch (e) {
+      console.error(e);
+      setError(e instanceof Error ? e.message : 'Failed to copy JSX.');
+    }
   };
 
   const handleDownload = async () => {
@@ -537,6 +563,13 @@ export default function HtmlImageDialog({
               </div>
 
               <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={handleCopyJsx}
+                  className="rounded border border-primary-100 px-4 py-2 text-sm text-primary-100 transition-colors hover:bg-primary-800"
+                >
+                  {copied ? 'Copied' : 'Copy JSX'}
+                </button>
                 <button
                   type="button"
                   onClick={handleDownload}

@@ -53,4 +53,4 @@ Idea: Alg packs, karma system. Algs can have fingertricks attached.
 
 utils/algCompilerCore.ts:811 removeAngleFromAlg is apparently broken
 
-Fix html player on firefox/zen
+Why is JS + CSS 200 KB on /learn/eo? Can we shrink?

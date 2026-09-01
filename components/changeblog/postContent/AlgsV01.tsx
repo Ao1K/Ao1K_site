@@ -157,7 +157,7 @@ export default function AlgsV01() {
 
       <h3 className="w-1/2 pl-4 text-lg bg-neutral-300 text-dark">{`>>`} Exploring F2L solutions</h3>
       <div className="flex flex-col gap-6 py-6">
-        <p>The number of cases makes a traditional list of all algorithms very unweildy for F2L. 
+        <p>The number of cases makes a traditional list of all algorithms very unwieldy for F2L. 
           The visual search tool here is very direct. You just click a few times, and you can set up a case in a couple seconds.</p>
       </div>
       <Image

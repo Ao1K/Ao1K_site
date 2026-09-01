@@ -4,6 +4,7 @@ import S from "../LessonSpan";
 import Story from "../LessonStory";
 import LessonLink from "../LessonLink";
 import TitleBar from "../TitleBar";
+import CubeScene from "../CubeScene";
 
 
 export default function EO() {
@@ -27,14 +28,30 @@ export default function EO() {
         <div className="flex flex-row flex-wrap gap-8 pb-6 pt-2">
           <div className="flex flex-col gap-1">
             <span className="text-sm font-bold">Good edge</span>
-            <div className="w-80 h-80.5 border border-neutral-400 rounded-sm overflow-hidden">
-              <iframe src="/learn/eo_1.html" className="w-165 h-165 overflow-hidden scale-50 origin-top-left" />
+            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
+              <CubeScene
+                scramble="R U"
+                hints
+                labels
+                lines={[
+                  { moves: ["U'", "R'"], durations: [1500, 1500], delay: 800, highlight: ["W", "O", "G", "R", "B", "Y", "GR"] }
+                ]}
+                progress
+              />
             </div>
           </div>
           <div className="flex flex-col gap-1">
             <span className="text-sm font-bold">Bad edge</span>
-            <div className="w-80 h-80.5 border border-neutral-400 rounded-sm overflow-hidden">
-              <iframe src="/learn/eo_2.html" className="w-165 h-165 overflow-hidden scale-50 origin-top-left" />
+            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
+              <CubeScene
+                scramble="R' F R F'"
+                hints
+                labels
+                lines={[
+                  { moves: ["U'", "R'"], durations: [1500, 1500], delay: 800, highlight: ["W", "O", "G", "R", "B", "Y", "GR"] }
+                ]}
+                progress
+              />
             </div>
           </div>
         </div>
@@ -67,8 +84,16 @@ export default function EO() {
 
         <div className="flex flex-col gap-1 pb-4">
           <span className="text-sm font-bold">Good edge, again</span>
-          <div className="w-80 h-80.5 border border-neutral-400 rounded-sm overflow-hidden">
-            <iframe src="/learn/eo_1.html" className="w-165 h-165 overflow-hidden scale-50 origin-top-left" />
+          <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
+            <CubeScene
+              scramble="R U"
+              hints
+              labels
+              lines={[
+                { moves: ["U'", "R'"], durations: [1500, 1500], delay: 800, highlight: ["W", "O", "G", "R", "B", "Y", "GR"] }
+              ]}
+              progress
+            />
           </div>
         </div>
         <p>{`If we were forced to use `}<code>F</code> or <code> B </code>{`to solve it, that'd automatically make it a bad edge. So the edge has to be able to connect to the right or left center using`} <code>R U L D</code> {` moves for it to be a good edge.`}</p>
@@ -76,15 +101,33 @@ export default function EO() {
         <div className="flex flex-row flex-wrap gap-8 pb-6 pt-2">
           <div className="flex flex-col gap-1">
             <span className="text-sm font-bold">Each location one-by-one</span>
-            <div className="w-80 h-80.5 border border-neutral-400 rounded-sm overflow-hidden">
-              <iframe src="/learn/eo_orbit_vid.html" className="w-165 h-165 overflow-hidden scale-50 origin-top-left" />
+            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
+              <CubeScene
+                scramble=""
+                hints
+                labels
+                lines={[
+                  { moves: [["U"],["U"],["U"],["U"],["R'"],["R'"],["D'"],["D'"],["D'"],["D'"],["R'"],["R'"]], durations: [1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000], delay: 800, highlight: ["WR"] }
+                ]}
+                progress
+                shade="#888888FF"
+                colors={{
+                  W: '#FF00FF',
+                  O: '#FFFFFF',
+                  G: '#FFFFFF',
+                  R: '#FFFFFF',
+                  B: '#FFFFFF',
+                  Y: '#FFFFFF'
+                }}
+                startHighlighted
+              />
             </div>
           </div>
           <div className="flex flex-col gap-1">
             <span className="text-sm font-bold">All locations</span>
-            <div className="w-80 h-80.5 border border-neutral-400 rounded-sm overflow-hidden">
+            {/* <div className="w-80 h-80.5 border border-neutral-400 rounded-sm overflow-hidden">
               <iframe src="/learn/eo_orbit_img.html" className="w-165 h-165 overflow-hidden scale-50 origin-top-left" />
-            </div>
+            </div> */}
           </div>
         </div>
         <p>{`In CFOP, this is useful for OLL, but especially F2L, for reasons we'll look at later.`}</p>

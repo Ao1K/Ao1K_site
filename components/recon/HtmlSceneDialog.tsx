@@ -22,6 +22,8 @@ import type { SvgShape } from '@/composables/recon/stepIconDescriptors';
 import { getAutoHighlight } from '@/composables/recon/autoHighlight';
 import { ALL_PIECE_NAMES, allHighlightSet } from './UnfoldedCube';
 import { compileCubeScene } from '../../app/devActions';
+import { formatCubeSceneJsx } from '../../utils/cubeSceneJsx';
+import { buildColorHex } from '../../utils/cubeSceneAuthoring';
 import type { CompiledLine } from '../../app/devActionTypes';
 import { SimpleCube } from '../../composables/recon/SimpleCube';
 
@@ -210,6 +212,7 @@ export default function HtmlSceneDialog({
   const [combineUD, setCombineUD] = useState(true);
   const [startHighlighted, setStartHighlighted] = useState(false);
   const [isCompiling, setIsCompiling] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewLoaded, setPreviewLoaded] = useState(false);
 
@@ -645,6 +648,36 @@ export default function HtmlSceneDialog({
     });
   };
 
+  const handleCopyJsx = async () => {
+    setError(null);
+    try {
+      const jsx = formatCubeSceneJsx({
+        scramble: scramble.trim(),
+        angles,
+        colors: buildColorHex(cubeColors),
+        shade: shadeColor,
+        dim: dimOpacityPercent / 100,
+        hints: includeFacelets,
+        labels: includeFaceLabels,
+        lines: buildCompiledLines().map(line => ({
+          moves: line.moveGroups,
+          durations: line.moveDurationsMs,
+          delay: line.delayMs,
+          highlight: line.highlight,
+        })),
+        loop: loopPlayback,
+        progress: showProgressBar,
+        startHighlighted,
+      });
+      await navigator.clipboard.writeText(jsx);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch (e) {
+      console.error(e);
+      setError(e instanceof Error ? e.message : 'Failed to copy JSX.');
+    }
+  };
+
   const handleDownload = async () => {
     if (isCompiling) return;
     setError(null);
@@ -1069,6 +1102,18 @@ export default function HtmlSceneDialog({
               </div>
 
               <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={handleCopyJsx}
+                  disabled={lineEntries.length === 0}
+                  className={`rounded border px-4 py-2 text-sm transition-colors ${
+                    lineEntries.length === 0
+                      ? 'cursor-not-allowed border-neutral-700 bg-neutral-800 text-neutral-500'
+                      : 'border-primary-100 text-primary-100 hover:bg-primary-800'
+                  }`}
+                >
+                  {copied ? 'Copied' : 'Copy JSX'}
+                </button>
                 <button
                   type="button"
                   onClick={handleDownload}

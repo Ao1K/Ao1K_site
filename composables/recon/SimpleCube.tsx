@@ -1,6 +1,6 @@
 export type Color = 'W' | 'Y' | 'R' | 'O' | 'G' | 'B'
-type Line = [Color, Color, Color];
-type Face = [Line, Line, Line];
+export type Line = [Color, Color, Color];
+export type Face = [Line, Line, Line];
 export type CubeState = [Face, Face, Face, Face, Face, Face];
 type BaseMove = 'U' | 'D' | 'F' | 'B' | 'L' | 'R' | 'u' | 'd' | 'f' | 'b' | 'l' | 'r' | 'M' | 'E' | 'S' | 'x' | 'y' | 'z';
 type MoveModifier = "'" | '2' | '';

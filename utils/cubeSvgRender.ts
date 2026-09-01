@@ -21,9 +21,9 @@ const HINT_FLOAT = HALF_CUBIE + HINT_OFFSET
 const LABEL_FLOAT = CUBE_MID + LABEL_OFFSET
 const HINT_OPACITY = 0.55
 
-type Mat = number[][]
+export type Mat = number[][]
 
-function mul(a: Mat, b: Mat): Mat {
+export function mul(a: Mat, b: Mat): Mat {
   const out: Mat = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
   for (let r = 0; r < 4; r++) {
     for (let c = 0; c < 4; c++) {
@@ -37,7 +37,7 @@ function chain(...mats: Mat[]): Mat {
   return mats.reduce(mul, [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
 }
 
-function translate(x: number, y: number, z: number): Mat {
+export function translate(x: number, y: number, z: number): Mat {
   return [[1, 0, 0, x], [0, 1, 0, y], [0, 0, 1, z], [0, 0, 0, 1]]
 }
 
@@ -59,6 +59,25 @@ function rotateY(deg: number): Mat {
   return [[c, 0, s, 0], [0, 1, 0, 0], [-s, 0, c, 0], [0, 0, 0, 1]]
 }
 
+function rotateZ(deg: number): Mat {
+  const a = (deg * Math.PI) / 180
+  const c = Math.cos(a)
+  const s = Math.sin(a)
+  return [[c, -s, 0, 0], [s, c, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
+}
+
+export type Axis = 'x' | 'y' | 'z'
+
+export function axisRotation(axis: Axis, deg: number): Mat {
+  if (axis === 'x') return rotateX(deg)
+  if (axis === 'y') return rotateY(deg)
+  return rotateZ(deg)
+}
+
+export function cubeRotation(axis: Axis, deg: number): Mat {
+  return aboutOrigin(CUBE_MID, CUBE_MID, axisRotation(axis, deg))
+}
+
 function perspective(d: number): Mat {
   return [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, -1 / d, 1]]
 }
@@ -67,7 +86,7 @@ function aboutOrigin(ox: number, oy: number, m: Mat): Mat {
   return chain(translate(ox, oy, 0), m, translate(-ox, -oy, 0))
 }
 
-function apply(m: Mat, x: number, y: number, z: number) {
+export function apply(m: Mat, x: number, y: number, z: number) {
   return {
     x: m[0][0] * x + m[0][1] * y + m[0][2] * z + m[0][3],
     y: m[1][0] * x + m[1][1] * y + m[1][2] * z + m[1][3],
@@ -236,7 +255,7 @@ function lerpRgba(from: Rgba, to: Rgba, t: number): Rgba {
   return { r: lerp(from.r, to.r, t), g: lerp(from.g, to.g, t), b: lerp(from.b, to.b, t), a: lerp(from.a, to.a, t) }
 }
 
-function lerpLook(pair: LookPair, t: number): Look {
+export function lerpLook(pair: LookPair, t: number): Look {
   return {
     frame: lerpRgba(pair.bright.frame, pair.dim.frame, t),
     fill: lerpRgba(pair.bright.fill, pair.dim.fill, t),
@@ -274,12 +293,12 @@ export function sceneGeometry(angles: { x: number; y: number }): SceneGeometry {
   }
 }
 
-function cornerAt(screen: Mat, x: number, y: number): [number, number] {
+export function cornerAt(screen: Mat, x: number, y: number): [number, number] {
   const q = apply(screen, x, y, 0)
   return [q.x / q.w, q.y / q.w]
 }
 
-function ringPath(screen: Mat, size: number, inset: number): string {
+export function ringPath(screen: Mat, size: number, inset: number): string {
   const lo = inset
   const hi = size - inset
   const corners: Array<[number, number]> = [[lo, lo], [hi, lo], [hi, hi], [lo, hi]]
@@ -291,7 +310,7 @@ function ringPath(screen: Mat, size: number, inset: number): string {
   return `M${joinCoords(points[0])}l${joinCoords(steps)}Z`
 }
 
-function facesCamera(screen: Mat, size: number): boolean {
+export function facesCamera(screen: Mat, size: number): boolean {
   const o = cornerAt(screen, 0, 0)
   const px = cornerAt(screen, size, 0)
   const py = cornerAt(screen, 0, size)
@@ -306,20 +325,20 @@ function opacityAttr(value: number): string {
   return value >= 1 ? '' : ` opacity="${ratio(value)}"`
 }
 
-function quadMarkup(screen: Mat, size: number, look: Look, border: number): string {
+export function quadMarkup(screen: Mat, size: number, look: Look, border: number): string {
   const inner = ringPath(screen, size, border)
   const outer = ringPath(screen, size, 0)
   const fillHidesFrameCenter = look.fill.a >= 1
   const framePath = fillHidesFrameCenter
-    ? `<path d="${outer}" fill="${rgbString(look.frame)}"${opacityAttr(look.frame.a)}/>`
-    : `<path d="${outer}${inner}" fill-rule="evenodd" fill="${rgbString(look.frame)}"${opacityAttr(look.frame.a)}/>`
-  const fillPath = `<path d="${inner}" fill="${rgbString(look.fill)}"${opacityAttr(look.fill.a)}/>`
+    ? `<path d="${outer}" fill="${rgbString(look.frame)}"${opacityAttr(look.frame.a)}></path>`
+    : `<path d="${outer}${inner}" fill-rule="evenodd" fill="${rgbString(look.frame)}"${opacityAttr(look.frame.a)}></path>`
+  const fillPath = `<path d="${inner}" fill="${rgbString(look.fill)}"${opacityAttr(look.fill.a)}></path>`
   return look.opacity >= 1
     ? framePath + fillPath
     : `<g opacity="${ratio(look.opacity)}">${framePath}${fillPath}</g>`
 }
 
-function labelMarkup(screen: Mat, letter: string): string {
+export function labelMarkup(screen: Mat, letter: string): string {
   const o = cornerAt(screen, 0, 0)
   const px = cornerAt(screen, LABEL_SIZE, 0)
   const py = cornerAt(screen, 0, LABEL_SIZE)
@@ -353,20 +372,49 @@ export type CubeSvgOptions = {
 }
 
 export function buildCubeSvg(opts: CubeSvgOptions): string {
+  return svgDocument(buildCubeSvgBody(opts))
+}
+
+export function buildCubeSvgBody(opts: CubeSvgOptions): string {
   const { state, angles, colorHex, showFacelets, showFaceLabels, shadeColor, dimOpacity, highlight } = opts
 
   const geometry = sceneGeometry(angles)
-  const looks = cubeLooks(colorHex, shadeColor, dimOpacity)
   const highlightSet = highlight ? new Set(highlight) : null
+  const cubies: PosedCubie[] = cubiesFromState(state).map(cubie => ({
+    stickers: cubie.stickers,
+    world: restingWorld(geometry, cubie),
+    dim: highlightSet !== null && !highlightSet.has(cubie.piece) ? 1 : 0,
+  }))
+
+  return renderSceneMarkup({
+    geometry,
+    looks: cubeLooks(colorHex, shadeColor, dimOpacity),
+    showFacelets,
+    showFaceLabels,
+    cubies,
+  })
+}
+
+export function restingWorld(geometry: SceneGeometry, cubie: Pick<Cubie, 'x' | 'y' | 'z'>): Mat {
+  return mul(geometry.placement, cubiePlacement(cubie.x, cubie.y, cubie.z))
+}
+
+export type PosedCubie = { stickers: Sticker[]; world: Mat; dim: number }
+
+export type SceneRenderInput = {
+  geometry: SceneGeometry
+  looks: CubeLooks
+  showFacelets: boolean
+  showFaceLabels: boolean
+  cubies: PosedCubie[]
+}
+
+export function renderSceneMarkup(input: SceneRenderInput): string {
+  const { geometry, looks, showFacelets, showFaceLabels, cubies } = input
   const drawables: Drawable[] = []
 
-  const placeLocal = (local: Mat) => {
-    const world = mul(geometry.placement, local)
-    return { world, screen: mul(geometry.projection, world) }
-  }
-
-  const addQuad = (local: Mat, size: number, look: Look, border: number, cull: boolean) => {
-    const { world, screen } = placeLocal(local)
+  const addQuad = (world: Mat, size: number, look: Look, border: number, cull: boolean) => {
+    const screen = mul(geometry.projection, world)
     if (cull && !facesCamera(screen, size)) return
     drawables.push({
       depth: apply(world, size / 2, size / 2, 0).z,
@@ -374,26 +422,25 @@ export function buildCubeSvg(opts: CubeSvgOptions): string {
     })
   }
 
-  cubiesFromState(state).forEach(cubie => {
-    const dim = highlightSet !== null && !highlightSet.has(cubie.piece) ? 1 : 0
-    const place = cubiePlacement(cubie.x, cubie.y, cubie.z)
+  cubies.forEach(cubie => {
     cubie.stickers.forEach(sticker => {
       const colorIndex = COLOR_ORDER.indexOf(sticker.color)
       // stickers skip backface culling so a highlighted piece on the far side is still drawn
       // and shows through the translucent dimmed pieces in front of it. Hints can't: they
       // float one sticker outside the cube, so an unculled near-side hint would sit between
       // the camera and the cube.
-      addQuad(mul(place, geometry.faceLocal[sticker.faceIndex]), CUBIE_PX,
-        lerpLook(looks.face[colorIndex], dim), FACE_BORDER_PX, false)
+      addQuad(mul(cubie.world, geometry.faceLocal[sticker.faceIndex]), CUBIE_PX,
+        lerpLook(looks.face[colorIndex], cubie.dim), FACE_BORDER_PX, false)
       if (!showFacelets) return
-      addQuad(mul(place, geometry.hintLocal[sticker.faceIndex]), HINT_PX,
-        lerpLook(looks.hint[colorIndex], dim), HINT_BORDER_PX, true)
+      addQuad(mul(cubie.world, geometry.hintLocal[sticker.faceIndex]), HINT_PX,
+        lerpLook(looks.hint[colorIndex], cubie.dim), HINT_BORDER_PX, true)
     })
   })
 
   if (showFaceLabels) {
     geometry.labels.forEach(label => {
-      const { world, screen } = placeLocal(label.matrix)
+      const world = mul(geometry.placement, label.matrix)
+      const screen = mul(geometry.projection, world)
       if (!facesCamera(screen, LABEL_SIZE)) return
       drawables.push({
         depth: apply(world, LABEL_SIZE / 2, LABEL_SIZE / 2, 0).z,
@@ -403,5 +450,5 @@ export function buildCubeSvg(opts: CubeSvgOptions): string {
   }
 
   drawables.sort((a, b) => a.depth - b.depth)
-  return svgDocument(drawables.map(d => d.markup).join(''))
+  return drawables.map(d => d.markup).join('')
 }

@@ -1,5 +1,5 @@
 import type { CubeState } from '../composables/recon/SimpleCube'
-import type { CubeColors } from '../composables/useSettings'
+import type { CubeColors } from '../utils/cubeColors'
 
 export type Angles = { x: number; y: number }
 

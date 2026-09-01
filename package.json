@@ -14,7 +14,9 @@
     "y-move-algs": "npx tsx scripts/generateYMoveAlgs.ts",
     "ingest-zbll": "npx tsx scripts/ingestZBLL.ts",
     "mirror-algs": "npx tsx scripts/mirrorAlgs.ts",
-    "compile-algs": "npx tsx scripts/compileAlgs.ts"
+    "compile-algs": "npx tsx scripts/compileAlgs.ts",
+    "build-cube-runtime": "npx tsx scripts/buildCubeRuntime.ts",
+    "verify-cube-parity": "npx tsx scripts/verifyCubeFrameParity.ts"
   },
   "dependencies": {
     "@aws-amplify/backend": "^1.22.0",
