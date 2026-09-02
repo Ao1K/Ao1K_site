@@ -17,6 +17,9 @@ import {
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { useCubeColors, type CubeColors } from '../../composables/useSettings';
 import { compileStaticCubeImage } from '../../app/devActions';
+import { formatCubeImageJsx } from '../../utils/cubeSceneJsx';
+import { buildColorHex } from '../../utils/cubeSceneAuthoring';
+import { faceletsFromState } from '../../utils/cubeMoves';
 import type { CubeState } from '../../composables/recon/SimpleCube';
 import UnfoldedCube, { allHighlightSet } from './UnfoldedCube';
 
@@ -123,10 +126,12 @@ export default function HtmlImageDialog({
   const [backgroundInput, setBackgroundInput] = useState('#00000000');
   const [shadeColor, setShadeColor] = useState('#000000b3');
   const [shadeInput, setShadeInput] = useState('#000000b3');
+  const [dimOpacityPercent, setDimOpacityPercent] = useState(60);
   const [includeFacelets, setIncludeFacelets] = useState(true);
   const [includeFaceLabels, setIncludeFaceLabels] = useState(true);
   const [standalone, setStandalone] = useState(false);
   const [isCompiling, setIsCompiling] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewLoaded, setPreviewLoaded] = useState(false);
   const [highlightSelection, setHighlightSelection] = useState<Set<string>>(allHighlightSet);
@@ -275,6 +280,28 @@ export default function HtmlImageDialog({
     setShadeInput(value);
   };
 
+  const handleCopyJsx = async () => {
+    setError(null);
+    try {
+      const jsx = formatCubeImageJsx({
+        facelets: faceletsFromState(cubeState),
+        angles,
+        colors: buildColorHex(cubeColors),
+        shade: shadeColor,
+        dim: dimOpacityPercent / 100,
+        hints: includeFacelets,
+        labels: includeFaceLabels,
+        highlight: highlightSelection.size > 0 ? Array.from(highlightSelection) : null,
+      });
+      await navigator.clipboard.writeText(jsx);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch (e) {
+      console.error(e);
+      setError(e instanceof Error ? e.message : 'Failed to copy JSX.');
+    }
+  };
+
   const handleDownload = async () => {
     if (isCompiling) return;
     setError(null);
@@ -292,6 +319,7 @@ export default function HtmlImageDialog({
         showFaceLabels: includeFaceLabels,
         backgroundColor,
         shadeColor,
+        dimOpacity: dimOpacityPercent / 100,
         standalone,
         highlight,
       });
@@ -447,7 +475,7 @@ export default function HtmlImageDialog({
                 <div className="mt-4 border-t border-neutral-600 pt-4">
                   <div className="mb-3 text-sm font-semibold text-primary-100">Unhighlighted piece shade</div>
                   <span className="mb-3 block text-xs text-neutral-400">
-                    Unselected pieces are shaded with this color. Adjust the alpha to control transparency.
+                    Unselected pieces are muted toward this color. Adjust the alpha to control how heavily.
                   </span>
                   <div className="mb-3 flex flex-wrap gap-2">
                     {SHADE_PRESETS.map(preset => (
@@ -481,6 +509,25 @@ export default function HtmlImageDialog({
                       className="w-full rounded-sm border border-neutral-600 bg-dark/40 px-3 py-2 font-mono text-sm text-primary-100 outline-none focus:border-primary-100"
                       placeholder="#000000b3"
                     />
+                  </div>
+
+                  <div className="mt-4 border-t border-neutral-600 pt-4">
+                    <div className="mb-3 text-sm font-semibold text-primary-100">Unhighlighted piece opacity</div>
+                    <span className="mb-3 block text-xs text-neutral-400">
+                      Unselected pieces are also made see-through, so highlighted pieces on the far side of the cube stay readable.
+                    </span>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={dimOpacityPercent}
+                        onChange={e => setDimOpacityPercent(Number(e.target.value))}
+                        className="max-w-75 flex-1 cursor-pointer"
+                      />
+                      <span className="w-12 text-right font-mono text-sm text-primary-100">{dimOpacityPercent}%</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -516,6 +563,13 @@ export default function HtmlImageDialog({
               </div>
 
               <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={handleCopyJsx}
+                  className="rounded border border-primary-100 px-4 py-2 text-sm text-primary-100 transition-colors hover:bg-primary-800"
+                >
+                  {copied ? 'Copied' : 'Copy JSX'}
+                </button>
                 <button
                   type="button"
                   onClick={handleDownload}

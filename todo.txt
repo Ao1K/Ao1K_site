@@ -52,3 +52,5 @@ Pasting in text should not trigger most text substitutions, only LW -> l and X/Y
 Idea: Alg packs, karma system. Algs can have fingertricks attached.
 
 utils/algCompilerCore.ts:811 removeAngleFromAlg is apparently broken
+
+Why is JS + CSS 200 KB on /learn/eo? Can we shrink?

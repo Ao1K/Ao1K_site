@@ -22,13 +22,16 @@ export default function Blog_1() {
           >
             cstimer.net
           </a>
-          {` is a full-featured cubing timer for basically every use case. It's open source and simple to use. It runs locally in your browser, and it costs nothing. We don't need another cstimer, just shinier. Or a cstimer, just without the things that you don't personally use. And we certainly don't need a lesser version you're still working on.`}
+          {` is a full-featured cubing timer for basically every use case. It's open source and simple to use. It runs locally in your browser, and it costs nothing. We don't need another cstimer, just shinier. Or a cstimer, just without the things that you don't personally use. And we certainly don't need to see a lesser version one that you made just for practice or for fun.`}
         </p>
         <p className="pt-6">
-          {`And I get it. Your site is more than just a timer! Okay, but why the timer though? What value does the timer create? Does it link up to the rest of your website in a meaningful way? Does it have extra utility? Otherwise, what is preventing you from telling people to use cstimer? Seriously! You want to help people learn to cube? Point them to the best tools available. Trim the fat! Kill your darlings! Delete that page from your site!`}
+          {`And I get it. Your site is more than just a timer! Okay, but why the timer though? Does it link up to the rest of your website in a meaningful way? Does it have extra utility? Otherwise, what is preventing you from linking to cstimer? You want to help people learn to cube? Point them to the best tools available. Trim the fat! Kill your darlings! Delete that timer from your site.`}
         </p>
         <p className="pt-6">
-          {`This is certainly not the only example. Talk to people. Search online. Spend some real time on it. You'll find a lot out there.`}
+          {`I will admit, some redundancy is good on the internet. It encourages competition to create the best version of the service. But everything that you add to your site is something you have to maintain. You might need to do extra bugfixing and respond to user feedback. You might need to test on multiple devices and browsers. And if you agree it's about competition, then you'll also want to improve the service. It's all time you could be spending elsewhere.`}
+        </p>
+        <p className="pt-6">
+          {`Timers are certainly not the only example. I encourage you to talk to folks about what tools they use. Search online for a while. You'll find a lot out there already.`}
         </p>
         <p className="pt-6">
           {`So please, let me know when you have something that doesn't already exist. Make something unlike anything I've ever seen. Please, not another timer.`}

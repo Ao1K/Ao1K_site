@@ -4,7 +4,41 @@ import S from "../LessonSpan";
 import Story from "../LessonStory";
 import LessonLink from "../LessonLink";
 import TitleBar from "../TitleBar";
+import CubeScene from "../CubeScene";
+import CubeImage from "../CubeImage";
 
+const ORBIT_FACELETS = "WWWWWWWWWYWYWYWYWYGGGWGWGGGRRRRRRRRRBBBWBWBBBOOOOOOOOO";
+
+const F2L_TOP_EDGE_FACELETS = "RGYRYOYGGYWWWWWWWWBRRBGGGGGWYROOOOOOGYYBBBBBBBYORRYRRO";
+const F2L_MIDDLE_EDGE_FACELETS = "RGYGYORROYWOWWWWWWBYGBGGGGYWYRROOBOOGOWBBBBBBGYYRRYRRO";
+const OLL_EDGE_FACELETS = "BOOWWWBWBYYWYYYYYYWOYBBGBBRORGWOOGOOWBWGGGGGGRBORRRRRR";
+const ROTATION_FACELETS = "YGGBYOOYBRWWWWWBWWBBWOBOYBRRBOGRRGRGYYRGGYOGOGRWROYYOB";
+const ROTATION_Y_FACELETS = "OBYYYGBOGWWWWWWRWBRBOGRRGRGYYRGGYOGOGRWROYYOBBBWOBOYBR";
+const PAIR_CHOICE_FACELETS = "WROYYGOGGYWBWWWGWBGRWYOOBOOOOWBBRYBRBBGYRYWRRRBYOGGYGR";
+
+const CENTERS = ["W", "Y", "G", "R", "B", "O"];
+
+function OrbitReferenceImage() {
+  return (
+    <CubeImage
+      facelets={ORBIT_FACELETS}
+      hints
+      labels
+      shade="#888888"
+      dim={1}
+      highlight={["WB", "WG", "WO", "WR"]}
+      colors={{
+        W: '#FF00FF',
+        O: '#FFFFFF',
+        G: '#FFFFFF',
+        R: '#FFFFFF',
+        B: '#FFFFFF',
+        Y: '#FFFFFF'
+      }}
+      className="w-full h-auto"
+    />
+  );
+}
 
 export default function EO() {
   return (
@@ -27,14 +61,30 @@ export default function EO() {
         <div className="flex flex-row flex-wrap gap-8 pb-6 pt-2">
           <div className="flex flex-col gap-1">
             <span className="text-sm font-bold">Good edge</span>
-            <div className="w-80 h-80.5 border border-neutral-400 rounded-sm overflow-hidden">
-              <iframe src="/learn/eo_1.html" className="w-165 h-165 overflow-hidden scale-50 origin-top-left" />
+            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
+              <CubeScene
+                scramble="R U"
+                hints
+                labels
+                lines={[
+                  { moves: ["U'", "R'"], durations: [1500, 1500], delay: 800, highlight: [...CENTERS, "GR"] }
+                ]}
+                progress
+              />
             </div>
           </div>
           <div className="flex flex-col gap-1">
             <span className="text-sm font-bold">Bad edge</span>
-            <div className="w-80 h-80.5 border border-neutral-400 rounded-sm overflow-hidden">
-              <iframe src="/learn/eo_2.html" className="w-165 h-165 overflow-hidden scale-50 origin-top-left" />
+            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
+              <CubeScene
+                scramble="R' F R F'"
+                hints
+                labels
+                lines={[
+                  { moves: ["U'", "R'"], durations: [1500, 1500], delay: 800, highlight: [...CENTERS, "GR"] }
+                ]}
+                progress
+              />
             </div>
           </div>
         </div>
@@ -45,7 +95,7 @@ export default function EO() {
 
 
 
-        <h1>Why does this matter?</h1>
+        <h1>The point of all this</h1>
         <p>{"This ability to put every edge into one of two categories (good or bad) wouldn't be interesting, except that good edges are usually faster to solve."}</p>
         <p>
           {"We can use the ends of our fingers to do most"}<code>U</code> and <code>D</code>{"moves, and our wrists for "}<code>L</code> and <code>R</code>{`moves. It just so happens that we can use these four types of moves to solve any good edge. This is awesome since it means you can rapidly alternate between using your fingers and your wrists to solve good edges. Certain combinations of these moves are especially fast, like`}
@@ -63,12 +113,20 @@ export default function EO() {
         {/* TODO: Add links for CFOP and F2L pages below, when they exist. */}
         <p>{``}</p>
         <p>{`The cube's centers don't move much in CFOP. What if we recognized EO by comparing the edges to the centers in some way? Which sticker on the edge would you look at? Consider this problem before you keep reading.`}</p>
-        <p>{`Going back to the good edge video, the red-green edge "connects" to the red center by doing `}<code>U'</code>{`. In other words, the red stickers line up on both pieces. Then, we did`}<code>R'</code>{`to solve the edge.`}</p>
+        <p>{`Going back to the good edge video, the red-green edge "connects" to the red center by doing `}<code>{"U'"}</code>{`. In other words, the red stickers line up on both pieces. Then, we did`}<code>{"R'"}</code>{`to solve the edge.`}</p>
 
         <div className="flex flex-col gap-1 pb-4">
           <span className="text-sm font-bold">Good edge, again</span>
-          <div className="w-80 h-80.5 border border-neutral-400 rounded-sm overflow-hidden">
-            <iframe src="/learn/eo_1.html" className="w-165 h-165 overflow-hidden scale-50 origin-top-left" />
+          <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
+            <CubeScene
+              scramble="R U"
+              hints
+              labels
+              lines={[
+                { moves: ["U'", "R'"], durations: [1500, 1500], delay: 800, highlight: [...CENTERS, "GR"] }
+              ]}
+              progress
+            />
           </div>
         </div>
         <p>{`If we were forced to use `}<code>F</code> or <code> B </code>{`to solve it, that'd automatically make it a bad edge. So the edge has to be able to connect to the right or left center using`} <code>R U L D</code> {` moves for it to be a good edge.`}</p>
@@ -76,14 +134,32 @@ export default function EO() {
         <div className="flex flex-row flex-wrap gap-8 pb-6 pt-2">
           <div className="flex flex-col gap-1">
             <span className="text-sm font-bold">Each location one-by-one</span>
-            <div className="w-80 h-80.5 border border-neutral-400 rounded-sm overflow-hidden">
-              <iframe src="/learn/eo_orbit_vid.html" className="w-165 h-165 overflow-hidden scale-50 origin-top-left" />
+            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
+              <CubeScene
+                scramble=""
+                hints
+                labels
+                lines={[
+                  { moves: [["U"],["U"],["U"],["U"],["R'"],["R'"],["D'"],["D'"],["D'"],["D'"],["R'"],["R'"]], durations: [1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000], delay: 800, highlight: ["WR"] }
+                ]}
+                progress
+                shade="#888888FF"
+                colors={{
+                  W: '#FF00FF',
+                  O: '#FFFFFF',
+                  G: '#FFFFFF',
+                  R: '#FFFFFF',
+                  B: '#FFFFFF',
+                  Y: '#FFFFFF'
+                }}
+                startHighlighted
+              />
             </div>
           </div>
           <div className="flex flex-col gap-1">
             <span className="text-sm font-bold">All locations</span>
             <div className="w-80 h-80.5 border border-neutral-400 rounded-sm overflow-hidden">
-              <iframe src="/learn/eo_orbit_img.html" className="w-165 h-165 overflow-hidden scale-50 origin-top-left" />
+              <OrbitReferenceImage />
             </div>
           </div>
         </div>
@@ -108,22 +184,39 @@ export default function EO() {
         <div className="flex flex-row flex-wrap gap-8 pb-6 pt-2">
           <div className="flex flex-col gap-1">
             <span className="text-sm font-bold">Good or bad?</span>
-            <div className="w-80 h-81.5 border border-neutral-400 rounded-sm overflow-hidden">
-              <iframe src="/learn/eo_3.html" className="w-165 h-165 overflow-hidden scale-50 origin-top-left" />
+            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
+              <CubeScene
+                facelets={F2L_TOP_EDGE_FACELETS}
+                angles={{ x: 30, y: -30 }}
+                hints
+                labels
+                lines={[
+                  { moves: ["L'", "U", "L"], durations: [1067, 1067, 1067], delay: 800, highlight: [...CENTERS, "GR"] }
+                ]}
+                progress
+              />
             </div>
           </div>
           <div className="flex flex-col gap-1">
             <span className="text-sm font-bold">Orbit reference</span>
-            <div className="w-80 h-81.5 border border-neutral-400 rounded-sm overflow-hidden">
-              <iframe src="/learn/eo_orbit_img.html" className="w-165 h-165 overflow-hidden scale-50 origin-top-left" />
+            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
+              <OrbitReferenceImage />
             </div>
           </div>
         </div>
         
         <p>{"Below is one more example. Again, we're looking at the red-green edge. But the edge is in the middle layer, so try using the white orbit this time. Good or bad?"}</p>
         <p>{"The sticker on this edge that's within the white orbit is red. When we use this orbit, the sticker has to match the left or right center color. The red sticker doesn't match the right center that's next to it, but it does match the left. Another good edge. Let's verify:"}</p>
-        <div className="w-80 h-81.5 mb-6 border border-neutral-400 rounded-sm overflow-hidden">
-          <iframe src="/learn/eo_4.html" className="w-165 h-165 overflow-hidden scale-50 origin-top-left" />
+        <div className="w-80 h-80 mb-6 border border-neutral-400 rounded-sm overflow-hidden">
+          <CubeScene
+            facelets={F2L_MIDDLE_EDGE_FACELETS}
+            hints
+            labels
+            lines={[
+              { moves: ["R", "U", "R'", "L'", "U", "L"], durations: [933, 933, 933, 933, 933, 933], delay: 500, highlight: [...CENTERS, "GR"] }
+            ]}
+            progress
+          />
         </div>
         <p>{"These approaches show how one sticker can be used to determine EO. But you still need to know the color of both stickers. Otherwise, you might be looking at an OLL edge or a cross piece."}</p>
         <p>{"If a both stickers aren't visible, you can either try to remember what it was from past moves (lookahead, an advanced skill), deduce what the sticker is, or barring those options, tilt the cube to check directly. You should avoid rotating or doing moves to get information, since that is wasted effort and would slow you down."}</p>
@@ -131,9 +224,9 @@ export default function EO() {
         <h2>OLL edges</h2>
         <p>{"If you know OLL, you already know how to orient last layer edges. You solve the top cross, which flips all the edges so that all of the same color is on top."}</p>
         <p>{"But it's useful to know that an OLL edge in the middle layer can still considered be oriented or not. Sometimes you'll try to influence OLL during F2L in various ways."}</p>
-        <p>{`A correctly oriented OLL edge will always have the top center color in the white orbit. Knowing that, is the white-green edge good or bad? Try to remember the orbit diagram and how it was made rather than referring back to it.`}</p>
+        <p>{`A correctly oriented OLL edge will always have the top center color in the magenta orbit. Knowing that, is the white-green edge good or bad? Try to remember the orbit diagram and how it was made rather than referring back to it.`}</p>
         <div className="w-80 h-80 mb-2  border border-neutral-400 rounded-sm overflow-hidden">
-          <iframe src="/learn/eo_5.html" className="w-165 h-165 overflow-hidden scale-50 origin-top-left" />
+          <CubeImage facelets={OLL_EDGE_FACELETS} hints labels className="w-full h-auto" />
         </div>
         <input type="checkbox" id="eo5-answer" className="hidden peer/eo5" />
         <label htmlFor="eo5-answer" className="inline-block peer-checked/eo5:hidden cursor-pointer text-md text-neutral-400 select-none hover:text-neutral-300 transition-colors bg-neutral-800 px-3 py-1 rounded-sm mb-1 w-fit">
@@ -143,7 +236,7 @@ export default function EO() {
           Click to hide the answer
         </label>
         <div className="opacity-0 peer-checked/eo5:opacity-100 transition-opacity duration-500 text-neutral-400 mb-4">
-          {`It's a bad edge. The sticker in the white orbit is green, and green doesn't match the top center color. You can verify by doing`} <code>R</code>{`, which puts the wrong color on top.`}
+          {`It's a bad edge. The sticker in the magenta orbit is green, and green doesn't match the top center color. You can verify by doing`} <code>R</code>{`, which puts the wrong color on top.`}
         </div>
         <span className="mb-6">
           Influencing OLL edges during F2L can be done in an unstructured way or in algorithm sets like{' '}
@@ -183,13 +276,27 @@ export default function EO() {
           <div className="flex flex-col gap-1">
             <span className="text-sm font-bold">No rotation</span>
             <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <iframe src="/learn/eo_6_y0.html" className="w-165 h-165 overflow-hidden scale-50 origin-top-left" />
+              <CubeImage
+                facelets={ROTATION_FACELETS}
+                hints
+                labels
+                highlight={[...CENTERS, "BR", "GR"]}
+                className="w-full h-auto"
+                dim={1}
+              />
             </div>
           </div>
           <div className="flex flex-col gap-1">
             <span className="text-sm font-bold">y rotation</span>
             <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <iframe src="/learn/eo_6_y1.html" className="w-165 h-165 overflow-hidden scale-50 origin-top-left" />
+              <CubeImage
+                facelets={ROTATION_Y_FACELETS}
+                hints
+                labels
+                highlight={[...CENTERS, "BO", "GR"]}
+                className="w-full h-auto"
+                dim={1}
+              />
             </div>
           </div>
         </div>
@@ -238,9 +345,9 @@ export default function EO() {
         <p>{"Doing x, y, and z rotations in a solve is essentially time spent doing nothing. In a perfect world, only one y rotation would be needed in a solve. You can solve cross and all good-edge pairs, rotate to turn all the bad edges into good edges, and finally solve the remaining pairs. And indeed, EO is a powerful tool for you to see how to reduce unnecessary rotations and F moves."}</p>
         <p>{"But reality is more complicated. What if a very fast pair would require a rotation before all good-edge pairs are solved? What if you have multiple bad edges in the middle layer? The choice is yours."}</p>
 
-        <p>{"Here's a hard example. Which pair is better to solve here, orange-blue or orange-green?"}</p>
+        <p>{"Here's a hard example. Which pair is better to solve here: orange-blue, orange-green, or are they about the same? Why?"}</p>
         <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-          <iframe src="/learn/eo_7.html" className="w-165 h-165 overflow-hidden scale-50 origin-top-left" />
+          <CubeImage facelets={PAIR_CHOICE_FACELETS} hints labels className="w-full h-auto" />
         </div>
         <input type="checkbox" id="eo7-answer" className="hidden peer/eo7" />
         <label htmlFor="eo7-answer" className="inline-block peer-checked/eo7:hidden cursor-pointer text-md text-neutral-400 select-none hover:text-neutral-300 transition-colors bg-neutral-800 px-3 py-1 rounded-sm mt-4 mb-1 w-fit">
@@ -250,7 +357,7 @@ export default function EO() {
           Click to hide the answer
         </label>
         <div className="opacity-0 peer-checked/eo7:opacity-100 transition-opacity duration-500 text-neutral-400 mt-1 mb-4">
-          Orange-blue is best. Orange-green is good, but it would require a rotation. Orange-blue is a good-edge pair, but solving it may destroy the free pair if you are not careful. However, you can indeed solve orange-blue reasonably without destroying orange-green. <LessonLink text="Check it out!" href="https://www.ao1k.com/recon/?solution=D_R-_U-_R_D-%0AU2_F_U-_F-_%2F%2F_chose_not_to_rotate_because_blue%7E-red_pair_has_a_good_edge%0AU_R-_U_R_U-_R-_U_R%0Ay_U2_R_U2-_R2-_U-_R2_U-_R-%0A%2F%2F_last_layer_not_shown&scramble=D_L2_D2_F_L_B_L2_F_D_L_U-_F2_D_U2_L2_D2_L2_F2_L2_D_R2_B2_x2_y-" />
+          {`Green-orange is slightly better. It's typically better to solve good-edge pairs first, but the orange-blue edge is in the middle layer, so rotating won't change its EO. This means rotating and solving orange-green first is okay. Orange-blue is okay as well if you can avoid breaking up the free orange-green pair. There's actually `}<LessonLink text="a reasonable way of doing that!" href="https://www.ao1k.com/recon/?solution=D_R-_U-_R_D-%0AU2_F_U-_F-_%2F%2F_chose_not_to_rotate_because_blue%7E-red_pair_has_a_good_edge%0AU_R-_U_R_U-_R-_U_R%0Ay_U2_R_U2-_R2-_U-_R2_U-_R-%0A%2F%2F_last_layer_not_shown&scramble=D_L2_D2_F_L_B_L2_F_D_L_U-_F2_D_U2_L2_D2_L2_F2_L2_D_R2_B2_x2_y-" /> {`But speaking practically, orange-green is better because the thought process is so much simpler. It's a free pair!`}
         </div>
 
         <h2>Simplifying your memory</h2>

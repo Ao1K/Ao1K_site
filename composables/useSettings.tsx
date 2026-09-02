@@ -4,17 +4,10 @@ import Cookies from 'js-cookie';
 import { useState, useEffect, useCallback } from 'react';
 
 // Default cube colors matching the original CUBE_COLORS
-export const DEFAULT_CUBE_COLORS = {
-  up: '#FFFFFF',     // white
-  down: '#EEFF00',   // yellow
-  front: '#3EF600',  // green
-  back: '#2870FF',   // blue
-  right: '#FF0000',  // red
-  left: '#FFA914',   // orange
-  eo: '#FF00FF',     // magenta
-};
+import { DEFAULT_CUBE_COLORS, type CubeColors } from '../utils/cubeColors';
 
-export type CubeColors = typeof DEFAULT_CUBE_COLORS;
+export { DEFAULT_CUBE_COLORS };
+export type { CubeColors };
 
 export type IconSize = 'small' | 'medium';
 

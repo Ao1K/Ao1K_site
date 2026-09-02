@@ -210,6 +210,7 @@ const F2lSetup = ({ config, onConfigChange, showEO }: F2lSetupProps) => {
       type="button"
       onClick={onClick}
       disabled={disabled}
+      autoComplete="off"
       className={`group flex-auto flex items-center justify-center gap-2 py-2 text-sm text-dark_accent enabled:hover:bg-primary-800
         disabled:text-neutral-700
         ${reverse ? 'flex-row-reverse border-l border-neutral-700' : ''}`}
@@ -243,6 +244,7 @@ const F2lSetup = ({ config, onConfigChange, showEO }: F2lSetupProps) => {
               key={i}
               type="button"
               disabled={disabled}
+              autoComplete="off"
               onClick={() => onConfigChange(goToStep(config, i))}
               className={`flex flex-1 items-center justify-center skew-x-[-24deg] enabled:hover:bg-primary-200 ${
                 active ? 'bg-primary-100' : complete ? 'bg-primary-300' : disabled ? 'bg-neutral-800' : 'bg-neutral-700'
