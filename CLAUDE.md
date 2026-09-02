@@ -52,3 +52,11 @@ Remember: you might not need an effect. useEffect and similar effect-based trigg
 
 - **Cookie settings**: Cube colors and preferences with cross-tab sync via BroadcastChannel
 - **Settings hooks**: `useSyncedSettings()`, `useCubeColors()`, `useShowControls()`, etc.
+
+## Html Cube Runtime
+
+There's a small local bundle used for rendering server-side svg cube images and videos. 
+
+If you modify any of that pipeline, such as:
+`cubeSceneEntry.client.ts`, `cubeSceneRuntime.client.ts`, `cubeSvgRender.ts`, `cubeSceneIsland.ts`, or `cubeMoves.ts`,
+then be sure to run `build-cube-runtime` and `verify-cube-parity` from the package.json.

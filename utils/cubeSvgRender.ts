@@ -237,11 +237,11 @@ export function cubeLooks(colorHex: Record<Color, string>, shadeColor: string, d
     const band = over(HINT_BORDER, color)
     face.push({
       bright: { frame: OPAQUE_BLACK, fill: color, opacity: 1 },
-      dim: { frame: over(shade, OPAQUE_BLACK), fill: over(shade, color), opacity: dimOpacity },
+      dim: { frame: OPAQUE_BLACK, fill: over(shade, color), opacity: dimOpacity },
     })
     hint.push({
       bright: { frame: band, fill: color, opacity: HINT_OPACITY },
-      dim: { frame: over(shade, band), fill: over(shade, color), opacity: HINT_OPACITY * dimOpacity },
+      dim: { frame: band, fill: over(shade, color), opacity: HINT_OPACITY * dimOpacity },
     })
   })
   return { face, hint }

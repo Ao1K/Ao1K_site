@@ -1,10 +1,44 @@
 import LessonList from "../LessonList";
 import LessonBody from "../LessonBody";
-import S from "../LessonSpan";
 import Story from "../LessonStory";
-import LessonLink from "../LessonLink";
 import TitleBar from "../TitleBar";
+import CubeScene from "../CubeScene";
 
+const START_1_FACELETS = "OBRBYBGOOWWBWWWWWWYGWOOGOOYBOGRBYRBRYRBGRYGRBYYORGYRGG";
+const START_2_FACELETS = "RBRBYBRRRGWWWWWBWWGYGGGOOGOYRBYOGBOGWYYYBOOBOBOWGRRYRY";
+const CORNER_CASE_FACELETS = "OGOGYGOOOBWWWWWGWWBYBBBRRBRYOGYRBGRBWYYYGRRGRGRWBOOYOY";
+const EDGE_CASE_FACELETS = "ROGRYBYGOWWWWWWWWGOYBBBYBBBYRYBRGRRWRYYRGGRGGBYGOOOOOO";
+const HARD_CASE_FACELETS = "GBOBYORBYWWWWWWBWBYRGGRYGRBOYBRGGRGWYYWOOGOOYOOGRBYRBR";
+
+const SOLVED = ["W", "Y", "G", "R", "B", "O", "WG", "WR", "WB", "WO"];
+
+function Start1Scene() {
+  return (
+    <CubeScene
+      facelets={START_1_FACELETS}
+      angles={{ x: 30, y: 0 }}
+      hints
+      lines={[
+        { moves: ["D'", "L'", "U", "L", "D"], durations: [640, 640, 640, 640, 640], delay: 800, highlight: [...SOLVED, "GO", "WGO"] }
+      ]}
+      progress
+    />
+  );
+}
+
+function Start2Scene() {
+  return (
+    <CubeScene
+      facelets={START_2_FACELETS}
+      angles={{ x: 30, y: 0 }}
+      hints
+      lines={[
+        { moves: ["D", "R", "U'", "R'", "D'"], durations: [640, 640, 640, 640, 640], delay: 800, highlight: [...SOLVED, "GR", "WGR"] }
+      ]}
+      progress
+    />
+  );
+}
 
 export default function Keyhole() {
   return (
@@ -15,10 +49,10 @@ export default function Keyhole() {
       <p>{`Sometimes, a quick example or two is enough to understand a concept. Here's a couple solutions that use keyhole:`}</p>
       <div className="flex flex-row flex-wrap gap-8 pb-6 pt-2">
         <div className="w-80 h-80 mb-2  border border-neutral-400 rounded-sm overflow-hidden">
-          <iframe src="/learn/keyhole/start_1.html" className="w-165 h-165 overflow-hidden scale-50 origin-top-left" />
+          <Start1Scene />
         </div>
         <div className="w-80 h-80 mb-2  border border-neutral-400 rounded-sm overflow-hidden">
-          <iframe src="/learn/keyhole/start_2.html" className="w-165 h-165 overflow-hidden scale-50 origin-top-left" />
+          <Start2Scene />
         </div>
       </div>
       <p>{`Don't quite get it? Don't worry, we'll go over everything. Even if this does make sense, you might benefit from reading on. There's a lot more ways to use keyhole than just these two examples.`}</p>
@@ -31,7 +65,7 @@ export default function Keyhole() {
       <p>{`Let's look at those keyhole examples again.`}</p>
       <div className="flex flex-row flex-wrap gap-8 pb-6 mb-6 pt-2 border border-neutral-400 rounded-sm p-4">
         <div className="w-80 h-80 -mb-2 mt-2 border border-neutral-400 rounded-sm overflow-hidden">
-          <iframe src="/learn/keyhole/start_1.html" className="w-165 h-165 overflow-hidden scale-50 origin-top-left" />
+          <Start1Scene />
         </div>
         <div className="flex flex-col py-4 min-w-50 w-[45%]">
           <p>This is a keyhole case because:</p>
@@ -40,7 +74,7 @@ export default function Keyhole() {
       </div>
       <div className="flex flex-row flex-wrap gap-8 pb-6 mb-6 pt-2 border border-neutral-400 rounded-sm p-4">
         <div className="w-80 h-80 -mb-2 mt-2 border border-neutral-400 rounded-sm overflow-hidden">
-          <iframe src="/learn/keyhole/start_2.html" className="w-165 h-165 overflow-hidden scale-50 origin-top-left" />
+          <Start2Scene />
         </div>
         <div className="flex flex-col py-4 min-w-50 w-[45%]">
           <p>This is a keyhole case because:</p>
@@ -50,8 +84,16 @@ export default function Keyhole() {
       <h1>How to use keyhole</h1>
       <p>{`In these cases, we already have one of the two pieces in the slot solved. Wouldn't it be great if you could just solve the last one directly? That's usually very simple, just a few moves:`}</p>
       <div className="flex flex-col gap-1 pb-4">
-        <div className="w-80 h-80.5 border border-neutral-400 rounded-sm overflow-hidden">
-          <iframe src="/learn/keyhole/naive.html" className="w-165 h-165 overflow-hidden scale-50 origin-top-left" />
+        <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
+          <CubeScene
+            facelets={CORNER_CASE_FACELETS}
+            angles={{ x: 30, y: -30 }}
+            hints
+            lines={[
+              { moves: ["L'", "U'", "L"], durations: [800, 800, 800], delay: 600, highlight: [...SOLVED, "BO", "WBO"] }
+            ]}
+            progress
+          />
         </div>
       </div>
       <p>{`But it doesn't work. The orange-blue edge becomes unsolved.`}</p>
@@ -60,19 +102,34 @@ export default function Keyhole() {
       <p aria-label="no, this wasn't written by AI">{`If we need to solve the corner, the edge is in the way—just like in the last example. Really, to solve the corner, it just needs to be between the orange and blue cross pieces. if we move the D layer, we can do that easily enough.`}</p>
       <p>{`Here, the front right slot is unsolved, so we can use it. We'll move the D layer in that direction, insert the corner piece, then undo the D move.`}</p>
       <div className="flex flex-col gap-1 pb-4">
-        <div className="w-80 h-80.5 border border-neutral-400 rounded-sm overflow-hidden">
-          <iframe src="/learn/keyhole/corner.html" className="w-165 h-165 overflow-hidden scale-50 origin-top-left" />
+        <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
+          <CubeScene
+            facelets={CORNER_CASE_FACELETS}
+            angles={{ x: 30, y: -30 }}
+            hints
+            lines={[
+              { moves: ["D", "R", "U'", "R'", "D'"], durations: [640, 640, 640, 640, 640], delay: 800, highlight: [...SOLVED, "BO", "WBO"] }
+            ]}
+            progress
+          />
         </div>
       </div>
-      <p>{`It's called keyhole because, well, it's like we're inserting a key into a hole. Imagine that.`}</p>
+      <p>{`It's called keyhole because, well, it's like we're inserting a key into a hole.`}</p>
       <p>{`I oversimplified earlier. Opinions differ on when to use keyhole. Solving corner cases with keyhole is typically not much better than solving with pure `}<code>RU</code> or <code>LU</code>{` moves. It's up to you to figure out which you prefer in the long term, but keyhole is perfectly okay to start off.`}</p>
       <p>{`Additionally, if the cross color on the corner is facing up, using keyhole won't make the case much better. You'd probably be better off solving something else.`}</p>
       <h2>The edge case</h2>
       <p>{`Now let's say the corner is solved but the edge isn't. We need to move that corner out of the way, but doing so will put a different corner in the slot we're trying to solve the edge into. That's fine, as long as that corner doesn't come from a slot that is already solved.`}</p>
       <p>{`The back right slot is unsolved here. Let's use that corner. We'll do`}<code>{`D'`}</code>{` to move the corner into the slot we care about. We'll also do`}<code>{`U`}</code>{` at the same time to set up for inserting the edge. After that, the procedure is the same as before. We insert then undo the`}<code>{`D`}</code>{` move.`}</p>
       <div className="flex flex-col gap-1 pb-4">
-        <div className="w-80 h-80.5 border border-neutral-400 rounded-sm overflow-hidden">
-          <iframe src="/learn/keyhole/edge.html" className="w-165 h-165 overflow-hidden scale-50 origin-top-left" />
+        <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
+          <CubeScene
+            facelets={EDGE_CASE_FACELETS}
+            hints
+            lines={[
+              { moves: [["U", "D'"], "R", "U'", "R'", "D"], durations: [600, 600, 600, 600, 600], delay: 900, highlight: [...SOLVED, "BR", "WBR", "BO", "WBO", "GO", "WGO"] }
+            ]}
+            progress
+          />
         </div>
       </div>
       <h1>{`That's it`}</h1>
@@ -80,8 +137,15 @@ export default function Keyhole() {
       <p>{`The slot you're trying to solve doesn't have to be in the front. That was just easier to show in a tutorial. You could solve cases where all the relevant pieces are in the back, if you can manage to spot them.`}</p>
       <p>{`Before you click play, try to spot the keyhole case.`}</p>
       <div className="flex flex-col gap-1 pb-4">
-        <div className="w-80 h-80.5 border border-neutral-400 rounded-sm overflow-hidden">
-          <iframe src="/learn/keyhole/hard.html" className="w-165 h-165 overflow-hidden scale-50 origin-top-left" />
+        <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
+          <CubeScene
+            facelets={HARD_CASE_FACELETS}
+            hints
+            lines={[
+              { moves: [["U'", "D'"], "R", "U'", "R'", "D"], durations: [667, 667, 667, 667, 667], delay: 1000, highlight: [...SOLVED, "GO", "WGO"] }
+            ]}
+            progress
+          />
         </div>
       </div>
       <p>{`Practice makes progress!`}</p>
