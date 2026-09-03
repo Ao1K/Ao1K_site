@@ -6,7 +6,7 @@ import { splitLeadingAuf } from '../../utils/collapseAufVariants';
 import Parrot from '../icons/parrot';
 import KeyboardKeeper from './KeyboardKeeper';
 import Link from 'next/link';
-import React, { JSX, useRef, useState } from 'react';
+import React, { JSX, useEffect, useRef, useState } from 'react';
 
 interface SuggestionCardProps {
   alg: string;
@@ -119,15 +119,7 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
     activationPointerType.current = event.pointerType;
   };
 
-  const handleFavoriteClick = (event: React.MouseEvent) => {
-    event.stopPropagation();
-
-    const pointerType = activationPointerType.current;
-    activationPointerType.current = null;
-    if (pointerType === 'touch' || pointerType === 'pen') {
-      focusKeyboardKeeper();
-    }
-
+  const applyFavoriteToggle = () => {
     toggleFavorite(favoriteAlg, algset);
     if (favorited) return;
 
@@ -147,6 +139,36 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
       ),
     });
   };
+
+  const handleFavoriteClick = (event: React.MouseEvent) => {
+    event.stopPropagation();
+
+    const pointerType = activationPointerType.current;
+    activationPointerType.current = null;
+    if (pointerType === 'touch' || pointerType === 'pen') {
+      focusKeyboardKeeper();
+    }
+
+    applyFavoriteToggle();
+  };
+
+  useEffect(() => {
+    if (!isFocused) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'p' && event.key !== 'P') return;
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
+
+      event.preventDefault();
+      applyFavoriteToggle();
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  });
 
   const blockCardHoverSelect = (event: React.MouseEvent) => event.stopPropagation();
 
@@ -197,8 +219,8 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
       <div className="grow">{alg}</div>
       <button
         type="button"
-        aria-label={favorited ? 'Unfavorite alg' : 'Favorite alg'}
-        title={favorited ? 'Unfavorite alg' : 'Favorite alg'}
+        aria-label={favorited ? 'Unfavorite alg (P)' : 'Favorite alg (P)'}
+        title={favorited ? 'Unfavorite alg (P)' : 'Favorite alg (P)'}
         aria-pressed={favorited}
         className={`shrink-0 p-2 -m-2 text-neutral-500 hover:text-primary-800 transition-opacity
           group-hover:opacity-100 pointer-coarse:opacity-100 ${favorited ? 'opacity-100' : 'opacity-0'}`}
