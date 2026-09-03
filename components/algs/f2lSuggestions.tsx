@@ -116,12 +116,12 @@ const F2lSuggestions = ({ config, cross, pair, suggestions, ready, playingAlg, h
   );
 
   return (
-    <div className="flex flex-col border border-neutral-600 rounded-sm text-lg text-primary-100 w-full h-full min-h-50">
-      <div className="flex flex-row items-center gap-2 py-2 px-3 min-h-[62] bg-dark border-b rounded-t-sm border-neutral-600">
+    <div className="flex flex-col overflow-hidden border border-neutral-600 rounded-sm text-lg text-primary-100 w-full h-full min-h-50 max-h-[265px] lg:max-h-[530px]">
+      <div className="flex shrink-0 flex-row items-center gap-2 py-2 px-3 min-h-[62] bg-dark border-b rounded-t-sm border-neutral-600">
         <h2 className="text-sm text-primary-100 font-medium">{ shownSuggestions.length === 1 ? "Solution" : "Solutions"}</h2>
       </div>
 
-      <div className="p-3">
+      <div className="min-h-0 flex-1 overflow-y-auto p-3">
         {!ready && <p className="text-dark_accent">Loading algorithms…</p>}
 
         {ready && hasPair && pairSolved && (
