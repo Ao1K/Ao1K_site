@@ -444,18 +444,20 @@ function transitionLabel(before: F2lPairInfo, after: F2lPairInfo, moves: string[
     return isValidInsert(moves) ? 'Insert pair' : undefined;
   }
 
+  const freedCorner = before.cornerInBottom && !after.cornerInBottom;
+  const freedEdge = before.edgeInMiddle && after.edgeInTop;
+  const freedBoth = freedCorner && freedEdge;
+
   const wasPaired = before.touching && before.minMoves >= 0 && before.minMoves <= 3;
   const isPaired = after.touching && after.minMoves >= 0 && after.minMoves <= 4;
-  if (isPaired && !wasPaired) return 'Make pair';
+  if (isPaired && !wasPaired) return freedBoth ? 'Free the pair' : 'Make pair';
 
   const isSplitPair = !after.touching && after.minMoves >= 0 && after.minMoves <= 4;
   if (isSplitPair && (before.minMoves < 0 || before.minMoves > 4)) return 'Make split pair';
 
   if (before.minMoves >= 0 && after.minMoves >= 0 && after.minMoves < before.minMoves) return 'Set up pair';
 
-  const freedCorner = before.cornerInBottom && !after.cornerInBottom;
-  const freedEdge = before.edgeInMiddle && after.edgeInTop;
-  if (freedCorner && freedEdge) return 'Free both pieces';
+  if (freedBoth) return 'Free both pieces';
   if (freedCorner) return 'Free the corner';
   if (freedEdge) return 'Free the edge';
 

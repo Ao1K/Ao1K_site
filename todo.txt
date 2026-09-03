@@ -19,8 +19,6 @@ Add cross solutions
  - Show for current angle
  - Off in settings by default
 
-Free both pieces + Make pair = Free pair
-
 Think about function of solve review carefully. Form will follow.
 - Add breakdown into MovesTextEditor? Explore adding divs.
 
