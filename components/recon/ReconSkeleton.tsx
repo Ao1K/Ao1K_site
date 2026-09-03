@@ -34,7 +34,6 @@ export default function ReconSkeleton() {
       {/* player box / cube area */}
       <div className="px-3 relative flex flex-col mt-6 w-full justify-center items-center">
         <div className="flex h-full aspect-video max-h-96 min-h-50 bg-black border border-neutral-600 rounded-t-sm w-full justify-center items-center">
-          <div className="text-xl text-primary-100 z-10">Loading cube...</div>
         </div>
       </div>
 

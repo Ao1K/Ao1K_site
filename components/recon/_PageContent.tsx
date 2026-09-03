@@ -1771,7 +1771,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       </div>
       <div id="player-box" className="px-3 relative flex flex-col mt-6 w-full justify-center items-center">
         <div id="cube_model" className="flex h-full aspect-video max-h-96 min-h-50 bg-primary-900 select-none z-20 w-full">
-          <Suspense fallback={<div className="flex text-xl w-full h-full justify-center items-center text-primary-100">Loading cube...</div>}>
+          <Suspense fallback={<div className="flex text-xl w-full h-full justify-center items-center text-primary-100 border border-neutral-600 hover:border-primary-100 rounded-t-sm">Loading cube...</div>}>
             <TwistyPlayer
               ref={twistyPlayerRef}
               speed={speed}
