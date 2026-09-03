@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { type Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
+import { type Algset, type Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
 import { type FaceKey } from '../../composables/algs/cubePaint';
 import { buildF2lCubeState } from '../../composables/algs/f2lCubeState';
 import type { Color } from '../../composables/recon/SimpleCube';
@@ -10,6 +10,7 @@ import ReplayIcon from '../icons/replay';
 import { IconSvg } from './f2lDefaults';
 import { useCubeColors } from '../../composables/useSettings';
 import { useAlgFavorites } from '../../composables/algs/algFavorites';
+import { classifyAlg } from '../../composables/algs/classifyAlg';
 import F2lAlgCard from './f2lAlgCard';
 import type { F2lCaseConfig } from './f2lSetup';
 import { isFullEOActive, isFullEOValid, isPairSolved } from '../../composables/algs/f2lCaseId';
@@ -82,6 +83,13 @@ const F2lSuggestions = ({ config, cross, pair, suggestions, ready, playingAlg, h
   const eoActive = isFullEOActive(config);
   const eoValid = isFullEOValid(config);
   const pairSolved = isPairSolved(config, cross, pair);
+
+  const eoConfigured = eoActive && eoValid;
+  const savedAlgset = (alg: string): Algset | undefined => {
+    if (!eoConfigured) return undefined;
+    return classifyAlg(alg).kind === 'multislot' ? 'f2leo' : 'zbls';
+  };
+
   const shownSuggestions = useMemo(
     () => (eoActive && eoValid ? suggestions.filter((s) => s.hasEOsolved) : suggestions),
     [suggestions, eoActive, eoValid],
@@ -139,7 +147,7 @@ const F2lSuggestions = ({ config, cross, pair, suggestions, ready, playingAlg, h
                   highlightedMove={playingAlg === s.alg ? highlightedMove : -1}
                   isFavorited={isFavorite(s.alg)}
                   onPlay={(playbackAlg) => onPlay?.(s.alg, playbackAlg)}
-                  onToggleFavorite={() => toggleFavorite(s.alg)}
+                  onToggleFavorite={() => toggleFavorite(s.alg, savedAlgset(s.alg))}
                 />
               </li>
             ))}

@@ -1,7 +1,7 @@
-import { SimpleCube, type Color } from '../recon/SimpleCube';
-import { tokenize } from './algMoves';
-import { algSolvedSlots, CORNERS, EDGES } from './multislotSlots';
-import { type SlotKey } from './pairIcon';
+import { SimpleCube, type Color, type CubeState } from '../recon/SimpleCube';
+import { invertTokens, tokenize } from './algMoves';
+import { algSolvedSlots, CORNERS, EDGES, type Facelet, type SlotKey } from './multislotSlots';
+import { isEdgeOriented, HINT_MASK_COLOR, type FaceKey } from './cubePaint';
 import { type ColorConfig, type IconDescriptor, type SvgShape } from '../recon/stepIconDescriptors';
 
 const UP = 0;
@@ -17,6 +17,26 @@ const GROUT = '#161018';
 const CHAR_FACE: Record<Color, keyof Pick<ColorConfig, 'up' | 'down' | 'front' | 'back' | 'right' | 'left'>> = {
   W: 'down', Y: 'up', G: 'right', R: 'front', B: 'left', O: 'back',
 };
+
+// the cube's real color identities, unlike CHAR_FACE above, which maps a color to the display
+// face it is drawn as. EO has to be read in the cube's own frame, not the drawn one.
+const FACE_KEY_AT: FaceKey[] = ['up', 'down', 'front', 'right', 'back', 'left'];
+
+const CHAR_IDENTITY: Record<Color, FaceKey> = {
+  W: 'up', Y: 'down', G: 'front', R: 'right', B: 'back', O: 'left',
+};
+
+function centerIdentities(state: CubeState): Record<FaceKey, FaceKey> {
+  const orient = {} as Record<FaceKey, FaceKey>;
+  FACE_KEY_AT.forEach((face, f) => { orient[face] = CHAR_IDENTITY[state[f][1][1]]; });
+  return orient;
+}
+
+function edgeOriented(group: Facelet[], chars: Color[], orient: Record<FaceKey, FaceKey>): boolean {
+  const faces = group.map(([f]) => FACE_KEY_AT[f]);
+  const faceToId = new Map(faces.map((face, i) => [face, CHAR_IDENTITY[chars[i]]]));
+  return isEdgeOriented(faces, faceToId, orient);
+}
 
 const SLOT_SIDE_CHARS: Record<SlotKey, [Color, Color]> = {
   FR: ['G', 'R'], BR: ['B', 'R'], BL: ['B', 'O'], FL: ['G', 'O'],
@@ -42,17 +62,6 @@ const H_STEP = 6;
 
 const SIZE = 24;
 const MARGIN = 0.5;
-
-const invert = (alg: string): string =>
-  tokenize(alg)
-    .reverse()
-    .map((m) =>
-      m.endsWith('2') ? m
-        : m.endsWith("2'") ? m.slice(0, -1)
-          : m.endsWith("'") ? m.slice(0, -1)
-            : m + "'",
-    )
-    .join(' ');
 
 type Point3 = [number, number, number];
 type Point2 = [number, number];
@@ -87,8 +96,8 @@ function project([x, y, z]: Point3, view: View): [number, number] {
   return [(xp - zp) * U_STEP, (xp + zp) * V_STEP - y * H_STEP];
 }
 
-export function f2lIsoDescriptor(alg: string, config: ColorConfig): IconDescriptor {
-  const state = new SimpleCube().getCubeState(tokenize(invert(alg)));
+export function f2lIsoDescriptor(alg: string, config: ColorConfig, eoColor?: string): IconDescriptor {
+  const state = new SimpleCube().getCubeState(invertTokens(tokenize(alg)));
   const realOf = (c: Color): string => config[CHAR_FACE[c]];
   const key = (f: number, r: number, c: number): string => `${f},${r},${c}`;
 
@@ -102,6 +111,21 @@ export function f2lIsoDescriptor(alg: string, config: ColorConfig): IconDescript
     targetCornerKeys.add([cross, a, b].sort().join(''));
   }
 
+  const isZbls = eoColor != null;
+  const otherSlotCornerKeys = new Set<string>();
+  const otherSlotEdgeKeys = new Set<string>();
+  if (isZbls) {
+    for (const slot of Object.keys(SLOT_SIDE_CHARS) as SlotKey[]) {
+      if (slots.includes(slot)) continue;
+      const [a, b] = SLOT_SIDE_CHARS[slot];
+      otherSlotEdgeKeys.add([a, b].sort().join(''));
+      otherSlotCornerKeys.add([cross, a, b].sort().join(''));
+    }
+  }
+
+  const isSolvedInCase = (group: Facelet[], chars: Color[]): boolean =>
+    group.every(([f], i) => chars[i] === state[f][1][1]);
+
   const paint = new Map<string, string>();
   const targetFacelets = new Set<string>();
 
@@ -111,19 +135,28 @@ export function f2lIsoDescriptor(alg: string, config: ColorConfig): IconDescript
 
   for (const group of CORNERS) {
     const chars = group.map(([f, r, c]) => state[f][r][c]);
-    const relevant = targetCornerKeys.has([...chars].sort().join(''));
+    const identity = [...chars].sort().join('');
+    const relevant = targetCornerKeys.has(identity);
+    const shown = relevant || (otherSlotCornerKeys.has(identity) && isSolvedInCase(group, chars));
     group.forEach(([f, r, c], i) => {
-      paint.set(key(f, r, c), relevant ? realOf(chars[i]) : DEEMPHASIS);
+      paint.set(key(f, r, c), shown ? realOf(chars[i]) : DEEMPHASIS);
       if (relevant) targetFacelets.add(key(f, r, c));
     });
   }
 
+  const orient = centerIdentities(state);
+
   for (const group of EDGES) {
     const chars = group.map(([f, r, c]) => state[f][r][c]);
-    const relevant = targetEdgeKeys.has([...chars].sort().join(''));
+    const identity = [...chars].sort().join('');
+    const relevant = targetEdgeKeys.has(identity);
     const isCross = chars.includes(cross);
+    const shown = relevant || isCross || (otherSlotEdgeKeys.has(identity) && isSolvedInCase(group, chars));
+    const eoFill = isZbls && !shown
+      ? (edgeOriented(group, chars, orient) ? eoColor : HINT_MASK_COLOR)
+      : null;
     group.forEach(([f, r, c], i) => {
-      paint.set(key(f, r, c), relevant || isCross ? realOf(chars[i]) : DEEMPHASIS);
+      paint.set(key(f, r, c), eoFill ?? (shown ? realOf(chars[i]) : DEEMPHASIS));
       if (relevant) targetFacelets.add(key(f, r, c));
     });
   }

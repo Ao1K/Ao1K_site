@@ -15,6 +15,16 @@ export const isMoveSequence = (alg: string): boolean => {
   return tokens.length > 0 && tokens.every((token) => MOVE_RE.test(token));
 };
 
+const invertToken = (token: string): string => {
+  const primed = token.endsWith("'");
+  const withoutPrime = primed ? token.slice(0, -1) : token;
+  const isHalfTurn = withoutPrime.endsWith('2');
+  if (isHalfTurn) return withoutPrime;
+  return primed ? withoutPrime : `${withoutPrime}'`;
+};
+
+export const invertTokens = (tokens: string[]): string[] => tokens.slice().reverse().map(invertToken);
+
 const amountOf = (suffix: string): number => {
   const magnitude = parseInt(suffix, 10) || 1;
   return suffix.includes("'") ? -magnitude : magnitude;

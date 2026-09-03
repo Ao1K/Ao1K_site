@@ -47,8 +47,12 @@ export interface AlgIconData {
 }
 
 export function buildAlgIcon(c: AlgClassification, alg: string, cubeColors: CubeColors): AlgIconData {
-  if (c.kind === 'f2l' || c.kind === 'multislot') {
-    return { descriptor: f2lIsoDescriptor(alg, realColorConfig(cubeColors)), title: f2lPairTitle(alg) };
+  if (c.kind === 'f2l' || c.kind === 'multislot' || c.kind === 'zbls' || c.kind === 'f2leo') {
+    const solvesEO = c.kind === 'zbls' || c.kind === 'f2leo';
+    return {
+      descriptor: f2lIsoDescriptor(alg, realColorConfig(cubeColors), solvesEO ? cubeColors.eo : undefined),
+      title: f2lPairTitle(alg, c.group),
+    };
   }
   if (c.kind === 'oll' && c.stepInfo) {
     const config = llConfig(c.stepInfo.colors[0], cubeColors);

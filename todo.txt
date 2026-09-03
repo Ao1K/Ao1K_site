@@ -13,6 +13,13 @@ A tab for your recons (click an icon and expand into a whole new page). A profil
 A completely intuitive f2l guide
 
 Add roux algs
+ - Roux icons in YourAlgsList
+
+Add cross solutions
+ - Show for current angle
+ - Off in settings by default
+
+More f2l:
 Missing L' U' L2 U L2' U' L and mirrors, y2?
 L' U' L R' U2 R2 U R'
 L' U' L U' D L' U L D' and probably other mirrors, y2, of RUD/LUD
@@ -21,12 +28,6 @@ Free both pieces + Make pair = Free pair
 
 Think about function of solve review carefully. Form will follow.
 - Add breakdown into MovesTextEditor? Explore adding divs.
-
-Add search bar to YourAlgsList for alg names
- - In dropdown, give context: "Search by keyword: (Jb, T 6, BR)
- - What about expanding the algset search to have name subsearch?
-
-Roux icons in YourAlgsList
 
 Wack suggestion
 http://localhost:3000/algs/?a=f2l&c=y3022000000000000
@@ -41,16 +42,19 @@ Pasting in text should not trigger most text substitutions, only LW -> l and X/Y
  - Would operating not just on diff be problematic? 
  - Issue is it wouldn't even be good enough to go based on line, 
  - so I'd need to parse individual characters as the diff
+ - What about changing parsing rules so that substitutions need empty space/newline!? This sounds like good idea.
 
  On page load, process Your Algs and add identified ones to known algsets
  - Also need to expose a module that adds one/several when the user adds them. Remember we have an import feature.
  - Add an add button to the Recon page? Direct people to the Algs page?
 
- Faved lefty algs should show even when righty is chosen. 
- - We should perhaps add some lefty/righty algs back in to both lists, if popular, like lefty Jb for Ja, but rank wrong hand LL algs much lower.
+Faved lefty algs should show even when righty is chosen. 
+- We should perhaps add some lefty/righty algs back in to both lists, if popular, like lefty Jb for Ja, but rank wrong hand LL algs much lower.
 
 Idea: Alg packs, karma system. Algs can have fingertricks attached.
 
 utils/algCompilerCore.ts:811 removeAngleFromAlg is apparently broken
 
-Why is JS + CSS 200 KB on /learn/eo? Can we shrink?
+switch to premium dns
+
+Unique parsing algorithm, Parser, for each puzzle/input abstraction. In this way, we can handle things like FMC and 4x4, or even allow people to create their own

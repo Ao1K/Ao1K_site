@@ -4,7 +4,7 @@
 // learning status and can be deleted inline. The list can be filtered by status and sorted
 // by when it was added or by move count.
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import Parrot from '../icons/parrot';
 import CaretIcon from '../icons/dropdown';
 import FunnelIcon from '../icons/funnel';
@@ -13,11 +13,13 @@ import AddIcon from '../icons/plus';
 import { useAlgFavorites } from '../../composables/algs/algFavorites';
 import { showToast } from '../../composables/toast';
 import { classifyFavorite } from '../../composables/algs/classifyAlg';
+import { keywordsForAlg, keywordLabel, compareKeywords } from '../../composables/algs/algKeywords';
 import YourAlgCard from './YourAlgCard';
 import AddAlgRow from './AddAlgRow';
 import TransferMenu from './TransferMenu';
 import type { AlgStatus } from '../../composables/algs/algFavorites';
 import type { ParsedImport } from '../../composables/algs/importFavorites';
+import type { AlgClassification } from '../../composables/algs/classifyAlg';
 
 const nextStatus = (status: AlgStatus): AlgStatus => {
   switch (status) {
@@ -29,11 +31,31 @@ const nextStatus = (status: AlgStatus): AlgStatus => {
 
 type StatusFilter = AlgStatus | 'all';
 type AlgsetFilter = string | 'all';
+type KeywordFilter = string | 'all';
 type SortKey = 'added' | 'moves' | 'alpha';
 type SortDir = 'asc' | 'desc';
 type ActiveEditor = { kind: 'add' } | { kind: 'card'; alg: string } | null;
 
 const PER_PAGE_OPTIONS = [10, 25, 50, 100];
+
+const LOCAL_SAVE_NOTICE_KEY = 'ao1k.algsLocalSaveNoticeDismissed';
+
+const readLocalSaveNoticeDismissed = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  try {
+    return window.localStorage.getItem(LOCAL_SAVE_NOTICE_KEY) === 'true';
+  } catch {
+    return false;
+  }
+};
+
+const writeLocalSaveNoticeDismissed = () => {
+  try {
+    window.localStorage.setItem(LOCAL_SAVE_NOTICE_KEY, 'true');
+  } catch {
+    return;
+  }
+};
 
 // statuses in the order they should appear in the filter dropdown
 const STATUS_ORDER: AlgStatus[] = ['learning', 'learned', 'none'];
@@ -96,6 +118,115 @@ function FilterSelect<T extends string>(props: {
   );
 }
 
+const VISIBLE_KEYWORD_LIMIT = 10;
+
+function KeywordSelect(props: {
+  noun: string;
+  value: string;
+  options: string[];
+  onChange: (value: string) => void;
+  open: boolean;
+  onToggle: () => void;
+  onClose: () => void;
+}) {
+  const { noun, value, options, onChange, open, onToggle, onClose } = props;
+  const [query, setQuery] = useState('');
+  const [activeRow, setActiveRow] = useState(0);
+
+  const allLabel = `All ${noun}s`;
+  const needle = query.trim().toLowerCase();
+  const matches = needle === '' ? options : options.filter((o) => o.toLowerCase().includes(needle));
+  const shownLimit = matches.length === VISIBLE_KEYWORD_LIMIT + 1 ? matches.length : VISIBLE_KEYWORD_LIMIT;
+  const shownMatches = matches.slice(0, shownLimit);
+  const hiddenMatchCount = matches.length - shownMatches.length;
+  const rows = [{ value: 'all', label: allLabel }, ...shownMatches.map((o) => ({ value: o, label: o }))];
+  const highlighted = Math.min(activeRow, rows.length - 1);
+
+  const choose = (keyword: string) => {
+    onChange(keyword);
+    setQuery('');
+    setActiveRow(0);
+    onClose();
+  };
+
+  const handleToggle = () => {
+    setQuery('');
+    setActiveRow(0);
+    onToggle();
+  };
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const step = e.key === 'ArrowDown' ? 1 : -1;
+      setActiveRow((cur) => {
+        const next = Math.min(cur, rows.length - 1) + step;
+        return (next + rows.length) % rows.length;
+      });
+      return;
+    }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      choose(rows[highlighted].value);
+      return;
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      onClose();
+    }
+  };
+
+  return (
+    <div className="relative flex items-center">
+      <span className="sr-only">{`Filter by ${noun}`}</span>
+      <button
+        type="button"
+        onClick={handleToggle}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        className="appearance-none rounded-sm border border-neutral-600 bg-dark py-1 pl-2 pr-6 text-sm text-left text-primary-100 cursor-pointer hover:border-neutral-500 focus:border-neutral-500 focus:outline-none"
+      >
+        {value === 'all' ? allLabel : value}
+      </button>
+      <CaretIcon className={`pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-primary-100 transition-transform duration-300 ${open ? '' : 'rotate-180'}`} />
+      {open && (
+        <div className="absolute left-0 top-full z-20 min-w-full w-40 rounded-sm border border-neutral-600 bg-dark shadow-lg">
+          <input
+            type="text"
+            autoFocus
+            autoComplete="off"
+            value={query}
+            onChange={(e) => { setQuery(e.target.value); setActiveRow(0); }}
+            onKeyDown={handleKeyDown}
+            placeholder={`Search ${noun}s`}
+            aria-label={`Search ${noun}s`}
+            className="w-full border-b border-neutral-600 bg-dark px-3 py-1.5 text-sm text-primary-100 placeholder:text-neutral-500 focus:outline-none"
+          />
+          <div>
+            {rows.map((row, i) => (
+              <button
+                key={row.value}
+                type="button"
+                onMouseEnter={() => setActiveRow(i)}
+                onClick={() => choose(row.value)}
+                className={`block w-full whitespace-nowrap px-3 py-1.5 text-left text-sm transition-colors ${i === highlighted ? 'bg-neutral-700' : ''} ${row.value === value ? 'text-primary-300' : 'text-primary-100'}`}
+              >
+                {row.label}
+              </button>
+            ))}
+            {matches.length === 0 && (
+              <p className="px-3 py-1.5 text-sm text-neutral-500">No matches</p>
+            )}
+            {hiddenMatchCount > 0 && (
+              <p className="px-3 py-1.5 text-sm text-neutral-500">{`...${hiddenMatchCount} more`}</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function NavBtn(props: { onClick: () => void; disabled: boolean; label: string; children: ReactNode }) {
   const { onClick, disabled, label, children } = props;
   return (
@@ -125,13 +256,20 @@ const YourAlgsList = ({ hasSolutions }: YourAlgsListProps) => {
   const [editMode, setEditMode] = useState(false);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [algsetFilter, setAlgsetFilter] = useState<AlgsetFilter>('all');
+  const [keywordFilter, setKeywordFilter] = useState<KeywordFilter>('all');
   const [sortKey, setSortKey] = useState<SortKey>('added');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
+  const [localSaveNoticeDismissed, setLocalSaveNoticeDismissed] = useState(readLocalSaveNoticeDismissed);
+
+  const dismissLocalSaveNotice = () => {
+    writeLocalSaveNoticeDismissed();
+    setLocalSaveNoticeDismissed(true);
+  };
 
   // only one toolbar menu is open at a time, so clicking from one straight to another switches
-  const [openMenu, setOpenMenu] = useState<null | 'filter' | 'algset' | 'sort' | 'download' | 'perPage'>(null);
+  const [openMenu, setOpenMenu] = useState<null | 'filter' | 'algset' | 'keyword' | 'sort' | 'download' | 'perPage'>(null);
   const toolbarRef = useRef<HTMLHeadingElement>(null);
   const paginationRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -143,7 +281,7 @@ const YourAlgsList = ({ hasSolutions }: YourAlgsListProps) => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-  const toggleMenu = (menu: 'filter' | 'algset' | 'sort' | 'download' | 'perPage') =>
+  const toggleMenu = (menu: 'filter' | 'algset' | 'keyword' | 'sort' | 'download' | 'perPage') =>
     setOpenMenu((cur) => (cur === menu ? null : menu));
 
   const handleAdd = (alg: string) => {
@@ -200,33 +338,55 @@ const YourAlgsList = ({ hasSolutions }: YourAlgsListProps) => {
 
   // the effective algset of each alg is its manual override or the detected classification label;
   // cached so the interpreter isn't re-run on every render (only when the favorites change)
-  const algsetByAlg = useMemo(() => {
-    const map = new Map<string, string>();
-    favorites.forEach((f) => map.set(f.alg, classifyFavorite(f).group));
+  const classificationByAlg = useMemo(() => {
+    const map = new Map<string, AlgClassification>();
+    favorites.forEach((f) => map.set(f.alg, classifyFavorite(f)));
     return map;
   }, [favorites]);
 
   // the algsets actually present, sorted so the dropdown order is stable
   const availableAlgsets = useMemo(
-    () => [...new Set(algsetByAlg.values())].sort((a, b) => a.localeCompare(b)),
-    [algsetByAlg],
+    () => [...new Set([...classificationByAlg.values()].map((c) => c.group))].sort((a, b) => a.localeCompare(b)),
+    [classificationByAlg],
   );
 
   // ignore a filter whose algset is no longer present, mirroring the status fallback
   const effectiveAlgset: AlgsetFilter =
     algsetFilter !== 'all' && availableAlgsets.includes(algsetFilter) ? algsetFilter : 'all';
 
+  const keywordsByAlg = useMemo(() => {
+    const map = new Map<string, string[]>();
+    if (effectiveAlgset === 'all') return map;
+    classificationByAlg.forEach((classification, alg) => {
+      if (classification.group !== effectiveAlgset) return;
+      map.set(alg, keywordsForAlg(alg, classification));
+    });
+    return map;
+  }, [classificationByAlg, effectiveAlgset]);
+
+  const availableKeywords = useMemo(
+    () => [...new Set([...keywordsByAlg.values()].flat())].sort(compareKeywords),
+    [keywordsByAlg],
+  );
+
+  // a lone keyword filters nothing, so its dropdown is hidden and the filter has to fall back too
+  const hasKeywordChoice = availableKeywords.length > 1;
+
+  const effectiveKeyword: KeywordFilter =
+    hasKeywordChoice && keywordFilter !== 'all' && availableKeywords.includes(keywordFilter) ? keywordFilter : 'all';
+
   const visible = useMemo(() => {
-    // filters are AND-based: an alg must pass both the status and algset filters to show
+    // filters are AND-based: an alg must pass the status, algset and keyword filters to show
     let filtered = favorites;
     if (effectiveStatus !== 'all') filtered = filtered.filter((f) => f.status === effectiveStatus);
-    if (effectiveAlgset !== 'all') filtered = filtered.filter((f) => algsetByAlg.get(f.alg) === effectiveAlgset);
+    if (effectiveAlgset !== 'all') filtered = filtered.filter((f) => classificationByAlg.get(f.alg)?.group === effectiveAlgset);
+    if (effectiveKeyword !== 'all') filtered = filtered.filter((f) => keywordsByAlg.get(f.alg)?.includes(effectiveKeyword));
     const dir = sortDir === 'asc' ? 1 : -1;
     if (sortKey === 'added') return sortDir === 'asc' ? filtered : [...filtered].reverse();
     if (sortKey === 'alpha') return [...filtered].sort((a, b) => dir * a.alg.localeCompare(b.alg));
     // stable sort keeps added-order among algs of equal length
     return [...filtered].sort((a, b) => dir * (moveCount(a.alg) - moveCount(b.alg)));
-  }, [favorites, effectiveStatus, effectiveAlgset, algsetByAlg, sortKey, sortDir]);
+  }, [favorites, effectiveStatus, effectiveAlgset, effectiveKeyword, classificationByAlg, keywordsByAlg, sortKey, sortDir]);
 
   const statusOptions: { value: StatusFilter; label: string }[] = [
     { value: 'all', label: 'All status' },
@@ -251,8 +411,21 @@ const YourAlgsList = ({ hasSolutions }: YourAlgsListProps) => {
   const pageItems = visible.slice(pageStart, pageStart + perPage);
   const goToPage = (p: number) => setPage(Math.min(Math.max(1, p), totalPages));
 
+  const isShowingDisclaimer = favorites.length > 0 && !localSaveNoticeDismissed
+
   return (
     <>
+    {isShowingDisclaimer && (
+      <div className="flex flex-wrap flex-col items-start gap-2 p-4 text-neutral-300 text-sm border border-neutral-600 rounded-sm w-fit mt-2 mb-4">
+        <p className="max-w-80"><span className="text-dark_accent font-semibold">Your Algs</span>{` are saved locally. Clearing browser cookies will delete them. Back up your algs by exporting them as a CSV file.`}</p>
+        <button
+          onClick={dismissLocalSaveNotice}
+          className="min-w-20 cursor-pointer rounded-sm border border-neutral-600 bg-dark px-1.5 py-1 text-dark_accent transition-colors hover:border-neutral-500 hover:text-primary-100"
+        >
+          Got it
+        </button>
+      </div>
+    )}
     <div className="flex items-stretch h-8 mb-0.75 text-dark_accent font-medium text-xl">
       <div className="relative">
         <div id="Algae" title="SQUAAAAWK!! Learn spaced repetition! Learn spaced repetition!" className="absolute left-1 -bottom-1.25 text-4xl z-10">🦜</div>
@@ -280,9 +453,20 @@ const YourAlgsList = ({ hasSolutions }: YourAlgsListProps) => {
                   label="Filter by algset"
                   value={effectiveAlgset}
                   options={algsetOptions}
-                  onChange={(v) => { setAlgsetFilter(v); setPage(1); }}
+                  onChange={(v) => { setAlgsetFilter(v); setKeywordFilter('all'); setPage(1); }}
                   open={openMenu === 'algset'}
                   onToggle={() => toggleMenu('algset')}
+                  onClose={() => setOpenMenu(null)}
+                />
+              )}
+              {hasKeywordChoice && (
+                <KeywordSelect
+                  noun={keywordLabel(effectiveAlgset)}
+                  value={effectiveKeyword}
+                  options={availableKeywords}
+                  onChange={(v) => { setKeywordFilter(v); setPage(1); }}
+                  open={openMenu === 'keyword'}
+                  onToggle={() => toggleMenu('keyword')}
                   onClose={() => setOpenMenu(null)}
                 />
               )}

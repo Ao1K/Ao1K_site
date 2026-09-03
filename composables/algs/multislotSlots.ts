@@ -1,6 +1,7 @@
 import { SimpleCube, type Color, type CubeState } from '../recon/SimpleCube';
-import { tokenize } from './algMoves';
-import { type SlotKey } from './pairIcon';
+import { invertTokens, tokenize } from './algMoves';
+
+export type SlotKey = 'FL' | 'FR' | 'BL' | 'BR';
 
 export type Facelet = [number, number, number];
 
@@ -36,12 +37,6 @@ export const EDGES: Facelet[][] = [
 const LATERAL_LETTER: Record<number, string> = { 2: 'F', 3: 'R', 4: 'B', 5: 'L' };
 
 const SLOT_KEYS: SlotKey[] = ['FL', 'FR', 'BL', 'BR'];
-
-const invertToken = (token: string): string =>
-  token.endsWith('2') ? token
-    : token.endsWith("2'") ? token.slice(0, -1)
-      : token.endsWith("'") ? token.slice(0, -1)
-        : token + "'";
 
 // a half turn can complete a slot halfway through, and its written direction doesn't say which
 // quarter that is, so both readings are sampled and either one counts
@@ -97,9 +92,9 @@ const SIDE_GROUPS: { label: string; slots: [SlotKey, SlotKey] }[] = [
 
 const capitalize = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
 
-export function f2lPairTitle(alg: string): string {
+export function f2lPairTitle(alg: string, setName = 'F2L'): string {
   const slots = new Set(algSolvedSlots(alg));
-  if (slots.size === 0) return 'F2L';
+  if (slots.size === 0) return setName;
   if (slots.size === 4) return 'What did you do';
 
   const labels: string[] = [];
@@ -117,7 +112,7 @@ export function f2lPairTitle(alg: string): string {
   const phrase = labels.length === 1
     ? labels[0]
     : `${labels.slice(0, -1).join(', ')} and ${labels[labels.length - 1]}`;
-  return `${capitalize(phrase)} F2L pair${slots.size > 1 ? '(s)' : ''}`;
+  return `${capitalize(phrase)} ${setName} pair${slots.size > 1 ? '(s)' : ''}`;
 }
 
 export function algSolvedSlots(alg: string): SlotKey[] {
@@ -125,7 +120,7 @@ export function algSolvedSlots(alg: string): SlotKey[] {
   if (tokens.length === 0) return [];
 
   const cube = new SimpleCube();
-  const setup = tokens.slice().reverse().map(invertToken);
+  const setup = invertTokens(tokens);
   const faceOfColor = faceOfEachColor(cube.getCubeState([...setup, ...tokens]));
   const slotsAfter = (moves: string[]) =>
     solvedSlots(cube.getCubeState([...setup, ...moves]), faceOfColor);

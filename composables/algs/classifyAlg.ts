@@ -6,10 +6,10 @@
 import { SimpleCube } from '../recon/SimpleCube';
 import { SimpleCubeInterpreter, type Algset, type StepInfo } from '../recon/SimpleCubeInterpreter';
 import { getNewSteps, getLineStepInfo } from '../recon/getLineStepInfo';
-import { tokenize } from './algMoves';
+import { invertTokens, tokenize } from './algMoves';
 import type { CompilableLLStep } from '../recon/LLinterpreter';
 
-export type AlgsetKind = 'f2l' | 'multislot' | 'oll' | 'pll' | 'zbll' | 'unknown';
+export type AlgsetKind = 'f2l' | 'multislot' | 'zbls' | 'f2leo' | 'oll' | 'pll' | 'zbll' | 'unknown';
 
 export interface AlgClassification {
   kind: AlgsetKind;
@@ -30,14 +30,42 @@ export const overrideClassification = (algset: string): AlgClassification => ({
 
 const LL_STEPS: Record<string, CompilableLLStep | undefined> = { oll: 'oll', pll: 'pll', zbll: 'zbll' };
 
+const F2L_STEPS: Record<string, Algset | undefined> = {
+  f2l: 'f2l',
+  zbls: 'zbls',
+  'f2l+eo': 'f2leo',
+  f2leo: 'f2leo',
+};
+
+const EO_STEPS = new Set<Algset>(['zbls', 'f2leo']);
+
+const F2L_KIND = {
+  plain: { lastSlot: 'f2l', multislot: 'multislot' },
+  eo: { lastSlot: 'zbls', multislot: 'f2leo' },
+} as const;
+
+const F2L_GROUP: Record<'f2l' | 'multislot' | 'zbls' | 'f2leo', string> = {
+  f2l: 'F2L', multislot: 'F2L', zbls: 'ZBLS', f2leo: 'F2L+EO',
+};
+
 const isLLkind = (kind: AlgsetKind): boolean => kind === 'oll' || kind === 'pll' || kind === 'zbll';
+
+const isF2Lkind = (kind: AlgsetKind): boolean => kind in F2L_GROUP;
 
 // an override that names an LL algset looks the case name up again in that set, so relabeling an
 // alg from OLL to ZBLL gives it its ZBLL case name. Any other override text is only a label.
 export const classifyFavorite = (f: { alg: string; algset?: string; sourceAlgset?: Algset }): AlgClassification => {
   if (!f.algset) return classifyAlg(f.alg, f.sourceAlgset);
 
-  const llStep = LL_STEPS[f.algset.trim().toLowerCase()];
+  const name = f.algset.trim().toLowerCase().replace(/\s+/g, '');
+
+  const f2lStep = F2L_STEPS[name];
+  if (f2lStep) {
+    const classification = classifyAlg(f.alg, f2lStep);
+    return isF2Lkind(classification.kind) ? classification : overrideClassification(f.algset);
+  }
+
+  const llStep = LL_STEPS[name];
   if (!llStep) return overrideClassification(f.algset);
 
   const classification = classifyAlg(f.alg, llStep);
@@ -46,12 +74,6 @@ export const classifyFavorite = (f: { alg: string; algset?: string; sourceAlgset
 
 // base letter + optional turn count (2 or 3) and optional prime
 const MOVE_RE = /^[UDFBLRudfblrMESxyz][23]?'?$/;
-
-const invertToken = (m: string): string =>
-  m.endsWith('2') ? m
-    : m.endsWith("2'") ? m.slice(0, -1)
-      : m.endsWith("'") ? m.slice(0, -1)
-        : m + "'";
 
 // reused across keystrokes; classification doesn't need the alg database
 let interpreter: SimpleCubeInterpreter | null = null;
@@ -68,8 +90,7 @@ export function classifyAlg(alg: string, sourceAlgset?: Algset): AlgClassificati
   const tokens = tokenize(alg);
   if (tokens.length === 0 || !tokens.every((t) => MOVE_RE.test(t))) return UNKNOWN;
 
-  const inverse = tokens.slice().reverse().map(invertToken);
-  const beforeState = new SimpleCube().getCubeState(['z2', ...inverse]);
+  const beforeState = new SimpleCube().getCubeState(['z2', ...invertTokens(tokens)]);
 
   interpreter ??= new SimpleCubeInterpreter();
   // solved steps first so its internal state doesn't clobber the before-state read below
@@ -82,9 +103,10 @@ export function classifyAlg(alg: string, sourceAlgset?: Algset): AlgClassificati
   if (!stepInfo) return UNKNOWN;
 
   if (stepInfo.type === 'f2l') {
-    return stepInfo.step === 'multislot'
-      ? { kind: 'multislot', label: 'F2L', group: 'F2L', stepInfo }
-      : { kind: 'f2l', label: 'F2L', group: 'F2L', stepInfo };
+    const eoRow = sourceAlgset != null && EO_STEPS.has(sourceAlgset) ? 'eo' : 'plain';
+    const slotColumn = stepInfo.step === 'multislot' ? 'multislot' : 'lastSlot';
+    const kind = F2L_KIND[eoRow][slotColumn];
+    return { kind, label: F2L_GROUP[kind], group: F2L_GROUP[kind], stepInfo };
   }
 
   if (stepInfo.type === 'last layer') {

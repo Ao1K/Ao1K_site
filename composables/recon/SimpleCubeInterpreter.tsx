@@ -21,7 +21,7 @@ import { algsetPriority, dedupeByAlgsetPriority, rankSuggestions, suggestionRank
 import type { SavedAlgKeys } from './suggestionRanking';
 
 export type HashAlgset = 'f2l' | 'zbls';
-export type Algset = HashAlgset | SuggestableLLStep;
+export type Algset = HashAlgset | SuggestableLLStep | 'f2leo';
 
 const toHashAlgset = (step: string | undefined): HashAlgset => (step === 'zbls' ? 'zbls' : 'f2l');
 
