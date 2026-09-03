@@ -19,11 +19,6 @@ Add cross solutions
  - Show for current angle
  - Off in settings by default
 
-More f2l:
-Missing L' U' L2 U L2' U' L and mirrors, y2?
-L' U' L R' U2 R2 U R'
-L' U' L U' D L' U L D' and probably other mirrors, y2, of RUD/LUD
-why y' U R U' R2' U2' R U2 R' U R and not y' R U' R2' U2' R U2 R' U R?
 Free both pieces + Make pair = Free pair
 
 Think about function of solve review carefully. Form will follow.
@@ -47,6 +42,7 @@ Pasting in text should not trigger most text substitutions, only LW -> l and X/Y
  On page load, process Your Algs and add identified ones to known algsets
  - Also need to expose a module that adds one/several when the user adds them. Remember we have an import feature.
  - Add an add button to the Recon page? Direct people to the Algs page?
+ - Can we add an abstraction that handles bringing in lefty algs as well? Like we'll need a "ambidextrous" category, or a "both" category. Can we add YourAlgs to that?
 
 Faved lefty algs should show even when righty is chosen. 
 - We should perhaps add some lefty/righty algs back in to both lists, if popular, like lefty Jb for Ja, but rank wrong hand LL algs much lower.

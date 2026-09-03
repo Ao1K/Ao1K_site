@@ -34,23 +34,28 @@ const extractF2LColors = (step: string, letterToColor: Record<string, string>): 
   return uniqueColors;
 };
 
+const iconBorderProps = (eoColor?: string) => ({
+  style: eoColor ? { border: `2px solid ${eoColor}` } : undefined,
+  className: eoColor ? undefined : 'border border-neutral-600',
+});
+
 const renderPairIcon = (colors: string[], defaultColors: string[], eoColor?: string): JSX.Element => {
   const [first, second] = colors.length >= 2 ? colors : defaultColors;
 
   return (
-    <svg viewBox="0 0 24 24" style={eoColor ? { border: `2px solid ${eoColor}` } : undefined} className={eoColor ? undefined : "border border-neutral-600"}>
+    <svg viewBox="0 0 24 24" {...iconBorderProps(eoColor)}>
       <polygon points="0,0 24,0 0,24" fill={first} />
       <polygon points="24,0 24,24 0,24" fill={second} />
     </svg>
   );
 };
 
-const renderMultislotIcon = (colors: string[], defaultColors: string[]): JSX.Element => {
+const renderMultislotIcon = (colors: string[], defaultColors: string[], eoColor?: string): JSX.Element => {
   const palette = colors.length >= 3 ? colors : defaultColors;
 
   if (palette.length >= 4) {
     return (
-      <svg viewBox="0 0 24 24" className="border border-neutral-600">
+      <svg viewBox="0 0 24 24" {...iconBorderProps(eoColor)}>
         <rect x="0" y="0" width="6" height="24" fill={palette[0]} />
         <rect x="6" y="0" width="6" height="24" fill={palette[1]} />
         <rect x="12" y="0" width="6" height="24" fill={palette[2]} />
@@ -60,7 +65,7 @@ const renderMultislotIcon = (colors: string[], defaultColors: string[]): JSX.Ele
   }
 
   return (
-    <svg viewBox="0 0 24 24" className="border border-neutral-600">
+    <svg viewBox="0 0 24 24" {...iconBorderProps(eoColor)}>
       <rect x="0" y="0" width="8" height="24" fill={palette[0]} />
       <rect x="8" y="0" width="8" height="24" fill={palette[1]} />
       <rect x="16" y="0" width="8" height="24" fill={palette[2]} />
@@ -84,7 +89,7 @@ const renderStepIcon = (steps: string[], letterToColor: Record<string, string>, 
   const uniqueColors = allColors.filter((color, index) => allColors.indexOf(color) === index);
 
   if (hasMultislot || uniqueColors.length >= 3) {
-    return renderMultislotIcon(uniqueColors.length >= 3 ? uniqueColors.slice(0, 4) : defaultMultislotColors, defaultMultislotColors);
+    return renderMultislotIcon(uniqueColors.length >= 3 ? uniqueColors.slice(0, 4) : defaultMultislotColors, defaultMultislotColors, eoColor);
   }
 
   if (hasPair || uniqueColors.length === 2) {

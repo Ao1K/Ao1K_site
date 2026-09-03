@@ -19,6 +19,7 @@ import { collapseAufGroups, canonicalizeAufHashes } from './collapseAufVariants'
 import { combineMoves, formatMove, parseMove } from './moveUtils';
 
 const LL_REPAIR_ROTATIONS = ['x', "x'", 'x2', 'z', "z'", 'z2'];
+const ANGLE_MOVE = /^[Uy](?:'|2'?)?$/;
 
 interface CompiledExactAlg {
   alg: string;
@@ -69,37 +70,16 @@ export function compileAlgs({ types, emit, shouldContinue = () => true }: Compil
   };
 
   const getAllowedAngles = (alg: ExactAlg): string[] => {
-    switch (alg.step) {
-      case 'f2l':
-        if (alg.add_y && alg.add_U) {
-          // allow all combinations of y and U, except any y2
-          return ['', 'y', "y'", 'U', "U'", 'U2', 'y U', "y U'", 'y U2', "y' U", "y' U'", "y' U2"];
-        } else if (alg.add_y) {
-          return ['', 'y', "y'"];
-        } else if (alg.add_U) {
-          return ['', 'U', "U'", 'U2'];
-        } else {
-          return [''];
-        }
-      case 'oll':
-      case 'pll':
-        if (alg.add_U) {
-          return ['', 'U', "U'", 'U2'];
-        } else {
-          return [''];
-        }
-      default:
-        if (alg.add_y && alg.add_U) {
-          // allow all combinations of y and U, including y2 and U2
-          return ['', 'y', "y'", "y2", 'U', "U'", 'U2', 'y U', "y U'", 'y U2', "y' U", "y' U'", "y' U2", "y2 U", "y2 U'", "y2 U2"];
-        } else if (alg.add_y) {
-          return ['', 'y', "y'", "y2"];
-        } else if (alg.add_U) {
-          return ['', 'U', "U'", 'U2'];
-        } else {
-          return [''];
-        }
+    if (!alg.add_y) {
+      return ['', 'U', "U'", 'U2'];
     }
+
+    if (alg.step === 'f2l') {
+      // all combinations of y and U, except any y2
+      return ['', 'y', "y'", 'U', "U'", 'U2', 'y U', "y U'", 'y U2', "y' U", "y' U'", "y' U2"];
+    }
+
+    return ['', 'y', "y'", "y2", 'U', "U'", 'U2', 'y U', "y U'", 'y U2', "y' U", "y' U'", "y' U2", "y2 U", "y2 U'", "y2 U2"];
   }
 
   /**
@@ -694,7 +674,6 @@ export function compileAlgs({ types, emit, shouldContinue = () => true }: Compil
           value: y2Variant,
           originalIndex: -1, // no need to associate with original index
           step: alg.step,
-          name: alg.name ?? "",
           new: true,
         } as ExpandedExactAlg);
       }
@@ -707,7 +686,6 @@ export function compileAlgs({ types, emit, shouldContinue = () => true }: Compil
           value: mirrorVariant,
           originalIndex: -1, // no need to associate with original index
           step: alg.step,
-          name: alg.name ?? "",
           new: true,
         } as ExpandedExactAlg);
       }
@@ -743,9 +721,7 @@ export function compileAlgs({ types, emit, shouldContinue = () => true }: Compil
       new: false,
       value: alg.value,
       step: alg.step,
-      name: alg.name ?? "",
       add_y: false,
-      add_U: false,
     }));
 
     algs = collapseAufGroups(algs);
@@ -810,14 +786,8 @@ export function compileAlgs({ types, emit, shouldContinue = () => true }: Compil
 
   const removeAngleFromAlg = (alg: string): string => {
     const moves = alg.trim().split(/\s+/);
-    for (const move in moves) {
-      if (move.match(/^[Uy]['2]?$/)) {
-        moves.shift();
-      } else {
-        break;
-      }
-    }
-    return moves.join(' ').trim();
+    const firstNonAngleMove = moves.findIndex((move) => !ANGLE_MOVE.test(move));
+    return firstNonAngleMove === -1 ? '' : moves.slice(firstNonAngleMove).join(' ');
   };
 
   const normalizeAlgForMatching = (alg: string): string => {

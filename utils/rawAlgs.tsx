@@ -22,8 +22,6 @@ import ZBLLlefty from './rawZBLLdata_lefty.json';
 export interface ExactAlg {
   value: string;
   add_y: boolean;
-  add_U: boolean;
-  name: string;
   new: boolean; // add this field when adding new algs. Makes verification easier.
   step: string;
 }
