@@ -2,6 +2,7 @@
 // 1. Add new algs to the appropriate JSON data file. Generic algs are objects; last layer algs are plain strings.
 // 2. For generic algs, add the "new": false field to the alg object.
 // 3. For OLL, PLL, and ZBLL, run `pnpm mirror-algs utils/raw<STEP>data.json` to regenerate the _righty and _lefty lists.
+//    Algs listed in frequentLeftAlgs.json are added to the _righty list as-is, and their M mirrors to the _lefty list.
 // 4. Compile, either way:
 //    - `pnpm compile-algs <types...>` writes straight to public/recon. Omit the types or pass `all` for every set.
 //    - Or uncomment the AlgCompiler component in _PageContent, `pnpm dev`, select algorithm types, and run the tool

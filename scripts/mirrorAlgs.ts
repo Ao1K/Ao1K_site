@@ -1,8 +1,11 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { replacementTable_M } from '../composables/recon/transformHTML';
+import frequentLeftAlgs from '../utils/frequentLeftAlgs.json';
 
 type AlgEntry = string | { value: string; [key: string]: unknown };
+
+type FrequentLeftTable = Record<string, { frequentLefty: string[] } | undefined>;
 
 const getValue = (entry: AlgEntry): string => typeof entry === 'string' ? entry : entry.value;
 
@@ -47,6 +50,16 @@ const dedupe = (entries: AlgEntry[]): AlgEntry[] => {
 const sortEntries = (entries: AlgEntry[]): AlgEntry[] =>
   [...entries].sort((a, b) => getValue(a).localeCompare(getValue(b)));
 
+const getStepFromFileName = (base: string): string | null => {
+  const match = /^raw(.+)data$/i.exec(base);
+  return match ? match[1].toLowerCase() : null;
+};
+
+const getFrequentLeftyAlgs = (step: string | null): string[] => {
+  if (!step) return [];
+  return (frequentLeftAlgs as FrequentLeftTable)[step]?.frequentLefty ?? [];
+};
+
 function main() {
   const inputArg = process.argv[2];
   if (!inputArg) {
@@ -86,11 +99,18 @@ function main() {
     }
   });
 
+  const dir = path.dirname(inputPath);
+  const base = path.basename(inputPath, '.json');
+
+  const frequentLefty = getFrequentLeftyAlgs(getStepFromFileName(base));
+  frequentLefty.forEach((alg) => {
+    righty.push(alg);
+    lefty.push(mirrorAlg(alg));
+  });
+
   const uniqueRighty = sortEntries(dedupe(righty));
   const uniqueLefty = sortEntries(dedupe(lefty));
 
-  const dir = path.dirname(inputPath);
-  const base = path.basename(inputPath, '.json');
   const rightyPath = path.join(dir, `${base}_righty.json`);
   const leftyPath = path.join(dir, `${base}_lefty.json`);
 
@@ -99,6 +119,9 @@ function main() {
 
   console.log(`Read ${entries.length} algs from ${inputPath}`);
   console.log(`Converted ${flipped} lefty algs to righty`);
+  if (frequentLefty.length > 0) {
+    console.log(`Added ${frequentLefty.length} frequent lefty algs to the righty list, and their mirrors to the lefty list`);
+  }
   if (mixed > 0) console.log(`${mixed} algs use both sides and were added to both lists in both orientations`);
   console.log(`Wrote ${uniqueRighty.length} algs to ${rightyPath} (${righty.length - uniqueRighty.length} duplicates removed)`);
   console.log(`Wrote ${uniqueLefty.length} algs to ${leftyPath} (${lefty.length - uniqueLefty.length} duplicates removed)`);
