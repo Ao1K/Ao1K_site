@@ -30,10 +30,7 @@ Can we explain F<R,U>F, better? Like F, pair, F'?
 On page load, process Your Algs and add identified ones to known algsets
 - Also need to expose a module that adds one/several when the user adds them. Remember we have an import feature.
 - Add an add button to the Recon page? Direct people to the Algs page?
-- Can we add an abstraction that handles bringing in lefty algs as well? Like we'll need a "ambidextrous" category, or a "both" category. Can we add YourAlgs to that?
-
-Faved lefty algs should show even when righty is chosen. 
-- We should perhaps add some lefty/righty algs back in to both lists, if popular, like lefty Jb for Ja, but rank wrong hand LL algs much lower.
+- Faved lefty algs should show even when righty is selected. 
 
 Idea: Alg packs, karma system. Algs can have fingertricks attached.
 
