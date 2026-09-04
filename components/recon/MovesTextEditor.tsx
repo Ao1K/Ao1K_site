@@ -1819,7 +1819,7 @@ function MovesTextEditor({
         contentEditable
         ref={contentEditableRef}
         className={`
-          text-[1.125rem] text-left ff-space-adjust break-normal p-2
+          text-[1.125rem] text-left ff-space-adjust wrap-break-word p-2
           min-h-[4.7rem]
           rounded-sm whitespace-pre-wrap
           border border-neutral-600 focus:border-primary-100 hover:border-primary-100

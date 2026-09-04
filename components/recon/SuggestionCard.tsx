@@ -6,7 +6,7 @@ import { splitLeadingAuf } from '../../utils/collapseAufVariants';
 import Parrot from '../icons/parrot';
 import KeyboardKeeper from './KeyboardKeeper';
 import Link from 'next/link';
-import React, { JSX, useRef, useState } from 'react';
+import React, { JSX, useEffect, useRef, useState } from 'react';
 
 interface SuggestionCardProps {
   alg: string;
@@ -34,23 +34,28 @@ const extractF2LColors = (step: string, letterToColor: Record<string, string>): 
   return uniqueColors;
 };
 
+const iconBorderProps = (eoColor?: string) => ({
+  style: eoColor ? { border: `2px solid ${eoColor}` } : undefined,
+  className: eoColor ? undefined : 'border border-neutral-600',
+});
+
 const renderPairIcon = (colors: string[], defaultColors: string[], eoColor?: string): JSX.Element => {
   const [first, second] = colors.length >= 2 ? colors : defaultColors;
 
   return (
-    <svg viewBox="0 0 24 24" style={eoColor ? { border: `2px solid ${eoColor}` } : undefined} className={eoColor ? undefined : "border border-neutral-600"}>
+    <svg viewBox="0 0 24 24" {...iconBorderProps(eoColor)}>
       <polygon points="0,0 24,0 0,24" fill={first} />
       <polygon points="24,0 24,24 0,24" fill={second} />
     </svg>
   );
 };
 
-const renderMultislotIcon = (colors: string[], defaultColors: string[]): JSX.Element => {
+const renderMultislotIcon = (colors: string[], defaultColors: string[], eoColor?: string): JSX.Element => {
   const palette = colors.length >= 3 ? colors : defaultColors;
 
   if (palette.length >= 4) {
     return (
-      <svg viewBox="0 0 24 24" className="border border-neutral-600">
+      <svg viewBox="0 0 24 24" {...iconBorderProps(eoColor)}>
         <rect x="0" y="0" width="6" height="24" fill={palette[0]} />
         <rect x="6" y="0" width="6" height="24" fill={palette[1]} />
         <rect x="12" y="0" width="6" height="24" fill={palette[2]} />
@@ -60,7 +65,7 @@ const renderMultislotIcon = (colors: string[], defaultColors: string[]): JSX.Ele
   }
 
   return (
-    <svg viewBox="0 0 24 24" className="border border-neutral-600">
+    <svg viewBox="0 0 24 24" {...iconBorderProps(eoColor)}>
       <rect x="0" y="0" width="8" height="24" fill={palette[0]} />
       <rect x="8" y="0" width="8" height="24" fill={palette[1]} />
       <rect x="16" y="0" width="8" height="24" fill={palette[2]} />
@@ -84,7 +89,7 @@ const renderStepIcon = (steps: string[], letterToColor: Record<string, string>, 
   const uniqueColors = allColors.filter((color, index) => allColors.indexOf(color) === index);
 
   if (hasMultislot || uniqueColors.length >= 3) {
-    return renderMultislotIcon(uniqueColors.length >= 3 ? uniqueColors.slice(0, 4) : defaultMultislotColors, defaultMultislotColors);
+    return renderMultislotIcon(uniqueColors.length >= 3 ? uniqueColors.slice(0, 4) : defaultMultislotColors, defaultMultislotColors, eoColor);
   }
 
   if (hasPair || uniqueColors.length === 2) {
@@ -119,15 +124,7 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
     activationPointerType.current = event.pointerType;
   };
 
-  const handleFavoriteClick = (event: React.MouseEvent) => {
-    event.stopPropagation();
-
-    const pointerType = activationPointerType.current;
-    activationPointerType.current = null;
-    if (pointerType === 'touch' || pointerType === 'pen') {
-      focusKeyboardKeeper();
-    }
-
+  const applyFavoriteToggle = () => {
     toggleFavorite(favoriteAlg, algset);
     if (favorited) return;
 
@@ -147,6 +144,36 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
       ),
     });
   };
+
+  const handleFavoriteClick = (event: React.MouseEvent) => {
+    event.stopPropagation();
+
+    const pointerType = activationPointerType.current;
+    activationPointerType.current = null;
+    if (pointerType === 'touch' || pointerType === 'pen') {
+      focusKeyboardKeeper();
+    }
+
+    applyFavoriteToggle();
+  };
+
+  useEffect(() => {
+    if (!isFocused) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'p' && event.key !== 'P') return;
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
+
+      event.preventDefault();
+      applyFavoriteToggle();
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  });
 
   const blockCardHoverSelect = (event: React.MouseEvent) => event.stopPropagation();
 
@@ -197,8 +224,8 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
       <div className="grow">{alg}</div>
       <button
         type="button"
-        aria-label={favorited ? 'Unfavorite alg' : 'Favorite alg'}
-        title={favorited ? 'Unfavorite alg' : 'Favorite alg'}
+        aria-label={favorited ? 'Unfavorite alg (P)' : 'Favorite alg (P)'}
+        title={favorited ? 'Unfavorite alg (P)' : 'Favorite alg (P)'}
         aria-pressed={favorited}
         className={`shrink-0 p-2 -m-2 text-neutral-500 hover:text-primary-800 transition-opacity
           group-hover:opacity-100 pointer-coarse:opacity-100 ${favorited ? 'opacity-100' : 'opacity-0'}`}

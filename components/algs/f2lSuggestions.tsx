@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { type Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
+import { type Algset, type Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
 import { type FaceKey } from '../../composables/algs/cubePaint';
 import { buildF2lCubeState } from '../../composables/algs/f2lCubeState';
 import type { Color } from '../../composables/recon/SimpleCube';
@@ -10,6 +10,7 @@ import ReplayIcon from '../icons/replay';
 import { IconSvg } from './f2lDefaults';
 import { useCubeColors } from '../../composables/useSettings';
 import { useAlgFavorites } from '../../composables/algs/algFavorites';
+import { classifyAlg } from '../../composables/algs/classifyAlg';
 import F2lAlgCard from './f2lAlgCard';
 import type { F2lCaseConfig } from './f2lSetup';
 import { isFullEOActive, isFullEOValid, isPairSolved } from '../../composables/algs/f2lCaseId';
@@ -82,6 +83,13 @@ const F2lSuggestions = ({ config, cross, pair, suggestions, ready, playingAlg, h
   const eoActive = isFullEOActive(config);
   const eoValid = isFullEOValid(config);
   const pairSolved = isPairSolved(config, cross, pair);
+
+  const eoConfigured = eoActive && eoValid;
+  const savedAlgset = (alg: string): Algset | undefined => {
+    if (!eoConfigured) return undefined;
+    return classifyAlg(alg).kind === 'multislot' ? 'f2leo' : 'zbls';
+  };
+
   const shownSuggestions = useMemo(
     () => (eoActive && eoValid ? suggestions.filter((s) => s.hasEOsolved) : suggestions),
     [suggestions, eoActive, eoValid],
@@ -108,12 +116,12 @@ const F2lSuggestions = ({ config, cross, pair, suggestions, ready, playingAlg, h
   );
 
   return (
-    <div className="flex flex-col border border-neutral-600 rounded-sm text-lg text-primary-100 w-full h-full min-h-50">
-      <div className="flex flex-row items-center gap-2 py-2 px-3 min-h-[62] bg-dark border-b rounded-t-sm border-neutral-600">
+    <div className="flex flex-col overflow-hidden border border-neutral-600 rounded-sm text-lg text-primary-100 w-full h-full min-h-50 max-h-[265px] lg:max-h-[530px]">
+      <div className="flex shrink-0 flex-row items-center gap-2 py-2 px-3 min-h-[62] bg-dark border-b rounded-t-sm border-neutral-600">
         <h2 className="text-sm text-primary-100 font-medium">{ shownSuggestions.length === 1 ? "Solution" : "Solutions"}</h2>
       </div>
 
-      <div className="p-3">
+      <div className="min-h-0 flex-1 overflow-y-auto p-3">
         {!ready && <p className="text-dark_accent">Loading algorithms…</p>}
 
         {ready && hasPair && pairSolved && (
@@ -139,7 +147,7 @@ const F2lSuggestions = ({ config, cross, pair, suggestions, ready, playingAlg, h
                   highlightedMove={playingAlg === s.alg ? highlightedMove : -1}
                   isFavorited={isFavorite(s.alg)}
                   onPlay={(playbackAlg) => onPlay?.(s.alg, playbackAlg)}
-                  onToggleFavorite={() => toggleFavorite(s.alg)}
+                  onToggleFavorite={() => toggleFavorite(s.alg, savedAlgset(s.alg))}
                 />
               </li>
             ))}

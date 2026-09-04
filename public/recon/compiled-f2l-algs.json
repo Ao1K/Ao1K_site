@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-07-13T01:14:13.443Z",
-  "step": "exact",
-  "totalAlgorithms": 2617,
+  "timestamp": "2026-09-03T21:02:58.922Z",
+  "step": "f2l",
+  "totalAlgorithms": 2530,
   "algorithms": [
     {
       "alg": "R U' R'",
@@ -11,11 +11,6 @@
     {
       "alg": "L' U' L",
       "hash": "jabdefghicklrekgnatwabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "R' U2 R",
-      "hash": "cbakefghijdlelixnqtcabcdef",
       "eoValue": 0
     },
     {
@@ -49,17 +44,7 @@
       "eoValue": 0
     },
     {
-      "alg": "U R' U2 R",
-      "hash": "dcbkefghijalhajxnqtdabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "U' R' U2 R",
-      "hash": "badkefghijclbgdxnqtjabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "U R U2 R'",
+      "alg": "U R U2' R'",
       "hash": "dcbiefghajkldkogaqtwabcdef",
       "eoValue": 0
     },
@@ -71,11 +56,6 @@
     {
       "alg": "U' L U2 L'",
       "hash": "bldcefghijkaugdknqawabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "U2 R' U2 R",
-      "hash": "adckefghijblkfcxnqtiabcdef",
       "eoValue": 0
     },
     {
@@ -189,16 +169,6 @@
       "eoValue": 0
     },
     {
-      "alg": "R U2 R2 U' R",
-      "hash": "ibkaefghdjclcdxolqtgabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "R U2 R2' U' R",
-      "hash": "ibkaefghdjclcdxolqtgabcdef",
-      "eoValue": 0
-    },
-    {
       "alg": "D L U L' D'",
       "hash": "bcldefghijkahvdbnqtjabcdef",
       "eoValue": 0
@@ -239,39 +209,14 @@
       "eoValue": 0
     },
     {
-      "alg": "L U2 L2 U' L",
-      "hash": "jcldefghiakbruijnafwabcdef",
-      "eoValue": 0
-    },
-    {
       "alg": "L U2 L2' U' L",
       "hash": "jcldefghiakbruijnafwabcdef",
       "eoValue": 0
     },
     {
-      "alg": "y R' U2 R",
-      "hash": "xdcbefghijkmshajnqdwabcdef",
-      "eoValue": 2049
-    },
-    {
-      "alg": "y' R' U2 R",
-      "hash": "adubefghojklgdmbjqtwabcdef",
-      "eoValue": 260
-    },
-    {
       "alg": "y R U2 R'",
       "hash": "wdcbefghijmlgdkvnqtaabcdef",
       "eoValue": 1025
-    },
-    {
-      "alg": "y R' U2' R",
-      "hash": "xdcbefghijkmshajnqdwabcdef",
-      "eoValue": 2049
-    },
-    {
-      "alg": "y' R' U2' R",
-      "hash": "adubefghojklgdmbjqtwabcdef",
-      "eoValue": 260
     },
     {
       "alg": "U' R U R2' U' R",
@@ -339,38 +284,8 @@
       "eoValue": 0
     },
     {
-      "alg": "R2 U' R2 U R2",
-      "hash": "bacdefghkjilbwkenqthabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "R2 U R2 U' R2",
-      "hash": "acbdefghkjilnkhbeqtwabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "R2 U' R2' U R2",
-      "hash": "bacdefghkjilbwkenqthabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "R2 U R2' U' R2",
-      "hash": "acbdefghkjilnkhbeqtwabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "D R U2' R' D'",
-      "hash": "cbaiefghdjklchpfnltwabcdef",
-      "eoValue": 0
-    },
-    {
       "alg": "D R' U2' R D'",
       "hash": "cbakefghijdlelimcqtwabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "D' R U2' R' D",
-      "hash": "cbaiefghdjklchvfnqtlabcdef",
       "eoValue": 0
     },
     {
@@ -381,26 +296,6 @@
     {
       "alg": "L R U2 R' L'",
       "hash": "cbadefghljkikhebtqnwabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "D L U2 L' D'",
-      "hash": "cladefghijkbvlibnqtfabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "D L' U2 L D'",
-      "hash": "cjadefghibklcskfnqiwabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "D' L U2 L' D",
-      "hash": "cladefghijkbplibnftwabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "D' L' U2 L D",
-      "hash": "cjadefghibklcmkfiqtwabcdef",
       "eoValue": 0
     },
     {
@@ -439,23 +334,8 @@
       "eoValue": 0
     },
     {
-      "alg": "L2 U' L2 U L2",
-      "hash": "abdcefghilkjekhqnbtwabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "L2 U L2 U' L2",
-      "hash": "dbcaefghilkjbhtenqkwabcdef",
-      "eoValue": 0
-    },
-    {
       "alg": "L2' U' L2 U L2'",
       "hash": "abdcefghilkjekhqnbtwabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "L2' U L2 U' L2'",
-      "hash": "dbcaefghilkjbhtenqkwabcdef",
       "eoValue": 0
     },
     {
@@ -531,11 +411,6 @@
     {
       "alg": "U R U2 R2' U' R",
       "hash": "ickbefghajdldixoaqtlabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "U' R U2 R2' U' R",
-      "hash": "iakdefghcjbljcxogqtfabcdef",
       "eoValue": 0
     },
     {
@@ -684,11 +559,6 @@
       "eoValue": 0
     },
     {
-      "alg": "U L U2 L2' U' L",
-      "hash": "jdlaefghibkcrujcnfgwabcdef",
-      "eoValue": 0
-    },
-    {
       "alg": "U' L U2 L2' U' L",
       "hash": "jblcefghidkarudinlawabcdef",
       "eoValue": 0
@@ -834,6 +704,11 @@
       "eoValue": 0
     },
     {
+      "alg": "U' R2 U R2' U' R2",
+      "hash": "dbacefghkjilnhekbqtwabcdef",
+      "eoValue": 0
+    },
+    {
       "alg": "L' U' L U' L U2 L'",
       "hash": "aldbefghickjufqknaiwabcdef",
       "eoValue": 0
@@ -866,11 +741,6 @@
     {
       "alg": "U2 L U L2 U2 L",
       "hash": "ljdbefghiakcirjansdwabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "U2 L U2 L2' U' L",
-      "hash": "jalbefghickdrucdnglwabcdef",
       "eoValue": 0
     },
     {
@@ -954,6 +824,11 @@
       "eoValue": 0
     },
     {
+      "alg": "U D R U2' R' D'",
+      "hash": "dcbiefghajkldkpgnatwabcdef",
+      "eoValue": 0
+    },
+    {
       "alg": "U2 D R' U R D'",
       "hash": "kdbcefghijalkohcdqtwabcdef",
       "eoValue": 0
@@ -964,8 +839,18 @@
       "eoValue": 0
     },
     {
+      "alg": "U D R' U2' R D'",
+      "hash": "dcbkefghijalhajmdqtwabcdef",
+      "eoValue": 0
+    },
+    {
       "alg": "U2 D' R U R' D",
       "hash": "idbcefghajkldbhvnqtjabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "U D' R U2' R' D",
+      "hash": "dcbiefghajkldkvgnqtaabcdef",
       "eoValue": 0
     },
     {
@@ -976,6 +861,11 @@
     {
       "alg": "U2 D' R' U' R D",
       "hash": "bdkaefghijclkgsenqawabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "U D' R' U2' R D",
+      "hash": "dcbkefghijalhajsnqdwabcdef",
       "eoValue": 0
     },
     {
@@ -996,6 +886,11 @@
     {
       "alg": "R' U2 R L' U L",
       "hash": "bajkefghicdllwipndtcabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "U L2' U L2 U' L2'",
+      "hash": "acdbefghilkjekthnqbwabcdef",
       "eoValue": 0
     },
     {
@@ -1029,8 +924,18 @@
       "eoValue": 0
     },
     {
+      "alg": "U' D L U2 L' D'",
+      "hash": "bldcefghijkavgdknqtaabcdef",
+      "eoValue": 0
+    },
+    {
       "alg": "U2 D L' U' L D'",
       "hash": "jcdbefghiaklskeanqgwabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "U' D L' U2 L D'",
+      "hash": "bjdcefghiakljshanqdwabcdef",
       "eoValue": 0
     },
     {
@@ -1039,8 +944,18 @@
       "eoValue": 0
     },
     {
+      "alg": "U' D' L U2 L' D",
+      "hash": "bldcefghijkapgdknatwabcdef",
+      "eoValue": 0
+    },
+    {
       "alg": "U2 D' L' U' L D",
       "hash": "jcdbefghiaklmkeagqtwabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "U' D' L' U2 L D",
+      "hash": "bjdcefghiakljmhadqtwabcdef",
       "eoValue": 0
     },
     {
@@ -1094,11 +1009,6 @@
       "eoValue": 0
     },
     {
-      "alg": "R U2 R' U2 R U R'",
-      "hash": "dibaefghcjklafhkmqtwabcdef",
-      "eoValue": 0
-    },
-    {
       "alg": "R' U2 R U2 R' U' R",
       "hash": "bkdcefghijalijbenqtvabcdef",
       "eoValue": 0
@@ -1129,11 +1039,6 @@
       "eoValue": 0
     },
     {
-      "alg": "R U R2 U' R2 U R'",
-      "hash": "cbdaefghkjilwnbflqtgabcdef",
-      "eoValue": 0
-    },
-    {
       "alg": "R' U' R2' U R2' U' R",
       "hash": "dbacefghkjilwnikdqtcabcdef",
       "eoValue": 0
@@ -1149,28 +1054,13 @@
       "eoValue": 264
     },
     {
-      "alg": "y U R' U2 R",
-      "hash": "xadcefghijknskfcnqiwabcdef",
-      "eoValue": 2050
-    },
-    {
-      "alg": "y U' R' U2 R",
+      "alg": "y U' R' U2' R",
       "hash": "xcbaefghijkpselinqcwabcdef",
       "eoValue": 2056
     },
     {
-      "alg": "y' U R' U2 R",
+      "alg": "y' U R' U2' R",
       "hash": "baucefghpjkllimecqtwabcdef",
-      "eoValue": 264
-    },
-    {
-      "alg": "y' U' R' U2 R",
-      "hash": "dcuaefghnjklfcmkiqtwabcdef",
-      "eoValue": 258
-    },
-    {
-      "alg": "U2 F' U F",
-      "hash": "cabuefghpjkloejhcqtwabcdef",
       "eoValue": 264
     },
     {
@@ -1184,13 +1074,13 @@
       "eoValue": 0
     },
     {
-      "alg": "L U2 L' U2 L U L'",
-      "hash": "dcblefghijkabeglnqswabcdef",
+      "alg": "U2 R2 U' R2' U R2",
+      "hash": "dcabefghkjilhweknqtbabcdef",
       "eoValue": 0
     },
     {
-      "alg": "L' U2 L U2 L' U' L",
-      "hash": "badjefghicklhkcdnptwabcdef",
+      "alg": "L U2 L' U2 L U L'",
+      "hash": "dcblefghijkabeglnqswabcdef",
       "eoValue": 0
     },
     {
@@ -1216,16 +1106,6 @@
     {
       "alg": "L U L2 U' L2 U L'",
       "hash": "bcadefghilkjhlqtnafwabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "L' U' L2 U L2 U' L",
-      "hash": "cabdefghilkjceqtnijwabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "L' U' L2' U L2' U' L",
-      "hash": "cabdefghilkjceqtnijwabcdef",
       "eoValue": 0
     },
     {
@@ -1739,11 +1619,6 @@
       "eoValue": 0
     },
     {
-      "alg": "R2 U2' R U R' U R2",
-      "hash": "dbckefghijalejivnqtbabcdef",
-      "eoValue": 0
-    },
-    {
       "alg": "R2' U2' R U R' U R2",
       "hash": "dbckefghijalejivnqtbabcdef",
       "eoValue": 0
@@ -1879,6 +1754,16 @@
       "eoValue": 0
     },
     {
+      "alg": "U2 D L' U2 L D'",
+      "hash": "ajcbefghidkliselnqcwabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "U2 D' L' U2 L D",
+      "hash": "ajcbefghidklimelcqtwabcdef",
+      "eoValue": 0
+    },
+    {
       "alg": "L U2 L2 U' L2 U' L'",
       "hash": "bjcdefghiaklhrdjnatwabcdef",
       "eoValue": 0
@@ -1941,6 +1826,16 @@
     {
       "alg": "U' R' U2 R U2 R' U R",
       "hash": "ckadefghijbldlgwnqtcabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "U R U R2 U' R2 U R'",
+      "hash": "dcabefghkjilwnegaqtlabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "U' R' U' R2' U R2' U' R",
+      "hash": "cadbefghkjilwndhcqtjabcdef",
       "eoValue": 0
     },
     {
@@ -2194,79 +2089,14 @@
       "eoValue": 0
     },
     {
-      "alg": "R U R' U' L U2 L'",
-      "hash": "bladefghcjkiuglbdqnwabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "R U R' U2 L U' L'",
-      "hash": "ldabefghcjkikbshdqnwabcdef",
-      "eoValue": 0
-    },
-    {
       "alg": "R U' R' U2 L U L'",
       "hash": "cdlbefghajkikuehaqnwabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "R U2 R' U L U' L'",
-      "hash": "lbacefghdjkidhsclqnwabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "R' U R U2 L' U' L",
-      "hash": "jdabefghikclrbehnwtjabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "R' U' R U L' U2 L",
-      "hash": "cjbdefghikaldrkcnwtgabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "R' U' R U2 L' U L",
-      "hash": "cdjbefghikalkbepnwtgabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "L U L' U' R U2 R'",
-      "hash": "cbdiefghljkafhoatqjwabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "L U L' U2 R U' R'",
-      "hash": "cdibefghljkambehtqjwabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "L U' L' U2 R U R'",
-      "hash": "idabefghljkckbeotqgwabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "L' U L U2 R' U' R",
-      "hash": "cdkbefghiajlkbxhndtqabcdef",
       "eoValue": 0
     },
     {
       "alg": "L' U' L U2 R' U R",
       "hash": "kdabefghicjlkvehnatqabcdef",
       "eoValue": 0
-    },
-    {
-      "alg": "L' U2 L U' R' U R",
-      "hash": "kcadefghibjlfvkanitqabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "y U2 R' U2 R",
-      "hash": "xbadefghijkosbgdnqjwabcdef",
-      "eoValue": 2052
-    },
-    {
-      "alg": "y' U2 R' U2 R",
-      "hash": "cbudefghmjklajmhdqtwabcdef",
-      "eoValue": 257
     },
     {
       "alg": "y' U2 R U2 R'",
@@ -2344,6 +2174,11 @@
       "eoValue": 0
     },
     {
+      "alg": "U L' U' L2' U L2' U' L",
+      "hash": "dbcaefghilkjdhqtnjcwabcdef",
+      "eoValue": 0
+    },
+    {
       "alg": "y U2 L U2 L'",
       "hash": "cbvdefghimklkpgdnatwabcdef",
       "eoValue": 513
@@ -2351,6 +2186,11 @@
     {
       "alg": "R U' R2' U' R U' R' U' R",
       "hash": "kcdbefghajilfvilaqtoabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "R' U' R U' R' U R2' U' R'",
+      "hash": "cdikefghajblmhlxeqtbabcdef",
       "eoValue": 0
     },
     {
@@ -2539,33 +2379,28 @@
       "eoValue": 0
     },
     {
-      "alg": "U R2 U2' R U R' U R2",
-      "hash": "acdkefghijblhcjvnqteabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "U' R2 U2' R U R' U R2",
-      "hash": "cabkefghijdlbidvnqtkabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "U R2' U2' R U R' U R2",
-      "hash": "acdkefghijblhcjvnqteabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "U' R2' U2' R U R' U R2",
-      "hash": "cabkefghijdlbidvnqtkabcdef",
-      "eoValue": 0
-    },
-    {
       "alg": "U2 R U2 R' U' R U2 R'",
       "hash": "daibefghcjklmiejaqtwabcdef",
       "eoValue": 0
     },
     {
+      "alg": "U2 R U2 R' U2 R U R'",
+      "hash": "bidcefghajklglbemqtwabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "U2 R U R2 U' R2 U R'",
+      "hash": "adbcefghkjilwnhlfqtaabcdef",
+      "eoValue": 0
+    },
+    {
       "alg": "U R2 U2 R' U' R U' R2",
       "hash": "bcaiefghdjklfkmgbqtwabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "L U L' U L U' L2 U L",
+      "hash": "cljbefghiakduikpnbewabcdef",
       "eoValue": 0
     },
     {
@@ -2654,6 +2489,11 @@
       "eoValue": 0
     },
     {
+      "alg": "U2 L' U2 L U2 L' U' L",
+      "hash": "dcbjefghiaklbeijnptwabcdef",
+      "eoValue": 0
+    },
+    {
       "alg": "U' R' U' R' U' R' U R U R",
       "hash": "cdbiefghajklkbehnqtwabcdef",
       "eoValue": 0
@@ -2666,6 +2506,11 @@
     {
       "alg": "U' L2 U2 L' U' L U' L2",
       "hash": "albcefghijkdsgfknqbwabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "U2 L' U' L2' U L2' U' L",
+      "hash": "acdbefghilkjikqtncdwabcdef",
       "eoValue": 0
     },
     {
@@ -2704,38 +2549,13 @@
       "eoValue": 520
     },
     {
-      "alg": "B' R U R' B",
-      "hash": "ibcaefghxjkpthkodqcwabcdef",
-      "eoValue": 2056
-    },
-    {
       "alg": "B R U' R' B'",
       "hash": "dbcwefghajulmekgaqtwabcdef",
       "eoValue": 1280
     },
     {
-      "alg": "B' R U' R' B",
-      "hash": "dbcxefghajkumhksaqewabcdef",
-      "eoValue": 2304
-    },
-    {
-      "alg": "B' R' U R B",
-      "hash": "oblaefghijkpeuglnqcwabcdef",
-      "eoValue": 12
-    },
-    {
-      "alg": "R B U' B' R'",
-      "hash": "ducnefghajklimkdaqtwabcdef",
-      "eoValue": 258
-    },
-    {
-      "alg": "R B' U B R'",
-      "hash": "ibcaefghxjkpehuokqcwabcdef",
-      "eoValue": 2056
-    },
-    {
-      "alg": "R' B' U B R",
-      "hash": "kbcaefghijxpekuinqcwabcdef",
+      "alg": "B' R U R' B",
+      "hash": "ibcaefghxjkpthkodqcwabcdef",
       "eoValue": 2056
     },
     {
@@ -2757,11 +2577,6 @@
       "alg": "U L' U' L' U' L' U L U L",
       "hash": "blcdefghijkaehkbnqtwabcdef",
       "eoValue": 0
-    },
-    {
-      "alg": "B L' U L B'",
-      "hash": "bwcdefghiavlvhkpndtbabcdef",
-      "eoValue": 1536
     },
     {
       "alg": "B L' U' L B'",
@@ -2811,16 +2626,6 @@
     {
       "alg": "U2 R U2' R2' U' R2 U' R'",
       "hash": "cdbkefghijaldjhxnqtaabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "U2 R2 U2' R U R' U R2",
-      "hash": "bdakefghijclkdcvnqthabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "U2 R2' U2' R U R' U R2",
-      "hash": "bdakefghijclkdcvnqthabcdef",
       "eoValue": 0
     },
     {
@@ -3114,6 +2919,41 @@
       "eoValue": 0
     },
     {
+      "alg": "U' R U R' U' L U2 L'",
+      "hash": "aldcefghbjkiufgkcqnwabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "U' R U R' U2 L U' L'",
+      "hash": "lcdaefghbjkihksecqnwabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "U R U2 R' U L U' L'",
+      "hash": "lcbdefghajkiiksdaqnwabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "U R' U R U2 L' U' L",
+      "hash": "jabcefghikdlrehknwtcabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "U L U L' U' R U2 R'",
+      "hash": "dcaiefghljkbgkoftqcwabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "U L U L' U2 R U' R'",
+      "hash": "daicefghljkbmehktqcwabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "U' L' U L U2 R' U' R",
+      "hash": "bckaefghidjlhkxenctqabcdef",
+      "eoValue": 0
+    },
+    {
       "alg": "L' U' L U' L' U2 L2 U' L'",
       "hash": "lacbefghijkdfjsinqbwabcdef",
       "eoValue": 0
@@ -3121,6 +2961,16 @@
     {
       "alg": "U R' U R2 U R' U R U R'",
       "hash": "abicefghkjdlmjdgxqtcabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "U R U R' U R U' R2' U R",
+      "hash": "kabiefghcjdlhvodbqtkabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "U' R' U' R U' R' U R2' U' R'",
+      "hash": "bcikefghdjalmegxbqtkabcdef",
       "eoValue": 0
     },
     {
@@ -3199,19 +3049,19 @@
       "eoValue": 0
     },
     {
-      "alg": "U' R U' R' D R' U R D'",
-      "hash": "kabcefghdjilmkhdbqtwabcdef",
+      "alg": "U' L U L' U L U' L2 U L",
+      "hash": "bljaefghidkcudhpnkbwabcdef",
       "eoValue": 0
     },
     {
-      "alg": "F' L' U' L F",
-      "hash": "oubdefghajklimkdaqtwabcdef",
-      "eoValue": 260
+      "alg": "U L' U' L U' L' U L2 U' L'",
+      "hash": "ljbcefghiakdgrsenkbwabcdef",
+      "eoValue": 0
     },
     {
-      "alg": "L F U F' L'",
-      "hash": "aclnefghijkpeuglnqcwabcdef",
-      "eoValue": 10
+      "alg": "U' R U' R' D R' U R D'",
+      "hash": "kabcefghdjilmkhdbqtwabcdef",
+      "eoValue": 0
     },
     {
       "alg": "R U R' U' R U' R' U R' U' R",
@@ -3241,26 +3091,6 @@
     {
       "alg": "R' U R U R' U R U' R U R'",
       "hash": "ickbefghdjalkveoaqtgabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "R' U R U R' U R U' R' U' R",
-      "hash": "kcadefghijblcfilnqtwabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "R U' R' U' R U' R' U R' U' R",
-      "hash": "iakbefghcjdlmbxhdqtjabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "R' U R U R' U R U' R' U' R'",
-      "hash": "kfadecghbjilwnilfqtcabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "R U' R' U' R U' R' U R U R",
-      "hash": "cfideaghkjblwncflqtiabcdef",
       "eoValue": 0
     },
     {
@@ -3444,9 +3274,24 @@
       "eoValue": 0
     },
     {
-      "alg": "B R U2 R' B'",
-      "hash": "wbciefghdjmlcmkfiqtwabcdef",
-      "eoValue": 1025
+      "alg": "U2 R' U' R U L' U2 L",
+      "hash": "ajdbefghikcljreinwtaabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "U2 R' U' R U2 L' U L",
+      "hash": "abjdefghikclehkpnwtaabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "U2 L U' L' U2 R U R'",
+      "hash": "ibcdefghljkaehkotqawabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "U2 L' U2 L U' R' U R",
+      "hash": "kacbefghidjllvegnctqabcdef",
+      "eoValue": 0
     },
     {
       "alg": "B' R U2 R' B",
@@ -3454,8 +3299,23 @@
       "eoValue": 2049
     },
     {
+      "alg": "L' U' L R' U2 R2 U R'",
+      "hash": "iakbefghjcdlflxoqathabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "L' U' L U' D L' U L D'",
+      "hash": "jacbefghidklrjeunahwabcdef",
+      "eoValue": 0
+    },
+    {
       "alg": "U' R U R' U R U2' R2' U R",
       "hash": "kcbdefghijalgvfjnqtbabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "U2 R U R' U R U' R2' U R",
+      "hash": "kbciefghdjalkvoieqtbabcdef",
       "eoValue": 0
     },
     {
@@ -3484,23 +3344,8 @@
       "eoValue": 0
     },
     {
-      "alg": "L' U L U L' U L U' L' U' L'",
-      "hash": "cbjhefgailkdcfqtnilwabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "L U' L' U' L U' L' U L U L",
-      "hash": "lbahefgcidkjilqtncfwabcdef",
-      "eoValue": 0
-    },
-    {
       "alg": "L' U L U L' U L U' L U L'",
       "hash": "jdlaefghickbkuepnagwabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "L U' L' U' L U' L' U L' U' L",
-      "hash": "jdlcefghibkarbshndjwabcdef",
       "eoValue": 0
     },
     {
@@ -3512,21 +3357,6 @@
       "alg": "B L' U2 L B'",
       "hash": "wjcdefghibmlchkfnxtpabcdef",
       "eoValue": 1025
-    },
-    {
-      "alg": "B' L' U2 L B",
-      "hash": "xjcdefghibkmchpfnltwabcdef",
-      "eoValue": 2049
-    },
-    {
-      "alg": "L' B U2 B' L",
-      "hash": "wjcdefghibmlgdkbnxtpabcdef",
-      "eoValue": 1025
-    },
-    {
-      "alg": "L' B' U2 B L",
-      "hash": "pjcmefghibkljhfqnbtwabcdef",
-      "eoValue": 9
     },
     {
       "alg": "U2 L D' L' U2' L D L'",
@@ -3541,6 +3371,11 @@
     {
       "alg": "U2 L U' L2 U' L U' L' U' L",
       "hash": "dbjcefghilkailfpnuawabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "U2 L' U' L U' L' U L2 U' L'",
+      "hash": "ljcdefghibkalrshnbewabcdef",
       "eoValue": 0
     },
     {
@@ -3616,16 +3451,6 @@
     {
       "alg": "R U R' U2 R U' R' U R U R'",
       "hash": "dcbaefghijkllaehmqtwabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "R' U R U' R' U2' R U' R' U' R",
-      "hash": "abdkefghijclkebwnqthabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "R' U' R U2' R' U R U' R' U R",
-      "hash": "dabkefghijcljfawnqtiabcdef",
       "eoValue": 0
     },
     {
@@ -3734,24 +3559,9 @@
       "eoValue": 0
     },
     {
-      "alg": "R U' R' y' R' U2 R",
-      "hash": "dcmbefghujklgnckeqtwabcdef",
-      "eoValue": 257
-    },
-    {
-      "alg": "R U2 R' y' R' U' R",
+      "alg": "R U2' R' y' R' U' R",
       "hash": "cpbaefghujklnjhfbqtwabcdef",
       "eoValue": 264
-    },
-    {
-      "alg": "R' U R y R U2 R'",
-      "hash": "oadbefghijwlwdblnqthabcdef",
-      "eoValue": 1028
-    },
-    {
-      "alg": "R' U2 R y R U R'",
-      "hash": "bpacefghijwlawienqtkabcdef",
-      "eoValue": 1032
     },
     {
       "alg": "y' U' R U' R2 U' R",
@@ -3774,26 +3584,6 @@
       "eoValue": 3081
     },
     {
-      "alg": "R' U R y R U2' R'",
-      "hash": "oadbefghijwlwdblnqthabcdef",
-      "eoValue": 1028
-    },
-    {
-      "alg": "R' U2' R y R U R'",
-      "hash": "bpacefghijwlawienqtkabcdef",
-      "eoValue": 1032
-    },
-    {
-      "alg": "R U' R' y' R' U2' R",
-      "hash": "dcmbefghujklgnckeqtwabcdef",
-      "eoValue": 257
-    },
-    {
-      "alg": "R U2' R' y' R' U' R",
-      "hash": "cpbaefghujklnjhfbqtwabcdef",
-      "eoValue": 264
-    },
-    {
       "alg": "U' B R U R' B'",
       "hash": "iabdefghwjolejhocqtwabcdef",
       "eoValue": 1028
@@ -3807,16 +3597,6 @@
       "alg": "U' B' R U R' B",
       "hash": "iabdefghxjkotehocqjwabcdef",
       "eoValue": 2052
-    },
-    {
-      "alg": "U' B' R U' R' B",
-      "hash": "cabxefghdjkumehslqbwabcdef",
-      "eoValue": 2304
-    },
-    {
-      "alg": "U R B' U B R'",
-      "hash": "icdbefghxjkmhkuobqdwabcdef",
-      "eoValue": 2049
     },
     {
       "alg": "U R' B' U' B R",
@@ -3856,16 +3636,6 @@
     {
       "alg": "L' U' L U2 L' U L U' L' U' L",
       "hash": "badcefghijklkbdinptwabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "L U' L' U L U2 L' U L U L'",
-      "hash": "albdefghijkctebhnqkwabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "L U L' U2 L U' L' U L U' L'",
-      "hash": "bldaefghijkctdcgnqlwabcdef",
       "eoValue": 0
     },
     {
@@ -3924,11 +3694,6 @@
       "eoValue": 0
     },
     {
-      "alg": "U R' U R U R' U R U' R' U' R",
-      "hash": "kdbaefghijcldgjanqtwabcdef",
-      "eoValue": 0
-    },
-    {
       "alg": "U' R' U R U R' U R U' R' U' R",
       "hash": "kbdcefghijaljadgnqtwabcdef",
       "eoValue": 0
@@ -3944,29 +3709,24 @@
       "eoValue": 0
     },
     {
-      "alg": "U B L U L' B'",
-      "hash": "cwnaefghijdlvglenqtcabcdef",
-      "eoValue": 1026
+      "alg": "U' R U' R' U' R U' R' U R' U' R",
+      "hash": "idkaefghbjclmkxecqtiabcdef",
+      "eoValue": 0
     },
     {
-      "alg": "U' B L U' L' B'",
-      "hash": "ndkcefghijmldixknqtaabcdef",
-      "eoValue": 3
-    },
-    {
-      "alg": "F L U2 L' F'",
-      "hash": "alvdefghiokbelisnqcwabcdef",
-      "eoValue": 516
-    },
-    {
-      "alg": "U' B L' U L B'",
-      "hash": "awbcefghidvlvehpnctkabcdef",
-      "eoValue": 1536
+      "alg": "U R U' R' U' R U' R' U R' U' R",
+      "hash": "ibkcefghdjalmexkiqtcabcdef",
+      "eoValue": 0
     },
     {
       "alg": "U' B' L' U L B",
       "hash": "axbcefghidkviekpnctwabcdef",
       "eoValue": 2560
+    },
+    {
+      "alg": "F L U2 L' F'",
+      "hash": "alvdefghiokbelisnqcwabcdef",
+      "eoValue": 516
     },
     {
       "alg": "U' B L' U' L B'",
@@ -3979,11 +3739,6 @@
       "eoValue": 2049
     },
     {
-      "alg": "L' F' U2 F L",
-      "hash": "ajudefghobklgdkoaqtwabcdef",
-      "eoValue": 260
-    },
-    {
       "alg": "U' L' B U B' L",
       "hash": "awbcefghidvlvqhknctdabcdef",
       "eoValue": 1536
@@ -3992,21 +3747,6 @@
       "alg": "U' L B U' B' L'",
       "hash": "ldbcefghijmwgxeknqtaabcdef",
       "eoValue": 1025
-    },
-    {
-      "alg": "U' L' B U' B' L",
-      "hash": "jdbcefghiwmlrxhknetaabcdef",
-      "eoValue": 1025
-    },
-    {
-      "alg": "U' L' B' U B L",
-      "hash": "aobvefghidkllepgnctwabcdef",
-      "eoValue": 516
-    },
-    {
-      "alg": "U L' B' U' B L",
-      "hash": "jbdoefghimklrkdinatwabcdef",
-      "eoValue": 5
     },
     {
       "alg": "U L U2 L2' U2 L U' L' U L",
@@ -4036,6 +3776,16 @@
     {
       "alg": "R' U R U R' U' R L' U L",
       "hash": "dcjaefghikblfgkpnxtaabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "U' R U R' U D' R U' R' D",
+      "hash": "icbdefghajklxkfocqthabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "U R U R' U D' R U' R' D",
+      "hash": "iadbefghcjklxeloiqtbabcdef",
       "eoValue": 0
     },
     {
@@ -4099,64 +3849,14 @@
       "eoValue": 777
     },
     {
-      "alg": "y R2 U' R2' U R2",
-      "hash": "acbdefghijlkhetbnqkwabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "y' R2 U' R2' U R2",
-      "hash": "dbcaefghjiklnhbkeqtwabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "y R2 U R2' U' R2",
-      "hash": "abdcefghijlkewbknqthabcdef",
-      "eoValue": 0
-    },
-    {
       "alg": "y' R2 U R2' U' R2",
       "hash": "bacdefghjiklhekqnbtwabcdef",
       "eoValue": 0
     },
     {
-      "alg": "L U' L' y' L' U2 L",
-      "hash": "odbaefghijkxieatnqkwabcdef",
-      "eoValue": 2052
-    },
-    {
-      "alg": "L U2 L' y' L' U' L",
-      "hash": "dcanefghijkxbltdnqhwabcdef",
-      "eoValue": 2050
-    },
-    {
-      "alg": "L' U L y L U2 L'",
-      "hash": "bdmcefghivklhfqjnbtwabcdef",
-      "eoValue": 513
-    },
-    {
-      "alg": "L' U2 L y L U L'",
-      "hash": "cadnefghivklckgqnetwabcdef",
-      "eoValue": 514
-    },
-    {
       "alg": "L' U L y L U2' L'",
       "hash": "bdmcefghivklhfqjnbtwabcdef",
       "eoValue": 513
-    },
-    {
-      "alg": "L' U2' L y L U L'",
-      "hash": "cadnefghivklckgqnetwabcdef",
-      "eoValue": 514
-    },
-    {
-      "alg": "L U' L' y' L' U2' L",
-      "hash": "odbaefghijkxieatnqkwabcdef",
-      "eoValue": 2052
-    },
-    {
-      "alg": "L U2' L' y' L' U' L",
-      "hash": "dcanefghijkxbltdnqhwabcdef",
-      "eoValue": 2050
     },
     {
       "alg": "U L U L' U' L U L' U' L U L'",
@@ -4194,14 +3894,19 @@
       "eoValue": 0
     },
     {
+      "alg": "U' L U' L' U' L U' L' U L' U' L",
+      "hash": "jclbefghiakdrksenciwabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "U L U' L' U' L U' L' U L' U' L",
+      "hash": "jaldefghickbresknicwabcdef",
+      "eoValue": 0
+    },
+    {
       "alg": "y D R U2' R' D'",
       "hash": "wdcbefghijmlgdkoaqtwabcdef",
       "eoValue": 1025
-    },
-    {
-      "alg": "y' D R U2' R' D'",
-      "hash": "advbefghiokleuajnqgwabcdef",
-      "eoValue": 516
     },
     {
       "alg": "y D R' U2' R D'",
@@ -4209,29 +3914,14 @@
       "eoValue": 2049
     },
     {
-      "alg": "y' D R' U2' R D'",
-      "hash": "adubefghojklgdrbnjtwabcdef",
-      "eoValue": 260
-    },
-    {
       "alg": "y D' R U2' R' D",
       "hash": "wdcbefghijmlgdkunqawabcdef",
       "eoValue": 1025
     },
     {
-      "alg": "y' D' R U2' R' D",
-      "hash": "advbefghiokleoajgqtwabcdef",
-      "eoValue": 516
-    },
-    {
       "alg": "y D' R' U2' R D",
       "hash": "xdcbefghijkmrhajndtwabcdef",
       "eoValue": 2049
-    },
-    {
-      "alg": "y' D' R' U2' R D",
-      "hash": "adubefghojklgdxbnqtjabcdef",
-      "eoValue": 260
     },
     {
       "alg": "y L R U2 R' L'",
@@ -4249,19 +3939,9 @@
       "eoValue": 0
     },
     {
-      "alg": "y D L U2 L' D'",
-      "hash": "advbefghiokleuajnqgwabcdef",
-      "eoValue": 516
-    },
-    {
       "alg": "y' D L U2 L' D'",
       "hash": "wdcbefghijmlgdkoaqtwabcdef",
       "eoValue": 1025
-    },
-    {
-      "alg": "y D L' U2 L D'",
-      "hash": "adubefghojklgdrbnjtwabcdef",
-      "eoValue": 260
     },
     {
       "alg": "y' D L' U2 L D'",
@@ -4269,19 +3949,9 @@
       "eoValue": 2049
     },
     {
-      "alg": "y D' L U2 L' D",
-      "hash": "advbefghiokleoajgqtwabcdef",
-      "eoValue": 516
-    },
-    {
       "alg": "y' D' L U2 L' D",
       "hash": "wdcbefghijmlgdkunqawabcdef",
       "eoValue": 1025
-    },
-    {
-      "alg": "y D' L' U2 L D",
-      "hash": "adubefghojklgdxbnqtjabcdef",
-      "eoValue": 260
     },
     {
       "alg": "y' D' L' U2 L D",
@@ -4399,6 +4069,11 @@
       "eoValue": 258
     },
     {
+      "alg": "U2 R' U R U R' U R U' R U R'",
+      "hash": "iakdefghbjclevkogqtaabcdef",
+      "eoValue": 0
+    },
+    {
       "alg": "R' U R y U R U R'",
       "hash": "doabefghijwlldivnqtcabcdef",
       "eoValue": 1028
@@ -4407,16 +4082,6 @@
       "alg": "R' U' R y U R U' R'",
       "hash": "dbcmefghijwleikvnqtcabcdef",
       "eoValue": 1025
-    },
-    {
-      "alg": "U2 R' U R U R' U R U' R' U' R",
-      "hash": "kacbefghijdlilcfnqtwabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "U2' R' U R U R' U R U' R' U' R",
-      "hash": "kacbefghijdlilcfnqtwabcdef",
-      "eoValue": 0
     },
     {
       "alg": "U R' U R U2 R U' R' U R U R'",
@@ -4449,24 +4114,19 @@
       "eoValue": 0
     },
     {
-      "alg": "U' F R U R' F'",
-      "hash": "nacvefghidkllepgnctwabcdef",
-      "eoValue": 514
+      "alg": "U F' R' U R F",
+      "hash": "bcauefghwjdlkvienqtcabcdef",
+      "eoValue": 1280
     },
     {
-      "alg": "U F R U' R' F'",
-      "hash": "jcndefghimklrkdinatwabcdef",
-      "eoValue": 3
+      "alg": "U R F U' F' R'",
+      "hash": "bcidefghvmklekgrnatwabcdef",
+      "eoValue": 513
     },
     {
       "alg": "U F R' U R F'",
       "hash": "bcavefghiwdlhvpenktcabcdef",
       "eoValue": 1536
-    },
-    {
-      "alg": "U F' R' U R F",
-      "hash": "bcauefghwjdlkvienqtcabcdef",
-      "eoValue": 1280
     },
     {
       "alg": "U F R' U' R F'",
@@ -4479,38 +4139,8 @@
       "eoValue": 1536
     },
     {
-      "alg": "U R F U' F' R'",
-      "hash": "bcidefghvmklekgrnatwabcdef",
-      "eoValue": 513
-    },
-    {
-      "alg": "U R' F' U F R",
-      "hash": "bwaoefghijdlvglenqtcabcdef",
-      "eoValue": 1028
-    },
-    {
-      "alg": "U' R' F' U' F R",
-      "hash": "dokbefghijmldixknqtaabcdef",
-      "eoValue": 5
-    },
-    {
-      "alg": "y L2' U' L2 U L2'",
-      "hash": "dbcaefghjiklnhbkeqtwabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "y' L2' U' L2 U L2'",
-      "hash": "acbdefghijlkhetbnqkwabcdef",
-      "eoValue": 0
-    },
-    {
       "alg": "y L2' U L2 U' L2'",
       "hash": "bacdefghjiklhekqnbtwabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "y' L2' U L2 U' L2'",
-      "hash": "abdcefghijlkewbknqthabcdef",
       "eoValue": 0
     },
     {
@@ -4601,6 +4231,16 @@
     {
       "alg": "U L U' L' U L U' L' U2 L U' L'",
       "hash": "aclbefghijkddjthnqcwabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "U L U' L' U L U2 L' U L U L'",
+      "hash": "blcaefghijkdtheknqbwabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "U L U L' U2 L U' L' U L U' L'",
+      "hash": "clabefghijkdtidlnqawabcdef",
       "eoValue": 0
     },
     {
@@ -4844,39 +4484,24 @@
       "eoValue": 2050
     },
     {
-      "alg": "U2 B' R' U' R B",
-      "hash": "bdoxefghijkakdisnqawabcdef",
-      "eoValue": 2052
-    },
-    {
-      "alg": "U B' R' U2 R B",
-      "hash": "xcmpefghijknhftjnqbwabcdef",
-      "eoValue": 2059
-    },
-    {
-      "alg": "U2 R B U B' R'",
-      "hash": "inacefghpjklgleocqtwabcdef",
-      "eoValue": 10
-    },
-    {
-      "alg": "U R' B' U2 B R",
-      "hash": "xcdkefghijanhufcnqlwabcdef",
-      "eoValue": 2050
-    },
-    {
       "alg": "U' r U' r B r2'",
       "hash": "xabpefghijkcsejhnqbwabcdef",
       "eoValue": 2056
     },
     {
+      "alg": "U2 L' U' L R' U2 R2 U R'",
+      "hash": "ickdefghjabllfxoqgtbabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "U2 L' U' L U' D L' U L D'",
+      "hash": "jcadefghibklrdkungbwabcdef",
+      "eoValue": 0
+    },
+    {
       "alg": "U' B L' U2 L B'",
       "hash": "wjbcefghiapljehanxtpabcdef",
       "eoValue": 1032
-    },
-    {
-      "alg": "U B' L' U2 L B",
-      "hash": "xjdaefghickndkpgnatwabcdef",
-      "eoValue": 2050
     },
     {
       "alg": "U2 L B U B' L'",
@@ -4887,26 +4512,6 @@
       "alg": "U2 L' B U B' L",
       "hash": "dwabefghicvlvqehnjtcabcdef",
       "eoValue": 1536
-    },
-    {
-      "alg": "U2 L' B U' B' L",
-      "hash": "jcabefghiwplrxehnbtlabcdef",
-      "eoValue": 1032
-    },
-    {
-      "alg": "U' L B U2 B' L'",
-      "hash": "wlbcefghijpafcxknqtiabcdef",
-      "eoValue": 1032
-    },
-    {
-      "alg": "U L B U2 B' L'",
-      "hash": "wldaefghijnclixenqtcabcdef",
-      "eoValue": 1026
-    },
-    {
-      "alg": "U' L' B U2 B' L",
-      "hash": "wjbcefghiaplfchknxtpabcdef",
-      "eoValue": 1032
     },
     {
       "alg": "y U D R U R' D'",
@@ -5181,6 +4786,16 @@
     {
       "alg": "U2 R' U R U' R' U R U2 R' U R",
       "hash": "dckbefghijalhwflnqtaabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "U2 R' U R U' R' U2' R U' R' U' R",
+      "hash": "cdbkefghijalekhwnqtbabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "U2 R' U' R U2' R' U R U' R' U R",
+      "hash": "bcdkefghijaldlgwnqtcabcdef",
       "eoValue": 0
     },
     {
@@ -5499,21 +5114,6 @@
       "eoValue": 2049
     },
     {
-      "alg": "y R U2 R' U R U' R'",
-      "hash": "wdbaefghijolgcvlnqteabcdef",
-      "eoValue": 1028
-    },
-    {
-      "alg": "y' R U2 R' U R U' R'",
-      "hash": "dcvbefghimklpfainktwabcdef",
-      "eoValue": 513
-    },
-    {
-      "alg": "y R U2 R' U' R U R'",
-      "hash": "wadbefghijolbjdvnqthabcdef",
-      "eoValue": 1028
-    },
-    {
       "alg": "y' R U2 R' U' R U R'",
       "hash": "bdvcefghimkljphdnbtwabcdef",
       "eoValue": 513
@@ -5539,12 +5139,7 @@
       "eoValue": 0
     },
     {
-      "alg": "y R' U' R U R' U2 R",
-      "hash": "bdxcefghijkmjfatnqiwabcdef",
-      "eoValue": 2049
-    },
-    {
-      "alg": "y' R' U' R U R' U2 R",
+      "alg": "y' R' U' R U R' U2' R",
       "hash": "uadbefghojklgndlcqtwabcdef",
       "eoValue": 260
     },
@@ -5579,34 +5174,9 @@
       "eoValue": 0
     },
     {
-      "alg": "y R U2' R' U R U' R'",
-      "hash": "wdbaefghijolgcvlnqteabcdef",
-      "eoValue": 1028
-    },
-    {
-      "alg": "y R U2' R' U' R U R'",
-      "hash": "wadbefghijolbjdvnqthabcdef",
-      "eoValue": 1028
-    },
-    {
-      "alg": "y R' U' R U R' U2' R",
-      "hash": "bdxcefghijkmjfatnqiwabcdef",
-      "eoValue": 2049
-    },
-    {
       "alg": "y R' U2 R U' R' U R",
       "hash": "xadbefghijkoisfjnqbwabcdef",
       "eoValue": 2052
-    },
-    {
-      "alg": "y' R U2' R' U R U' R'",
-      "hash": "dcvbefghimklpfainktwabcdef",
-      "eoValue": 513
-    },
-    {
-      "alg": "y' R' U' R U R' U2' R",
-      "hash": "uadbefghojklgndlcqtwabcdef",
-      "eoValue": 260
     },
     {
       "alg": "y' R U' R' U2 R U R'",
@@ -5664,69 +5234,19 @@
       "eoValue": 258
     },
     {
-      "alg": "U R U' R' y' R' U2 R",
-      "hash": "adncefghujkllndbhqtwabcdef",
-      "eoValue": 258
-    },
-    {
-      "alg": "U' R U' R' y' R' U2 R",
+      "alg": "U' R U' R' y' R' U2' R",
       "hash": "cbpaefghujklfnjhbqtwabcdef",
       "eoValue": 264
     },
     {
-      "alg": "U R U2 R' y' R' U' R",
-      "hash": "dmcbefghujklnckgeqtwabcdef",
-      "eoValue": 257
-    },
-    {
-      "alg": "U' R U2 R' y' R' U' R",
-      "hash": "boadefghujklnieakqtwabcdef",
-      "eoValue": 260
-    },
-    {
-      "alg": "U R' U R y R U2 R'",
-      "hash": "pbacefghijwlwieanqtkabcdef",
-      "eoValue": 1032
-    },
-    {
-      "alg": "U' R' U R y R U2 R'",
-      "hash": "ndcaefghijwlwckgnqteabcdef",
-      "eoValue": 1026
-    },
-    {
-      "alg": "U R' U2 R y R U R'",
+      "alg": "U R' U2' R y R U R'",
       "hash": "cmbdefghijwlfwjhnqtbabcdef",
       "eoValue": 1025
-    },
-    {
-      "alg": "U' R' U2 R y R U R'",
-      "hash": "aodbefghijwllwdbnqthabcdef",
-      "eoValue": 1028
-    },
-    {
-      "alg": "R U' R' y' U2 R' U' R",
-      "hash": "imcdefghnjklockhdqtwabcdef",
-      "eoValue": 3
-    },
-    {
-      "alg": "R' U R y U2 R U R'",
-      "hash": "aokdefghijnllxebnqtgabcdef",
-      "eoValue": 6
     },
     {
       "alg": "U R' U R y' R U2 R'",
       "hash": "kbvcefghimdlhpkdnwtcabcdef",
       "eoValue": 513
-    },
-    {
-      "alg": "R' U R y U2' R U R'",
-      "hash": "aokdefghijnllxebnqtgabcdef",
-      "eoValue": 6
-    },
-    {
-      "alg": "R U' R' y' U2' R' U' R",
-      "hash": "imcdefghnjklockhdqtwabcdef",
-      "eoValue": 3
     },
     {
       "alg": "U2 F R' U R F'",
@@ -5739,24 +5259,9 @@
       "eoValue": 514
     },
     {
-      "alg": "U F R' U2 R F'",
-      "hash": "bcvkefghipalhajenvtrabcdef",
-      "eoValue": 520
-    },
-    {
       "alg": "U' F' R' U2 R F",
       "hash": "daukefghnjclvgdknqtaabcdef",
       "eoValue": 258
-    },
-    {
-      "alg": "U R F U2 F' R'",
-      "hash": "bcviefghapklrkfcnitwabcdef",
-      "eoValue": 520
-    },
-    {
-      "alg": "U' R F U2 F' R'",
-      "hash": "daviefghcnklrelinctwabcdef",
-      "eoValue": 514
     },
     {
       "alg": "U' F' L' U2 L F",
@@ -5774,14 +5279,19 @@
       "eoValue": 258
     },
     {
-      "alg": "U2 F' L U L' F",
-      "hash": "calbefghpjkukunhcqdwabcdef",
-      "eoValue": 264
-    },
-    {
       "alg": "U2 F L U' L' F'",
       "hash": "cvdbefghixkakgsenqawabcdef",
       "eoValue": 2560
+    },
+    {
+      "alg": "U2 L' F' U F L",
+      "hash": "cajbefghpukloiekcqtwabcdef",
+      "eoValue": 264
+    },
+    {
+      "alg": "U2 F' L U L' F",
+      "hash": "calbefghpjkukunhcqdwabcdef",
+      "eoValue": 264
     },
     {
       "alg": "U2 F' L U' L' F",
@@ -5792,26 +5302,6 @@
       "alg": "U' F' L U2 L' F",
       "hash": "dlucefghnjkabgdksqowabcdef",
       "eoValue": 258
-    },
-    {
-      "alg": "U2 F' L' U L F",
-      "hash": "iaobefghpjklgleocqtwabcdef",
-      "eoValue": 12
-    },
-    {
-      "alg": "U2 L F U' F' L'",
-      "hash": "cndxefghijkakdisnqawabcdef",
-      "eoValue": 2050
-    },
-    {
-      "alg": "U L F U2 F' L'",
-      "hash": "blmpefghijkchftjnqbwabcdef",
-      "eoValue": 9
-    },
-    {
-      "alg": "U2 L' F' U F L",
-      "hash": "cajbefghpukloiekcqtwabcdef",
-      "eoValue": 264
     },
     {
       "alg": "U2 L F' U' F L'",
@@ -5826,11 +5316,6 @@
     {
       "alg": "U' L F' U2 F L'",
       "hash": "dlucefghnjkafchksqowabcdef",
-      "eoValue": 258
-    },
-    {
-      "alg": "U' L' F' U2 F L",
-      "hash": "djucefghnaklfcholqtwabcdef",
       "eoValue": 258
     },
     {
@@ -5934,7 +5419,7 @@
       "eoValue": 257
     },
     {
-      "alg": "y L U2 L' U' L U L'",
+      "alg": "y L U2' L' U' L U L'",
       "hash": "bdvcefghimkljphdnbtwabcdef",
       "eoValue": 513
     },
@@ -5944,14 +5429,9 @@
       "eoValue": 0
     },
     {
-      "alg": "y L' U' L U L' U2 L",
+      "alg": "y L' U' L U L' U2' L",
       "hash": "uadbefghojklgndlcqtwabcdef",
       "eoValue": 260
-    },
-    {
-      "alg": "y' L' U' L U L' U2 L",
-      "hash": "bdxcefghijkmjfatnqiwabcdef",
-      "eoValue": 2049
     },
     {
       "alg": "y' L' U' L U2 L U L'",
@@ -5974,24 +5454,19 @@
       "eoValue": 0
     },
     {
-      "alg": "y L U2' L' U' L U L'",
-      "hash": "bdvcefghimkljphdnbtwabcdef",
-      "eoValue": 513
-    },
-    {
-      "alg": "y L' U' L U L' U2' L",
-      "hash": "uadbefghojklgndlcqtwabcdef",
-      "eoValue": 260
-    },
-    {
-      "alg": "y' L' U' L U L' U2' L",
-      "hash": "bdxcefghijkmjfatnqiwabcdef",
-      "eoValue": 2049
-    },
-    {
       "alg": "y' U2 R U2 R2' U' R",
       "hash": "cubvefghpmklimpdlatwabcdef",
       "eoValue": 777
+    },
+    {
+      "alg": "y U R2 U' R2' U R2",
+      "hash": "bdcaefghijlkkhtenqbwabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "y' U' R2 U' R2' U R2",
+      "hash": "cabdefghjiklnekhbqtwabcdef",
+      "eoValue": 0
     },
     {
       "alg": "y L U L' U L' U2 L",
@@ -6034,64 +5509,14 @@
       "eoValue": 2052
     },
     {
-      "alg": "U L U' L' y' L' U2 L",
+      "alg": "U L U' L' y' L' U2' L",
       "hash": "pacbefghijkxjhftnqbwabcdef",
       "eoValue": 2056
     },
     {
-      "alg": "U' L U' L' y' L' U2 L",
-      "hash": "ncadefghijkxdbltnqhwabcdef",
-      "eoValue": 2050
-    },
-    {
-      "alg": "U L U2 L' y' L' U' L",
-      "hash": "adboefghijkxeatinqkwabcdef",
-      "eoValue": 2052
-    },
-    {
-      "alg": "U' L U2 L' y' L' U' L",
-      "hash": "cbdmefghijkxkgtcnqewabcdef",
-      "eoValue": 2049
-    },
-    {
-      "alg": "U L' U L y L U2 L'",
-      "hash": "candefghivklkgqcnetwabcdef",
-      "eoValue": 514
-    },
-    {
-      "alg": "U' L' U L y L U2 L'",
-      "hash": "acpbefghivkleaqinktwabcdef",
-      "eoValue": 520
-    },
-    {
-      "alg": "U L' U2 L y L U L'",
-      "hash": "dbaoefghivkldblqnhtwabcdef",
-      "eoValue": 516
-    },
-    {
-      "alg": "U' L' U2 L y L U L'",
+      "alg": "U' L' U2' L y L U L'",
       "hash": "bdcmefghivkljhfqnbtwabcdef",
       "eoValue": 513
-    },
-    {
-      "alg": "L' U L y U2 L U L'",
-      "hash": "jbcmefghipklkhfrnatwabcdef",
-      "eoValue": 9
-    },
-    {
-      "alg": "L U' L' y' U2 L' U' L",
-      "hash": "abloefghijkpebuinqjwabcdef",
-      "eoValue": 12
-    },
-    {
-      "alg": "U' L' U L y' L U2 L'",
-      "hash": "wcjbefghidmlkdhvnctqabcdef",
-      "eoValue": 1025
-    },
-    {
-      "alg": "L U' L' y' U2' L' U' L",
-      "hash": "abloefghijkpebuinqjwabcdef",
-      "eoValue": 12
     },
     {
       "alg": "L' U L y U2' L U L'",
@@ -6099,14 +5524,9 @@
       "eoValue": 9
     },
     {
-      "alg": "U2 B R U2 R' B'",
-      "hash": "wdaiefghbjolimelcqtwabcdef",
-      "eoValue": 1028
-    },
-    {
-      "alg": "U2 R' B' U2 B R",
-      "hash": "xdakefghijbokugdnqawabcdef",
-      "eoValue": 2052
+      "alg": "U' L' U L y' L U2 L'",
+      "hash": "wcjbefghidmlkdhvnctqabcdef",
+      "eoValue": 1025
     },
     {
       "alg": "U2 R' U R L U' L' U L U L'",
@@ -6344,6 +5764,16 @@
       "eoValue": 264
     },
     {
+      "alg": "y U' D R' U2' R D'",
+      "hash": "xcbaefghijkpxelinqtcabcdef",
+      "eoValue": 2056
+    },
+    {
+      "alg": "y' U D R' U2' R D'",
+      "hash": "baucefghpjkllirenctwabcdef",
+      "eoValue": 264
+    },
+    {
       "alg": "y U2 D' R U R' D",
       "hash": "dwacefghijnluieknqcwabcdef",
       "eoValue": 1026
@@ -6351,6 +5781,16 @@
     {
       "alg": "y' U2 D' R' U R D",
       "hash": "cabuefghpjklvejhnqtcabcdef",
+      "eoValue": 264
+    },
+    {
+      "alg": "y U' D' R' U2' R D",
+      "hash": "xcbaefghijkprelinctwabcdef",
+      "eoValue": 2056
+    },
+    {
+      "alg": "y' U D' R' U2' R D",
+      "hash": "baucefghpjkllixenqtcabcdef",
       "eoValue": 264
     },
     {
@@ -6389,14 +5829,19 @@
       "eoValue": 2307
     },
     {
-      "alg": "R' U' R L' U2 L2 U L2 U L",
-      "hash": "dlbcefghijakuelcnqwgabcdef",
-      "eoValue": 0
-    },
-    {
       "alg": "y' R' U2 R L' U L",
       "hash": "dxuaefghojknndugjqcwabcdef",
       "eoValue": 2310
+    },
+    {
+      "alg": "y U' L2' U' L2 U L2'",
+      "hash": "cabdefghjiklnekhbqtwabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "y' U L2' U' L2 U L2'",
+      "hash": "bdcaefghijlkkhtenqbwabcdef",
+      "eoValue": 0
     },
     {
       "alg": "y R U R' L U2 L'",
@@ -6447,6 +5892,11 @@
       "alg": "y L' U2 L R' U R",
       "hash": "dxuaefghojknndugjqcwabcdef",
       "eoValue": 2310
+    },
+    {
+      "alg": "U L D F' D' L'",
+      "hash": "ucdnefghvmklekgrnatwabcdef",
+      "eoValue": 771
     },
     {
       "alg": "U2 r' U r' F' r2",
@@ -6504,6 +5954,16 @@
       "eoValue": 264
     },
     {
+      "alg": "y U D L' U2 L D'",
+      "hash": "baucefghpjkllirenctwabcdef",
+      "eoValue": 264
+    },
+    {
+      "alg": "y' U' D L' U2 L D'",
+      "hash": "xcbaefghijkpxelinqtcabcdef",
+      "eoValue": 2056
+    },
+    {
       "alg": "y' U2 D' L U L' D",
       "hash": "dwacefghijnluieknqcwabcdef",
       "eoValue": 1026
@@ -6512,6 +5972,16 @@
       "alg": "y U2 D' L' U L D",
       "hash": "cabuefghpjklvejhnqtcabcdef",
       "eoValue": 264
+    },
+    {
+      "alg": "y U D' L' U2 L D",
+      "hash": "baucefghpjkllixenqtcabcdef",
+      "eoValue": 264
+    },
+    {
+      "alg": "y' U' D' L' U2 L D",
+      "hash": "xcbaefghijkprelinctwabcdef",
+      "eoValue": 2056
     },
     {
       "alg": "U' L U L' R U2 R' U2 R U' R'",
@@ -6694,26 +6164,6 @@
       "eoValue": 258
     },
     {
-      "alg": "y R U2 R' U2 R U R'",
-      "hash": "bawcefghijplbfgknqtxabcdef",
-      "eoValue": 1032
-    },
-    {
-      "alg": "y' R U2 R' U2 R U R'",
-      "hash": "vadcefghinklaehlnrtwabcdef",
-      "eoValue": 514
-    },
-    {
-      "alg": "y R' U2 R U2 R' U' R",
-      "hash": "dcxaefghijknhjcenquwabcdef",
-      "eoValue": 2050
-    },
-    {
-      "alg": "y' R' U2 R U2 R' U' R",
-      "hash": "ucbaefghpjklikbdoqtwabcdef",
-      "eoValue": 264
-    },
-    {
       "alg": "U' L U L' y' U' L' U L",
       "hash": "apbcefghijkxsegknqawabcdef",
       "eoValue": 2056
@@ -6729,29 +6179,9 @@
       "eoValue": 520
     },
     {
-      "alg": "U2 R U' R' y' R' U2 R",
-      "hash": "baodefghujklaniekqtwabcdef",
-      "eoValue": 260
-    },
-    {
-      "alg": "U2 R U2 R' y' R' U' R",
-      "hash": "andcefghujklndblhqtwabcdef",
-      "eoValue": 258
-    },
-    {
-      "alg": "U2 R' U R y R U2 R'",
+      "alg": "U2 R' U R y R U2' R'",
       "hash": "mcbdefghijwlwjhfnqtbabcdef",
       "eoValue": 1025
-    },
-    {
-      "alg": "U2 R' U2 R y R U R'",
-      "hash": "dncaefghijwlgwcknqteabcdef",
-      "eoValue": 1026
-    },
-    {
-      "alg": "U2 F R' U2 R F'",
-      "hash": "cdvkefghimblkfchnvtrabcdef",
-      "eoValue": 513
     },
     {
       "alg": "U2 F' R' U2 R F",
@@ -6764,18 +6194,8 @@
       "eoValue": 0
     },
     {
-      "alg": "y' R U R2 U' R2 U R'",
-      "hash": "acdbefghjiklqkanfgtwabcdef",
-      "eoValue": 0
-    },
-    {
       "alg": "y' R' U' R2' U R2' U' R",
       "hash": "adbcefghjiklqdhnjctwabcdef",
-      "eoValue": 0
-    },
-    {
-      "alg": "y R' U' R2' U R2' U' R",
-      "hash": "dacbefghijlkbtwjnqdiabcdef",
       "eoValue": 0
     },
     {
@@ -6854,24 +6274,9 @@
       "eoValue": 258
     },
     {
-      "alg": "y L U2 L' U2 L U L'",
-      "hash": "vadcefghinklaehlnrtwabcdef",
-      "eoValue": 514
-    },
-    {
-      "alg": "y' L U2 L' U2 L U L'",
-      "hash": "bawcefghijplbfgknqtxabcdef",
-      "eoValue": 1032
-    },
-    {
-      "alg": "y L' U2 L U2 L' U' L",
-      "hash": "ucbaefghpjklikbdoqtwabcdef",
-      "eoValue": 264
-    },
-    {
-      "alg": "y' L' U2 L U2 L' U' L",
-      "hash": "dcxaefghijknhjcenquwabcdef",
-      "eoValue": 2050
+      "alg": "y U2 R2 U R2' U' R2",
+      "hash": "cdbaefghijlkkwhenqtbabcdef",
+      "eoValue": 0
     },
     {
       "alg": "y L' U2 L U2 L' U L",
@@ -6879,28 +6284,33 @@
       "eoValue": 258
     },
     {
-      "alg": "U2 L U' L' y' L' U2 L",
-      "hash": "mbdcefghijkxckgtnqewabcdef",
-      "eoValue": 2049
-    },
-    {
-      "alg": "U2 L U2 L' y' L' U' L",
+      "alg": "U2 L U2' L' y' L' U' L",
       "hash": "bacpefghijkxhftjnqbwabcdef",
       "eoValue": 2056
     },
     {
-      "alg": "U2 L' U L y L U2 L'",
-      "hash": "dboaefghivklblqdnhtwabcdef",
-      "eoValue": 516
-    },
-    {
-      "alg": "U2 L' U2 L y L U L'",
-      "hash": "acbpefghivklieaqnktwabcdef",
-      "eoValue": 520
-    },
-    {
       "alg": "y' L U L2 U' L2 U L'",
       "hash": "bdcaefghijlkgtwenqlaabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "y L' U' L2' U L2' U' L",
+      "hash": "adbcefghjiklqdhnjctwabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "y' L' U' L2' U L2' U' L",
+      "hash": "dacbefghijlkbtwjnqdiabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "y L' U' L2 U L2 U' L",
+      "hash": "adbcefghjiklqdhnjctwabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "y' L' U' L2 U L2 U' L",
+      "hash": "dacbefghijlkbtwjnqdiabcdef",
       "eoValue": 0
     },
     {
@@ -7429,34 +6839,14 @@
       "eoValue": 0
     },
     {
-      "alg": "y U R U2 R' U R U' R'",
-      "hash": "wacbefghijplldvanqthabcdef",
-      "eoValue": 1032
-    },
-    {
-      "alg": "y U' R U2 R' U R U' R'",
+      "alg": "y U' R U2' R' U R U' R'",
       "hash": "wcadefghijnlfjvgnqtbabcdef",
       "eoValue": 1026
     },
     {
-      "alg": "y' U R U2 R' U R U' R'",
+      "alg": "y' U R U2' R' U R U' R'",
       "hash": "advcefghinklpgfjnbtwabcdef",
       "eoValue": 514
-    },
-    {
-      "alg": "y' U' R U2 R' U R U' R'",
-      "hash": "cbvaefghipklpaldnhtwabcdef",
-      "eoValue": 520
-    },
-    {
-      "alg": "y U R U2 R' U' R U R'",
-      "hash": "wbacefghijplecivnqtkabcdef",
-      "eoValue": 1032
-    },
-    {
-      "alg": "y U' R U2 R' U' R U R'",
-      "hash": "wdcaefghijnlkicvnqteabcdef",
-      "eoValue": 1026
     },
     {
       "alg": "y U R U2' R' U R U R'",
@@ -7514,26 +6904,6 @@
       "eoValue": 2049
     },
     {
-      "alg": "y U R' U' R U R' U2 R",
-      "hash": "caxdefghijkncgftnqjwabcdef",
-      "eoValue": 2050
-    },
-    {
-      "alg": "y U' R' U' R U R' U2 R",
-      "hash": "acxbefghijkpialtnqdwabcdef",
-      "eoValue": 2056
-    },
-    {
-      "alg": "y' U R' U' R U R' U2 R",
-      "hash": "ubacefghpjkllniadqtwabcdef",
-      "eoValue": 264
-    },
-    {
-      "alg": "y' U' R' U' R U R' U2 R",
-      "hash": "udcaefghnjklfncgjqtwabcdef",
-      "eoValue": 258
-    },
-    {
       "alg": "y U R' U' R U2 R U R'",
       "hash": "xwadefghijnovjegnqatabcdef",
       "eoValue": 3078
@@ -7569,59 +6939,9 @@
       "eoValue": 0
     },
     {
-      "alg": "y U R U2' R' U R U' R'",
-      "hash": "wacbefghijplldvanqthabcdef",
-      "eoValue": 1032
-    },
-    {
-      "alg": "y U' R U2' R' U R U' R'",
-      "hash": "wcadefghijnlfjvgnqtbabcdef",
-      "eoValue": 1026
-    },
-    {
-      "alg": "y U R U2' R' U' R U R'",
-      "hash": "wbacefghijplecivnqtkabcdef",
-      "eoValue": 1032
-    },
-    {
-      "alg": "y U' R U2' R' U' R U R'",
-      "hash": "wdcaefghijnlkicvnqteabcdef",
-      "eoValue": 1026
-    },
-    {
-      "alg": "y U R' U' R U R' U2' R",
-      "hash": "caxdefghijkncgftnqjwabcdef",
-      "eoValue": 2050
-    },
-    {
-      "alg": "y U' R' U' R U R' U2' R",
-      "hash": "acxbefghijkpialtnqdwabcdef",
-      "eoValue": 2056
-    },
-    {
       "alg": "y U2 R' U' R U' R' U' R",
       "hash": "axcdefghijknlhudnqawabcdef",
       "eoValue": 2050
-    },
-    {
-      "alg": "y' U R U2' R' U R U' R'",
-      "hash": "advcefghinklpgfjnbtwabcdef",
-      "eoValue": 514
-    },
-    {
-      "alg": "y' U' R U2' R' U R U' R'",
-      "hash": "cbvaefghipklpaldnhtwabcdef",
-      "eoValue": 520
-    },
-    {
-      "alg": "y' U R' U' R U R' U2' R",
-      "hash": "ubacefghpjkllniadqtwabcdef",
-      "eoValue": 264
-    },
-    {
-      "alg": "y' U' R' U' R U R' U2' R",
-      "hash": "udcaefghnjklfncgjqtwabcdef",
-      "eoValue": 258
     },
     {
       "alg": "y U R U R' U' R U2 R'",
@@ -7719,24 +7039,9 @@
       "eoValue": 257
     },
     {
-      "alg": "U R U' R' y' U2 R' U' R",
-      "hash": "indaefghojklodbkiqtwabcdef",
-      "eoValue": 6
-    },
-    {
-      "alg": "U' R U' R' y' U2 R' U' R",
+      "alg": "U' R U' R' y' U2' R' U' R",
       "hash": "ipbcefghmjklojhecqtwabcdef",
       "eoValue": 9
-    },
-    {
-      "alg": "U R' U R y U2 R U R'",
-      "hash": "bpkaefghijolaxhenqtlabcdef",
-      "eoValue": 12
-    },
-    {
-      "alg": "U' R' U R y U2 R U R'",
-      "hash": "dnkcefghijmlgxbknqtfabcdef",
-      "eoValue": 3
     },
     {
       "alg": "U' R U R' y U2 R U R'",
@@ -7762,6 +7067,16 @@
       "alg": "y U' R' U' R U' R U2 R'",
       "hash": "wbdcefghijlmltevnqgcabcdef",
       "eoValue": 1025
+    },
+    {
+      "alg": "y' U2 L2' U L2 U' L2'",
+      "hash": "cdbaefghijlkkwhenqtbabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "U2 R' D' F D R",
+      "hash": "voabefghpukloiekcqtwabcdef",
+      "eoValue": 780
     },
     {
       "alg": "R U' R' U2 L' U2 L U2 L' U L",
@@ -7797,6 +7112,26 @@
       "alg": "U L' U' L F' U2 F",
       "hash": "jaubefghodklgqmlcftwabcdef",
       "eoValue": 260
+    },
+    {
+      "alg": "y' U2 D R U2' R' D'",
+      "hash": "cbvdefghimklkugdnqawabcdef",
+      "eoValue": 513
+    },
+    {
+      "alg": "y' U2 D R' U2' R D'",
+      "hash": "cbudefghmjklajrhndtwabcdef",
+      "eoValue": 257
+    },
+    {
+      "alg": "y' U2 D' R U2' R' D",
+      "hash": "cbvdefghimklkogdaqtwabcdef",
+      "eoValue": 513
+    },
+    {
+      "alg": "y' U2 D' R' U2' R D",
+      "hash": "cbudefghmjklajxhnqtdabcdef",
+      "eoValue": 257
     },
     {
       "alg": "y' L D' L' U L D L'",
@@ -7999,26 +7334,6 @@
       "eoValue": 520
     },
     {
-      "alg": "y R2 U2' R U R' U R2",
-      "hash": "xacdefghijknuhcjnqewabcdef",
-      "eoValue": 2050
-    },
-    {
-      "alg": "y' R2 U2' R U R' U R2",
-      "hash": "abucefghpjklidobkqtwabcdef",
-      "eoValue": 264
-    },
-    {
-      "alg": "y R2' U2' R U R' U R2",
-      "hash": "xacdefghijknuhcjnqewabcdef",
-      "eoValue": 2050
-    },
-    {
-      "alg": "y' R2' U2' R U R' U R2",
-      "hash": "abucefghpjklidobkqtwabcdef",
-      "eoValue": 264
-    },
-    {
       "alg": "y U2 L U L' U L U' L'",
       "hash": "adbvefghioklelphnbtwabcdef",
       "eoValue": 516
@@ -8044,16 +7359,6 @@
       "eoValue": 0
     },
     {
-      "alg": "y U L U2 L' U' L U L'",
-      "hash": "cavdefghinklcpkinetwabcdef",
-      "eoValue": 514
-    },
-    {
-      "alg": "y U' L U2 L' U' L U L'",
-      "hash": "acvbefghipklipecnktwabcdef",
-      "eoValue": 520
-    },
-    {
       "alg": "y U' L U2' L' U L U L'",
       "hash": "cadbefghijklpieknctwabcdef",
       "eoValue": 0
@@ -8064,26 +7369,6 @@
       "eoValue": 0
     },
     {
-      "alg": "y U L' U' L U L' U2 L",
-      "hash": "ubacefghpjkllniadqtwabcdef",
-      "eoValue": 264
-    },
-    {
-      "alg": "y U' L' U' L U L' U2 L",
-      "hash": "udcaefghnjklfncgjqtwabcdef",
-      "eoValue": 258
-    },
-    {
-      "alg": "y' U L' U' L U L' U2 L",
-      "hash": "caxdefghijkncgftnqjwabcdef",
-      "eoValue": 2050
-    },
-    {
-      "alg": "y' U' L' U' L U L' U2 L",
-      "hash": "acxbefghijkpialtnqdwabcdef",
-      "eoValue": 2056
-    },
-    {
       "alg": "y U' L' U' L U2 L U L'",
       "hash": "aduvefghonklegpjantwabcdef",
       "eoValue": 774
@@ -8092,36 +7377,6 @@
       "alg": "y' U L' U' L U2 L U L'",
       "hash": "xwadefghijnovjegnqatabcdef",
       "eoValue": 3078
-    },
-    {
-      "alg": "y U L U2' L' U' L U L'",
-      "hash": "cavdefghinklcpkinetwabcdef",
-      "eoValue": 514
-    },
-    {
-      "alg": "y U' L U2' L' U' L U L'",
-      "hash": "acvbefghipklipecnktwabcdef",
-      "eoValue": 520
-    },
-    {
-      "alg": "y U L' U' L U L' U2' L",
-      "hash": "ubacefghpjkllniadqtwabcdef",
-      "eoValue": 264
-    },
-    {
-      "alg": "y U' L' U' L U L' U2' L",
-      "hash": "udcaefghnjklfncgjqtwabcdef",
-      "eoValue": 258
-    },
-    {
-      "alg": "y' U L' U' L U L' U2' L",
-      "hash": "caxdefghijkncgftnqjwabcdef",
-      "eoValue": 2050
-    },
-    {
-      "alg": "y' U' L' U' L U L' U2' L",
-      "hash": "acxbefghijkpialtnqdwabcdef",
-      "eoValue": 2056
     },
     {
       "alg": "y' U2 L U L' U L' U' L",
@@ -8189,24 +7444,9 @@
       "eoValue": 513
     },
     {
-      "alg": "U L' U L y U2 L U L'",
-      "hash": "jcdnefghimklbkgrnftwabcdef",
-      "eoValue": 3
-    },
-    {
-      "alg": "U' L' U L y U2 L U L'",
-      "hash": "jabpefghioklhearnltwabcdef",
-      "eoValue": 12
-    },
-    {
-      "alg": "U L U' L' y' U2 L' U' L",
+      "alg": "U L U' L' y' U2' L' U' L",
       "hash": "bclpefghijkmheujnqcwabcdef",
       "eoValue": 9
-    },
-    {
-      "alg": "U' L U' L' y' U2 L' U' L",
-      "hash": "dalnefghijkobkudnqiwabcdef",
-      "eoValue": 6
     },
     {
       "alg": "U L U L' y U2 L U L'",
@@ -8237,6 +7477,26 @@
       "alg": "y U L' U' L U' L U2 L'",
       "hash": "dcvbefghmikleplngctwabcdef",
       "eoValue": 513
+    },
+    {
+      "alg": "y U2 D L U2 L' D'",
+      "hash": "cbvdefghimklkugdnqawabcdef",
+      "eoValue": 513
+    },
+    {
+      "alg": "y U2 D L' U2 L D'",
+      "hash": "cbudefghmjklajrhndtwabcdef",
+      "eoValue": 257
+    },
+    {
+      "alg": "y U2 D' L U2 L' D",
+      "hash": "cbvdefghimklkogdaqtwabcdef",
+      "eoValue": 513
+    },
+    {
+      "alg": "y U2 D' L' U2 L D",
+      "hash": "cbudefghmjklajxhnqtdabcdef",
+      "eoValue": 257
     },
     {
       "alg": "y R U2 R' f R f'",
@@ -8429,6 +7689,11 @@
       "eoValue": 520
     },
     {
+      "alg": "U2 R' U' R L' U2 L2 U L2 U L",
+      "hash": "bldaefghijckukfinqwaabcdef",
+      "eoValue": 0
+    },
+    {
       "alg": "y' U R' F R' F' R2",
       "hash": "mcdiefghnjklfkohbqtwabcdef",
       "eoValue": 3
@@ -8489,17 +7754,7 @@
       "eoValue": 768
     },
     {
-      "alg": "y U2 R U2 R' U R U' R'",
-      "hash": "wbdcefghijmlaivfnqtkabcdef",
-      "eoValue": 1025
-    },
-    {
-      "alg": "y' U2 R U2 R' U R U' R'",
-      "hash": "bavdefghioklplgcnetwabcdef",
-      "eoValue": 516
-    },
-    {
-      "alg": "y U2 R U2 R' U' R U R'",
+      "alg": "y U2 R U2' R' U' R U R'",
       "hash": "wcbdefghijmlhdjvnqtbabcdef",
       "eoValue": 1025
     },
@@ -8524,14 +7779,9 @@
       "eoValue": 0
     },
     {
-      "alg": "y U2 R' U' R U R' U2 R",
+      "alg": "y U2 R' U' R U R' U2' R",
       "hash": "dbxaefghijkodlgtnqcwabcdef",
       "eoValue": 2052
-    },
-    {
-      "alg": "y' U2 R' U' R U R' U2 R",
-      "hash": "ucbdefghmjklanjfiqtwabcdef",
-      "eoValue": 257
     },
     {
       "alg": "y' U2 R' U' R U2 R U R'",
@@ -8557,31 +7807,6 @@
       "alg": "y U2 R' U2' R U' R' U' R",
       "hash": "adbcefghijklgseknqawabcdef",
       "eoValue": 0
-    },
-    {
-      "alg": "y U2 R U2' R' U R U' R'",
-      "hash": "wbdcefghijmlaivfnqtkabcdef",
-      "eoValue": 1025
-    },
-    {
-      "alg": "y U2 R U2' R' U' R U R'",
-      "hash": "wcbdefghijmlhdjvnqtbabcdef",
-      "eoValue": 1025
-    },
-    {
-      "alg": "y U2 R' U' R U R' U2' R",
-      "hash": "dbxaefghijkodlgtnqcwabcdef",
-      "eoValue": 2052
-    },
-    {
-      "alg": "y' U2 R U2' R' U R U' R'",
-      "hash": "bavdefghioklplgcnetwabcdef",
-      "eoValue": 516
-    },
-    {
-      "alg": "y' U2 R' U' R U R' U2' R",
-      "hash": "ucbdefghmjklanjfiqtwabcdef",
-      "eoValue": 257
     },
     {
       "alg": "y U2 R U' R' U2 R U R'",
@@ -8649,6 +7874,26 @@
       "eoValue": 260
     },
     {
+      "alg": "y U R U2 R' U2 R U R'",
+      "hash": "cbwdefghijmleglbnqtxabcdef",
+      "eoValue": 1025
+    },
+    {
+      "alg": "y' U' R U2 R' U2 R U R'",
+      "hash": "vdcbefghimkllbegnrtwabcdef",
+      "eoValue": 513
+    },
+    {
+      "alg": "y U' R' U2 R U2 R' U' R",
+      "hash": "cbxdefghijkmeijbnquwabcdef",
+      "eoValue": 2049
+    },
+    {
+      "alg": "y' U R' U2 R U2 R' U' R",
+      "hash": "udcbefghmjkljbeioqtwabcdef",
+      "eoValue": 257
+    },
+    {
       "alg": "y U2 R U R' U R' U2 R",
       "hash": "xdcaefghijnksewjnqgcabcdef",
       "eoValue": 2050
@@ -8659,14 +7904,29 @@
       "eoValue": 264
     },
     {
-      "alg": "U2 R U' R' y' U2 R' U' R",
-      "hash": "ioabefghpjkloiebjqtwabcdef",
-      "eoValue": 12
-    },
-    {
-      "alg": "U2 R' U R y U2 R U R'",
+      "alg": "U2 R' U R y U2' R U R'",
       "hash": "cmkbefghijplfxkhnqtaabcdef",
       "eoValue": 9
+    },
+    {
+      "alg": "y U R U R2 U' R2 U R'",
+      "hash": "cadbefghijlkltwhnqafabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "y' U' R U R2 U' R2 U R'",
+      "hash": "dbcaefghjiklqhlnaftwabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "y' U R' U' R2' U R2' U' R",
+      "hash": "bacdefghjiklqikncdtwabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "y U' R' U' R2' U R2' U' R",
+      "hash": "cdbaefghijlkktwinqcdabcdef",
+      "eoValue": 0
     },
     {
       "alg": "y' U2 L U L' R U R'",
@@ -9174,11 +8434,6 @@
       "eoValue": 3078
     },
     {
-      "alg": "y U2 L U2 L' U' L U L'",
-      "hash": "dbvaefghiokldpbjnhtwabcdef",
-      "eoValue": 516
-    },
-    {
       "alg": "y' U2 L U2 L' U' L U L'",
       "hash": "wcbdefghijmlhdjvnqtbabcdef",
       "eoValue": 1025
@@ -9199,12 +8454,7 @@
       "eoValue": 0
     },
     {
-      "alg": "y U2 L' U' L U L' U2 L",
-      "hash": "ucbdefghmjklanjfiqtwabcdef",
-      "eoValue": 257
-    },
-    {
-      "alg": "y' U2 L' U' L U L' U2 L",
+      "alg": "y' U2 L' U' L U L' U2' L",
       "hash": "dbxaefghijkodlgtnqcwabcdef",
       "eoValue": 2052
     },
@@ -9229,19 +8479,24 @@
       "eoValue": 0
     },
     {
-      "alg": "y U2 L U2' L' U' L U L'",
-      "hash": "dbvaefghiokldpbjnhtwabcdef",
-      "eoValue": 516
+      "alg": "y U' L U2 L' U2 L U L'",
+      "hash": "vdcbefghimkllbegnrtwabcdef",
+      "eoValue": 513
     },
     {
-      "alg": "y U2 L' U' L U L' U2' L",
-      "hash": "ucbdefghmjklanjfiqtwabcdef",
+      "alg": "y' U L U2 L' U2 L U L'",
+      "hash": "cbwdefghijmleglbnqtxabcdef",
+      "eoValue": 1025
+    },
+    {
+      "alg": "y U L' U2 L U2 L' U' L",
+      "hash": "udcbefghmjkljbeioqtwabcdef",
       "eoValue": 257
     },
     {
-      "alg": "y' U2 L' U' L U L' U2' L",
-      "hash": "dbxaefghijkodlgtnqcwabcdef",
-      "eoValue": 2052
+      "alg": "y' U' L' U2 L U2 L' U' L",
+      "hash": "cbxdefghijkmeijbnquwabcdef",
+      "eoValue": 2049
     },
     {
       "alg": "y U2 L U L' U L' U2 L",
@@ -9279,16 +8534,6 @@
       "eoValue": 3077
     },
     {
-      "alg": "U2 L' U L y U2 L U L'",
-      "hash": "jdaoefghinkleblrngtwabcdef",
-      "eoValue": 6
-    },
-    {
-      "alg": "U2 L U' L' y' U2 L' U' L",
-      "hash": "cdlmefghijknkhucnqdwabcdef",
-      "eoValue": 3
-    },
-    {
       "alg": "R U' R' U f' L f",
       "hash": "ixcbefghajkpjfuhaqnwabcdef",
       "eoValue": 2056
@@ -9301,6 +8546,46 @@
     {
       "alg": "y' U L U L2 U' L2 U L'",
       "hash": "cadbefghijlkltwhnqafabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "y U L' U' L2' U L2' U' L",
+      "hash": "bacdefghjiklqikncdtwabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "y U' L' U' L2' U L2' U' L",
+      "hash": "dcabefghjiklqcenijtwabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "y' U L' U' L2' U L2' U' L",
+      "hash": "abdcefghijlketwcnqijabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "y' U' L' U' L2' U L2' U' L",
+      "hash": "cdbaefghijlkktwinqcdabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "y U L' U' L2 U L2 U' L",
+      "hash": "bacdefghjiklqikncdtwabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "y U' L' U' L2 U L2 U' L",
+      "hash": "dcabefghjiklqcenijtwabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "y' U L' U' L2 U L2 U' L",
+      "hash": "abdcefghijlketwcnqijabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "y' U' L' U' L2 U L2 U' L",
+      "hash": "cdbaefghijlkktwinqcdabcdef",
       "eoValue": 0
     },
     {
@@ -9414,9 +8699,34 @@
       "eoValue": 1032
     },
     {
+      "alg": "y R U R' U R U' R2' U R",
+      "hash": "wxabefghijopdhuvnqkbabcdef",
+      "eoValue": 3084
+    },
+    {
+      "alg": "y' R U R' U R U' R2' U R",
+      "hash": "cdvuefghnmklopjbehtwabcdef",
+      "eoValue": 771
+    },
+    {
       "alg": "U2 R' F R F' R U R'",
       "hash": "dobuefghajkldicknqtwabcdef",
       "eoValue": 260
+    },
+    {
+      "alg": "y R U R' U R U' R2 U R",
+      "hash": "wxabefghijopdhuvnqkbabcdef",
+      "eoValue": 3084
+    },
+    {
+      "alg": "y' R U R' U R U' R2 U R",
+      "hash": "cdvuefghnmklopjbehtwabcdef",
+      "eoValue": 771
+    },
+    {
+      "alg": "y' R' U' R U' R' U R2' U' R'",
+      "hash": "cvubefghmpklegmrkbtwabcdef",
+      "eoValue": 777
     },
     {
       "alg": "U' L U2 L' U R2' U2 R U R' U R2",
@@ -9889,36 +9199,6 @@
       "eoValue": 2050
     },
     {
-      "alg": "y U R2 U2' R U R' U R2",
-      "hash": "xbdaefghijkoukdcnqhwabcdef",
-      "eoValue": 2052
-    },
-    {
-      "alg": "y U' R2 U2' R U R' U R2",
-      "hash": "xdbcefghijkmuejinqbwabcdef",
-      "eoValue": 2049
-    },
-    {
-      "alg": "y' U R2 U2' R U R' U R2",
-      "hash": "bcudefghmjkljioebqtwabcdef",
-      "eoValue": 257
-    },
-    {
-      "alg": "y' U' R2 U2' R U R' U R2",
-      "hash": "daubefghojkldcokhqtwabcdef",
-      "eoValue": 260
-    },
-    {
-      "alg": "U2 R2' U' F' U F R2",
-      "hash": "bdawefghijolkvienqtcabcdef",
-      "eoValue": 1028
-    },
-    {
-      "alg": "y U R2' U2' R U R' U R2",
-      "hash": "xbdaefghijkoukdcnqhwabcdef",
-      "eoValue": 2052
-    },
-    {
       "alg": "y U' R2' U2' R U R' U R2",
       "hash": "xdbcefghijkmuejinqbwabcdef",
       "eoValue": 2049
@@ -9929,9 +9209,9 @@
       "eoValue": 257
     },
     {
-      "alg": "y' U' R2' U2' R U R' U R2",
-      "hash": "daubefghojkldcokhqtwabcdef",
-      "eoValue": 260
+      "alg": "U2 R2' U' F' U F R2",
+      "hash": "bdawefghijolkvienqtcabcdef",
+      "eoValue": 1028
     },
     {
       "alg": "y U2 R' U2 R U2 R' U R",
@@ -9939,9 +9219,29 @@
       "eoValue": 2050
     },
     {
+      "alg": "y' U2 R U R2 U' R2 U R'",
+      "hash": "cabdefghjiklqegnlatwabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "y U2 R' U' R2' U R2' U' R",
+      "hash": "bcadefghijlkhtwdnqjcabcdef",
+      "eoValue": 0
+    },
+    {
       "alg": "y' L' U L2 U L' U L U L'",
       "hash": "cabwefghijlpgxjdnqcsabcdef",
       "eoValue": 1032
+    },
+    {
+      "alg": "y' L U L' U L U' L2 U L",
+      "hash": "wxabefghijopdhuvnqkbabcdef",
+      "eoValue": 3084
+    },
+    {
+      "alg": "y L' U' L U' L' U L2' U' L'",
+      "hash": "cvubefghmpklegmrkbtwabcdef",
+      "eoValue": 777
     },
     {
       "alg": "U2 d' R U' R' U R U R'",
@@ -10204,6 +9504,26 @@
       "eoValue": 0
     },
     {
+      "alg": "y U2 L' U' L2' U L2' U' L",
+      "hash": "cbdaefghjiklqjbnditwabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "y' U2 L' U' L2' U L2' U' L",
+      "hash": "bcadefghijlkhtwdnqjcabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "y U2 L' U' L2 U L2 U' L",
+      "hash": "cbdaefghjiklqjbnditwabcdef",
+      "eoValue": 0
+    },
+    {
+      "alg": "y' U2 L' U' L2 U L2 U' L",
+      "hash": "bcadefghijlkhtwdnqjcabcdef",
+      "eoValue": 0
+    },
+    {
       "alg": "M' U R U' r' R U' R'",
       "hash": "dmbcefghujkldkogaqtwabcdef",
       "eoValue": 257
@@ -10297,26 +9617,6 @@
       "alg": "y U2 R' U2' R2 U R2 U R",
       "hash": "wcabefghijplhflvnqtcabcdef",
       "eoValue": 1032
-    },
-    {
-      "alg": "y U2 R2 U2' R U R' U R2",
-      "hash": "xcabefghijkpubidnqkwabcdef",
-      "eoValue": 2056
-    },
-    {
-      "alg": "y' U2 R2 U2' R U R' U R2",
-      "hash": "cduaefghnjklcjoheqtwabcdef",
-      "eoValue": 258
-    },
-    {
-      "alg": "y U2 R2' U2' R U R' U R2",
-      "hash": "xcabefghijkpubidnqkwabcdef",
-      "eoValue": 2056
-    },
-    {
-      "alg": "y' U2 R2' U2' R U R' U R2",
-      "hash": "cduaefghnjklcjoheqtwabcdef",
-      "eoValue": 258
     },
     {
       "alg": "U S' R' U' R S R' U2' R",
@@ -10734,9 +10034,59 @@
       "eoValue": 257
     },
     {
+      "alg": "y U R U R' U R U' R2' U R",
+      "hash": "wxbcefghijpmikuvnqbeabcdef",
+      "eoValue": 3081
+    },
+    {
+      "alg": "y U' R U R' U R U' R2' U R",
+      "hash": "wxdaefghijnoceuvnqhkabcdef",
+      "eoValue": 3078
+    },
+    {
+      "alg": "y' U R U R' U R U' R2' U R",
+      "hash": "davuefghonklopcehktwabcdef",
+      "eoValue": 774
+    },
+    {
+      "alg": "y' U' R U R' U R U' R2' U R",
+      "hash": "bcvuefghmpklopikbetwabcdef",
+      "eoValue": 777
+    },
+    {
       "alg": "y U2 R' U' R' U' R' U R U R",
       "hash": "wcdbefghijmlhkbenqtwabcdef",
       "eoValue": 1025
+    },
+    {
+      "alg": "y U R U R' U R U' R2 U R",
+      "hash": "wxbcefghijpmikuvnqbeabcdef",
+      "eoValue": 3081
+    },
+    {
+      "alg": "y U' R U R' U R U' R2 U R",
+      "hash": "wxdaefghijnoceuvnqhkabcdef",
+      "eoValue": 3078
+    },
+    {
+      "alg": "y' U R U R' U R U' R2 U R",
+      "hash": "davuefghonklopcehktwabcdef",
+      "eoValue": 774
+    },
+    {
+      "alg": "y' U' R U R' U R U' R2 U R",
+      "hash": "bcvuefghmpklopikbetwabcdef",
+      "eoValue": 777
+    },
+    {
+      "alg": "y' U R' U' R U' R' U R2' U' R'",
+      "hash": "dvucefghnmklhlmrbetwabcdef",
+      "eoValue": 771
+    },
+    {
+      "alg": "y U' R' U' R U' R' U R2' U' R'",
+      "hash": "xcdwefghijmnsxhlnqbeabcdef",
+      "eoValue": 3075
     },
     {
       "alg": "U R U' R' U f' L f",
@@ -10904,6 +10254,26 @@
       "eoValue": 2049
     },
     {
+      "alg": "y U' L U L' U L U' L2 U L",
+      "hash": "bcvuefghmpklopikbetwabcdef",
+      "eoValue": 777
+    },
+    {
+      "alg": "y' U L U L' U L U' L2 U L",
+      "hash": "wxbcefghijpmikuvnqbeabcdef",
+      "eoValue": 3081
+    },
+    {
+      "alg": "y' U' L' U' L U' L' U L2' U' L'",
+      "hash": "xcdwefghijmnsxhlnqbeabcdef",
+      "eoValue": 3075
+    },
+    {
+      "alg": "y U L' U' L U' L' U L2' U' L'",
+      "hash": "dvucefghnmklhlmrbetwabcdef",
+      "eoValue": 771
+    },
+    {
       "alg": "U' F R' F' R L' U L",
       "hash": "ibjcefghpmkllehpcmtwabcdef",
       "eoValue": 9
@@ -10994,11 +10364,6 @@
       "eoValue": 257
     },
     {
-      "alg": "y R' U R U R' U R U' R' U' R",
-      "hash": "axdbefghijkoadgjnqtwabcdef",
-      "eoValue": 2052
-    },
-    {
       "alg": "y R' U R U R' U R U' R' U R",
       "hash": "cbdxefghijkmsdkhnqbwabcdef",
       "eoValue": 2049
@@ -11012,16 +10377,6 @@
       "alg": "U R' U R y' R U R' U R U' R'",
       "hash": "acbvefghiwdlegpjnvtcabcdef",
       "eoValue": 1536
-    },
-    {
-      "alg": "y R' U R U R' U R U' R U R'",
-      "hash": "cwdxefghijmnvbuhnqlfabcdef",
-      "eoValue": 3075
-    },
-    {
-      "alg": "y' R' U R U R' U R U' R U R'",
-      "hash": "buavefghpoklobphfltwabcdef",
-      "eoValue": 780
     },
     {
       "alg": "y' R U' R' U' R U' R' U R' U' R",
@@ -11254,6 +10609,46 @@
       "eoValue": 2565
     },
     {
+      "alg": "y L' U' L R' U2 R2 U R'",
+      "hash": "cwbxefghpjimvgasfqknabcdef",
+      "eoValue": 3081
+    },
+    {
+      "alg": "y' L' U' L R' U2 R2 U R'",
+      "hash": "duavefgholkngmpaetlwabcdef",
+      "eoValue": 774
+    },
+    {
+      "alg": "y L' U' L U' D L' U L D'",
+      "hash": "cubdefghmjklpmchfktwabcdef",
+      "eoValue": 257
+    },
+    {
+      "alg": "y' L' U' L U' D L' U L D'",
+      "hash": "dbaxefghijkoibvsnqleabcdef",
+      "eoValue": 2052
+    },
+    {
+      "alg": "y L' U' L R' U2 R2 U R'",
+      "hash": "cwbxefghpjimvgasfqknabcdef",
+      "eoValue": 3081
+    },
+    {
+      "alg": "y' L' U' L R' U2 R2 U R'",
+      "hash": "duavefgholkngmpaetlwabcdef",
+      "eoValue": 774
+    },
+    {
+      "alg": "y L' U' L U' D L' U L D'",
+      "hash": "cubdefghmjklpmchfktwabcdef",
+      "eoValue": 257
+    },
+    {
+      "alg": "y' L' U' L U' D L' U L D'",
+      "hash": "dbaxefghijkoibvsnqleabcdef",
+      "eoValue": 2052
+    },
+    {
       "alg": "L' U' L U L' U' L F' U' F",
       "hash": "cuabefghvdklimelbptwabcdef",
       "eoValue": 768
@@ -11269,6 +10664,16 @@
       "eoValue": 520
     },
     {
+      "alg": "y U2 R U R' U R U' R2' U R",
+      "hash": "wxcdefghijmnjbuvnqehabcdef",
+      "eoValue": 3075
+    },
+    {
+      "alg": "y' U2 R U R' U R U' R2' U R",
+      "hash": "abvuefghpoklopdhkbtwabcdef",
+      "eoValue": 780
+    },
+    {
       "alg": "y' U' R' U' R U' R' U2 R2 U' R'",
       "hash": "bvacefghipklifjrnbtwabcdef",
       "eoValue": 520
@@ -11277,6 +10682,21 @@
       "alg": "y U R' U' R U' R' U2 R2 U' R'",
       "hash": "acbwefghijpljxifnqtbabcdef",
       "eoValue": 1032
+    },
+    {
+      "alg": "y U2 R U R' U R U' R2 U R",
+      "hash": "wxcdefghijmnjbuvnqehabcdef",
+      "eoValue": 3075
+    },
+    {
+      "alg": "y' U2 R U R' U R U' R2 U R",
+      "hash": "abvuefghpoklopdhkbtwabcdef",
+      "eoValue": 780
+    },
+    {
+      "alg": "y U2 R' U' R U' R' U R2' U' R'",
+      "hash": "xbcwefghijpmsxegnqkbabcdef",
+      "eoValue": 3081
     },
     {
       "alg": "M' U R U' r' U' R U R'",
@@ -11342,6 +10762,16 @@
       "alg": "y L' U L U L' U L U' L' U' L",
       "hash": "bdcuefghmjkladgjnqtwabcdef",
       "eoValue": 257
+    },
+    {
+      "alg": "y' L U' L' U' L U' L' U L' U' L",
+      "hash": "cwbxefghijpmkxesnqciabcdef",
+      "eoValue": 3081
+    },
+    {
+      "alg": "y L U' L' U' L U' L' U L' U' L",
+      "hash": "duavefghonklkmerictwabcdef",
+      "eoValue": 774
     },
     {
       "alg": "y U' L2 U' L2' U' L2 U2 L2'",
@@ -11412,6 +10842,16 @@
       "alg": "y U' L' U' L U' L' U2 L2 U' L'",
       "hash": "bvacefghipklifjrnbtwabcdef",
       "eoValue": 520
+    },
+    {
+      "alg": "y U2 L U L' U L U' L2 U L",
+      "hash": "abvuefghpoklopdhkbtwabcdef",
+      "eoValue": 780
+    },
+    {
+      "alg": "y' U2 L' U' L U' L' U L2' U' L'",
+      "hash": "xbcwefghijpmsxegnqkbabcdef",
+      "eoValue": 3081
     },
     {
       "alg": "y U2 R' F R F' R' U' R",
@@ -11704,39 +11144,9 @@
       "eoValue": 520
     },
     {
-      "alg": "y' L U' L' U L U2 L' U L U L'",
-      "hash": "wacdefghijnlbkewnqthabcdef",
-      "eoValue": 1026
-    },
-    {
       "alg": "y L U L' U2 L U' L' U L U' L'",
       "hash": "bcvaefghipkllqidnatwabcdef",
       "eoValue": 520
-    },
-    {
-      "alg": "y' L U L' U2 L U' L' U L U' L'",
-      "hash": "wcdaefghijnlcjfwnqtgabcdef",
-      "eoValue": 1026
-    },
-    {
-      "alg": "y' L' U L U' L' U2' L U' L' U' L",
-      "hash": "xbcaefghijkptbhenqkwabcdef",
-      "eoValue": 2056
-    },
-    {
-      "alg": "y L' U L U' L' U2' L U' L' U' L",
-      "hash": "acudefghnjklbknheqtwabcdef",
-      "eoValue": 258
-    },
-    {
-      "alg": "y' L' U' L U2' L' U L U' L' U L",
-      "hash": "xabcefghijkptcgfnqjwabcdef",
-      "eoValue": 2056
-    },
-    {
-      "alg": "y L' U' L U2' L' U L U' L' U L",
-      "hash": "daucefghnjklalnidqtwabcdef",
-      "eoValue": 258
     },
     {
       "alg": "y' U2 L2 U L2 U L2 U2' L2",
@@ -11829,24 +11239,24 @@
       "eoValue": 257
     },
     {
-      "alg": "y' U R' U R U R' U R U' R' U' R",
-      "hash": "caduefghnjklfilcnqtwabcdef",
-      "eoValue": 258
+      "alg": "y U R' U R U R' U R U' R U R'",
+      "hash": "dwaxefghijnoveuknqagabcdef",
+      "eoValue": 3078
     },
     {
-      "alg": "y' U' R' U R U R' U R U' R' U' R",
-      "hash": "acbuefghpjkllcfinqtwabcdef",
-      "eoValue": 264
+      "alg": "y U' R' U R U R' U R U' R U R'",
+      "hash": "bwcxefghijpmvkuenqgaabcdef",
+      "eoValue": 3081
     },
     {
-      "alg": "y U R' U R U R' U R U' R' U' R",
-      "hash": "bxacefghijkpfilcnqtwabcdef",
-      "eoValue": 2056
+      "alg": "y' U' R' U R U R' U R U' R U R'",
+      "hash": "audvefghonklokpeagtwabcdef",
+      "eoValue": 774
     },
     {
-      "alg": "y U' R' U R U R' U R U' R' U' R",
-      "hash": "dxcaefghijknlcfinqtwabcdef",
-      "eoValue": 2050
+      "alg": "y' U R' U R U R' U R U' R U R'",
+      "hash": "cubvefghmpkloepkgatwabcdef",
+      "eoValue": 777
     },
     {
       "alg": "y U L U' L2 U2 L U2 L' U L",
@@ -12069,6 +11479,86 @@
       "eoValue": 520
     },
     {
+      "alg": "y U L' U' L R' U2 R2 U R'",
+      "hash": "dwcxefghmjinvlfsgqbnabcdef",
+      "eoValue": 3075
+    },
+    {
+      "alg": "y U' L' U' L R' U2 R2 U R'",
+      "hash": "bwaxefghojipvflsaqhnabcdef",
+      "eoValue": 3084
+    },
+    {
+      "alg": "y' U L' U' L R' U2 R2 U R'",
+      "hash": "aubvefghplkolmpfhtawabcdef",
+      "eoValue": 780
+    },
+    {
+      "alg": "y' U' L' U' L R' U2 R2 U R'",
+      "hash": "cudvefghnlkmfmplbtgwabcdef",
+      "eoValue": 771
+    },
+    {
+      "alg": "y U L' U' L U' D L' U L D'",
+      "hash": "ducaefghnjklpmdkgbtwabcdef",
+      "eoValue": 258
+    },
+    {
+      "alg": "y U' L' U' L U' D L' U L D'",
+      "hash": "buacefghpjklpmjeahtwabcdef",
+      "eoValue": 264
+    },
+    {
+      "alg": "y' U L' U' L U' D L' U L D'",
+      "hash": "acbxefghijkpjevsnqahabcdef",
+      "eoValue": 2056
+    },
+    {
+      "alg": "y' U' L' U' L U' D L' U L D'",
+      "hash": "cadxefghijkndkvsnqgbabcdef",
+      "eoValue": 2050
+    },
+    {
+      "alg": "y U L' U' L R' U2 R2 U R'",
+      "hash": "dwcxefghmjinvlfsgqbnabcdef",
+      "eoValue": 3075
+    },
+    {
+      "alg": "y U' L' U' L R' U2 R2 U R'",
+      "hash": "bwaxefghojipvflsaqhnabcdef",
+      "eoValue": 3084
+    },
+    {
+      "alg": "y' U L' U' L R' U2 R2 U R'",
+      "hash": "aubvefghplkolmpfhtawabcdef",
+      "eoValue": 780
+    },
+    {
+      "alg": "y' U' L' U' L R' U2 R2 U R'",
+      "hash": "cudvefghnlkmfmplbtgwabcdef",
+      "eoValue": 771
+    },
+    {
+      "alg": "y U L' U' L U' D L' U L D'",
+      "hash": "ducaefghnjklpmdkgbtwabcdef",
+      "eoValue": 258
+    },
+    {
+      "alg": "y U' L' U' L U' D L' U L D'",
+      "hash": "buacefghpjklpmjeahtwabcdef",
+      "eoValue": 264
+    },
+    {
+      "alg": "y' U L' U' L U' D L' U L D'",
+      "hash": "acbxefghijkpjevsnqahabcdef",
+      "eoValue": 2056
+    },
+    {
+      "alg": "y' U' L' U' L U' D L' U L D'",
+      "hash": "cadxefghijkndkvsnqgbabcdef",
+      "eoValue": 2050
+    },
+    {
       "alg": "y' U2 R' U R2 U2 R' U2 R U' R'",
       "hash": "vbacefghpiklgqldcntwabcdef",
       "eoValue": 520
@@ -12080,11 +11570,6 @@
     },
     {
       "alg": "R2' U2' F R2 F' U2' R' U R'",
-      "hash": "odbaefghujklbhjfnqtwabcdef",
-      "eoValue": 260
-    },
-    {
-      "alg": "R2 U2 F R2 F' U2 R' U R'",
       "hash": "odbaefghujklbhjfnqtwabcdef",
       "eoValue": 260
     },
@@ -12204,22 +11689,7 @@
       "eoValue": 513
     },
     {
-      "alg": "y' U2 R' U R U R' U R U' R' U' R",
-      "hash": "dbauefghojklgjadnqtwabcdef",
-      "eoValue": 260
-    },
-    {
       "alg": "y U2 R' U R U R' U R U' R' U' R",
-      "hash": "cxbdefghijkmgjadnqtwabcdef",
-      "eoValue": 2049
-    },
-    {
-      "alg": "y' U2' R' U R U R' U R U' R' U' R",
-      "hash": "dbauefghojklgjadnqtwabcdef",
-      "eoValue": 260
-    },
-    {
-      "alg": "y U2' R' U R U R' U R U' R' U' R",
       "hash": "cxbdefghijkmgjadnqtwabcdef",
       "eoValue": 2049
     },
@@ -12266,6 +11736,36 @@
     {
       "alg": "y U R' U R U' R' U R U2 R' U R",
       "hash": "bdcxefghijkmlhtfnqawabcdef",
+      "eoValue": 2049
+    },
+    {
+      "alg": "y' U2 R U' R' U' R U' R' U R' U' R",
+      "hash": "bucvefghmpklemkrcitwabcdef",
+      "eoValue": 777
+    },
+    {
+      "alg": "y U2 R U' R' U' R U' R' U R' U' R",
+      "hash": "awdxefghijnoexksnqicabcdef",
+      "eoValue": 3078
+    },
+    {
+      "alg": "y' U' R' U R U' R' U2' R U' R' U' R",
+      "hash": "dbucefghmjklkhnebqtwabcdef",
+      "eoValue": 257
+    },
+    {
+      "alg": "y U R' U R U' R' U2' R U' R' U' R",
+      "hash": "xcdbefghijkmtekhnqbwabcdef",
+      "eoValue": 2049
+    },
+    {
+      "alg": "y' U' R' U' R U2' R' U R U' R' U R",
+      "hash": "cdubefghmjkllgndcqtwabcdef",
+      "eoValue": 257
+    },
+    {
+      "alg": "y U R' U' R U2' R' U R U' R' U R",
+      "hash": "xbcdefghijkmtdlgnqcwabcdef",
       "eoValue": 2049
     },
     {
@@ -12424,6 +11924,36 @@
       "eoValue": 513
     },
     {
+      "alg": "y' U L' U L U' L' U2' L U' L' U' L",
+      "hash": "xcdbefghijkmtekhnqbwabcdef",
+      "eoValue": 2049
+    },
+    {
+      "alg": "y U' L' U L U' L' U2' L U' L' U' L",
+      "hash": "dbucefghmjklkhnebqtwabcdef",
+      "eoValue": 257
+    },
+    {
+      "alg": "y' U L' U' L U2' L' U L U' L' U L",
+      "hash": "xbcdefghijkmtdlgnqcwabcdef",
+      "eoValue": 2049
+    },
+    {
+      "alg": "y U' L' U' L U2' L' U L U' L' U L",
+      "hash": "cdubefghmjkllgndcqtwabcdef",
+      "eoValue": 257
+    },
+    {
+      "alg": "y' U2 L U' L' U' L U' L' U L' U' L",
+      "hash": "awdxefghijnoexksnqicabcdef",
+      "eoValue": 3078
+    },
+    {
+      "alg": "y U2 L U' L' U' L U' L' U L' U' L",
+      "hash": "bucvefghmpklemkrcitwabcdef",
+      "eoValue": 777
+    },
+    {
       "alg": "U' R' F R F' U f R f'",
       "hash": "bwcpefghajilvndjaqtiabcdef",
       "eoValue": 1032
@@ -12437,6 +11967,46 @@
       "alg": "U2 R U R' U2 R U' R' f R f'",
       "hash": "cwadefghbjulvfgkaqtmabcdef",
       "eoValue": 1280
+    },
+    {
+      "alg": "y U2 L' U' L R' U2 R2 U R'",
+      "hash": "awdxefghnjiovagslqenabcdef",
+      "eoValue": 3078
+    },
+    {
+      "alg": "y' U2 L' U' L R' U2 R2 U R'",
+      "hash": "bucvefghmlkpampgktfwabcdef",
+      "eoValue": 777
+    },
+    {
+      "alg": "y U2 L' U' L U' D L' U L D'",
+      "hash": "audbefghojklpmibletwabcdef",
+      "eoValue": 260
+    },
+    {
+      "alg": "y' U2 L' U' L U' D L' U L D'",
+      "hash": "bdcxefghijkmchvsnqfkabcdef",
+      "eoValue": 2049
+    },
+    {
+      "alg": "y U2 L' U' L R' U2 R2 U R'",
+      "hash": "awdxefghnjiovagslqenabcdef",
+      "eoValue": 3078
+    },
+    {
+      "alg": "y' U2 L' U' L R' U2 R2 U R'",
+      "hash": "bucvefghmlkpampgktfwabcdef",
+      "eoValue": 777
+    },
+    {
+      "alg": "y U2 L' U' L U' D L' U L D'",
+      "hash": "audbefghojklpmibletwabcdef",
+      "eoValue": 260
+    },
+    {
+      "alg": "y' U2 L' U' L U' D L' U L D'",
+      "hash": "bdcxefghijkmchvsnqfkabcdef",
+      "eoValue": 2049
     },
     {
       "alg": "y U2 R U' R' U R U' R' U2 R U' R'",
@@ -12509,16 +12079,6 @@
       "eoValue": 2050
     },
     {
-      "alg": "U R2' U2' F R2 F' U2' R' U R'",
-      "hash": "pacbefghujklekcgnqtwabcdef",
-      "eoValue": 264
-    },
-    {
-      "alg": "U' R2' U2' F R2 F' U2' R' U R'",
-      "hash": "ncadefghujklkeianqtwabcdef",
-      "eoValue": 258
-    },
-    {
       "alg": "y L' U' L U L' U' L U' R' U' R",
       "hash": "bcdxefghmjkihajsoqewabcdef",
       "eoValue": 2049
@@ -12572,6 +12132,16 @@
       "alg": "y U2 L U L' U' L' U2 L U L' U' L",
       "hash": "baucefghjpklqemlcitwabcdef",
       "eoValue": 264
+    },
+    {
+      "alg": "y' U2 L U' L' U L U2 L' U L U L'",
+      "hash": "wcabefghijplhekwnqtbabcdef",
+      "eoValue": 1032
+    },
+    {
+      "alg": "y' U2 L U L' U2 L U' L' U L U' L'",
+      "hash": "wabcefghijplidlwnqtaabcdef",
+      "eoValue": 1032
     },
     {
       "alg": "F U M' U R U' r' F'",
@@ -12639,11 +12209,6 @@
       "eoValue": 3
     },
     {
-      "alg": "U2 R2' U2' F R2 F' U2' R' U R'",
-      "hash": "mbdcefghujklhbdlnqtwabcdef",
-      "eoValue": 257
-    },
-    {
       "alg": "U2 F R U R' U' F' L U L'",
       "hash": "odlbefghijkmduhknqcwabcdef",
       "eoValue": 5
@@ -12702,16 +12267,6 @@
       "alg": "y U' R' F R S R' f'",
       "hash": "ldkcefghijnmbisknqvfabcdef",
       "eoValue": 3
-    },
-    {
-      "alg": "y R' U' R L' U2 L2 U L2 U L",
-      "hash": "davcefghilkndphantlwabcdef",
-      "eoValue": 514
-    },
-    {
-      "alg": "y' R' U' R L' U2 L2 U L2 U L",
-      "hash": "wabcefghpjilbgjvfqtnabcdef",
-      "eoValue": 1032
     },
     {
       "alg": "F R' F' R U R U R' L U L'",
@@ -12962,6 +12517,16 @@
       "alg": "y' U L' U' L R' U2 R2 U R2 U R",
       "hash": "abvdefghilkoipkfntawabcdef",
       "eoValue": 516
+    },
+    {
+      "alg": "y U R' U' R L' U2 L2 U L2 U L",
+      "hash": "abvdefghilkoipkfntawabcdef",
+      "eoValue": 516
+    },
+    {
+      "alg": "y' U' R' U' R L' U2 L2 U L2 U L",
+      "hash": "wdabefghojilkfivaqtnabcdef",
+      "eoValue": 1028
     },
     {
       "alg": "U2 L U' L' R' U2 R U' f R f'",

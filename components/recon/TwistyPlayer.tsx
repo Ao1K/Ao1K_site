@@ -1188,7 +1188,7 @@ const Player = React.memo(({
     <>
       <div
         ref={divRef}
-        className="h-full w-full border border-neutral-600 hover:border-primary-100 rounded-t-sm relative bg-black"
+        className="h-full w-full border border-neutral-600 hover:border-primary-100 rounded-t-sm overflow-hidden relative bg-black [&>canvas]:rounded-t-[3px]"
         onKeyDown={handleKeyDown}
         tabIndex={2}
       >

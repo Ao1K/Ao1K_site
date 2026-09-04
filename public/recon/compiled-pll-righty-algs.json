@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-08-10T01:08:29.635Z",
+  "timestamp": "2026-09-04T17:51:50.977Z",
   "step": "pll-righty",
-  "totalAlgorithms": 128,
+  "totalAlgorithms": 130,
   "algorithms": [
     {
       "alg": "R U' R U R U R U' R' U' R2",
@@ -392,6 +392,15 @@
       "frequency": 11
     },
     {
+      "alg": "L2 U' L U' L U L' U L2 D' U L U' L' D",
+      "caseIndex": 7,
+      "refPieceMovement": 2,
+      "minMovements": [
+        1
+      ],
+      "frequency": 34
+    },
+    {
       "alg": "M' U M2' U M2' U M' U2 M2'",
       "caseIndex": 21,
       "refPieceMovement": 2,
@@ -596,6 +605,15 @@
         0
       ],
       "frequency": 2
+    },
+    {
+      "alg": "L' U' L F L' U' L U L F' L2' U L",
+      "caseIndex": 10,
+      "refPieceMovement": 0,
+      "minMovements": [
+        1
+      ],
+      "frequency": 61
     },
     {
       "alg": "F R U' R' U R U R2' F' R U R U' R'",

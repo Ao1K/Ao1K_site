@@ -76,14 +76,12 @@ export function groupCleanAufSets<T>(
 interface AufSourceAlg {
   value: string;
   step: string;
-  name?: string;
-  add_U: boolean;
 }
 
 export function collapseAufGroups<T extends AufSourceAlg>(algs: T[]): T[] {
   const cleanGroups = groupCleanAufSets(
     algs,
-    (a) => `${a.step}${KEY_SEP}${a.name ?? ''}`,
+    (a) => a.step,
     (a) => a.value,
   );
 
@@ -92,7 +90,7 @@ export function collapseAufGroups<T extends AufSourceAlg>(algs: T[]): T[] {
 
   algs.forEach((alg) => {
     const { coreKey } = splitLeadingAuf(alg.value);
-    const key = `${alg.step}${KEY_SEP}${alg.name ?? ''}${KEY_SEP}${coreKey}`;
+    const key = `${alg.step}${KEY_SEP}${coreKey}`;
     const group = cleanGroups.get(key);
 
     if (!group) {
@@ -104,7 +102,7 @@ export function collapseAufGroups<T extends AufSourceAlg>(algs: T[]): T[] {
     emitted.add(key);
 
     const base = group.get('')!;
-    result.push({ ...base, value: coreKey, add_U: true });
+    result.push({ ...base, value: coreKey });
   });
 
   return result;

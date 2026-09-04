@@ -206,21 +206,28 @@ interface CandidateGroup {
   partner: number;
 }
 
+// a span of just (y)RU or (y)LU can be explained in other ways, so only RUD or LUD spans qualify
+const spanQualifies = (span: string[]): boolean => {
+  if (!span.some((token) => isD(token))) return false;
+  const fits = (allowed: Set<string>) => span.every((token) => allowed.has(baseOf(token)));
+  return fits(RUD) || fits(LUD);
+};
+
 // create a process that uses a sliding window and checks for at least 3 moves where the normal and
 // inverse are both present, for example, R D R' and R D' R'. We'll call these candidate groups.
-function findCandidateGroups(tokens: string[]): CandidateGroup[] {
+function findCandidateGroups(tokens: string[], aufEnd: number): CandidateGroup[] {
   const groups: CandidateGroup[] = [];
   // increase window size until size is greater or equal to total number of moves divided by 2
   const maxSize = Math.max(3, Math.ceil(tokens.length / 2));
 
   for (let size = 3; size <= maxSize; size++) {
-    for (let start = 0; start + size <= tokens.length; start++) {
+    for (let start = Math.max(0, aufEnd); start + size <= tokens.length; start++) {
       const window = tokens.slice(start, start + size);
       for (let partner = start + size + 1; partner + size <= tokens.length; partner++) {
+        const end = partner + size;
         // return list of all sequences that have normal and inverse
-        if (isInverseOf(window, tokens.slice(partner, partner + size))) {
-          groups.push({ start, size, partner });
-        }
+        if (!isInverseOf(window, tokens.slice(partner, end))) continue;
+        if (spanQualifies(tokens.slice(start, end))) groups.push({ start, size, partner });
       }
     }
   }
@@ -263,18 +270,12 @@ const restoreLabel = (moves: string[]): string => {
 
 function labelCommutatorOrConjugate(
   body: string[],
+  aufEnd: number,
   start?: Facelets | null,
   pairColors?: [Color, Color] | null,
 ): TaggedSegment[] | null {
-  // if just (y)RU or (y)LU, can be explained in other ways, skip
-  if (!body.join('').includes('D')) return null;
-
-  // if yRUD or yLUD, may be commutator or conjugate
-  const fits = (allowed: Set<string>) => body.every((token) => allowed.has(baseOf(token)));
-  if (!fits(RUD) && !fits(LUD)) return null;
-
   // identify portion that is commutator or conjugate
-  const selected = selectCandidateGroups(findCandidateGroups(body));
+  const selected = selectCandidateGroups(findCandidateGroups(body, aufEnd));
   if (!selected.length) return null;
 
   const spans: TaggedSegment[] = [];
@@ -444,18 +445,20 @@ function transitionLabel(before: F2lPairInfo, after: F2lPairInfo, moves: string[
     return isValidInsert(moves) ? 'Insert pair' : undefined;
   }
 
+  const freedCorner = before.cornerInBottom && !after.cornerInBottom;
+  const freedEdge = before.edgeInMiddle && after.edgeInTop;
+  const freedBoth = freedCorner && freedEdge;
+
   const wasPaired = before.touching && before.minMoves >= 0 && before.minMoves <= 3;
   const isPaired = after.touching && after.minMoves >= 0 && after.minMoves <= 4;
-  if (isPaired && !wasPaired) return 'Make pair';
+  if (isPaired && !wasPaired) return freedBoth ? 'Free the pair' : 'Make pair';
 
   const isSplitPair = !after.touching && after.minMoves >= 0 && after.minMoves <= 4;
   if (isSplitPair && (before.minMoves < 0 || before.minMoves > 4)) return 'Make split pair';
 
   if (before.minMoves >= 0 && after.minMoves >= 0 && after.minMoves < before.minMoves) return 'Set up pair';
 
-  const freedCorner = before.cornerInBottom && !after.cornerInBottom;
-  const freedEdge = before.edgeInMiddle && after.edgeInTop;
-  if (freedCorner && freedEdge) return 'Free both pieces';
+  if (freedBoth) return 'Free both pieces';
   if (freedCorner) return 'Free the corner';
   if (freedEdge) return 'Free the edge';
 
@@ -516,13 +519,13 @@ function splitAtRotations(tokens: string[], start: Facelets | null): Run[] {
   return runs;
 }
 
-function labelRun(run: Run, pairColors?: [Color, Color] | null): TaggedSegment[] {
+function labelRun(run: Run, aufEnd: number, pairColors?: [Color, Color] | null): TaggedSegment[] {
   if (run.rotation) return [{ label: rotationLabel(run.start, run.end, pairColors), moves: run.moves }];
 
   const keyhole = labelKeyhole(run.moves, run.start, pairColors);
   if (keyhole) return keyhole;
 
-  const commutator = labelCommutatorOrConjugate(run.moves, run.start, pairColors);
+  const commutator = labelCommutatorOrConjugate(run.moves, aufEnd, run.start, pairColors);
   if (commutator) return commutator;
 
   return labelSlice(run.moves, run.start, pairColors);
@@ -546,10 +549,13 @@ export function labelF2lAlg(
 
   const segments: TaggedSegment[] = [];
   let groupOffset = 0;
+  let runStart = 0;
+  let leadingAuf = 0;
+  while (leadingAuf < tokens.length && isU(tokens[leadingAuf])) leadingAuf++;
 
   for (const run of splitAtRotations(tokens, start)) {
     let maxId = -1;
-    for (const segment of labelRun(run, pairColors)) {
+    for (const segment of labelRun(run, leadingAuf - runStart, pairColors)) {
       if (segment.groupId === undefined) {
         segments.push(segment);
         continue;
@@ -558,6 +564,7 @@ export function labelF2lAlg(
       segments.push({ ...segment, groupId: segment.groupId + groupOffset });
     }
     groupOffset += maxId + 1;
+    runStart += run.moves.length;
   }
 
   if (!segments.some((segment) => segment.label)) return null;

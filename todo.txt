@@ -13,44 +13,27 @@ A tab for your recons (click an icon and expand into a whole new page). A profil
 A completely intuitive f2l guide
 
 Add roux algs
-Missing L' U' L2 U L2' U' L and mirrors, y2?
-L' U' L R' U2 R2 U R'
-L' U' L U' D L' U L D' and probably other mirrors, y2, of RUD/LUD
-why y' U R U' R2' U2' R U2 R' U R and not y' R U' R2' U2' R U2 R' U R?
-Free both pieces + Make pair = Free pair
+ - Roux icons in YourAlgsList
+
+Add cross solutions
+ - Show for current angle
+ - Off in settings by default
 
 Think about function of solve review carefully. Form will follow.
 - Add breakdown into MovesTextEditor? Explore adding divs.
 
-Add search bar to YourAlgsList for alg names
- - In dropdown, give context: "Search by keyword: (Jb, T 6, BR)
- - What about expanding the algset search to have name subsearch?
-
-Roux icons in YourAlgsList
-
 Wack suggestion
 http://localhost:3000/algs/?a=f2l&c=y3022000000000000
 
-https://www.ao1k.com/algs/?a=f2l&p=WBO&c=y231001110
-Breakdown for U2 r' F' r R' D R U' R' D' R is bad, same for inverse above. F U' R U' R' U2 F' should be higher. 
 Can we explain F<R,U>F, better? Like F, pair, F'?
-Set up testing. We should set up a way to input algs and output breakdowns, then get a list of breakdowns that are correct.
 
-Pasting in text should not trigger most text substitutions, only LW -> l and X/Y/Z -> x/y/z. Not NN -> N2, NM -> N M, or UD -> (U D).
- - Issue is that parsing text happens every render, not just on text diff
- - Would operating not just on diff be problematic? 
- - Issue is it wouldn't even be good enough to go based on line, 
- - so I'd need to parse individual characters as the diff
-
- On page load, process Your Algs and add identified ones to known algsets
- - Also need to expose a module that adds one/several when the user adds them. Remember we have an import feature.
- - Add an add button to the Recon page? Direct people to the Algs page?
-
- Faved lefty algs should show even when righty is chosen. 
- - We should perhaps add some lefty/righty algs back in to both lists, if popular, like lefty Jb for Ja, but rank wrong hand LL algs much lower.
+On page load, process Your Algs and add identified ones to known algsets
+- Also need to expose a module that adds one/several when the user adds them. Remember we have an import feature.
+- Add an add button to the Recon page? Direct people to the Algs page?
+- Faved lefty algs should show even when righty is selected. 
 
 Idea: Alg packs, karma system. Algs can have fingertricks attached.
 
-utils/algCompilerCore.ts:811 removeAngleFromAlg is apparently broken
+switch to premium dns
 
-Why is JS + CSS 200 KB on /learn/eo? Can we shrink?
+Unique parsing algorithm, Parser, for each puzzle/input abstraction. In this way, we can handle things like FMC and 4x4, or even allow people to create their own

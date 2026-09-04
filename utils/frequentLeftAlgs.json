@@ -1,0 +1,27 @@
+{
+  "oll": {
+    "frequentLefty": [
+      "l' U2 L U L' U l",
+      "l' U' L U' L' U2 l",
+      "l' U' L U' L' U2 l",
+      "l' U' l L' U' L U l' U l",
+      "l' U' L U l F' L' F",
+      "L' U' L U' L' U2 L",
+      "L U F' U' L' U L F L'",
+      "L' U' L U' L' U L U L F' L' F",
+      "L F' L' U' L U F U' L'",
+      "F' U' L' U L F",
+      "F' L' U' L U L' U' L U F",
+      "l U' l2 U l2 U l2 U' l",
+      "l' U l2 U' l2 U' l2 U l'",
+      "l' U l2 U' l2' U' l2 U l'",
+      "l' U' L U' L' U L U' L' U2 l"
+    ]
+  },
+  "pll": {
+    "frequentLefty": [
+      "L2 U' L U' L U L' U L2 D' U L U' L' D",
+      "L' U' L F L' U' L U L F' L2' U L"
+    ]
+  }
+}

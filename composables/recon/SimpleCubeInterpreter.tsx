@@ -21,7 +21,7 @@ import { algsetPriority, dedupeByAlgsetPriority, rankSuggestions, suggestionRank
 import type { SavedAlgKeys } from './suggestionRanking';
 
 export type HashAlgset = 'f2l' | 'zbls';
-export type Algset = HashAlgset | SuggestableLLStep;
+export type Algset = HashAlgset | SuggestableLLStep | 'f2leo';
 
 const toHashAlgset = (step: string | undefined): HashAlgset => (step === 'zbls' ? 'zbls' : 'f2l');
 
@@ -3621,6 +3621,7 @@ export class SimpleCubeInterpreter {
     const speedEstimator = new AlgSpeedEstimator(this.handedness);
     const algSet = new Set<string>();
     const currentEO = this.eoValue;
+    const labelsByAufFreeCore = new Map<string, Set<string>>();
 
     // iterate and collect suggestions
     queries.forEach(({ query, pairColors, q, isTopLayer, isZBLSrelevant }) => {
@@ -3655,6 +3656,13 @@ export class SimpleCubeInterpreter {
           return;
         }
 
+        if (!isTopLayer) {
+          const core = splitLeadingAuf(finalAlg).coreKey;
+          const labels = labelsByAufFreeCore.get(core) ?? new Set<string>();
+          labels.add(pairLabel);
+          labelsByAufFreeCore.set(core, labels);
+        }
+
         if (!algSet.has(finalAlg)) {
           algSet.add(finalAlg);
 
@@ -3671,6 +3679,15 @@ export class SimpleCubeInterpreter {
           if (existingSuggestion && !existingSuggestion.steps.includes(pairLabel)) {
             existingSuggestion.steps.push(pairLabel);
           }
+        }
+      });
+    });
+
+    suggestions.forEach(suggestion => {
+      const labels = labelsByAufFreeCore.get(splitLeadingAuf(suggestion.alg).coreKey);
+      labels?.forEach(label => {
+        if (!suggestion.steps.includes(label)) {
+          suggestion.steps.push(label);
         }
       });
     });
