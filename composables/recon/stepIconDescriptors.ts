@@ -697,11 +697,13 @@ export function getStepIconDescriptor(
   const step = data.step;
   const eoColor = options?.eoColor;
 
-  // steps where EO border is not meaningful
-  const noEO = data.type === 'last layer' || data.type === 'solved';
+  const lsePattern = (data.type === 'lse' || data.type === 'solved') ? data.lsePattern : undefined;
+
+  // a last layer or solved icon already implies EO, so the border is only clutter
+  const allowEO = data.type !== 'last layer' && data.type !== 'solved';
 
   const withEO = (desc: IconDescriptor): IconDescriptor => {
-    if (eoColor && !noEO) desc.eoBorderColor = eoColor;
+    if (eoColor && allowEO) desc.eoBorderColor = eoColor;
     return desc;
   };
 
@@ -742,8 +744,8 @@ export function getStepIconDescriptor(
   }
 
   // lse - top 3x3 grid with side stickers
-  if (data.type === 'lse' && data.lsePattern) {
-    return withEO(lseIcon(data.lsePattern, config));
+  if (lsePattern) {
+    return withEO(lseIcon(lsePattern, config));
   }
 
   // block - isometric 3-face view

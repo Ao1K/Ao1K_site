@@ -124,7 +124,7 @@ const getRouxStep = (currentSteps: StepInfo[], prevSteps: StepInfo[], prevLSEPat
     if (!hasPrevCMLL) {
       return { step: 'owl', type: 'solved', colors: currentSteps[0].colors, lsePattern: prevLSEPattern };
     }
-    return { step: 'solved', type: 'lse', colors: currentSteps[0].colors, lsePattern: prevLSEPattern };
+    return { step: 'solved', type: 'solved', colors: currentSteps[0].colors, lsePattern: prevLSEPattern };
   }
 
   // LSE combinations (highest priority after solved)

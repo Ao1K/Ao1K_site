@@ -243,7 +243,7 @@ const TwistyClickable = ({ cross = 'up', pair, corner, edge, filledSlots, highli
   };
 
   // pull the camera back as hint facelets rise so they stay framed (same factor as TwistyPlayer)
-  const radiusForElevation = (elev: number) => 1.7 * (1 + (elev - DEFAULT_HINT_FACELETS_ELEVATION) * 0.1);
+  const radiusForElevation = (elev: number) => 1.87 * (1 + (elev - DEFAULT_HINT_FACELETS_ELEVATION) * 0.1);
 
   // rebuild the F2L paint overrides from the current placement, then repaint
   const recomputeOverrides = () => {
@@ -405,14 +405,15 @@ const TwistyClickable = ({ cross = 'up', pair, corner, edge, filledSlots, highli
     cube.rotation.y = targetYRef.current;
     cubeObjectRef.current = cube;
 
-    const aspectRatio = (divRef.current.clientWidth - 1) / (divRef.current.clientHeight - 1);
+    const aspectRatio = divRef.current.clientWidth / divRef.current.clientHeight;
     const camera = new PerspectiveCamera(75, aspectRatio, 0.1, 5);
     const radius = radiusForElevation(elevationRef.current);
     camera.position.set(0, radius * 0.5, radius * (Math.sqrt(3) / 2));
     cameraRef.current = camera;
 
     const renderer = new WebGLRenderer({ antialias: true });
-    renderer.setSize(divRef.current.clientWidth - 1, divRef.current.clientHeight - 1);
+    renderer.setSize(divRef.current.clientWidth, divRef.current.clientHeight);
+    renderer.domElement.style.display = 'block';
     divRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
@@ -454,9 +455,9 @@ const TwistyClickable = ({ cross = 'up', pair, corner, edge, filledSlots, highli
     const cam = cameraRef.current;
     const rend = rendererRef.current;
     if (rend && cam && divRef.current) {
-      cam.aspect = (divRef.current.clientWidth - 1) / (divRef.current.clientHeight - 1);
+      cam.aspect = divRef.current.clientWidth / divRef.current.clientHeight;
       cam.updateProjectionMatrix();
-      rend.setSize(divRef.current.clientWidth - 1, divRef.current.clientHeight - 1);
+      rend.setSize(divRef.current.clientWidth, divRef.current.clientHeight);
     }
   };
 
