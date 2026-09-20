@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { TwistyPlayer } from 'cubing/twisty';
-import { initialize as initializeCubeSolver, solve as solveCube } from 'cube-solver';
+import { warmUpCubeSolver, solveKociemba } from '../../composables/recon/cubeSolverClient';
 import {
   Scene,
   PerspectiveCamera,
@@ -96,7 +96,7 @@ const invertAlgMoves = (alg: string) => splitAlgMoves(alg)
   .map(normalizeMoveForCubeSolver)
   .join(' ');
 
-const simplifySetupMoves = (setupMoves: string) => {
+const simplifySetupMoves = async (setupMoves: string) => {
   if (!setupMoves) {
     return '';
   }
@@ -105,17 +105,11 @@ const simplifySetupMoves = (setupMoves: string) => {
     return setupMoves;
   }
 
-  try {
-    const kociembaSolution = solveCube(invertAlgMoves(setupMoves), 'kociemba');
-    if (splitAlgMoves(kociembaSolution).length < splitAlgMoves(setupMoves).length) {
-      return kociembaSolution;
-    } else {
-      return setupMoves;
-    }
-  } catch (error) {
-    console.error('Failed to simplify setup moves:', error);
-    return setupMoves;
+  const kociembaSolution = await solveKociemba(invertAlgMoves(setupMoves));
+  if (kociembaSolution && splitAlgMoves(kociembaSolution).length < splitAlgMoves(setupMoves).length) {
+    return kociembaSolution;
   }
+  return setupMoves;
 };
 
 const AVAILABLE_SCREENSHOT_SETUP_STATUS: ScreenshotSetupStatus = {
@@ -182,6 +176,7 @@ const Player = React.memo(({
   const [displayedSetupMoves, setDisplayedSetupMoves] = useState('');
   const displayedSetupMovesRef = useRef('');
   const setupMoveSimplificationCacheRef = useRef({ unsimplified: '', simplified: '' });
+  const pendingSetupMovesRef = useRef('');
   const screenshotSetupStatus = AVAILABLE_SCREENSHOT_SETUP_STATUS;
 
   const [screenshotGenerator] = useState(() => {
@@ -221,25 +216,36 @@ const Player = React.memo(({
   const ANIMATED = true;
   const NOT_ANIMATED = false;
 
-  const syncDisplayedSetupMoves = (scramble: string, displayedSolutionAlg: string) => {
-    const nextUnsimplifiedSetupMoves = joinAlgMoves(scramble, displayedSolutionAlg);
-    const nextSetupMoves = setupMoveSimplificationCacheRef.current.unsimplified === nextUnsimplifiedSetupMoves
-      ? setupMoveSimplificationCacheRef.current.simplified
-      : simplifySetupMoves(nextUnsimplifiedSetupMoves);
-    
-    if (setupMoveSimplificationCacheRef.current.unsimplified !== nextUnsimplifiedSetupMoves) {
-      setupMoveSimplificationCacheRef.current = {
-        unsimplified: nextUnsimplifiedSetupMoves,
-        simplified: nextSetupMoves,
-      };
-    }
-
-    if (displayedSetupMovesRef.current === nextSetupMoves) {
+  const applyDisplayedSetupMoves = (setupMoves: string) => {
+    if (displayedSetupMovesRef.current === setupMoves) {
       return;
     }
 
-    displayedSetupMovesRef.current = nextSetupMoves;
-    setDisplayedSetupMoves(nextSetupMoves);
+    displayedSetupMovesRef.current = setupMoves;
+    setDisplayedSetupMoves(setupMoves);
+  };
+
+  const syncDisplayedSetupMoves = async (scramble: string, displayedSolutionAlg: string) => {
+    const nextUnsimplifiedSetupMoves = joinAlgMoves(scramble, displayedSolutionAlg);
+    pendingSetupMovesRef.current = nextUnsimplifiedSetupMoves;
+
+    if (setupMoveSimplificationCacheRef.current.unsimplified === nextUnsimplifiedSetupMoves) {
+      applyDisplayedSetupMoves(setupMoveSimplificationCacheRef.current.simplified);
+      return;
+    }
+
+    applyDisplayedSetupMoves(nextUnsimplifiedSetupMoves);
+
+    const nextSetupMoves = await simplifySetupMoves(nextUnsimplifiedSetupMoves);
+    if (pendingSetupMovesRef.current !== nextUnsimplifiedSetupMoves) {
+      return;
+    }
+
+    setupMoveSimplificationCacheRef.current = {
+      unsimplified: nextUnsimplifiedSetupMoves,
+      simplified: nextSetupMoves,
+    };
+    applyDisplayedSetupMoves(nextSetupMoves);
   };
 
   if (lastSpeed.current !== speed && playerRef.current) {
@@ -250,7 +256,7 @@ const Player = React.memo(({
   const handleTakePicture = () => {
     if (!sceneRef.current || !cameraRef.current) return;
 
-    syncDisplayedSetupMoves(
+    void syncDisplayedSetupMoves(
       lastScramble.current,
       getDisplayedSolutionAlg(lastSolution.current, lastAnimationTimes.current),
     );
@@ -1085,7 +1091,14 @@ const Player = React.memo(({
   };
 
   useEffect(() => {
-    initializeCubeSolver('kociemba');
+    if (typeof requestIdleCallback === 'function') {
+      const handle = requestIdleCallback(warmUpCubeSolver, { timeout: 10000 });
+      return () => cancelIdleCallback(handle);
+    } else {
+      // backup. safari doesn't have requestIdleCallback yet
+      const handle = setTimeout(warmUpCubeSolver, 3000);
+      return () => clearTimeout(handle);
+    }
   }, []);
 
   useEffect(() => {
