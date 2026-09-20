@@ -37,3 +37,8 @@ Idea: Alg packs, karma system. Algs can have fingertricks attached.
 switch to premium dns
 
 Unique parsing algorithm, Parser, for each puzzle/input abstraction. In this way, we can handle things like FMC and 4x4, or even allow people to create their own
+
+Switch local algs saving disclaimer to login prompt once we have profiles
+
+Untimer -> Correlator? Semitimer? PseudoTimer? Detime?
+ - Space to activate checklist. c to check, space to continue

@@ -191,7 +191,7 @@ const F2lSearch = ({ cross, setCross, pair, setPair, config, setConfig, suggesti
     <div className="grid w-full max-w-220 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_25rem]">
       <div className="flex flex-col items-start gap-4 min-w-0">
         <div id="f2l-visualizer" className="flex flex-col w-full border border-neutral-600 rounded-sm bg-black">
-          <div className="flex flex-row items-center justify-between gap-2 mb-2 px-3 py-2 bg-dark border-b border-neutral-600 rounded-t-sm">
+          <div className="flex flex-row items-center justify-between gap-2 px-3 py-2 bg-dark border-b border-neutral-600 rounded-t-sm">
             <h2 className="text-sm text-primary-100 font-medium">Visual Input</h2>
             <div className="flex items-center gap-2">
               <F2lDefaults cross={cross} pair={pair} onCrossChange={handleCrossChange} onPairChange={handlePairChange} />
@@ -211,9 +211,7 @@ const F2lSearch = ({ cross, setCross, pair, setPair, config, setConfig, suggesti
             </div>
           </div>
 
-          {/* keep the cube square by capping width (not height); a height cap would let the
-              full-width column stretch it wide. centered so it sits under the heading. */}
-          <div className="relative mx-auto w-full max-w-100 aspect-square">
+          <div className="relative w-full aspect-square max-h-100">
             <TwistyClickable
               ref={twistyRef}
               cross={cross}

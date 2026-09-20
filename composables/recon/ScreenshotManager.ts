@@ -223,7 +223,7 @@ export function isSolveComplete(stepInfoLines: Array<StepInfo[] | null | undefin
   for (let i = stepInfoLines.length - 1; i >= 0; i--) {
     const stepInfo = stepInfoLines[i];
     if (stepInfo && stepInfo.length > 0) {
-      return stepInfo.some(step => step.type?.toLowerCase() === 'solved');
+      return stepInfo.some(step => step.type === 'solved');
     }
   }
 
