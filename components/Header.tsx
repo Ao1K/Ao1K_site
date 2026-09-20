@@ -5,12 +5,13 @@ import GlassesIcon from './icons/glasses';
 import BulletListIcon from './icons/bulletList';
 import DatabaseIcon, { PhDatabaseFill } from './icons/database';
 import HeaderSidebar from './HeaderSidebar';
+import HeaderShell from './HeaderShell';
 import SettingsMenuWrapper from './SettingsMenuWrapper';
 import { versionList } from '../utils/sharedConstants';
 
 export default function Header() {
   return (
-    <div className="absolute bg-primary-200 flex flex-row text-light_accent w-full z-45 h-16 top-0">
+    <HeaderShell>
       <img
         src="/Ao1K-Logo-v2.svg"
         className="h-16 w-auto overflow-visible"
@@ -35,6 +36,6 @@ export default function Header() {
         <SettingsMenuWrapper />
         <HeaderSidebar />
       </div>
-    </div>
+    </HeaderShell>
   );
 }
