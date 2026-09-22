@@ -65,7 +65,7 @@ function OrbitReferenceImage() {
 export default function EO() {
   return (
     <>
-      <TitleBar title="Edge Orientation" subtitle="A hidden lens for good cubing" seconds={30} />
+      <TitleBar title="Edge Orientation" subtitle="A hidden lens for good cubing" audience={30} />
       <div className="flex flex-row items-center gap-3 mb-6 rounded-sm border border-dark_accent px-5 py-2 text-base text-dark_accent sm:text-md">
         <InfoIcon className="min-w-8 min-h-8 text-dark_accent" />
         <div>
