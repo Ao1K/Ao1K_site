@@ -6,6 +6,7 @@ import LessonLink from "../LessonLink";
 import TitleBar from "../TitleBar";
 import CubeScene from "../CubeScene";
 import CubeImage from "../CubeImage";
+import ExternalLink from "../../ExternalLink";
 
 const ORBIT_FACELETS = "WWWWWWWWWYWYWYWYWYGGGWGWGGGRRRRRRRRRBBBWBWBBBOOOOOOOOO";
 
@@ -43,7 +44,7 @@ function OrbitReferenceImage() {
 export default function EO() {
   return (
     <>
-      <TitleBar title="Edge Orientation" subtitle="A hidden lens for good cubing" seconds={30} />
+      <TitleBar title="Edge Orientation" subtitle="A hidden lens for good cubing" audience={30} />
       <LessonBody>
         <Story storyParagraphs={[
           "There is danger. A young adventurer, Peaku, is trying to rescue his sister. In the heart of a labyrinth filled with monsters, he's found a clue to her whereabouts, and now he needs to escape before the whole place collapses.",
@@ -240,13 +241,7 @@ export default function EO() {
         </div>
         <span className="mb-6">
           Influencing OLL edges during F2L can be done in an unstructured way or in algorithm sets like{' '}
-          <a 
-            href="https://www.speedsolving.com/wiki/index.php/ZBLS"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-              ZBLS
-          </a>
+          <ExternalLink href="https://www.speedsolving.com/wiki/index.php/ZBLS" text="ZBLS" />
           .
         </span>
 
@@ -254,13 +249,7 @@ export default function EO() {
         <p>{"EO is useful for CFOP, but it is an integral part of the ZZ method. It also provides great intuition for how EO really works."}</p>
         <span>
           You can find an excellent{' '}
-          <a 
-            href="https://www.zzmethod.com/tutorial/eo"
-            target="_blank"
-            rel="noopener noreferrer" 
-          >
-              introduction to EO and ZZ
-          </a>
+          <ExternalLink href="https://www.zzmethod.com/tutorial/eo" text="introduction to EO and ZZ" />
           {' '}here by crystalcuber. His guide inspired parts of this one.
         </span>
 

@@ -1,7 +1,7 @@
 export default function LessonBody({
   children,
 }: {
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }) {
   return (
     <div className="

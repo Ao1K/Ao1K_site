@@ -153,7 +153,7 @@ export default function LessonNavigator() {
 
   return (
     <aside className="hidden xl:block sticky top-0 h-screen w-64 shrink-0 overflow-y-auto bg-primary-900 pt-16">
-      <div className="px-6 pt-4 text-xs font-semibold uppercase tracking-[0.2em] text-primary-400">
+      <div className="px-6 pt-4 text-sm font-semibold tracking-[0.2em] text-primary-400">
         Lesson Topics
       </div>
 

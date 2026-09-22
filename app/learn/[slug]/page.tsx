@@ -3,10 +3,14 @@ import { notFound } from "next/navigation";
 import { lessons } from "../../../components/learn/lessons";
 import EO from "../../../components/learn/postContent/eo";
 import Keyhole from "../../../components/learn/postContent/keyhole";
+import HowToLearn from "../../../components/learn/postContent/how-to-learn";
+import CubeSceneLoader from "../../../components/learn/CubeSceneLoader";
+import LessonFooterNav from "../../../components/learn/LessonFooterNav";
 
 const lessonComponents: Record<string, React.ComponentType> = {
   eo: EO,
   keyhole: Keyhole,
+  "how-to-learn": HowToLearn,
 };
 
 export function generateStaticParams() {
@@ -44,8 +48,10 @@ export default async function LearnLesson({
       data-lesson-content
       className="flex w-full max-w-3xl flex-col pt-20 pb-10 px-6 text-md text-primary-100 leading-relaxed"
     >
+      <link rel="preload" href="/learn/cubeScene.js" as="script" />
       <Component />
-      <script src="/learn/cubeScene.js" defer />
+      <LessonFooterNav slug={slug} />
+      <CubeSceneLoader />
     </div>
   );
 }

@@ -10,6 +10,7 @@ import DropdownIcon from '../icons/dropdown';
 import Image from 'next/image';
 import InfoPanelSection from './InfoPanelSection';
 import LessonLink from '../learn/LessonLink';
+import ExternalLink from '../ExternalLink';
 
 const dummyButtons = [
   { label: 'M', title: 'Mirror M' },
@@ -64,12 +65,12 @@ export default function InfoPanelContent() {
           If you or someone else does a cube solve, you can use this tool to write it down.
         </p>
         <p>
-          You&apos;ll need to know <a className="underline underline-offset-2" href="https://jperm.net/3x3/moves" target="_blank">cubing notation</a>. 
+          You&apos;ll need to know <ExternalLink href="https://jperm.net/3x3/moves" text="cubing notation" />. 
           Then you can start writing:
         </p>
         <ol className="list-decimal list-inside pl-2 space-y-4 marker:text-dark_accent marker:text-lg marker:space-x-2">
           <li>
-            In the Scramble box, copy in a scramble from somewhere like <a className="underline underline-offset-2" href="https://cstimer.net" target="_blank">cstimer</a>.
+            In the Scramble box, copy in a scramble from somewhere like <ExternalLink href="https://cstimer.net" text="cstimer" />.
           </li>
           <li>
             In the Solution box, write the first step of your solution. An icon will appear! No more writing comments.
@@ -278,7 +279,7 @@ export default function InfoPanelContent() {
         </div>
         <p>
           OLL and PLL autocomplete suggestions are ranked by 
-          frequency in <a className="underline underline-offset-2" href="https://reco.nz" target="_blank">reco.nz</a>.
+          frequency in <ExternalLink href="https://reco.nz" text="reco.nz" />.
           F2L suggestions are ranked imperfectly, but shorter solutions that use fast moves like R, L, U, and D
           are generally preferred.
         </p>

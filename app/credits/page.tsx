@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import ExternalLink from "../../components/ExternalLink";
 
 export const metadata: Metadata = {
   title: "Credits",
@@ -81,14 +82,11 @@ export default function Credits() {
               {" for "}
               {credit.source ? (
                 <span>
-                <a
-                href={credit.source}
-                target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline underline-offset-2 hover:text-primary-300"
-                >
-                  {credit.contribution}
-                </a>
+                <ExternalLink
+                  href={credit.source}
+                  text={credit.contribution}
+                  className="hover:text-primary-300"
+                />
                 {credit.extraContrib}
                 </span>
               ) : (

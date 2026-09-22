@@ -7,6 +7,7 @@ import { buildF2lCubeState } from '../../composables/algs/f2lCubeState';
 import type { Color } from '../../composables/recon/SimpleCube';
 import { simplePairIcon, type ColorConfig } from '../../composables/recon/stepIconDescriptors';
 import ReplayIcon from '../icons/replay';
+import ExternalLink from '../ExternalLink';
 import { IconSvg } from './f2lDefaults';
 import { useCubeColors } from '../../composables/useSettings';
 import { useAlgFavorites } from '../../composables/algs/algFavorites';
@@ -39,14 +40,11 @@ function NoSolutionsDisclaimer() {
     <>
       <p className="text-dark_accent pb-2">No solutions found</p>
       <p className="text-neutral-300 text-xs">{`Some cases aren't worth solving. If this one is worth it, offer a solution`}{" "}
-        <a
+        <ExternalLink
           href="https://discord.gg/WMm6JBgt2W"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="gap-2 hover:text-primary-100 underline underline-offset-2"
-        >
-          on the Discord
-        </a>
+          text="on the Discord"
+          className="hover:text-primary-100"
+        />
         {" "}and we can add it!
       </p>
     </>
