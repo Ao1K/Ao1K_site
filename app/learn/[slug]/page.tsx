@@ -29,7 +29,7 @@ export async function generateMetadata({
 
   return {
     title: lessonTitle,
-    description: lesson?.description ?? "Learn to cube",
+    description: lesson?.description ?? "Learn CFOP",
   };
 }
 
