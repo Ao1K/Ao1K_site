@@ -9,7 +9,7 @@ export const lessons: Lesson[] = [
   {
     slug: "how-to-learn",
     title: "How to Learn",
-    description: "There is much to learn, but the land is full of pitfalls. Learn how to progress with the CFOP method.",
+    description: "There is much to learn, but the land is full of pitfalls. Begin your CFOP journey.",
     category: "CFOP",
   },
   {
