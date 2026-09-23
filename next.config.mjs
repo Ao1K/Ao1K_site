@@ -12,6 +12,14 @@ const nextConfig = {
   logging: {
     browserToTerminal: true,
   },
+  turbopack: {
+    resolveAlias: {
+      // cubing imports three's source files directly. Without this, the app loads a second copy of
+      // three whose material ids can match cubing's, and the renderer skips color updates.
+      three: 'three/src/Three.js',
+    },
+  },
+  devIndicators: false,
   reactStrictMode: true, // Optional but recommended
   // output: 'standalone', // Ensures it builds correctly for deployment
   trailingSlash: true, // Ensures Amplify correctly handles trailing slashes
