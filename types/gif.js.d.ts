@@ -1,34 +1,15 @@
-declare module 'gif.js/src/GIFEncoder.js' {
-  interface ByteArray {
-    pages: Uint8Array[];
-    cursor: number;
+declare module 'gif.js/src/LZWEncoder.js' {
+  interface ByteOutput {
     writeByte(value: number): void;
+    writeBytes(values: ArrayLike<number>, offset?: number, count?: number): void;
   }
 
-  class GIFEncoder {
-    constructor(width: number, height: number);
-    colorTab: number[] | null;
-    indexedPixels: Uint8Array | null;
-    transIndex: number;
-    delay: number;
-    out: ByteArray;
-    setRepeat(repeat: number): void;
-    setDelay(milliseconds: number): void;
-    setQuality(quality: number): void;
-    setDither(dither: boolean | string): void;
-    setTransparent(color: number | null): void;
-    setGlobalPalette(palette: number[] | boolean): void;
-    findClosestRGB(r: number, g: number, b: number, used?: boolean): number;
-    analyzePixels(): void;
-    writeGraphicCtrlExt(): void;
-    writeShort(value: number): void;
-    writeHeader(): void;
-    addFrame(imageData: Uint8ClampedArray): void;
-    finish(): void;
-    stream(): ByteArray;
+  class LZWEncoder {
+    constructor(width: number, height: number, pixels: Uint8Array, colorDepth: number);
+    encode(output: ByteOutput): void;
   }
 
-  export = GIFEncoder;
+  export = LZWEncoder;
 }
 
 declare module 'gif.js/src/TypedNeuQuant.js' {

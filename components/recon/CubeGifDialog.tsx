@@ -30,6 +30,9 @@ import LineConfigItem, { type LineEntry, MIN_LINE_PCT } from './LineConfigItem';
 import type { LineIconDatum } from './IconStack';
 import type { SvgShape } from '@/composables/recon/stepIconDescriptors';
 import { getAutoHighlight } from '@/composables/recon/autoHighlight';
+import { createGifEncoderPool, type GifEncoderPool } from '@/composables/recon/gifEncoderPool';
+import type { GifSettings } from '@/utils/gifEncoding';
+import { listFlatSceneColors, type Rgb, type SceneColors, type TranslucentLayer } from '@/utils/gifPalette';
 
 const CHECKERBOARD_STYLE = {
   backgroundColor: '#d4d4d4',
@@ -97,6 +100,7 @@ const FACE_COLOR_KEYS: (keyof CubeColors)[] = ['up', 'left', 'front', 'right', '
 
 type FaceMaterials = {
   regular: MeshBasicMaterial;
+  regularHint: MeshBasicMaterial;
   translucent: MeshBasicMaterial;
   translucentHint: MeshBasicMaterial;
 };
@@ -107,6 +111,7 @@ function createFaceMaterials(cube: any): FaceMaterials[] {
     const center = centerInfos[0];
     faceMaterials[center.faceIdx] = {
       regular: center.facelet.material,
+      regularHint: center.hintFacelet.material,
       translucent: new MeshBasicMaterial({ transparent: true, opacity: 0.3 }),
       translucentHint: new MeshBasicMaterial({ transparent: true, opacity: 0.3, side: BackSide }),
     };
@@ -124,6 +129,8 @@ function boxFaceIndexFacing(position: Vector3): number {
   );
   return axis * 2 + (components[axis] > 0 ? 0 : 1);
 }
+
+const readFoundationMaterial = (cube: any) => (cube.experimentalFoundationMeshes as Mesh[])[0].material as MeshBasicMaterial;
 
 function hideInnerFoundationFaces(cube: any) {
   for (const foundation of cube.experimentalFoundationMeshes as Mesh[]) {
@@ -145,16 +152,12 @@ function applyCubeColors(faceMaterials: FaceMaterials[], colors: CubeColors) {
   });
 }
 
-type NeuQuantClass = typeof import('gif.js/src/TypedNeuQuant.js');
-type GIFEncoderInstance = InstanceType<typeof import('gif.js/src/GIFEncoder.js')>;
-
-const GIF_DISPOSE_LEAVE_IN_PLACE = 1;
-
 const PALETTE_SAMPLE_FRAMES = 16;
-const PALETTE_SAMPLE_STRIDE = 3;
 const PALETTE_PROGRESS_SHARE = 8;
 
-function compositeOverBlack(color: number, alpha: number): [number, number, number] {
+const FACE_LABEL_COLORS: Rgb[] = [[0xec, 0xe6, 0xef], [0x16, 0x10, 0x18]];
+
+function compositeOverBlack(color: number, alpha: number): Rgb {
   return [
     Math.round(((color >> 16) & 0xff) * alpha),
     Math.round(((color >> 8) & 0xff) * alpha),
@@ -162,146 +165,42 @@ function compositeOverBlack(color: number, alpha: number): [number, number, numb
   ];
 }
 
-// every frame shares this palette. A palette per frame shifts flat areas by a level or two
-// between frames, and sites that re-encode the gif (Discord) show that as flicker.
-function buildSharedPalette(
-  NeuQuant: NeuQuantClass,
-  samples: Uint8ClampedArray[],
-  exactColor: [number, number, number],
-): { palette: number[]; spareIndex: number } {
-  let sampledPixels = 0;
-  for (const frame of samples) sampledPixels += Math.ceil((frame.length / 4) / PALETTE_SAMPLE_STRIDE);
-
-  const merged = new Uint8Array(sampledPixels * 3);
-  let out = 0;
-  samples.forEach((frame, frameIdx) => {
-    const pixelCount = frame.length / 4;
-    for (let i = frameIdx % PALETTE_SAMPLE_STRIDE; i < pixelCount; i += PALETTE_SAMPLE_STRIDE) {
-      const p = i * 4;
-      merged[out++] = frame[p];
-      merged[out++] = frame[p + 1];
-      merged[out++] = frame[p + 2];
-    }
-  });
-
-  const quantizer = new NeuQuant(merged.subarray(0, out), 10);
-  quantizer.buildColormap();
-  const palette = quantizer.getColormap().map(v => v & 0xff);
-
-  // quantization lands near the background color rather than on it. it covers most of the
-  // image, so overwrite its entry with the color the user actually picked.
-  const backgroundEntry = quantizer.lookupRGB(exactColor[0], exactColor[1], exactColor[2]);
-  palette[backgroundEntry * 3] = exactColor[0];
-  palette[backgroundEntry * 3 + 1] = exactColor[1];
-  palette[backgroundEntry * 3 + 2] = exactColor[2];
-
-  const entryCount = palette.length / 3;
-  const usage = new Uint32Array(entryCount);
-  for (let p = 0; p < out; p += 3) {
-    usage[quantizer.lookupRGB(merged[p], merged[p + 1], merged[p + 2])]++;
-  }
-  let spareIndex = backgroundEntry === 0 ? 1 : 0;
-  for (let i = 0; i < entryCount; i++) {
-    if (i !== backgroundEntry && usage[i] < usage[spareIndex]) spareIndex = i;
-  }
-
-  return { palette, spareIndex };
+function materialRgb(material: MeshBasicMaterial): Rgb {
+  const hex = material.color.getHex();
+  return [(hex >> 16) & 0xff, (hex >> 8) & 0xff, hex & 0xff];
 }
 
-function closestPaletteIndex(
-  colorTab: number[],
-  r: number,
-  g: number,
-  b: number,
-  excluded: number,
-): number {
-  let best = excluded === 0 ? 1 : 0;
-  let bestDistance = Infinity;
-  for (let i = 0, index = 0; i < colorTab.length; index++) {
-    const dr = r - (colorTab[i++] & 0xff);
-    const dg = g - (colorTab[i++] & 0xff);
-    const db = b - (colorTab[i++] & 0xff);
-    if (index === excluded) continue;
-    const distance = dr * dr + dg * dg + db * db;
-    if (distance < bestDistance) {
-      bestDistance = distance;
-      best = index;
-    }
-  }
-  return best;
+function materialLayer(material: MeshBasicMaterial): TranslucentLayer {
+  return { color: materialRgb(material), opacity: material.transparent ? material.opacity : 1 };
 }
 
-// gif.js checks all 256 entries per pixel when it didn't build the palette, so results are
-// cached by color. The excluded index stays free for frame differencing.
-function cachePaletteLookups(encoder: GIFEncoderInstance, excludedIndex: number) {
-  const indexByColor = new Map<number, number>();
-  const scanPalette = encoder.findClosestRGB.bind(encoder);
-  encoder.findClosestRGB = (r: number, g: number, b: number, used?: boolean) => {
-    if (used) return scanPalette(r, g, b, used);
-    const key = (r << 16) | (g << 8) | b;
-    const cached = indexByColor.get(key);
-    if (cached !== undefined) return cached;
-    const index = closestPaletteIndex(encoder.colorTab!, r, g, b, excludedIndex);
-    indexByColor.set(key, index);
-    return index;
+type SceneColorOptions = {
+  background: Rgb;
+  hasTranslucentPieces: boolean;
+  includeFacelets: boolean;
+  includeFaceLabels: boolean;
+};
+
+function collectSceneColors(
+  faceMaterials: FaceMaterials[],
+  foundation: MeshBasicMaterial,
+  options: SceneColorOptions,
+): SceneColors {
+  const { hasTranslucentPieces } = options;
+  const regularHints = faceMaterials.map(materials => materialLayer(materials.regularHint));
+  const translucentHints = hasTranslucentPieces
+    ? faceMaterials.map(materials => materialLayer(materials.translucentHint))
+    : [];
+  return {
+    background: options.background,
+    opaqueStickers: faceMaterials.map(materials => materialRgb(materials.regular)),
+    foundation: materialLayer(foundation),
+    hints: options.includeFacelets ? [...regularHints, ...translucentHints] : [],
+    labels: options.includeFaceLabels ? FACE_LABEL_COLORS : [],
   };
 }
 
-// unchanged pixels are only safe to drop under disposal 1, and gif.js forces disposal 2 on any
-// frame with a transparent index. its setDispose override path throws, so writeGraphicCtrlExt is
-// replaced outright alongside the pixel rewrite.
-function enableFrameDifferencing(encoder: GIFEncoderInstance, transparentIndex: number) {
-  const analyzePixels = encoder.analyzePixels.bind(encoder);
-  let previousIndexed: Uint8Array | null = null;
-
-  encoder.analyzePixels = () => {
-    analyzePixels();
-    encoder.transIndex = transparentIndex;
-
-    const indexed = encoder.indexedPixels!;
-    const previous = previousIndexed;
-    previousIndexed = indexed.slice();
-    if (!previous) return;
-    for (let i = 0; i < indexed.length; i++) {
-      if (indexed[i] === previous[i]) indexed[i] = transparentIndex;
-    }
-  };
-
-  encoder.writeGraphicCtrlExt = () => {
-    const out = encoder.out;
-    out.writeByte(0x21);
-    out.writeByte(0xf9);
-    out.writeByte(4);
-    out.writeByte((GIF_DISPOSE_LEAVE_IN_PLACE << 2) | 1);
-    encoder.writeShort(encoder.delay);
-    out.writeByte(encoder.transIndex);
-    out.writeByte(0);
-  };
-}
-
-function encodedBytes(encoder: GIFEncoderInstance): Uint8Array<ArrayBuffer> {
-  const stream = encoder.stream();
-  const pages: Uint8Array[] = stream.pages;
-  const pageSize = pages[0].length;
-  const bytes = new Uint8Array((pages.length - 1) * pageSize + stream.cursor);
-  pages.forEach((page, i) => {
-    const offset = i * pageSize;
-    if (i === pages.length - 1) bytes.set(page.subarray(0, stream.cursor), offset);
-    else bytes.set(page, offset);
-  });
-  return bytes;
-}
-
-function framesEqual(a: Uint8ClampedArray, b: Uint8ClampedArray): boolean {
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) {
-    if (a[i] !== b[i]) return false;
-  }
-  return true;
-}
-
-type GIFEncoderClass = typeof import('gif.js/src/GIFEncoder.js');
-type CaptureFrame = (tSec: number, settleFrames?: number) => Promise<Uint8ClampedArray>;
+type CaptureFrame = (tSec: number) => Promise<Uint8ClampedArray>;
 type CaptureBackground = { color: number; alpha: number };
 
 const HEX_COLOR_PATTERN = /^#([0-9a-fA-F]{6})([0-9a-fA-F]{2})?$/;
@@ -333,128 +232,100 @@ function createSquareCamera(camera: PerspectiveCamera): PerspectiveCamera {
   return square;
 }
 
+function flipRowsAndMakeOpaque(bottomUpPixels: Uint8Array, resolution: number): Uint8ClampedArray {
+  const rowBytes = resolution * 4;
+  const frame = new Uint8ClampedArray(bottomUpPixels.length);
+  for (let row = 0; row < resolution; row++) {
+    const sourceStart = (resolution - 1 - row) * rowBytes;
+    frame.set(bottomUpPixels.subarray(sourceStart, sourceStart + rowBytes), row * rowBytes);
+  }
+  for (let alpha = 3; alpha < frame.length; alpha += 4) frame[alpha] = 255;
+  return frame;
+}
+
 function createFrameGrabber(
   renderer: WebGLRenderer,
   scene: Scene,
   camera: PerspectiveCamera,
   resolution: number,
 ): () => Uint8ClampedArray {
-  const readback = document.createElement('canvas');
-  readback.width = resolution;
-  readback.height = resolution;
-  const readbackCtx = readback.getContext('2d', { willReadFrequently: true })!;
+  const gl = renderer.getContext();
+  const bottomUpPixels = new Uint8Array(resolution * resolution * 4);
 
   return () => {
     renderer.render(scene, camera);
-    // black goes down first so a translucent background always comes out as one fixed color.
-    // With the transparent preset, empty areas end up black.
-    readbackCtx.fillStyle = '#000000';
-    readbackCtx.fillRect(0, 0, resolution, resolution);
-    readbackCtx.drawImage(renderer.domElement, 0, 0);
-    return readbackCtx.getImageData(0, 0, resolution, resolution).data;
+    gl.readPixels(0, 0, resolution, resolution, gl.RGBA, gl.UNSIGNED_BYTE, bottomUpPixels);
+    return flipRowsAndMakeOpaque(bottomUpPixels, resolution);
   };
 }
 
-// cubing.js queues a puzzle update on one frame and draws it on the next.
-const SETTLE_FRAMES = 2;
+const BROWSER_YIELD_INTERVAL_MS = 100;
 
-async function waitAnimationFrames(count: number) {
-  for (let i = 0; i < count; i++) {
-    await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
-  }
+function yieldToEventLoop(): Promise<void> {
+  return new Promise(resolve => {
+    const channel = new MessageChannel();
+    channel.port1.onmessage = () => {
+      channel.port1.close();
+      resolve();
+    };
+    channel.port2.postMessage(null);
+  });
 }
 
-async function samplePalette(
-  NeuQuant: NeuQuantClass,
+function createPeriodicBrowserYield(): () => Promise<void> {
+  let lastYield = performance.now();
+  return async () => {
+    if (performance.now() - lastYield < BROWSER_YIELD_INTERVAL_MS) return;
+    await yieldToEventLoop();
+    lastYield = performance.now();
+  };
+}
+
+async function applyPlayerPositionToCube(player: TwistyPlayer, cube: Object3D) {
+  const position = await player.experimentalModel.legacyPosition.get();
+  (cube as any).onPositionChange(position);
+}
+
+async function captureSampleFrames(
   captureFrame: CaptureFrame,
   totalFrames: number,
-  totalDuration: number,
-  background: CaptureBackground,
   onProgress: (percent: number) => void,
-): Promise<{ palette: number[]; spareIndex: number }> {
+): Promise<Map<number, Uint8ClampedArray>> {
   const sampleCount = Math.min(PALETTE_SAMPLE_FRAMES, totalFrames);
-  const samples: Uint8ClampedArray[] = [];
+  const samplesByFrameIdx = new Map<number, Uint8ClampedArray>();
   for (let i = 0; i < sampleCount; i++) {
-    const tSec = sampleCount === 1 ? 0 : (i / (sampleCount - 1)) * totalDuration;
-    samples.push(await captureFrame(tSec));
+    const frameIdx = sampleCount === 1 ? 0 : Math.round((i / (sampleCount - 1)) * (totalFrames - 1));
+    samplesByFrameIdx.set(frameIdx, await captureFrame(frameIdx / FPS));
     onProgress(Math.round(((i + 1) / sampleCount) * PALETTE_PROGRESS_SHARE));
   }
-  return buildSharedPalette(NeuQuant, samples, compositeOverBlack(background.color, background.alpha));
-}
-
-function createGifEncoder(
-  GIFEncoder: GIFEncoderClass,
-  resolution: number,
-  palette: number[],
-  spareIndex: number,
-  transparentBackground: boolean,
-): GIFEncoderInstance {
-  // a gif has one transparent index. the transparent preset already spends it on "show the
-  // page", which leaves nothing to mean "same as the previous frame".
-  const differencing = !transparentBackground;
-
-  const encoder = new GIFEncoder(resolution, resolution);
-  encoder.setRepeat(0);
-  encoder.setTransparent(transparentBackground ? 0x000000 : null);
-  encoder.setGlobalPalette(palette);
-  encoder.writeHeader();
-  cachePaletteLookups(encoder, differencing ? spareIndex : -1);
-  if (differencing) enableFrameDifferencing(encoder, spareIndex);
-  return encoder;
-}
-
-function createFrameDeduper(encoder: GIFEncoderInstance) {
-  let pendingFrame: Uint8ClampedArray | null = null;
-  let pendingDelayMs = 0;
-
-  const writePendingFrame = () => {
-    if (!pendingFrame) return;
-    encoder.setDelay(pendingDelayMs);
-    encoder.addFrame(pendingFrame);
-  };
-
-  const appendFrame = (frame: Uint8ClampedArray) => {
-    if (pendingFrame && framesEqual(pendingFrame, frame)) {
-      pendingDelayMs += FRAME_DELAY_MS;
-      return;
-    }
-    writePendingFrame();
-    pendingFrame = frame;
-    pendingDelayMs = FRAME_DELAY_MS;
-  };
-
-  const writeLastFrame = (extraDelayMs: number) => {
-    pendingDelayMs += extraDelayMs;
-    writePendingFrame();
-  };
-
-  return { appendFrame, writeLastFrame };
+  return samplesByFrameIdx;
 }
 
 async function encodeFrames(
-  encoder: GIFEncoderInstance,
+  pool: GifEncoderPool,
+  pendingSettings: Promise<GifSettings>,
   captureFrame: CaptureFrame,
   totalFrames: number,
   totalDuration: number,
+  samplesByFrameIdx: Map<number, Uint8ClampedArray>,
   onProgress: (percent: number) => void,
-) {
-  const deduper = createFrameDeduper(encoder);
+): Promise<Uint8Array<ArrayBuffer>> {
+  const capturedFrameCount = totalFrames + 1;
+  const encoder = pool.encodeFrames(pendingSettings, encodedFrameCount => onProgress(
+    PALETTE_PROGRESS_SHARE +
+    Math.round((encodedFrameCount / capturedFrameCount) * (100 - PALETTE_PROGRESS_SHARE))
+  ));
 
   for (let i = 0; i < totalFrames; i++) {
-    deduper.appendFrame(await captureFrame(i / FPS));
-    onProgress(
-      PALETTE_PROGRESS_SHARE +
-      Math.round(((i + 1) / totalFrames) * (100 - PALETTE_PROGRESS_SHARE))
-    );
+    await encoder.addFrame(samplesByFrameIdx.get(i) ?? await captureFrame(i / FPS));
   }
 
-  // the loop's last time step can fall just before the end. Capturing the exact end, with
-  // extra frames to settle, makes the last frame show the final state.
-  deduper.appendFrame(await captureFrame(totalDuration, SETTLE_FRAMES * 2));
+  // the loop's last time step can fall just before the end. Capturing the exact end makes
+  // the last frame show the final state.
+  await encoder.addFrame(await captureFrame(totalDuration));
 
-  // hold the final frame; outside of duration/UI calculations
-  deduper.writeLastFrame(END_HOLD_MS);
-  encoder.finish();
+  // END_HOLD_MS holds the final frame; outside of duration/UI calculations
+  return encoder.finish(FRAME_DELAY_MS, END_HOLD_MS);
 }
 
 function buildGifFilename(scramble: string, now: Date): string {
@@ -529,6 +400,7 @@ export default function CubeGifDialog({
   const hintStickerMeshesRef = useRef<any[]>([]);
   const faceLabelMeshesRef = useRef<Mesh[]>([]);
   const faceMaterialsRef = useRef<FaceMaterials[]>([]);
+  const foundationMaterialRef = useRef<MeshBasicMaterial | null>(null);
   const colorBasedOrbitNamesRef = useRef<Record<string, string[]>>({});
   const sceneRef = useRef<Scene | null>(null);
   const cameraRef = useRef<PerspectiveCamera | null>(null);
@@ -545,7 +417,7 @@ export default function CubeGifDialog({
   const [includeFaceLabels, setIncludeFaceLabels] = useState(true);
   const [resolution, setResolution] = useState(360);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generationProgress, setGenerationProgress] = useState(0);
+  const progressLabelRef = useRef<HTMLSpanElement | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [previewLoaded, setPreviewLoaded] = useState(false);
 
@@ -1152,6 +1024,7 @@ export default function CubeGifDialog({
       const twistyEl = player.querySelector('canvas');
       if (twistyEl?.parentNode) twistyEl.parentNode.removeChild(twistyEl);
 
+      foundationMaterialRef.current = readFoundationMaterial(cube);
       hideInnerFoundationFaces(cube);
       faceMaterialsRef.current = createFaceMaterials(cube);
       applyCubeColors(faceMaterialsRef.current, latestStateRef.current.cubeColors);
@@ -1274,62 +1147,84 @@ export default function CubeGifDialog({
     applyHighlightForLine(realTimeToLineIndex(tSec));
   };
 
+  const showGenerationProgress = (percent: number) => {
+    if (progressLabelRef.current) progressLabelRef.current.textContent = `Generating... ${percent}%`;
+  };
+
   const handleDownload = async () => {
     if (isGenerating) return;
     const scene = sceneRef.current;
     const camera = cameraRef.current;
-    if (!scene || !camera || !playerElRef.current) {
+    const player = playerElRef.current;
+    const cube = cubeObjectRef.current;
+    const foundationMaterial = foundationMaterialRef.current;
+    if (!scene || !camera || !player || !cube || !foundationMaterial) {
       setError('Preview is not ready yet.');
       return;
     }
 
     setError(null);
     setIsGenerating(true);
-    setGenerationProgress(0);
     isCapturingRef.current = true;
 
     let captureRenderer: WebGLRenderer | null = null;
+    const pool = createGifEncoderPool();
 
     try {
-      const { default: GIFEncoder } = await import('gif.js/src/GIFEncoder.js');
-      const { default: NeuQuant } = await import('gif.js/src/TypedNeuQuant.js');
-
       const background = parseCaptureBackground(backgroundColor, transparentBackground);
       captureRenderer = createCaptureRenderer(resolution, background);
       const grabFrame = createFrameGrabber(captureRenderer, scene, createSquareCamera(camera), resolution);
 
-      const captureFrame: CaptureFrame = async (tSec, settleFrames = SETTLE_FRAMES) => {
+      const yieldToBrowserPeriodically = createPeriodicBrowserYield();
+      const captureFrame: CaptureFrame = async (tSec) => {
+        await yieldToBrowserPeriodically();
         seekCaptureTo(tSec);
-        await waitAnimationFrames(settleFrames);
+        await applyPlayerPositionToCube(player, cube);
         return grabFrame();
       };
 
       const totalFrames = Math.max(1, Math.round(totalDuration * FPS)) + 1;
 
-      const { palette, spareIndex } = await samplePalette(
-        NeuQuant,
+      const sceneColors = collectSceneColors(faceMaterialsRef.current, foundationMaterial, {
+        background: compositeOverBlack(background.color, background.alpha),
+        hasTranslucentPieces: lineHighlights.some(set => set.size < ALL_PIECE_NAMES.length),
+        includeFacelets,
+        includeFaceLabels,
+      });
+      const samplesByFrameIdx = await captureSampleFrames(captureFrame, totalFrames, showGenerationProgress);
+      const sampleCopies = [...samplesByFrameIdx.values()].map(frame => frame.slice());
+      const pendingSettings = pool.buildPalette(sampleCopies, listFlatSceneColors(sceneColors)).then(
+        ({ palette, spareIndex }): GifSettings => ({
+          width: resolution,
+          height: resolution,
+          palette,
+          spareIndex,
+          transparentBackground,
+        }),
+      );
+      const gifBytes = await encodeFrames(
+        pool,
+        pendingSettings,
         captureFrame,
         totalFrames,
         totalDuration,
-        background,
-        setGenerationProgress,
+        samplesByFrameIdx,
+        showGenerationProgress,
       );
-      const encoder = createGifEncoder(GIFEncoder, resolution, palette, spareIndex, transparentBackground);
-      await encodeFrames(encoder, captureFrame, totalFrames, totalDuration, setGenerationProgress);
 
-      const blob = new Blob([encodedBytes(encoder)], { type: 'image/gif' });
+      const blob = new Blob([gifBytes], { type: 'image/gif' });
       downloadBlob(blob, buildGifFilename(scramble, new Date()));
     } catch (e) {
       console.error(e);
       setError(e instanceof Error ? e.message : 'Failed to generate GIF.');
     } finally {
+      pool.dispose();
       captureRenderer?.dispose();
       // clear highlighting after capture so preview returns to normal
       applyHighlightForLine(-1);
       isCapturingRef.current = false;
       previewStartRef.current = performance.now();
       setIsGenerating(false);
-      setGenerationProgress(0);
     }
   };
 
@@ -1660,7 +1555,7 @@ export default function CubeGifDialog({
                       : 'border-primary-100 bg-primary-200 text-black hover:brightness-110'
                   }`}
                 >
-                  {isGenerating ? `Generating... ${generationProgress}%` : 'Download GIF'}
+                  {isGenerating ? <span ref={progressLabelRef}>Generating... 0%</span> : 'Download GIF'}
                 </button>
               </div>
               {lineEntries.length === 0 && (
