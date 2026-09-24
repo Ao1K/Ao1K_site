@@ -91,8 +91,10 @@ export default function HowToLearn() {
         <p>{`The best way to learn something changes depending on how you are and what you're learning. If you're learning algorithms (algs), there's all sorts of techniques you can use to make it go smoother. We'll talk more about these and other techniques when they become relevant.`}</p>
         <h2>Practicing</h2>
         {/* TODO: link to F2L tutorial */}
-        <p>{`Practicing is how you remember and get fast at something. Without practice, that new thing you learned will feel slow. This is the common pitfall with learning F2L. It might take a lot of practice to make F2L faster than some easier technique.`}</p>
-        <p>{`In general, there's a few ways to practice:`}</p>
+        <p>{`Practicing is how you remember and get fast at something. Without enough practice, that new thing you learned might actually make your times go up. But as you practice it more, your times should hopefully go down, and eventually they might even level off as you get truly familiar with it.`}</p>
+        <LearningJumpsGraph />
+        <p>{`This illustration is still oversimplified. There's a lot of randomness, and you might be working on several things at once. It can be hard to tell what's really going on. The good news is that practice can be a lot of fun.`}</p>
+        <p>{`There's a few main ways to practice:`}</p>
         <LessonList items={['Doing algorithms repeatedly (also called drilling)', 'Partial solves', 'Untimed solves','Timed solves']} />
         {/* TODO: link to speed training tutorial, if we make one */}
         <p>{`Among other ways.`}</p>
@@ -105,6 +107,11 @@ export default function HowToLearn() {
 
 const X_LABEL = "Number of solves";
 const Y_LABEL = "Solve Time";
+
+const LEARNED_LABEL = "Learned new thing";
+const PRACTICED_LABEL = "Practiced thing";
+const FAMILIAR_LABEL = "Familiar with thing";
+const LEGEND_TITLE = "Legend";
 
 const VIEW_WIDTH = 420;
 const VIEW_HEIGHT = 190;
@@ -121,41 +128,85 @@ const DECAY_RATE = 3.6;
 const ASYMPTOTE = 0.1;
 const SAMPLE_COUNT = 80;
 
+function toPlotX(progress: number) {
+  return PLOT_LEFT + progress * PLOT_WIDTH;
+}
+
+function toPlotY(value: number) {
+  return PLOT_TOP + (1 - value) * PLOT_HEIGHT;
+}
+
+function formatPoint(progress: number, value: number) {
+  return `${toPlotX(progress).toFixed(2)},${toPlotY(value).toFixed(2)}`;
+}
+
 function decayCurvePoints() {
   return Array.from({ length: SAMPLE_COUNT + 1 }, (_, index) => {
     const progress = index / SAMPLE_COUNT;
     const value = ASYMPTOTE + (1 - ASYMPTOTE) * Math.exp(-DECAY_RATE * progress);
-    const x = PLOT_LEFT + progress * PLOT_WIDTH;
-    const y = PLOT_TOP + (1 - value) * PLOT_HEIGHT;
-    return `${x.toFixed(2)},${y.toFixed(2)}`;
+    return formatPoint(progress, value);
   }).join(" ");
+}
+
+function GraphAxes() {
+  return (
+    <>
+      <line
+        x1={PLOT_LEFT}
+        y1={PLOT_TOP}
+        x2={PLOT_LEFT}
+        y2={BASELINE}
+        className="stroke-primary-600"
+        strokeWidth={1}
+      />
+      <line
+        x1={PLOT_LEFT}
+        y1={BASELINE}
+        x2={PLOT_LEFT + PLOT_WIDTH}
+        y2={BASELINE}
+        className="stroke-primary-600"
+        strokeWidth={1}
+      />
+      <text
+        x={PLOT_LEFT + PLOT_WIDTH / 2}
+        y={VIEW_HEIGHT - 12}
+        textAnchor="middle"
+        className="fill-primary-100 text-md"
+      >
+        {X_LABEL}
+      </text>
+      <text
+        x={42}
+        y={VIEW_HEIGHT - 100}
+        textAnchor="middle"
+        className="fill-primary-100 text-md"
+      >
+        {Y_LABEL}
+      </text>
+    </>
+  );
+}
+
+function GraphFigure({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <figure className="mb-4 flex flex-col items-center sm:mx-10 rounded-sm">
+      <figcaption className="mb-2 text-md font-semibold text-primary-100">{title}</figcaption>
+      {children}
+    </figure>
+  );
 }
 
 function SolveTimeDecayGraph() {
   return (
-    <figure className="mb-4 flex justify-center">
+    <GraphFigure title="Improvement Curve (Version 1)">
       <svg
         viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
-        className="w-full max-w-sm"
+        className="w-full"
+        style={{ maxWidth: VIEW_WIDTH }}
         role="img"
         aria-label={`${Y_LABEL} against ${X_LABEL}: a curve that falls steeply at first, then flattens out.`}
       >
-        <line
-          x1={PLOT_LEFT}
-          y1={PLOT_TOP}
-          x2={PLOT_LEFT}
-          y2={BASELINE}
-          className="stroke-primary-600"
-          strokeWidth={1}
-        />
-        <line
-          x1={PLOT_LEFT}
-          y1={BASELINE}
-          x2={PLOT_LEFT + PLOT_WIDTH}
-          y2={BASELINE}
-          className="stroke-primary-600"
-          strokeWidth={1}
-        />
+        <GraphAxes />
         <polyline
           points={decayCurvePoints()}
           fill="none"
@@ -163,24 +214,273 @@ function SolveTimeDecayGraph() {
           strokeWidth={2}
           strokeLinecap="round"
         />
-        <text
-          x={PLOT_LEFT + PLOT_WIDTH / 2}
-          y={VIEW_HEIGHT - 12}
-          textAnchor="middle"
-          className="fill-primary-100 text-md"
-        >
-          {X_LABEL}
-        </text>
-        <text
-          x={42}
-          y={VIEW_HEIGHT - 100}
-          textAnchor="middle"
-          className="fill-primary-100 text-md"
-        >
-          {Y_LABEL}
-        </text>
       </svg>
-    </figure>
+    </GraphFigure>
+  );
+}
+
+type LearningPhase = {
+  learnedAt: number;
+  jump: number;
+  settlesTo: number;
+  practiceSpan?: number;
+  settleRate?: number;
+};
+
+type PracticeSegment = {
+  learnedAt: number;
+  start: number;
+  end: number;
+  from: number;
+  to: number;
+  practiceSpan: number;
+  settleRate: number;
+};
+
+type LegendSwatch = "learned" | "practiced" | "familiar";
+
+type LegendItem = {
+  label: string;
+  swatch: LegendSwatch;
+};
+
+const FIRST_LEARNED_AT = 0.01;
+const FIRST_SOLVE_TIME = 1;
+const FIRST_PLATEAU = 0.62;
+const FIRST_PRACTICE_SPAN = 0.23;
+
+const LEARNING_PHASES: LearningPhase[] = [
+  { learnedAt: 0.27, jump: 0.3, settlesTo: 0.4, practiceSpan: 0.26, settleRate: 2.5 },
+  { learnedAt: 0.53, jump: 0.04, settlesTo: 0.33 },
+  { learnedAt: 0.79, jump: 0.05, settlesTo: 0.12 },
+];
+
+const LEARNED_DURING_PRACTICE_AT = [0.4];
+
+const JUMP_RISE = 0.006;
+const PRACTICE_SPAN = 0.2;
+const SETTLE_RATE = 4;
+const SEGMENT_SAMPLE_COUNT = 40;
+
+const LEGEND_ITEMS: LegendItem[] = [
+  { label: LEARNED_LABEL, swatch: "learned" },
+  { label: PRACTICED_LABEL, swatch: "practiced" },
+  { label: FAMILIAR_LABEL, swatch: "familiar" },
+];
+
+const PRACTICED_FILL = "fill-primary-500/30";
+
+const LEGEND_CHAR_WIDTH = 7.2;
+const LEGEND_SWATCH_SIZE = 14;
+const LEGEND_TEXT_GAP = 8;
+const LEGEND_ROW_GAP = 8;
+const LEGEND_PADDING = 12;
+const LEGEND_TITLE_GAP = 10;
+const LEGEND_STROKE_INSET = 0.5;
+const LEGEND_TITLE_TOP = LEGEND_PADDING;
+const LEGEND_ITEMS_TOP = LEGEND_TITLE_TOP + LEGEND_SWATCH_SIZE + LEGEND_TITLE_GAP;
+const LEGEND_ROWS_HEIGHT =
+  LEGEND_ITEMS.length * LEGEND_SWATCH_SIZE + (LEGEND_ITEMS.length - 1) * LEGEND_ROW_GAP;
+const LEGEND_BOX_HEIGHT = LEGEND_ITEMS_TOP + LEGEND_ROWS_HEIGHT + LEGEND_PADDING;
+
+function legendItemWidth(item: LegendItem) {
+  return LEGEND_SWATCH_SIZE + LEGEND_TEXT_GAP + item.label.length * LEGEND_CHAR_WIDTH;
+}
+
+const LEGEND_BOX_WIDTH =
+  Math.max(LEGEND_TITLE.length * LEGEND_CHAR_WIDTH, ...LEGEND_ITEMS.map(legendItemWidth)) +
+  LEGEND_PADDING * 2;
+const LEGEND_RIGHT_ROOM = 4;
+const LEGEND_VIEW_WIDTH = LEGEND_BOX_WIDTH + LEGEND_RIGHT_ROOM;
+
+function toGraphWidthShare(length: number) {
+  return `${(length / VIEW_WIDTH) * 100}%`;
+}
+
+const GRAPH_WITH_LEGEND_SIZES = {
+  "--graph-width": `${VIEW_WIDTH}px`,
+  "--legend-width": `${LEGEND_VIEW_WIDTH}px`,
+  "--legend-width-share": toGraphWidthShare(LEGEND_VIEW_WIDTH),
+  "--legend-right-share": toGraphWidthShare(PLOT_RIGHT - LEGEND_RIGHT_ROOM),
+} as React.CSSProperties;
+
+function legendRowTop(index: number) {
+  return LEGEND_ITEMS_TOP + index * (LEGEND_SWATCH_SIZE + LEGEND_ROW_GAP);
+}
+
+function legendTextBaseline(rowTop: number) {
+  return rowTop + LEGEND_SWATCH_SIZE - 2;
+}
+
+function segmentValue(segment: PracticeSegment, progress: number) {
+  const elapsedSpans = (progress - segment.start) / segment.practiceSpan;
+  return segment.to + (segment.from - segment.to) * Math.exp(-segment.settleRate * elapsedSpans);
+}
+
+function practiceSegments() {
+  const firstSegment: PracticeSegment = {
+    learnedAt: FIRST_LEARNED_AT,
+    start: FIRST_LEARNED_AT,
+    end: LEARNING_PHASES[0].learnedAt,
+    from: FIRST_SOLVE_TIME,
+    to: FIRST_PLATEAU,
+    practiceSpan: FIRST_PRACTICE_SPAN,
+    settleRate: SETTLE_RATE,
+  };
+  return LEARNING_PHASES.reduce<PracticeSegment[]>(
+    (segments, phase, index) => {
+      const previous = segments[segments.length - 1];
+      const timeWhenLearned = segmentValue(previous, phase.learnedAt);
+      const nextPhase = LEARNING_PHASES[index + 1];
+      segments.push({
+        learnedAt: phase.learnedAt,
+        start: phase.learnedAt + JUMP_RISE,
+        end: nextPhase ? nextPhase.learnedAt : 1,
+        from: timeWhenLearned + phase.jump,
+        to: phase.settlesTo,
+        practiceSpan: phase.practiceSpan ?? PRACTICE_SPAN,
+        settleRate: phase.settleRate ?? SETTLE_RATE,
+      });
+      return segments;
+    },
+    [firstSegment]
+  );
+}
+
+function learningCurvePoints(segments: PracticeSegment[]) {
+  return segments
+    .flatMap((segment) =>
+      Array.from({ length: SEGMENT_SAMPLE_COUNT + 1 }, (_, index) => {
+        const progress = segment.start + (index / SEGMENT_SAMPLE_COUNT) * (segment.end - segment.start);
+        return formatPoint(progress, segmentValue(segment, progress));
+      })
+    )
+    .join(" ");
+}
+
+function LearnedMarker({ x, y1, y2 }: { x: number; y1: number; y2: number }) {
+  return (
+    <line
+      x1={x}
+      y1={y1}
+      x2={x}
+      y2={y2}
+      className="stroke-primary-300"
+      strokeWidth={1.5}
+      strokeDasharray="4 3"
+    />
+  );
+}
+
+function LearningJumpsGraph() {
+  const segments = practiceSegments();
+  return (
+    <GraphFigure title="Improvement Curve (Version 2)">
+      <div
+        className="flex w-full max-w-(--graph-width) flex-col items-end lg:max-w-none lg:flex-row lg:items-center lg:justify-center lg:gap-4"
+        style={GRAPH_WITH_LEGEND_SIZES}
+      >
+        <svg
+          viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
+          className="w-full lg:min-w-0 lg:flex-1"
+          style={{ maxWidth: VIEW_WIDTH }}
+          role="img"
+          aria-label={`${Y_LABEL} against ${X_LABEL}: each time something new is learned, solve time jumps up, then practice brings it down below where it was before. The jumps mostly get smaller as solve time gets lower, and one new thing barely causes a jump at all.`}
+        >
+          {segments.map((segment) => (
+            <rect
+              key={`practice-${segment.learnedAt}`}
+              x={toPlotX(segment.learnedAt)}
+              y={PLOT_TOP}
+              width={segment.practiceSpan * PLOT_WIDTH}
+              height={PLOT_HEIGHT}
+              className={PRACTICED_FILL}
+            />
+          ))}
+          {[...segments.map((segment) => segment.learnedAt), ...LEARNED_DURING_PRACTICE_AT].map((learnedAt) => (
+            <LearnedMarker
+              key={`learned-${learnedAt}`}
+              x={toPlotX(learnedAt)}
+              y1={PLOT_TOP}
+              y2={BASELINE}
+            />
+          ))}
+          <GraphAxes />
+          <polyline
+            points={learningCurvePoints(segments)}
+            fill="none"
+            className="stroke-dark_accent"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+        <LearningLegend />
+      </div>
+    </GraphFigure>
+  );
+}
+
+function LegendSwatchMark({ swatch, x, y }: { swatch: LegendSwatch; x: number; y: number }) {
+  if (swatch === "learned") {
+    return (
+      <LearnedMarker
+        x={x + LEGEND_SWATCH_SIZE / 2}
+        y1={y}
+        y2={y + LEGEND_SWATCH_SIZE}
+      />
+    );
+  }
+  return (
+    <rect
+      x={x}
+      y={y}
+      width={LEGEND_SWATCH_SIZE}
+      height={LEGEND_SWATCH_SIZE}
+      className={swatch === "practiced" ? PRACTICED_FILL : "fill-primary-900 stroke-primary-600"}
+      strokeWidth={1}
+    />
+  );
+}
+
+function LearningLegend() {
+  const itemX = LEGEND_PADDING;
+  return (
+    <svg
+      viewBox={`0 0 ${LEGEND_VIEW_WIDTH} ${LEGEND_BOX_HEIGHT}`}
+      className="mt-3.5 mr-(--legend-right-share) w-(--legend-width-share) shrink-0 lg:mt-0 lg:mr-0 lg:w-(--legend-width)"
+      aria-hidden
+    >
+      <rect
+        x={LEGEND_STROKE_INSET}
+        y={LEGEND_STROKE_INSET}
+        width={LEGEND_BOX_WIDTH - LEGEND_STROKE_INSET * 2}
+        height={LEGEND_BOX_HEIGHT - LEGEND_STROKE_INSET * 2}
+        rx={4}
+        fill="none"
+        className="stroke-primary-600"
+        strokeWidth={1}
+      />
+      <text
+        x={itemX}
+        y={legendTextBaseline(LEGEND_TITLE_TOP)}
+        className="fill-primary-100 text-md font-semibold"
+      >
+        {LEGEND_TITLE}
+      </text>
+      {LEGEND_ITEMS.map((item, index) => (
+        <g key={item.label}>
+          <LegendSwatchMark swatch={item.swatch} x={itemX} y={legendRowTop(index)} />
+          <text
+            x={itemX + LEGEND_SWATCH_SIZE + LEGEND_TEXT_GAP}
+            y={legendTextBaseline(legendRowTop(index))}
+            className="fill-primary-100 text-md"
+          >
+            {item.label}
+          </text>
+        </g>
+      ))}
+    </svg>
   );
 }
 

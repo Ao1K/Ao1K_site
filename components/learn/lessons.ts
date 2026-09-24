@@ -13,6 +13,12 @@ export const lessons: Lesson[] = [
     category: "CFOP",
   },
   {
+    slug: "what-to-learn",
+    title: "What to Learn",
+    description: "There is so much to do! Where to start? Learn how to get started with CFOP.",
+    category: "CFOP",
+  },
+  {
     slug: "keyhole",
     title: "Keyhole",
     description: "There is a long road. Learn how keyhole can set you down the path towards greater efficiency.",

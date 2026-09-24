@@ -4,6 +4,7 @@ import { lessons } from "../../../components/learn/lessons";
 import EO from "../../../components/learn/postContent/eo";
 import Keyhole from "../../../components/learn/postContent/keyhole";
 import HowToLearn from "../../../components/learn/postContent/how-to-learn";
+import WhatToLearn from "../../../components/learn/postContent/what-to-learn";
 import CubeSceneLoader from "../../../components/learn/CubeSceneLoader";
 import LessonFooterNav from "../../../components/learn/LessonFooterNav";
 
@@ -11,6 +12,7 @@ const lessonComponents: Record<string, React.ComponentType> = {
   eo: EO,
   keyhole: Keyhole,
   "how-to-learn": HowToLearn,
+  "what-to-learn": WhatToLearn,
 };
 
 export function generateStaticParams() {
