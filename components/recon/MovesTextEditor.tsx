@@ -64,6 +64,7 @@ export interface ImperativeRef {
   getElement: () => HTMLDivElement | null;
   flushURLUpdate: () => void;
   setSuggestions: (suggestions: Suggestion[], lineIndex: number | null) => void;
+  getSuggestionLineIndex: () => number | null;
 }
 
 function MovesTextEditor({
@@ -1644,7 +1645,9 @@ function MovesTextEditor({
 
     setSuggestions: (nextSuggestions: Suggestion[], lineIndex: number | null) => {
       suggestionManagerRef.current?.setSuggestions(nextSuggestions, lineIndex);
-    }
+    },
+
+    getSuggestionLineIndex: () => suggestionManagerRef.current?.getSuggestionLineIndex() ?? null,
   }));
 
   // useEffectEvent ensures up-to-date values are used in subsequent function calls even if they are 

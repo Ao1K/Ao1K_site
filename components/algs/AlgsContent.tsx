@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { SimpleCubeInterpreter, type Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
 import type { Doc } from '../../composables/recon/ExactAlgSuggester';
+import { MAX_SHOWN_SUGGESTIONS } from '../../composables/recon/suggestionRanking';
 import { buildF2lCubeState } from '../../composables/algs/f2lCubeState';
 import { type FaceKey } from '../../composables/algs/cubePaint';
 import AlgsetSelector, { type AlgsetId } from './AlgsetSelector';
@@ -72,7 +73,7 @@ const AlgsContent = ({ initialCross, initialPair, initialConfig, initialAlgset }
       const m = /^([WYGBRO])([WYGBRO]) pair$/.exec(step);
       return m != null && wantColors.includes(m[1]) && wantColors.includes(m[2]);
     };
-    return allSuggestions.filter((s) => s.steps.some(isTargetPair));
+    return allSuggestions.filter((s) => s.steps.some(isTargetPair)).slice(0, MAX_SHOWN_SUGGESTIONS);
   }, [ready, hasPair, config, cross, pair]);
 
   return (

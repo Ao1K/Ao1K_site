@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { HexColorPicker } from 'react-colorful';
 import PhGear, { PhGearFill } from './icons/settings';
-import { useCubeColors, useShowControls, useShowSplits, useHintFaceletsElevation, useAlgsets, useHandedness, useShowEOStep, ALGSET_OPTIONS, DEFAULT_HINT_FACELETS_ELEVATION, DEFAULT_CUBE_COLORS, type CubeColors, type AlgsetDict } from '../composables/useSettings';
+import { useCubeColors, useShowControls, useShowSplits, useHintFaceletsElevation, useAlgsets, useHandedness, useShowEOStep, ALGSET_OPTIONS, DEFAULT_HINT_FACELETS_ELEVATION, DEFAULT_CUBE_COLORS, type CubeColors, type AlgsetDict, type Handedness } from '../composables/useSettings';
 
 const FACE_LABELS: { key: keyof CubeColors; label: string }[] = [
   { key: 'up', label: 'Up' },
@@ -13,6 +13,11 @@ const FACE_LABELS: { key: keyof CubeColors; label: string }[] = [
   { key: 'left', label: 'Left' },
   { key: 'right', label: 'Right' },
   { key: 'eo', label: 'EO' },
+];
+
+const HANDEDNESS_OPTIONS: { value: Handedness; label: string }[] = [
+  { value: 'left', label: 'Lefty' },
+  { value: 'right', label: 'Righty' },
 ];
 
 interface SettingsMenuProps {
@@ -127,27 +132,21 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
           <div className="px-3 py-2 border-b border-primary-200">
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold text-light_accent">Handedness</span>
-              <div className="flex rounded-sm overflow-hidden border border-primary-300">
-                <button
-                  onClick={() => setHandedness('left')}
-                  className={`px-3 py-1 text-xs font-semibold transition-colors ${
-                    handedness === 'left'
-                      ? 'bg-neutral-700 text-primary-100'
-                      : 'bg-primary-100 text-dark hover:bg-neutral-300'
-                  }`}
-                >
-                  Lefty
-                </button>
-                <button
-                  onClick={() => setHandedness('right')}
-                  className={`px-3 py-1 text-xs font-semibold transition-colors ${
-                    handedness === 'right'
-                      ? 'bg-neutral-700 text-primary-100'
-                      : 'bg-primary-100 text-dark hover:bg-neutral-300'
-                  }`}
-                >
-                  Righty
-                </button>
+              <div className="flex gap-0.5 rounded-sm bg-neutral-700 p-0.5">
+                {HANDEDNESS_OPTIONS.map(({ value, label }) => (
+                  <button
+                    key={value}
+                    onClick={() => setHandedness(value)}
+                    aria-pressed={handedness === value}
+                    className={`px-3 py-1 rounded-xs text-xs font-semibold transition-colors ${
+                      handedness === value
+                        ? 'bg-primary-100 text-dark shadow-sm'
+                        : 'text-neutral-400 hover:text-primary-100'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
@@ -209,7 +208,7 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
           )}
 
           {/* Hint Facelets Elevation Slider — shown on both the recon and algs cubes */}
-          <div className="px-3 py-2 border-b border-primary-200">
+          <div className="px-3 pt-3 pb-2 border-b border-primary-200">
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold text-light_accent">Hint Facelet Distance</span>
               <button
@@ -231,7 +230,7 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
               step={0.1}
               value={elevation}
               onChange={(e) => setElevation(parseFloat(e.target.value))}
-              className="w-full h-2 mt-1 accent-primary-500 cursor-pointer"
+              className="w-full h-10 mt-1 accent-primary-500 cursor-pointer"
             />
           </div>
 
