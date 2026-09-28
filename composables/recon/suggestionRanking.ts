@@ -2,6 +2,8 @@ import type { Algset, Suggestion } from './SimpleCubeInterpreter';
 
 export type SavedAlgKeys = ReadonlySet<string>;
 
+export const MAX_SHOWN_SUGGESTIONS = 20;
+
 export type SuggestionComparator = (a: Suggestion, b: Suggestion) => number;
 
 export type CaseSpecificAlgset = Exclude<Algset, 'f2l' | 'auf'>;

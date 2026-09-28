@@ -3439,8 +3439,7 @@ export class SimpleCubeInterpreter {
   }
 
   /**
-   * Filters out redundant algorithms that are extensions of shorter ones without unique steps.
-   * Handles edge case where L' doesn't match L L (but should when L2 is spread).
+   * Filters out redundant algorithms that are extensions of shorter ones. The steps each solves is also considered.
    */
   private filterOverlongAlgorithms(suggestions: Suggestion[]): Suggestion[] {
 
@@ -3452,77 +3451,45 @@ export class SimpleCubeInterpreter {
       return countMoves(a.alg) - countMoves(b.alg);
     });
 
-    // Helper function to spread double and triple moves
-    const spreadAlg = (alg: string): string => {
-      return alg.replace(/([A-Za-z])([23])('?)/g, (_, letter, num, prime) => {
-        if (num === '2') return `${letter} ${letter}`;
-        return prime ? letter : `${letter}'`; // 3' → letter, 3 → letter'
-      });
+    const toMoves = (alg: string): string[] =>
+      alg.trim().split(/\s+/).map(move => move.replace(/2'$/, '2'));
+
+    const movesPerSuggestion = suggestions.map(suggestion => toMoves(suggestion.alg));
+
+    const sharesAnyStep = (a: Suggestion, b: Suggestion): boolean =>
+      a.steps.some(step => b.steps.includes(step));
+
+    const addsNoNewStep = (longer: Suggestion, shorter: Suggestion): boolean =>
+      longer.steps.every(step => shorter.steps.includes(step));
+
+    const isRedundantExtension = (longer: number, shorter: number): boolean => {
+      const shortMoves = movesPerSuggestion[shorter];
+      const longMoves = movesPerSuggestion[longer];
+      const lastIndex = shortMoves.length - 1;
+      if (!shortMoves.slice(0, lastIndex).every((move, i) => move === longMoves[i])) return false;
+
+      const lastShortMove = shortMoves[lastIndex];
+      const matchingLongMove = longMoves[lastIndex];
+      if (lastShortMove === matchingLongMove) {
+        // if R U R' and R U R' L U L' match on last common move R', 
+        // longer alg redundant if they have any step in common
+        return sharesAnyStep(suggestions[longer], suggestions[shorter]);
+      }
+
+      // if we have L' U' L and L' U' L2 U L', 
+      // longer alg redundant if shorter alg has all of the longer alg's steps
+      const isHalfOfDouble = matchingLongMove === `${lastShortMove.replace(/'$/, '')}2`;
+      return isHalfOfDouble && addsNoNewStep(suggestions[longer], suggestions[shorter]);
     };
 
-    // Check if longAlg starts with shortAlg (with special handling for last move)
-    const isPrefix = (shortAlg: string, longAlg: string): boolean => {
-      const shortMoves = shortAlg.split(/\s+/);
-      const longMoves = longAlg.split(/\s+/);
+    const keptIndexes: number[] = [];
 
-      if (shortMoves.length > longMoves.length) return false;
-      if (shortMoves.length === 0) return false;
+    suggestions.forEach((_, i) => {
+      const isRedundant = keptIndexes.some(k => isRedundantExtension(i, k));
+      if (!isRedundant) keptIndexes.push(i);
+    });
 
-      // Compare all moves except the last one
-      for (let i = 0; i < shortMoves.length - 1; i++) {
-        if (shortMoves[i] !== longMoves[i]) return false;
-      }
-
-      // Handle last move specially
-      const lastShortMove = shortMoves[shortMoves.length - 1];
-      const lastShortIndex = shortMoves.length - 1;
-      const correspondingLongMove = longMoves[lastShortIndex];
-
-      // If last move has prime and the corresponding position has repeated move
-      if (lastShortMove.endsWith("'")) {
-        const letter = lastShortMove.slice(0, -1);
-        // Check if long alg has "L L" at this position (meaning L2 was spread)
-        if (correspondingLongMove === letter && longMoves[lastShortIndex + 1] === letter) {
-          // L' matches the start of "L L", so it's a prefix
-          return true;
-        }
-      }
-
-      // Otherwise, just check if the moves match
-      return lastShortMove === correspondingLongMove;
-    };
-
-    const spreadSuggestions = suggestions.map(suggestion => spreadAlg(suggestion.alg));
-    const filteredSuggestions: Suggestion[] = [];
-    const filteredSpreadAlgs: string[] = [];
-
-    for (let i = 0; i < suggestions.length; i++) {
-      const suggestion = suggestions[i];
-      const spreadCurrent = spreadSuggestions[i];
-      let isRedundant = false;
-
-      for (let j = 0; j < filteredSuggestions.length; j++) {
-        const spreadFiltered = filteredSpreadAlgs[j];
-
-        // Check if current spread alg starts with an existing spread alg
-        if (isPrefix(spreadFiltered, spreadCurrent)) {
-          // Check if current alg has any unique steps compared to existing
-          const hasUniqueSteps = suggestion.steps.some(step => !filteredSuggestions[j].steps.includes(step));
-
-          if (!hasUniqueSteps) {
-            isRedundant = true;
-            break;
-          }
-        }
-      }
-
-      if (!isRedundant) {
-        filteredSuggestions.push(suggestion);
-        filteredSpreadAlgs.push(spreadCurrent);
-      }
-    }
-
-    return filteredSuggestions;
+    return keptIndexes.map(k => suggestions[k]);
   }
 
   /**
@@ -3717,30 +3684,38 @@ export class SimpleCubeInterpreter {
 
     const filteredSuggestions = this.filterF2LSuggestions(suggestions);
 
-    // Calculate cutoff time for each pair
-    const cutoffTimes = new Map<string, number>();
+    const bestTimes = new Map<string, number>();
     filteredSuggestions.forEach(suggestion => {
       suggestion.steps.forEach(pairLabel => {
-        const currentBest = cutoffTimes.get(pairLabel);
-        if (currentBest === undefined || suggestion.time < currentBest) {
-          cutoffTimes.set(pairLabel, suggestion.time * 1.5);
-        }
+        const currentBest = bestTimes.get(pairLabel) ?? Infinity;
+        bestTimes.set(pairLabel, Math.min(currentBest, suggestion.time));
       });
     });
 
-    // Filter suggestions based on their pair's cutoff time
+    const cutoffMultiplier = 1.5;
+    const isWithinCutoff = (suggestion: Suggestion, pairLabel: string) =>
+      suggestion.time <= (bestTimes.get(pairLabel) ?? Infinity) * cutoffMultiplier;
+
     const fastSuggestions = filteredSuggestions.filter(suggestion =>
       suggestion.hasEOsolved ||
       suggestionRank(suggestion, this.savedAlgs) > 0 ||
-      suggestion.steps.some(pairLabel => suggestion.time <= (cutoffTimes.get(pairLabel) || Infinity))
+      suggestion.steps.some(pairLabel => isWithinCutoff(suggestion, pairLabel))
     );
 
-    // Sort EO-solving algs first, then by time (low is better)
+    const unsolvedPairCount = 4 - steps.filter(s => s.type === 'f2l').length;
+    const eoBonusByPairsLeft = [100, 1, 0.5, 0.25];
+
+    const rankingTime = (suggestion: Suggestion): number => {
+      if (!suggestion.hasEOsolved) return suggestion.time;
+      const pairsLeft = unsolvedPairCount - suggestion.steps.length;
+      return suggestion.time - (eoBonusByPairsLeft[pairsLeft] ?? 0);
+    };
+
     return rankSuggestions(
       fastSuggestions,
-      (a, b) => (Number(b.hasEOsolved) - Number(a.hasEOsolved)) || (a.time - b.time),
+      (a, b) => rankingTime(a) - rankingTime(b),
       this.savedAlgs,
-    ).splice(0, 20); // limit to top 20
+    );
   }
 
   private applyHandednessModifier(alg: string, frequency: number): number {
