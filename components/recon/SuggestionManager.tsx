@@ -30,6 +30,7 @@ export interface SuggestionManagerHandle {
   // so updating it re-renders only the ghost, never the editor's contentEditable.
   updateCaretRect: (left: number, top: number, height: number) => void;
   setSuggestions: (suggestions: Suggestion[], lineIndex: number | null) => void;
+  getSuggestionLineIndex: () => number | null;
 }
 
 interface SuggestionState {
@@ -206,6 +207,7 @@ export function SuggestionManager({
           : { suggestions: next, lineIndex: nextLineIndex },
       );
     },
+    getSuggestionLineIndex: () => suggestionLineIndex,
   }));
 
   const acceptByOriginalIndex = (originalIndex: number) => {
