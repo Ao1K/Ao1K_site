@@ -42,6 +42,16 @@ import { readFavorites } from '../../composables/algs/algFavorites';
 import { getNewSteps } from '../../composables/recon/getLineStepInfo';
 import { ScreenshotManager, isSolveComplete } from '../../composables/recon/ScreenshotManager';
 import type { TwistyPlayerImperativeRef } from '../../components/recon/TwistyPlayer';
+import SolveBreakdown from './SolveBreakdown';
+import {
+  startBreakdown,
+  endBreakdown,
+  FLIGHT_BOX_CLASS,
+  PAGE_TRANSITION_NAMES,
+  flightStyle,
+  type EditorView,
+  type BreakdownSession,
+} from '../../composables/recon/breakdownTransition';
 
 // utility imports
 // import HtmlSceneDialog from "../../components/recon/HtmlSceneDialog";
@@ -117,6 +127,8 @@ const calcCubeSpeedLocal = (speed: number) =>
 const isRotationOnlyLine = (moves: string[]) =>
   moves.length > 0 && moves.every(move => !/[^xyz2'3]/.test(move));
 
+const TRANSFORM_SHORTCUT_LETTERS = new Set(['m', 's', 'x', 'y', 'z', 'i']);
+
 const MAX_EDITOR_HISTORY = 100;
 const CLEAR_UNDO_DURATION = 8000;
 
@@ -151,6 +163,8 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   const [isGifDialogOpen, setIsGifDialogOpen] = useState<boolean>(false);
   const [isHtmlSceneDialogOpen, setIsHtmlSceneDialogOpen] = useState<boolean>(false);
   const [htmlImageData, setHtmlImageData] = useState<{ cubeState: CubeState; setupMovesForFilename: string } | null>(null);
+  const [breakdownSession, setBreakdownSession] = useState<BreakdownSession | null>(null);
+  const isBreakdownOpen = breakdownSession !== null;
 
   const [playerParams, setPlayerParams] = useState<PlayerParams>({ animationTimes: [], solution: '', scramble: '' });
 
@@ -1058,6 +1072,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
 
     const snapshot = takePageSnapshot();
 
+    setBreakdownSession(null);
     allMovesRef.current = [[[]], [[]]];
     moveLocation.current = [0, 0, 0];
     setPlayerParams({ animationTimes: [], solution: '', scramble: '' });
@@ -1112,7 +1127,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
 
   const getTextboxInnerText = (textboxID: string): string => {
     const parentElement = document.getElementById(textboxID);
-    const textbox = parentElement!.querySelector<HTMLDivElement>('div[contenteditable="true"]');
+    const textbox = parentElement!.querySelector<HTMLDivElement>('div[contenteditable]');
     const textboxClone = textbox!.cloneNode(true) as HTMLElement;
     textboxClone.innerHTML = textboxClone.innerHTML.replace(/<br>/g, '\n');
     return textboxClone.innerText;
@@ -1315,6 +1330,24 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     }
   }
 
+  const getSolutionEditorView = (): EditorView | null => {
+    const editor = solutionMethodsRef.current?.getElement();
+    const scrollBox = document.getElementById('solution');
+    return editor && scrollBox ? { editor, scrollBox } : null;
+  }
+
+  const handleOpenBreakdown = () => {
+    const editorView = getSolutionEditorView();
+    if (!editorView) return;
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+    startBreakdown(editorView, lineIconData, setBreakdownSession);
+  }
+
+  const handleCloseBreakdown = () => {
+    if (!breakdownSession) return;
+    endBreakdown(breakdownSession.lines, getSolutionEditorView, () => setBreakdownSession(null));
+  }
+
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const title = e.target.value;
 
@@ -1335,6 +1368,12 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     const letter = /^[a-z]$/i.test(e.key)
       ? e.key.toLowerCase()
       : e.code.replace(/^Key/, '').toLowerCase();
+
+    const isTextTransformShortcut = isCtrl && ((isModifier && TRANSFORM_SHORTCUT_LETTERS.has(letter)) || e.key === '/');
+    if (isBreakdownOpen && isTextTransformShortcut) {
+      e.preventDefault();
+      return;
+    }
 
     if (isCtrl && isModifier && letter === 'm') {
 
@@ -1775,10 +1814,15 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
             html={scrambleHTML}
             setHTML={setScrambleHTML}
             initialContent={solutionHTML ? '' : dailyScramble}
+            isReadOnly={isBreakdownOpen}
           />
         </div>
       </div>
-      <div id="player-box" className="px-3 relative flex flex-col mt-6 w-full justify-center items-center">
+      <div
+        id="player-box"
+        className="px-3 relative flex flex-col mt-6 w-full justify-center items-center"
+        style={{ viewTransitionName: PAGE_TRANSITION_NAMES.player }}
+      >
         <div id="cube_model" className="flex h-full aspect-video max-h-96 min-h-50 bg-primary-900 select-none z-20 w-full">
           <Suspense fallback={<div className="flex text-xl w-full h-full justify-center items-center text-primary-100 border border-neutral-600 hover:border-primary-100 rounded-t-sm">Loading cube...</div>}>
             <TwistyPlayer
@@ -1793,7 +1837,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
           </Suspense>
         </div>
       </div>
-      <div id="bottom-box" className="mx-3 relative flex flex-col justify-center items-center">
+      <div id="bottom-box" className={`mx-3 relative flex-col justify-center items-center ${isBreakdownOpen ? 'hidden' : 'flex'}`}>
         <div id="bottom-box-borders" className={`border-x w-full border-neutral-600 h-14 absolute top-0 z-0 pointer-events-none ${isShowingToolbar ? 'block' : 'hidden'}`}></div>
         <div
           id="bottom-bar"
@@ -1809,17 +1853,32 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
           <SpeedDropdown speed={speed} setSpeed={setSpeed} />
           <Toolbar buttons={toolbarButtons} containerRef={bottomBarRef} />
         </div>
-        <div className="border border-neutral-600 hover:border-primary-100 h-1.5 rounded-b-sm w-full z-0 bg-primary-700 mb-2" onClick={() => toggleShowBottomBar()}></div>
+        <div className="border border-neutral-600 hover:border-primary-100 h-1.75 rounded-b-sm w-full z-0 bg-primary-700" onClick={() => toggleShowBottomBar()}></div>
       </div>
       <div id="datafields" className="w-full items-start transition-width duration-500 ease-linear">
-        <div id="solution-area" className="px-3 mt-1 mb-14 flex flex-col w-full">
-          <div className="flex flex-row items-baseline w-full z-10">
-            <div className="text-xl text-dark_accent font-medium flex-1">Solution</div>
-            {showSplitsColumn && (
+        <div id="solution-area" className={`px-3 mt-1 flex flex-col w-full ${isBreakdownOpen ? '' : 'mb-14'}`}>
+          <div
+            className="flex flex-row items-end mb-2 w-full z-10"
+            style={{ viewTransitionName: PAGE_TRANSITION_NAMES.heading }}
+          >
+            <div className="text-xl text-dark_accent leading-none font-medium flex-1">{isBreakdownOpen ? 'Breakdown' : 'Solution'}</div>
+            <button
+              type="button"
+              onClick={isBreakdownOpen ? handleCloseBreakdown : handleOpenBreakdown}
+              className="mr-2 px-2 py-1 mt-1 text-sm text-primary-100 border border-neutral-600 hover:border-primary-100 rounded-sm"
+            >
+              {isBreakdownOpen ? 'Go back to editor' : 'Review Solve'}
+            </button>
+            {showSplitsColumn && !isBreakdownOpen && (
               <div className="text-xl text-dark_accent font-medium" style={{ width: SPLITS_WIDTH, textAlign: 'center' }}>Splits</div>
             )}
           </div>
-          <div id="rich-solution-display" className="relative max-h-[35vh] -mb-20 border-none overflow-visible">
+          {breakdownSession && <SolveBreakdown session={breakdownSession} />}
+          <div
+            id="rich-solution-display"
+            className={`relative border-none ${FLIGHT_BOX_CLASS} ${isBreakdownOpen ? 'invisible h-0 overflow-hidden' : 'max-h-[35vh] -mb-20 overflow-visible'}`}
+            style={isBreakdownOpen ? undefined : flightStyle(PAGE_TRANSITION_NAMES.solutionBox)}
+          >
             <div
               className="icon-column-clip max-h-[35vh] absolute left-0 top-0"
               style={{ width: ICON_SIZE_CONFIG['medium'].iconWidth }}
@@ -1863,6 +1922,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
                 setHTML={setSolutionHTML}
                 lineHeight={solutionLineHeight}
                 iconColumnWidth={hasIcons ? ICON_SIZE_CONFIG['medium'].iconWidth : 0}
+                isReadOnly={isBreakdownOpen}
               />
             </div>
             {showSplitsColumn && (
@@ -1884,7 +1944,11 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
             )}
           </div>
         </div>
-        <div id="time-area" className="px-3 pt-12 flex flex-col w-full pb-16">
+        <div
+          id="time-area"
+          className="px-3 pt-12 flex flex-col w-full pb-16"
+          style={{ viewTransitionName: PAGE_TRANSITION_NAMES.stats }}
+        >
           <div className="text-xl text-dark_accent font-medium w-full">Time</div>
           <div id="time-stats" className="flex flex-row flex-wrap text-nowrap items-center w-full gap-y-2 pb-2">
             <div id="time-field" className="border border-neutral-600 group flex flex-row items-center justify-start">

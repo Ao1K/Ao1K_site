@@ -53,6 +53,7 @@ interface EditorProps {
   lineHeight?: number;
   simpleInput?: boolean;
   iconColumnWidth?: number;
+  isReadOnly?: boolean;
 }
 
 export interface ImperativeRef {
@@ -80,6 +81,7 @@ function MovesTextEditor({
   lineHeight,
   simpleInput = false,
   iconColumnWidth = 0,
+  isReadOnly = false,
 }: EditorProps) {
 
   const contentEditableRef = useRef<HTMLDivElement>(null);
@@ -1665,14 +1667,17 @@ function MovesTextEditor({
   });
 
   const handleCommandEvent = useEffectEvent((event: KeyboardEvent) => {
+    if (isReadOnly) return;
     handleCommand(event);
   });
 
   const handleBeforeInputEvent = useEffectEvent((event: InputEvent) => {
+    if (isReadOnly) return;
     blockInputOnKeeper(event);
   });
 
   const handleCompositionStartEvent = useEffectEvent(() => {
+    if (isReadOnly) return;
     resumeTypingInEditor();
   });
 
@@ -1819,14 +1824,16 @@ function MovesTextEditor({
   return (
     <div className="relative" ref={editorWrapperRef}>
       <div
-        contentEditable
+        contentEditable={!isReadOnly}
+        aria-readonly={isReadOnly}
         ref={contentEditableRef}
         className={`
           text-[1.125rem] text-left ff-space-adjust wrap-break-word p-2
-          min-h-[4.7rem]
-          rounded-sm whitespace-pre-wrap
-          border border-neutral-600 focus:border-primary-100 hover:border-primary-100
-          outline-none resize-none caret-primary-200 bg-primary-800 `}
+          rounded-sm whitespace-pre-wrap border
+          outline-none resize-none caret-primary-200
+          ${isReadOnly
+            ? 'border-transparent'
+            : 'min-h-[4.7rem] border-neutral-600 focus:border-primary-100 hover:border-primary-100 bg-primary-800'}`}
         style={{ lineHeight: lineHeight ? `${lineHeight}px` : '1.75rem' }}
         onInput={() => handleInput(true)}
         onCopy={handleCopy}
@@ -1839,7 +1846,7 @@ function MovesTextEditor({
         role="textbox"
         autoCorrect="off"
         autoCapitalize="characters"
-        tabIndex={simpleInput ? undefined : (idIndex === 0 ? 1 : 3)}
+        tabIndex={simpleInput || isReadOnly ? undefined : (idIndex === 0 ? 1 : 3)}
       />
       <SuggestionManager
         ref={suggestionManagerRef}

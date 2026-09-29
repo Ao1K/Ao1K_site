@@ -56,6 +56,47 @@ export function computeLineIconData(
   });
 }
 
+const renderShape = (shape: SvgShape, i: number) => {
+  if (shape.type === 'rect') return <rect key={i} x={shape.x} y={shape.y} width={shape.width} height={shape.height} fill={shape.fill} />;
+  if (shape.type === 'polygon') return <polygon key={i} points={shape.points} fill={shape.fill} />;
+  return <circle key={i} cx={shape.cx} cy={shape.cy} r={shape.r} fill={shape.fill} />;
+};
+
+export function StepIconSvg({ descriptor: desc, nameType }: { descriptor: IconDescriptor; nameType?: string }) {
+  const [, , vw, vh] = desc.viewBox.split(' ').map(Number);
+
+  return (
+    <svg
+      viewBox={desc.viewBox}
+      className={`step-icon-svg w-full border ${desc.eoBorderColor ? 'border-2' : 'border border-neutral-600'}`}
+      style={desc.eoBorderColor ? { borderColor: desc.eoBorderColor } : undefined}
+      stroke="#52525b"
+      strokeWidth="1"
+      fill="none"
+    >
+      {desc.shapes.map(renderShape)}
+      {desc.label && (
+        <text
+          x={vw / 2}
+          y={vh / 2}
+          textAnchor="middle"
+          dominantBaseline="central"
+          fill={desc.label.color}
+          stroke="none"
+          fontSize={desc.label.fontSize}
+          fontWeight={desc.label.fontWeight}
+          fontFamily="var(--font-Rubik), system-ui, sans-serif"
+        >
+          {desc.label.text}
+        </text>
+      )}
+      {desc.name && !desc.label && (
+        <title>{nameType ? `${nameType.toUpperCase()} ${desc.name}` : desc.name}</title>
+      )}
+    </svg>
+  );
+}
+
 interface IconStackProps {
   position: [number, number, number] | null;
   moves: string[][][] | null;
@@ -135,47 +176,6 @@ const IconStack = ({position, moves, lineIconData, editableElement}: IconStackPr
 
   const divHeights = editableElement ? getCurrentDivHeights(editableElement) : [];
 
-  const renderShape = (shape: SvgShape, i: number) => {
-    if (shape.type === 'rect') return <rect key={i} x={shape.x} y={shape.y} width={shape.width} height={shape.height} fill={shape.fill} />;
-    if (shape.type === 'polygon') return <polygon key={i} points={shape.points} fill={shape.fill} />;
-    return <circle key={i} cx={shape.cx} cy={shape.cy} r={shape.r} fill={shape.fill} />;
-  };
-
-  const descriptorToJsx = (desc: IconDescriptor, nameType?: string) => {
-    const [, , vw, vh] = desc.viewBox.split(' ').map(Number);
-
-    return (
-      <svg
-        viewBox={desc.viewBox}
-        className={`step-icon-svg w-full border ${desc.eoBorderColor ? 'border-2' : 'border border-neutral-600'}`}
-        style={desc.eoBorderColor ? { borderColor: desc.eoBorderColor } : undefined}
-        stroke="#52525b"
-        strokeWidth="1"
-        fill="none"
-      >
-        {desc.shapes.map(renderShape)}
-        {desc.label && (
-          <text
-            x={vw / 2}
-            y={vh / 2}
-            textAnchor="middle"
-            dominantBaseline="central"
-            fill={desc.label.color}
-            stroke="none"
-            fontSize={desc.label.fontSize}
-            fontWeight={desc.label.fontWeight}
-            fontFamily="var(--font-Rubik), system-ui, sans-serif"
-          >
-            {desc.label.text}
-          </text>
-        )}
-        {desc.name && !desc.label && (
-          <title>{nameType ? `${nameType.toUpperCase()} ${desc.name}` : desc.name}</title>
-        )}
-      </svg>
-    );
-  };
-
   const StepIcon = ({ id, stepInfo, descriptor, height }: { id: string, stepInfo: StepInfo | null; descriptor: IconDescriptor | null; height: number }) => {
     if (!descriptor) {
       return (
@@ -198,7 +198,7 @@ const IconStack = ({position, moves, lineIconData, editableElement}: IconStackPr
             height: `${height}px`
           }}
         >
-          {descriptorToJsx(descriptor, stepInfo?.nameType)}
+          <StepIconSvg descriptor={descriptor} nameType={stepInfo?.nameType} />
         </div>
       </div>
     );

@@ -187,6 +187,29 @@ input[type='range']::-moz-range-track {
   letter-spacing: normal;
 }
 
+::view-transition-group(*),
+::view-transition-old(*),
+::view-transition-new(*) {
+  animation-duration: 650ms;
+  animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+::view-transition-old(*.bd-flight),
+::view-transition-new(*.bd-flight) {
+  width: auto;
+  height: auto;
+  object-fit: none;
+  object-position: left top;
+}
+
+.bd-flight-box {
+  view-transition-group: contain;
+}
+
+::view-transition-group-children(bd-solution-box) {
+  overflow: clip;
+}
+
 .scrollbar-hidden {
   -ms-overflow-style: none; /* Internet Explorer 10+ */
   scrollbar-width: none; /* Firefox */
