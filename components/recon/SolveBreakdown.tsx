@@ -27,6 +27,7 @@ const stepLabel = (line: BreakdownLine) => {
 export interface BreakdownPlayRequest {
   lineIndex: number;
   alg: string;
+  isFinished?: boolean;
 }
 
 interface SolveBreakdownProps {
@@ -90,6 +91,7 @@ export default function SolveBreakdown({ session, crossReview, playingRequest, o
                   ? <CrossReviewFeedback
                       review={crossReview}
                       playingAlg={playingRequest?.lineIndex === line.index ? playingRequest.alg : null}
+                      isPlaybackFinished={playingRequest?.isFinished ?? false}
                       onPlay={alg => onPlay({ lineIndex: line.index, alg })}
                       onStop={onStop}
                     />

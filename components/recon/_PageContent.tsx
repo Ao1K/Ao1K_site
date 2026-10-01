@@ -1411,7 +1411,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     const setupAlg = [...allMovesRef.current[0].flat(), ...allMovesRef.current[1].slice(0, request.lineIndex).flat()].join(' ');
     setBreakdownPlayRequest(request);
     document.getElementById('player-box')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    twistyPlayerRef.current?.playPreview(setupAlg, request.alg, () => setBreakdownPlayRequest(null));
+    twistyPlayerRef.current?.playPreview(setupAlg, request.alg, () => setBreakdownPlayRequest({ ...request, isFinished: true }));
   }
 
   const handleBreakdownStop = () => {

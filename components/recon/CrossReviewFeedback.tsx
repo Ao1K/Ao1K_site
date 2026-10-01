@@ -8,6 +8,7 @@ import DropdownIcon from '../icons/dropdown';
 import CopyIcon from '../icons/copy';
 import PlayIcon from '../icons/play';
 import StopIcon from '../icons/stop';
+import ReplayIcon from '../icons/replay';
 
 const CATEGORY_LABELS: Record<CrossPickCategory, string> = {
   fastest: 'Best',
@@ -25,6 +26,7 @@ const iconButtonClass = 'shrink-0 text-neutral-500 hover:text-neutral-200 focus-
 
 interface PlaybackControls {
   playingAlg: string | null;
+  isPlaybackFinished: boolean;
   onPlay: (alg: string) => void;
   onStop: () => void;
 }
@@ -34,13 +36,15 @@ interface CrossPanelProps extends PlaybackControls {
   categories?: CrossPickCategory[];
 }
 
-function CrossPanel({ cross, categories = [], playingAlg, onPlay, onStop }: CrossPanelProps) {
+function CrossPanel({ cross, categories = [], playingAlg, isPlaybackFinished, onPlay, onStop }: CrossPanelProps) {
   const { settings: { cubeColors } } = useSyncedSettings();
   const [copied, setCopied] = useState(false);
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { solution, shownMoves } = cross;
   const alg = shownMoves.join(' ');
-  const isPlaying = playingAlg === alg;
+  const isShown = playingAlg === alg;
+  const isPlaying = isShown && !isPlaybackFinished;
+  const isFinished = isShown && isPlaybackFinished;
 
   const handleCopy = (event: React.MouseEvent) => {
     event.preventDefault();
@@ -57,6 +61,8 @@ function CrossPanel({ cross, categories = [], playingAlg, onPlay, onStop }: Cros
     else onPlay(alg);
   };
 
+  const playbackLabel = isPlaying ? 'Stop cross' : isFinished ? 'Replay cross' : 'Play cross';
+
   return (
     <li>
       {(cross.isUserCross || categories.length > 0) && (
@@ -67,7 +73,7 @@ function CrossPanel({ cross, categories = [], playingAlg, onPlay, onStop }: Cros
           )}
         </div>
       )}
-      <details className={`group rounded-sm border bg-primary-900 px-2 py-1 ${cross.isUserCross ? 'rounded-tl-none' : ''} ${isPlaying ? 'border-primary-100' : 'border-neutral-600'}`}>
+      <details className={`group rounded-sm border bg-primary-900 px-2 py-1 ${cross.isUserCross ? 'rounded-tl-none' : ''} ${isShown ? 'border-primary-100' : 'border-neutral-600'}`}>
         <summary className="flex flex-col gap-1 cursor-pointer list-none [&::-webkit-details-marker]:hidden text-neutral-500 group-hover:text-neutral-200 group-has-[button:hover]:text-neutral-500 transition-colors">
           <div className="flex flex-row items-center gap-2">
             <CrossIcon stepInfo={crossStepInfo(solution)} cubeColors={cubeColors} />
@@ -94,12 +100,12 @@ function CrossPanel({ cross, categories = [], playingAlg, onPlay, onStop }: Cros
             </span>
             <button
               type="button"
-              aria-label={isPlaying ? 'Stop cross' : 'Play cross'}
-              title={isPlaying ? 'Stop cross' : 'Play cross'}
-              className={`${iconButtonClass} ${isPlaying ? 'text-primary-400' : ''}`}
+              aria-label={playbackLabel}
+              title={playbackLabel}
+              className={`${iconButtonClass} ${isShown ? 'text-primary-400' : ''}`}
               onClick={handlePlay}
             >
-              {isPlaying ? <StopIcon className="translate-x-[0.13em]" /> : <PlayIcon />}
+              {isPlaying ? <StopIcon className="translate-x-[0.13em]" /> : isFinished ? <ReplayIcon /> : <PlayIcon />}
             </button>
             <DropdownIcon className="shrink-0 text-lg transition-transform duration-300 rotate-180 group-open:rotate-0" />
           </div>
