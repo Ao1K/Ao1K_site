@@ -1,6 +1,10 @@
-import { useSyncedSettings } from '../../composables/useSettings';
+import { useSyncedSettings, type CubeColors } from '../../composables/useSettings';
 import { useAlgFavorites } from '../../composables/algs/algFavorites';
-import type { Algset } from '../../composables/recon/SimpleCubeInterpreter';
+import type { Algset, StepInfo } from '../../composables/recon/SimpleCubeInterpreter';
+import type { CrossSuggestionDetails } from '../../composables/recon/crossAutocomplete';
+import type { ContinuationCategory } from '../../composables/recon/crossContinuations';
+import { getStepIconDescriptor } from '../../composables/recon/stepIconDescriptors';
+import { StepIconSvg, buildIconColorConfig, getCrossBg } from './IconStack';
 import { showToast } from '../../composables/toast';
 import { splitLeadingAuf } from '../../utils/collapseAufVariants';
 import Parrot from '../icons/parrot';
@@ -16,9 +20,47 @@ interface SuggestionCardProps {
   isFocused: boolean;
   hasEOsolved?: boolean;
   algset?: Algset;
+  cross?: CrossSuggestionDetails;
   onSelect: () => void;
   onAccept: () => void;
 }
+
+const CONTINUATION_BORDER_COLORS: Record<ContinuationCategory, string> = {
+  great: 'var(--color-cube-blue)',
+  good: 'var(--color-cube-green)',
+  okay: 'var(--color-cube-orange)',
+  bad: 'var(--color-cube-red)',
+};
+
+export const CrossIcon = ({ stepInfo, cubeColors }: { stepInfo: StepInfo; cubeColors: CubeColors }) => (
+  <div className="w-6 h-6 shrink-0">
+    <StepIconSvg descriptor={getStepIconDescriptor(buildIconColorConfig(cubeColors), stepInfo, { getCrossBg })} />
+  </div>
+);
+
+export const ContinuationIcon = ({ cross, cubeColors, title }: {
+  cross: Pick<CrossSuggestionDetails, 'continuationPair' | 'category'>;
+  cubeColors: CubeColors;
+  title?: string;
+}) => {
+  if (!cross.continuationPair) return null;
+
+  const colorNameToHex: Record<string, string> = {
+    white: cubeColors.up,
+    yellow: cubeColors.down,
+    green: cubeColors.front,
+    blue: cubeColors.back,
+    red: cubeColors.right,
+    orange: cubeColors.left,
+  };
+  const pairHexColors = cross.continuationPair.map(name => colorNameToHex[name]);
+
+  return (
+    <div className="w-6 h-6 shrink-0" title={title}>
+      {renderPairIcon(pairHexColors, pairHexColors, CONTINUATION_BORDER_COLORS[cross.category])}
+    </div>
+  );
+};
 
 const extractF2LColors = (step: string, letterToColor: Record<string, string>): string[] => {
   const prefix = step.split(' ')[0] ?? '';
@@ -34,16 +76,16 @@ const extractF2LColors = (step: string, letterToColor: Record<string, string>): 
   return uniqueColors;
 };
 
-const iconBorderProps = (eoColor?: string) => ({
-  style: eoColor ? { border: `2px solid ${eoColor}` } : undefined,
-  className: eoColor ? undefined : 'border border-neutral-600',
+const iconBorderProps = (borderColor?: string) => ({
+  style: borderColor ? { border: `2px solid ${borderColor}` } : undefined,
+  className: borderColor ? undefined : 'border border-neutral-600',
 });
 
-const renderPairIcon = (colors: string[], defaultColors: string[], eoColor?: string): JSX.Element => {
+const renderPairIcon = (colors: string[], defaultColors: string[], borderColor?: string): JSX.Element => {
   const [first, second] = colors.length >= 2 ? colors : defaultColors;
 
   return (
-    <svg viewBox="0 0 24 24" {...iconBorderProps(eoColor)}>
+    <svg viewBox="0 0 24 24" {...iconBorderProps(borderColor)}>
       <polygon points="0,0 24,0 0,24" fill={first} />
       <polygon points="24,0 24,24 0,24" fill={second} />
     </svg>
@@ -100,7 +142,7 @@ const renderStepIcon = (steps: string[], letterToColor: Record<string, string>, 
   return renderTextIcon(steps[0] || '?');
 };
 
-export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolved, algset, onSelect, onAccept }: SuggestionCardProps) => {
+export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolved, algset, cross, onSelect, onAccept }: SuggestionCardProps) => {
   const { settings } = useSyncedSettings();
   const { cubeColors } = settings;
 
@@ -158,7 +200,7 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
   };
 
   useEffect(() => {
-    if (!isFocused) return;
+    if (!isFocused || cross) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'p' && event.key !== 'P') return;
@@ -212,7 +254,9 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
       tabIndex={0}
     >
       <KeyboardKeeper ref={keeperRef} />
-      {hasPair || hasMultislot ? 
+      {cross ? (
+        <CrossIcon stepInfo={cross.stepInfo} cubeColors={cubeColors} />
+      ) : hasPair || hasMultislot ?
       <div className="w-6 h-6">
         {icon}
       </div>
@@ -221,7 +265,14 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
         {icon}
       </div>
       }
-      <div className="grow">{alg}</div>
+      <div className="grow">{cross?.followsInput ? `…${alg}` : alg}</div>
+      {cross ? (
+        <ContinuationIcon
+          cross={cross}
+          cubeColors={cubeColors}
+          title={`Next pair is ${cross.category}: ${cross.continuation}`}
+        />
+      ) : (
       <button
         type="button"
         aria-label={favorited ? 'Unfavorite alg (P)' : 'Favorite alg (P)'}
@@ -240,6 +291,7 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
           className="w-6 h-6"
         />
       </button>
+      )}
     </div>
   );
 };

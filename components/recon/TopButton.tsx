@@ -31,7 +31,7 @@ export default function TopButton({ id, text, onClick, buttonRef, shortcutHint, 
       {alert.id === id && 
         <div className={`py-1 px-2 font-semibold translate-y-[-120%] absolute text-dark rounded-sm text-sm pointer-events-none select-none z-50 mb-2 whitespace-nowrap 
           ${alertAlign === 'right' ? 'right-0' : 'left-1/2 -translate-x-1/2'} ${
-          alert.messageType === 'warn' ? 'bg-orange-500' : 'bg-primary-100'
+          alert.messageType === 'warn' ? 'bg-cube-orange' : 'bg-primary-100'
         }`}>
           {alert.message}
         </div>

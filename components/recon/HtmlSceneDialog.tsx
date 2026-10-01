@@ -1128,7 +1128,7 @@ export default function HtmlSceneDialog({
                 </button>
               </div>
               {lineEntries.length === 0 && (
-                <p className="text-right text-sm text-orange-400">No solution to compile.</p>
+                <p className="text-right text-sm text-cube-orange">No solution to compile.</p>
               )}
             </section>
           </div>
