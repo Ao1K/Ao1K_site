@@ -16,7 +16,7 @@ export type Handedness = 'left' | 'right';
 export const DEFAULT_HANDEDNESS: Handedness = 'right';
 
 export const ALGSET_OPTIONS = {
-  CFOP: ['f2l', 'oll', 'pll'],
+  CFOP: ['cross', 'f2l', 'oll', 'pll'],
   ZB: ['zbls', 'zbll'],
 } as const;
 

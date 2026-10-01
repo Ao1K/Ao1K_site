@@ -561,7 +561,7 @@ export default function CubeImageDialog({
               <div className="relative">
                 {copyAlert.id === 'copy-cube-image' ? (
                   <div className={`pointer-events-none absolute left-1/2 top-0 z-10 mb-2 -translate-x-1/2 translate-y-[-120%] whitespace-nowrap rounded-sm px-2 py-1 text-sm font-semibold text-dark ${
-                    copyAlert.messageType === 'warn' ? 'bg-orange-500' : 'bg-primary-100'
+                    copyAlert.messageType === 'warn' ? 'bg-cube-orange' : 'bg-primary-100'
                   }`}>
                     {copyAlert.message}
                   </div>

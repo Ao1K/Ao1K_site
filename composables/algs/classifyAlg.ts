@@ -4,7 +4,8 @@
 // This reuses the same pipeline the recon page uses to label each solution line.
 
 import { SimpleCube } from '../recon/SimpleCube';
-import { SimpleCubeInterpreter, readCubeRotation, type Algset, type StepInfo } from '../recon/SimpleCubeInterpreter';
+import { SimpleCubeInterpreter, type Algset, type StepInfo } from '../recon/SimpleCubeInterpreter';
+import { readCubeRotation } from '../recon/cubeHashState';
 import { getNewSteps, getLineStepInfo } from '../recon/getLineStepInfo';
 import { invertTokens, tokenize } from './algMoves';
 import type { CompilableLLStep } from '../recon/LLinterpreter';

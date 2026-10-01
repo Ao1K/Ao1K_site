@@ -60,6 +60,10 @@ export default async function RootLayout({
 }>) {
   return (
     <html lang="en" className={`min-h-full flex flex-col ${rubik.variable} font-san bg-primary-900`}>
+      <head>
+        {/* lightning css doesn't recognize this pseudo-element and warns during build. Inline style tags aren't parsed by it. */}
+        <style>{'::view-transition-group-children(bd-solution-box) { overflow: clip; }'}</style>
+      </head>
       <body className="min-h-screen pt-16 overflow-auto bg-primary-900">
         {/* Checkbox state for mobile sidebar - must be first sibling for peer-checked to work */}
         <input type="checkbox" id="sidebar-toggle" className="peer sr-only" />

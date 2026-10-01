@@ -85,6 +85,7 @@ export const SuggestionBox = ({suggestions, selectedOriginalIndex, topOffset, le
             steps={item.suggestion.steps}
             hasEOsolved={item.suggestion.hasEOsolved}
             algset={item.suggestion.algset}
+            cross={item.suggestion.cross}
             onSelect={() => selectAtIndex(index)}
             onAccept={() => onAccept(item.originalIndex)}
           />

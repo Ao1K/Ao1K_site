@@ -2,6 +2,7 @@ import React, { useImperativeHandle, useRef, useState, type Ref } from 'react';
 import { createPortal } from 'react-dom';
 
 import type { Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
+import type { CrossSuggestionDetails } from '../../composables/recon/crossAutocomplete';
 import { MAX_SHOWN_SUGGESTIONS } from '../../composables/recon/suggestionRanking';
 import { SuggestionBox } from './SuggestionBox';
 import { SuggestionGhost } from './SuggestionGhost';
@@ -86,8 +87,23 @@ const getLineText = (lineHtml = ''): string =>
  * with one) comes for free, and no space is added when the line already ends with one.
  * Returns '' when the typed text isn't a prefix of the alg.
  */
-const resolveRemaining = (suggestionAlg: string, visibleText: string): string =>
+const resolvePrefixRemaining = (suggestionAlg: string, visibleText: string): string =>
   suggestionAlg.startsWith(visibleText) ? suggestionAlg.slice(visibleText.length) : '';
+
+const resolveAppendedRemaining = (suggestionAlg: string, visibleText: string): string =>
+  visibleText === '' || /\s$/.test(visibleText) ? suggestionAlg : ` ${suggestionAlg}`;
+
+const resolveCrossRemaining = (suggestion: Suggestion, cross: CrossSuggestionDetails, visibleText: string): string => {
+  const { lastInputMoveMerge } = cross;
+  if (!lastInputMoveMerge) return resolveAppendedRemaining(suggestion.alg, visibleText);
+  if (!visibleText.endsWith(lastInputMoveMerge.inputMove)) return '';
+  return [lastInputMoveMerge.suffix, ...lastInputMoveMerge.remainingMoves].join(' ');
+};
+
+const resolveRemaining = (suggestion: Suggestion, visibleText: string): string =>
+  suggestion.cross
+    ? resolveCrossRemaining(suggestion, suggestion.cross, visibleText)
+    : resolvePrefixRemaining(suggestion.alg, visibleText);
 
 const NO_REGION = -2;
 
@@ -117,7 +133,7 @@ const filterSuggestionsForDisplay = ({
 
   return suggestions
     ?.map((suggestion, originalIndex) => ({ suggestion, originalIndex }))
-    .filter(({ suggestion }) => resolveRemaining(suggestion.alg, visibleText).trim().length > 0)
+    .filter(({ suggestion }) => resolveRemaining(suggestion, visibleText).trim().length > 0)
     .slice(0, MAX_SHOWN_SUGGESTIONS);
 };
 
@@ -177,11 +193,9 @@ export function SuggestionManager({
     setDismissed(false);
   }
 
-  // everything below is derived every render.
   const selectedItem = filteredSuggestions?.find((item) => item.originalIndex === selectedOriginalIndex)
     ?? filteredSuggestions?.[0];
-  const full = selectedItem?.suggestion.alg ?? '';
-  const remaining = full ? resolveRemaining(full, getLineText(activeLineHtml)) : '';
+  const remaining = selectedItem ? resolveRemaining(selectedItem.suggestion, getLineText(activeLineHtml)) : '';
 
   const shouldShow = name === 'solution'
     && !!filteredSuggestions?.length
@@ -214,7 +228,7 @@ export function SuggestionManager({
     const item = filteredSuggestions?.find((entry) => entry.originalIndex === originalIndex);
     if (!item) return;
 
-    const acceptText = resolveRemaining(item.suggestion.alg, getLineText(activeLineHtml));
+    const acceptText = resolveRemaining(item.suggestion, getLineText(activeLineHtml));
     if (!acceptText) return;
 
     onAccept(acceptText);

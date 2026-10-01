@@ -13,6 +13,8 @@ This project is for a speed cubing website.
 Cubing terms or jargon may be used in user prompts. When this occurs, refer to `/docs/cubing-term-definitions.md`.
 If the jargon is not listed, ask for a definition and then add it.
 
+"Slot" specifically only refers to one of the four locations that an f2l pair gets solved into (front-right, back-right, front-left, or back-left). Do not use the word "slot" to refer to other types of locations or any other concept.
+
 The favorite button used throughout the site can also be called the parrot. It's not the "heart" or the "star".
 
 # Style
@@ -36,6 +38,14 @@ Remember: you might not need an effect. useEffect and similar effect-based trigg
 1. Trigger stateful changes through events
 2. Pass state in as props to a component
 3. Simply recalculating values every render
+
+## Keep simple modifications in-line
+
+Avoid functions that needlessly abstract a simple concept. One-line functions should usually be avoided for this reason. Instead, keep the modifications in-line. 
+
+## When clarity needed, return a named variable
+
+If a function has multiple different return blocks, assign the return value to a constant before returning it. The name shows the reader what the function is returning without needing a comment. If it is obvious what a return is doing, this isn't needed.
 
 ## Architecture
 

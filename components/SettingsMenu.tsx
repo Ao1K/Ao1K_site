@@ -86,6 +86,11 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
     setAlgsets({ ...algsets, [category]: allSelected ? [] : [...options] });
   };
 
+  const capitalizeOption = (option: string): string => {
+    if (option === 'cross') return 'Cross';
+    return option.toUpperCase();
+  }
+
   return (
     <div ref={menuRef} id="settings-menu-container" className="relative inline-block">
       <button
@@ -152,7 +157,7 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
           </div>
 
           <div className="px-3 py-2 border-b border-primary-200">
-            <span className="text-sm font-semibold text-light_accent">Algsets</span>
+            <span className="text-sm font-semibold text-light_accent">Autocomplete For...</span>
             <div className="grid grid-cols-[auto_1fr] gap-x-0 gap-y-2 mt-2">
               {(Object.keys(ALGSET_OPTIONS) as (keyof AlgsetDict)[]).map((category) => {
                 const options = ALGSET_OPTIONS[category];
@@ -180,7 +185,7 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
                             onChange={() => handleToggleAlgset(category, option)}
                             className="w-3.5 h-3.5 cursor-pointer"
                           />
-                          <span className="text-xs text-primary-600">{option.toUpperCase()}</span>
+                          <span className="text-xs text-primary-600">{capitalizeOption(option)}</span>
                         </label>
                       ))}
                     </div>

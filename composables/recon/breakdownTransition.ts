@@ -29,6 +29,8 @@ export const FLIGHT_BOX_CLASS = 'bd-flight-box';
 export const PAGE_TRANSITION_NAMES = {
   player: 'bd-player',
   heading: 'bd-solution-heading',
+  reviewButton: 'bd-review-button',
+  reviewLabel: 'bd-review-label',
   stats: 'bd-stats',
   solutionBox: 'bd-solution-box',
 };
