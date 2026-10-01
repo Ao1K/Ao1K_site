@@ -35,7 +35,6 @@ export interface TwistyPlayerImperativeRef {
 }
 
 const PREVIEW_TEMPO = 1;
-const PREVIEW_HOLD_MS = 1000;
 const PREVIEW_SAFETY_MS = 15000;
 
 interface PlayerProps {
@@ -188,13 +187,8 @@ const Player = React.memo(({
 
       const finish = () => {
         removeListeners();
-        const holdTimeoutId = setTimeout(() => {
-          if (token !== previewTokenRef.current) return;
-          previewCleanupRef.current = null;
-          player.jumpToStart();
-          onEnd();
-        }, PREVIEW_HOLD_MS);
-        previewCleanupRef.current = () => clearTimeout(holdTimeoutId);
+        previewCleanupRef.current = null;
+        onEnd();
       };
 
       function onPlaying(info: { playing: boolean }) {
