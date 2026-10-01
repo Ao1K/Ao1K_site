@@ -1559,7 +1559,7 @@ export default function CubeGifDialog({
                 </button>
               </div>
               {lineEntries.length === 0 && (
-                <p className="text-right text-sm text-orange-400">No solution to turn into a gif.</p>
+                <p className="text-right text-sm text-cube-orange">No solution to turn into a gif.</p>
               )}
             </section>
           </div>

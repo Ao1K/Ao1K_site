@@ -64,7 +64,7 @@ function multiplyMatrices(a: Matrix3x3, b: Matrix3x3): Matrix3x3 {
 export default function simplifyRotations(sequence: string): string[] {
   // assumes no leading or trailing spaces in sequence
 
-  const moves = sequence.split(" ");
+  const moves = sequence.split(" ").map(move => move.replace("2'", "2"));
   const rotations: { [key: string]: Matrix3x3 } = {
     "": [
       [1, 0, 0],

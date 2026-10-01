@@ -24,23 +24,26 @@ export interface LineIconDatum {
   isEmptyIcon: boolean;
 }
 
+export const buildIconColorConfig = (cubeColors: CubeColors): ColorConfig => ({
+  up: cubeColors.up,
+  down: cubeColors.down,
+  front: cubeColors.front,
+  back: cubeColors.back,
+  right: cubeColors.right,
+  left: cubeColors.left,
+  gray: '#888888',
+  darkBg: '#161018',
+});
+
+export const getCrossBg = (crossColor: string) =>
+  isColorDark(crossColor) ? '#ECE6EF' : '#161018';
+
 export function computeLineIconData(
   solutionLines: string[],
   lineSteps: StepInfo[][] | null,
   cubeColors: CubeColors,
 ): LineIconDatum[] {
-  const colorConfig: ColorConfig = {
-    up: cubeColors.up,
-    down: cubeColors.down,
-    front: cubeColors.front,
-    back: cubeColors.back,
-    right: cubeColors.right,
-    left: cubeColors.left,
-    gray: '#888888',
-    darkBg: '#161018',
-  };
-  const getCrossBg = (crossColor: string) =>
-    isColorDark(crossColor) ? '#ECE6EF' : '#161018';
+  const colorConfig = buildIconColorConfig(cubeColors);
 
   return solutionLines.map((line, index) => {
     const isWhitespace = line.trim() === '';

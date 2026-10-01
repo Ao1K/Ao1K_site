@@ -28,7 +28,14 @@ import CameraIcon from '../icons/camera';
 export interface TwistyPlayerImperativeRef {
   setTempoScale: (scale: number) => void;
   setInstantOverride: (instant: boolean) => void;
+  playPreview: (setupAlg: string, alg: string, onEnd: () => void) => void;
+  stopPreview: () => void;
+  restoreSolveState: () => void;
 }
+
+const PREVIEW_TEMPO = 1;
+const PREVIEW_HOLD_MS = 1000;
+const PREVIEW_SAFETY_MS = 15000;
 
 interface PlayerProps {
   scrambleRequest: string;
@@ -43,7 +50,8 @@ interface PlayerProps {
     stepRight: string;
     fullRight: string;
   };
-  ref?: React.Ref<TwistyPlayerImperativeRef>;
+  isControllerHidden: boolean;
+  ref?:React.Ref<TwistyPlayerImperativeRef>;
 }
 
 // Default cube colors - kept for backwards compatibility with imports
@@ -137,6 +145,7 @@ const Player = React.memo(({
   animationTimesRequest,
   handleControllerRequest,
   controllerButtonsStatus,
+  isControllerHidden,
   ref,
 }: PlayerProps) => {
   const { settings } = useSyncedSettings();
@@ -165,6 +174,8 @@ const Player = React.memo(({
   const animatingRef = useRef<boolean>(false);
   const pendingQueueRef = useRef<RenderRefProps[]>([]);
   const instantOverrideRef = useRef<boolean>(false);
+  const previewTokenRef = useRef(0);
+  const previewCleanupRef = useRef<(() => void) | null>(null);
 
   const cubeSpeedRef = useRef(0);
   
@@ -192,6 +203,77 @@ const Player = React.memo(({
     }));
   });
   
+  const cancelPreviewPlayback = () => {
+    previewTokenRef.current++;
+    previewCleanupRef.current?.();
+    previewCleanupRef.current = null;
+  };
+
+  const playPreview = (setupAlg: string, alg: string, onEnd: () => void) => {
+    cancelPreviewPlayback();
+    const player = playerRef.current;
+    if (!player) return;
+
+    const token = previewTokenRef.current;
+    player.pause();
+    player.experimentalSetupAlg = setupAlg;
+    player.alg = alg;
+    player.tempoScale = PREVIEW_TEMPO;
+    player.jumpToStart();
+
+    requestAnimationFrame(() => {
+      if (token !== previewTokenRef.current) return;
+      const model = player.experimentalModel;
+      let seenPlaying = false;
+
+      const removeListeners = () => {
+        model.playingInfo.removeFreshListener(onPlaying);
+        clearTimeout(safetyTimeoutId);
+      };
+
+      const finish = () => {
+        removeListeners();
+        const holdTimeoutId = setTimeout(() => {
+          if (token !== previewTokenRef.current) return;
+          previewCleanupRef.current = null;
+          player.jumpToStart();
+          onEnd();
+        }, PREVIEW_HOLD_MS);
+        previewCleanupRef.current = () => clearTimeout(holdTimeoutId);
+      };
+
+      function onPlaying(info: { playing: boolean }) {
+        if (info.playing) {
+          seenPlaying = true;
+          return;
+        }
+        if (seenPlaying) finish();
+      }
+
+      model.playingInfo.addFreshListener(onPlaying);
+      const safetyTimeoutId = setTimeout(finish, PREVIEW_SAFETY_MS);
+      previewCleanupRef.current = removeListeners;
+      player.play();
+    });
+  };
+
+  const stopPreview = () => {
+    cancelPreviewPlayback();
+    playerRef.current?.pause();
+    playerRef.current?.jumpToStart();
+  };
+
+  const restoreSolveState = () => {
+    cancelPreviewPlayback();
+    const player = playerRef.current;
+    if (!player) return;
+    player.pause();
+    player.experimentalSetupAlg = lastScramble.current;
+    player.alg = lastSolution.current;
+    player.timestamp = lastAnimationTimes.current.reduce((acc, val) => acc + val, 0) as any;
+    player.tempoScale = cubeSpeedRef.current;
+  };
+
   useImperativeHandle(ref, () => ({
     setTempoScale: (scale: number) => {
       if (playerRef.current) playerRef.current.tempoScale = scale;
@@ -199,6 +281,9 @@ const Player = React.memo(({
     setInstantOverride: (instant: boolean) => {
       instantOverrideRef.current = instant;
     },
+    playPreview,
+    stopPreview,
+    restoreSolveState,
   }));
 
   const calcCubeSpeed = (speed: number) => {
@@ -1165,6 +1250,7 @@ const Player = React.memo(({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     // Handle if this div has focus OR if focus is on any element within this container
     const isWithinContainer = divRef.current?.contains(document.activeElement as Node);
+    if (isControllerHidden) return;
     if (document.activeElement !== e.currentTarget && !isWithinContainer) return;
 
     switch (e.key) {
@@ -1216,18 +1302,20 @@ const Player = React.memo(({
           >
             <CameraIcon/>
           </button>
-          <PlayerControls
-            onFullLeft={handleFullLeft}
-            onStepLeft={handleStepLeft}
-            onPause={handlePause}
-            onPlay={handlePlay}
-            onReplay={handleReplay}
-            onStepRight={handleStepRight}
-            onFullRight={handleFullRight}
-            controllerButtonsStatus={controllerButtonsStatus}
-            flashingButtons={flashingButtons}
-            handleFlash={handleFlash}
-          />
+          {!isControllerHidden && (
+            <PlayerControls
+              onFullLeft={handleFullLeft}
+              onStepLeft={handleStepLeft}
+              onPause={handlePause}
+              onPlay={handlePlay}
+              onReplay={handleReplay}
+              onStepRight={handleStepRight}
+              onFullRight={handleFullRight}
+              controllerButtonsStatus={controllerButtonsStatus}
+              flashingButtons={flashingButtons}
+              handleFlash={handleFlash}
+            />
+          )}
           </>
         )}
       </div>

@@ -12,15 +12,13 @@ A tab for your recons (click an icon and expand into a whole new page). A profil
 
 A completely intuitive f2l guide
 
+Add algs:
+R' F R F' U2 L' U' L
+L F' L' F U2' R U R'
+U R U R' U R U' l U' R' U R' x
+
 Add roux algs
  - Roux icons in YourAlgsList
-
-Add cross solutions
- - Show for current angle
- - Off in settings by default
-
-Think about function of solve review carefully. Form will follow.
-- Add breakdown into MovesTextEditor? Explore adding divs.
 
 Wack suggestion
 http://localhost:3000/algs/?a=f2l&c=y3022000000000000
@@ -51,8 +49,8 @@ If rotates when unnecessary (check f2l intuitive breakdown code) -> EO
 y2 and RULD would have been fine -> EO
 Doesn't disrupt a slot when disrupting would be more efficient -> Using empty slots
 Back-to-back U moves or y moves (y y', U U2, U y U, etc.) -> Bad habits, Deduction (maybe)
-Pure cross was inefficient -> Improving at cross
 Didn't insert with sledge or back sledge when there was a made-pair and it would have avoided dot or given cross -> Partial EO Control
 CP then EP -> Full PLL
-EO then CO -> Full OLL
+EO then CO, but still full PLL -> Full OLL
 Didn't use 5 mover to solve that same pair -> 5 movers
+Check if cross has any xyz moves in it. If yes, needs work and link tutorial.

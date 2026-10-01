@@ -17,7 +17,8 @@
     "compile-algs": "npx tsx scripts/compileAlgs.ts",
     "measure-load": "npx tsx scripts/measureLoad.ts",
     "build-cube-runtime": "npx tsx scripts/buildCubeRuntime.ts",
-    "verify-cube-parity": "npx tsx scripts/verifyCubeFrameParity.ts"
+    "verify-cube-parity": "npx tsx scripts/verifyCubeFrameParity.ts",
+    "autocomplete-solve": "npx tsx tests/autocompleteSolve.ts"
   },
   "dependencies": {
     "@aws-amplify/backend": "^1.22.0",

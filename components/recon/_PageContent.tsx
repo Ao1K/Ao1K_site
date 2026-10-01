@@ -38,11 +38,13 @@ import type { StepInfo, Suggestion } from '../../composables/recon/SimpleCubeInt
 import type { Doc } from '../../composables/recon/ExactAlgSuggester';
 import type { CompiledLLAlg } from '../../composables/recon/LLsuggester';
 import { savedAlgKeys } from '../../composables/recon/suggestionRanking';
+import { applyMovesUntilCross, getCrossSuggestions } from '../../composables/recon/crossAutocomplete';
+import { hasCrossFeedback, reviewCross, type CrossReview } from '../../composables/recon/crossReview';
 import { readFavorites } from '../../composables/algs/algFavorites';
 import { getNewSteps } from '../../composables/recon/getLineStepInfo';
 import { ScreenshotManager, isSolveComplete } from '../../composables/recon/ScreenshotManager';
 import type { TwistyPlayerImperativeRef } from '../../components/recon/TwistyPlayer';
-import SolveBreakdown from './SolveBreakdown';
+import SolveBreakdown, { type BreakdownPlayRequest } from './SolveBreakdown';
 import {
   startBreakdown,
   endBreakdown,
@@ -164,7 +166,15 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   const [isHtmlSceneDialogOpen, setIsHtmlSceneDialogOpen] = useState<boolean>(false);
   const [htmlImageData, setHtmlImageData] = useState<{ cubeState: CubeState; setupMovesForFilename: string } | null>(null);
   const [breakdownSession, setBreakdownSession] = useState<BreakdownSession | null>(null);
+  const [crossReview, setCrossReview] = useState<CrossReview | null>(null);
+  const [breakdownPlayRequest, setBreakdownPlayRequest] = useState<BreakdownPlayRequest | null>(null);
   const isBreakdownOpen = breakdownSession !== null;
+  const hasReviewFeedback = hasCrossFeedback(allMovesRef.current[0].flat(), allMovesRef.current[1]);
+  const reviewButtonClass = !hasReviewFeedback
+    ? 'text-neutral-500 border-neutral-700'
+    : isSolveComplete(lineSteps.map(line => line.stepInfo))
+      ? 'text-primary-900 border-primary-100 animate-review-highlight'
+      : 'text-primary-100 border-neutral-600 hover:border-primary-100';
 
   const [playerParams, setPlayerParams] = useState<PlayerParams>({ animationTimes: [], solution: '', scramble: '' });
 
@@ -751,18 +761,58 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     solutionMethodsRef.current?.setSuggestions(newSuggestions, trueLineIndex);
   };
 
-  const refreshLineSuggestions = (lineIndex: number, enabledAlgsets: Set<string>, handedness: Handedness) => {
-    const moves = allMovesRef.current[1];
-    if (moves[lineIndex]?.length === 0) {
-      handleEmptyLineSuggestions(moves, lineIndex, enabledAlgsets, handedness);
+  /**
+   * Creates and pushes out cross suggestions. Returns true or false based on if operation was successful.
+   * @param solutionMoves 
+   * @param lineIndex 
+   * @param enabledAlgsets 
+   * @param handedness 
+   * @returns 
+   */
+  const handleCrossSuggestions = (
+    solutionMoves: string[][],
+    lineIndex: number,
+    enabledAlgsets: Set<string>,
+    handedness: Handedness,
+  ): boolean => {
+    const interpreter = cubeInterpreter.current;
+    if (!interpreter || !enabledAlgsets.has('cross')) return false;
+
+    const precedingMoveGroups = [allMovesRef.current[0].flat(), ...solutionMoves.slice(0, lineIndex)];
+    const facelets = applyMovesUntilCross(precedingMoveGroups);
+    if (!facelets) return false;
+
+    const index = interpreter.getF2LScoreIndex(handedness);
+    const suggestions = index ? getCrossSuggestions(facelets, solutionMoves[lineIndex] ?? [], index) : [];
+    solutionMethodsRef.current?.setSuggestions(suggestions, lineIndex);
+    return true;
+  };
+
+  const updateLineSuggestions = (
+    solutionMoves: string[][],
+    lineIndex: number,
+    enabledAlgsets: Set<string>,
+    handedness: Handedness,
+  ) => {
+    if (handleCrossSuggestions(solutionMoves, lineIndex, enabledAlgsets, handedness)) return;
+    if (solutionMoves[lineIndex]?.length === 0) {
+      handleEmptyLineSuggestions(solutionMoves, lineIndex, enabledAlgsets, handedness);
     }
+  };
+
+  const isCaretInSolution = () =>
+    document.getElementById('solution')?.contains(window.getSelection()?.anchorNode ?? null) ?? false;
+
+  const refreshLineSuggestions = (lineIndex: number, enabledAlgsets: Set<string>, handedness: Handedness) => {
+    updateLineSuggestions(allMovesRef.current[1], lineIndex, enabledAlgsets, handedness);
   };
 
   const loadEnabledAlgsets = async (enabledAlgsets: Set<string>, forHandedness: Handedness) => {
     const interpreter = cubeInterpreter.current;
     if (!interpreter) return;
 
-    const toLoad = [...enabledAlgsets].filter(name =>
+    const algsetsToLoad = enabledAlgsets.has('cross') ? new Set([...enabledAlgsets, 'f2l']) : enabledAlgsets;
+    const toLoad = [...algsetsToLoad].filter(name =>
       ALGSET_LOADERS[name] && !interpreter.isAlgsetLoaded(name, algsetVariant(name, forHandedness))
     );
     if (toLoad.length > 0) {
@@ -773,7 +823,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     }
 
     const [idIndex, lineIndex] = trueCaretRef.current;
-    if (idIndex === 1) refreshLineSuggestions(lineIndex, enabledAlgsets, forHandedness);
+    if (idIndex === 1 && isCaretInSolution()) refreshLineSuggestions(lineIndex, enabledAlgsets, forHandedness);
   };
 
   useEffect(() => {
@@ -808,11 +858,10 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
 
       trueCaretRef.current = [idIndex, lineIndex];
 
+      if (idIndex === 1 && isCaretInSolution()) updateLineSuggestions(moves, lineIndex, enabledAlgsets, handedness);
+
       const isLineEmpty = moves[lineIndex]?.length === 0;
       if (isLineEmpty) {
-
-        // only allowing suggestions on empty line simplifies logic and leads to more beautiful recons
-        if (idIndex === 1) handleEmptyLineSuggestions(moves, lineIndex, enabledAlgsets, handedness);
 
         // pretend caret is at end of the last line that has a move
         const adjustedLineIndex = findPrevNonEmptyLine(moves, lineIndex);
@@ -1073,6 +1122,8 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     const snapshot = takePageSnapshot();
 
     setBreakdownSession(null);
+    twistyPlayerRef.current?.restoreSolveState();
+    setBreakdownPlayRequest(null);
     allMovesRef.current = [[[]], [[]]];
     moveLocation.current = [0, 0, 0];
     setPlayerParams({ animationTimes: [], solution: '', scramble: '' });
@@ -1336,15 +1387,42 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     return editor && scrollBox ? { editor, scrollBox } : null;
   }
 
-  const handleOpenBreakdown = () => {
+  const handleOpenBreakdown = async () => {
     const editorView = getSolutionEditorView();
-    if (!editorView) return;
+    const interpreter = cubeInterpreter.current;
+    if (!editorView || !interpreter) return;
+    if (!interpreter.isAlgsetLoaded('f2l')) {
+      const f2lModule = await ALGSET_LOADERS.f2l(handedness);
+      interpreter.addAlgset('f2l', f2lModule.default.algorithms as Doc[]);
+    }
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+
+    // create empty index
+    const index = interpreter.getF2LScoreIndex(handedness);
+    
+    setCrossReview(index ? reviewCross(allMovesRef.current[0].flat(), allMovesRef.current[1], index) : null);
+    clearLoopTimeout();
+    isLoopingRef.current = false;
+    setControllerButtonsStatus(status => status.playPause === 'play' ? { ...status, playPause: 'pause' } : status);
     startBreakdown(editorView, lineIconData, setBreakdownSession);
+  }
+
+  const handleBreakdownPlay = (request: BreakdownPlayRequest) => {
+    const setupAlg = [...allMovesRef.current[0].flat(), ...allMovesRef.current[1].slice(0, request.lineIndex).flat()].join(' ');
+    setBreakdownPlayRequest(request);
+    document.getElementById('player-box')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    twistyPlayerRef.current?.playPreview(setupAlg, request.alg, () => setBreakdownPlayRequest(null));
+  }
+
+  const handleBreakdownStop = () => {
+    twistyPlayerRef.current?.stopPreview();
+    setBreakdownPlayRequest(null);
   }
 
   const handleCloseBreakdown = () => {
     if (!breakdownSession) return;
+    twistyPlayerRef.current?.restoreSolveState();
+    setBreakdownPlayRequest(null);
     endBreakdown(breakdownSession.lines, getSolutionEditorView, () => setBreakdownSession(null));
   }
 
@@ -1833,6 +1911,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
               animationTimesRequest={playerParams.animationTimes}
               handleControllerRequest={handleControllerRequest}
               controllerButtonsStatus={controllerButtonsStatus}
+              isControllerHidden={isBreakdownOpen}
             />
           </Suspense>
         </div>
@@ -1858,25 +1937,38 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       <div id="datafields" className="w-full items-start transition-width duration-500 ease-linear">
         <div id="solution-area" className={`px-3 mt-1 flex flex-col w-full ${isBreakdownOpen ? '' : 'mb-14'}`}>
           <div
-            className="flex flex-row items-end mb-2 w-full z-10"
+            className="flex flex-row items-end mb-2 gap-3 w-full z-10"
             style={{ viewTransitionName: PAGE_TRANSITION_NAMES.heading }}
           >
-            <div className="text-xl text-dark_accent leading-none font-medium flex-1">{isBreakdownOpen ? 'Breakdown' : 'Solution'}</div>
+            <div className="text-xl text-dark_accent leading-none font-medium">{isBreakdownOpen ? 'Breakdown' : 'Solution'}</div>
             <button
               type="button"
+              autoComplete="off"
+              disabled={!isBreakdownOpen && !hasReviewFeedback}
               onClick={isBreakdownOpen ? handleCloseBreakdown : handleOpenBreakdown}
-              className="mr-2 px-2 py-1 mt-1 text-sm text-primary-100 border border-neutral-600 hover:border-primary-100 rounded-sm"
+              className={`mr-2 px-2 py-1 mt-1 text-sm border rounded-sm transition-colors duration-150 disabled:cursor-not-allowed ${reviewButtonClass}`}
+              style={{ viewTransitionName: PAGE_TRANSITION_NAMES.reviewButton }}
             >
-              {isBreakdownOpen ? 'Go back to editor' : 'Review Solve'}
+              <span className="inline-block whitespace-nowrap" style={flightStyle(PAGE_TRANSITION_NAMES.reviewLabel)}>
+                {isBreakdownOpen ? 'Go back to editor' : 'Review'}
+              </span>
             </button>
             {showSplitsColumn && !isBreakdownOpen && (
               <div className="text-xl text-dark_accent font-medium" style={{ width: SPLITS_WIDTH, textAlign: 'center' }}>Splits</div>
             )}
           </div>
-          {breakdownSession && <SolveBreakdown session={breakdownSession} />}
+          {breakdownSession && (
+            <SolveBreakdown
+              session={breakdownSession}
+              crossReview={crossReview}
+              playingRequest={breakdownPlayRequest}
+              onPlay={handleBreakdownPlay}
+              onStop={handleBreakdownStop}
+            />
+          )}
           <div
             id="rich-solution-display"
-            className={`relative border-none ${FLIGHT_BOX_CLASS} ${isBreakdownOpen ? 'invisible h-0 overflow-hidden' : 'max-h-[35vh] -mb-20 overflow-visible'}`}
+            className={`relative border-none ${FLIGHT_BOX_CLASS} ${isBreakdownOpen ? 'invisible h-0 overflow-hidden' : 'max-h-[35vh] -mb-20 overflow-visible z-10'}`}
             style={isBreakdownOpen ? undefined : flightStyle(PAGE_TRANSITION_NAMES.solutionBox)}
           >
             <div
@@ -1971,7 +2063,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
             </div>
           </div>
           {showSplitsWarning && (
-            <div className="text-orange-500 text-sm">Time doesn&apos;t match sum of splits ({splitsSum.toFixed(3)} sec)</div>
+            <div className="text-cube-orange text-sm">Time doesn&apos;t match sum of splits ({splitsSum.toFixed(3)} sec)</div>
           )}
         </div>
       </div>

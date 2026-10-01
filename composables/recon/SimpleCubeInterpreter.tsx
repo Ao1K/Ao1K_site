@@ -1,5 +1,5 @@
 import AlgSuggester from './ExactAlgSuggester';
-import type { Doc, Constraint, Query } from './ExactAlgSuggester';
+import type { Doc, Constraint } from './ExactAlgSuggester';
 import AlgSpeedEstimator from './AlgSpeedEstimator';
 import type { Grid, CompilableLLStep, SuggestableLLStep, LLCaseInfo } from './LLinterpreter';
 import LLinterpreter from './LLinterpreter';
@@ -8,22 +8,30 @@ import type { CompiledLLAlg } from './LLsuggester';
 import type { CubeState as SimpleCubeState, Color } from './SimpleCube';
 import type { Handedness } from '../useSettings';
 import { splitLeadingAuf } from '../../utils/collapseAufVariants';
-import {
-  isTopLayerChar,
-  canonicalizePair,
-  rotateEOBits,
-  aufTokenToVal,
-  aufValToToken,
-  combineAuf,
-} from '../../utils/canonicalizeAuf';
-import { combineMoves } from '../../utils/moveUtils';
 import { algsetPriority, dedupeByAlgsetPriority, rankSuggestions, suggestionRank } from './suggestionRanking';
 import type { SavedAlgKeys } from './suggestionRanking';
+import {
+  SOLVED_HASH,
+  colorCharToName,
+  EDGE_PIECE_DIRECTIONS,
+  CENTER_PIECE_DIRECTIONS,
+  CORNER_PIECE_DIRECTIONS,
+  F2L_SLOTS,
+  getOppositeColor,
+  effectiveToActualColor,
+  actualToEffectiveColor,
+  readCube,
+  readCubeRotation,
+  findSolvedPieces,
+  calcCrossColorsSolved,
+} from './cubeHashState';
+import type { DirectionChar, PieceState, PieceColorMapping, HashState, TopInfo } from './cubeHashState';
+import { F2LScoreIndex, buildF2LPairQueries, reconstructF2LAlg, toHashAlgset, wantsEORanking } from './f2lPairLookup';
+import type { AlgsetFilter, F2LPairQuery, HashAlgset } from './f2lPairLookup';
+import type { CrossSuggestionDetails } from './crossAutocomplete';
 
-export type HashAlgset = 'f2l' | 'zbls';
+export type { AlgsetFilter, HashAlgset };
 export type Algset = HashAlgset | SuggestableLLStep | 'f2leo';
-
-const toHashAlgset = (step: string | undefined): HashAlgset => (step === 'zbls' ? 'zbls' : 'f2l');
 
 export interface Suggestion {
   alg: string;
@@ -33,20 +41,8 @@ export interface Suggestion {
   hasEOsolved?: boolean;
   frequency?: number;
   algset?: Algset;
+  cross?: CrossSuggestionDetails;
 }
-
-interface F2LPairQuery {
-  query: Query;
-  pairColors: [string, string];
-  q: number;
-  isTopLayer: boolean;
-  isZBLSrelevant: boolean;
-}
-
-export type AlgsetFilter = ReadonlySet<string> | 'all';
-
-type ColorName = 'white' | 'yellow' | 'red' | 'orange' | 'green' | 'blue';
-type DirectionChar = 'U' | 'D' | 'L' | 'R' | 'F' | 'B';
 
 // Block pattern types for Roux-style blocks
 type BlockOrigin = 'UFL' | 'UFR' | 'DFR' | 'DFL';
@@ -60,32 +56,6 @@ export type BlockPattern = {
   L?: Face;
   R?: Face;
 };
-
-// maps single-char color codes to full color names
-const colorCharToName: { [key in Color]: ColorName } = {
-  'W': 'white',
-  'Y': 'yellow',
-  'R': 'red',
-  'O': 'orange',
-  'G': 'green',
-  'B': 'blue'
-};
-
-interface StickerState {
-  faceIdx: number;
-  colorName: ColorName;
-  direction: DirectionChar;
-}
-
-interface PieceState {
-  type: 'corner' | 'edge' | 'center';
-  origin: string; // e.g. 'UFR', 'FR', 'U'
-  stickers: StickerState[];
-}
-
-interface CubeState {
-  hash: string;
-}
 
 /**
  * Represents a connected block on the cube.
@@ -132,22 +102,8 @@ export interface StepInfo {
  */
 export class SimpleCubeInterpreter {
   private cubeState: SimpleCubeState | null = null;
-  private solvedState: CubeState = { hash: '' };
-
-  /**
-   * Fixed string representing the state of a solved 3x3 cube.
-   * The index of each character in the string corresponds to a piece of 
-   * a specific set of colors. Colors are then mapped based on cube rotation.
-   * Finally, we get the position of each piece that has those mapped (effective) colors.
-   * 
-   * Example: 
-   *  We have a solved cube where an x rotation was applied, and we want to find the 0th 
-   *  character in the hash. With no rotation this corresponds white-green edge. 
-   *  With rotation, we map the colors, so the effective colors are green-yellow.
-   *  Direction green-yellow is U-F. U-F corresponds to character 'a'.
-   */
-  private readonly solved3x3Hash = 'abcdefghijklehkbnqtwabcdef';
-  private currentState: CubeState | null = { hash: this.solved3x3Hash };
+  private readonly solvedState = { hash: SOLVED_HASH };
+  private currentState: HashState | null = { hash: SOLVED_HASH, rotation: 'no_rotation', eoValue: 0 };
   public currentCubeRotation: string | number = -1;
   private algSuggester: AlgSuggester | null = null;
   private LLsuggester: LLsuggester | null = null;
@@ -155,6 +111,7 @@ export class SimpleCubeInterpreter {
   private handedness: Handedness = 'right';
   private savedAlgs: SavedAlgKeys | undefined = undefined;
   private loadedAlgsets: Map<string, string | undefined> = new Map();
+  private f2lScoreIndexes: Map<Handedness, F2LScoreIndex> = new Map();
 
   // algsets whose compiled algs are hash-searched via the position suggester
   private static readonly hashAlgsets: ReadonlySet<HashAlgset> = new Set<HashAlgset>(['f2l', 'zbls']);
@@ -163,163 +120,15 @@ export class SimpleCubeInterpreter {
     return (SimpleCubeInterpreter.hashAlgsets as ReadonlySet<string>).has(name);
   }
 
-  // standard facelets mapping (face index to color name for solved cube)
-  private readonly facelets: { faceIdx: number; colorName: string }[] = [
-    { faceIdx: 0, colorName: 'white' },   // U
-    { faceIdx: 1, colorName: 'yellow' },  // D
-    { faceIdx: 2, colorName: 'green' },   // F
-    { faceIdx: 3, colorName: 'red' },     // R
-    { faceIdx: 4, colorName: 'blue' },    // B
-    { faceIdx: 5, colorName: 'orange' },  // L
-  ];
   private currentPieces: PieceState[] = [];
-  private pieceColorMapping: Map<number, { effectivePieceIndex: number, stickerOrder: string[] }> = new Map();
-
-  /**
-   * Maps edge piece positions to their sticker locations in SimpleCubeState.
-   * Each entry: [face1, row1, col1, dir1, face2, row2, col2, dir2]
-   * face indices: 0=U, 1=D, 2=F, 3=R, 4=B, 5=L
-   */
-  private readonly edgePositions: [number, number, number, DirectionChar, number, number, number, DirectionChar][] = [
-    [0, 2, 1, 'U', 2, 0, 1, 'F'], // 0: UF
-    [0, 1, 2, 'U', 3, 0, 1, 'R'], // 1: UR
-    [0, 0, 1, 'U', 4, 0, 1, 'B'], // 2: UB
-    [0, 1, 0, 'U', 5, 0, 1, 'L'], // 3: UL
-    [1, 0, 1, 'D', 2, 2, 1, 'F'], // 4: DF
-    [1, 1, 2, 'D', 3, 2, 1, 'R'], // 5: DR
-    [1, 2, 1, 'D', 4, 2, 1, 'B'], // 6: DB
-    [1, 1, 0, 'D', 5, 2, 1, 'L'], // 7: DL
-    [2, 1, 2, 'F', 3, 1, 0, 'R'], // 8: FR
-    [2, 1, 0, 'F', 5, 1, 2, 'L'], // 9: FL
-    [4, 1, 0, 'B', 3, 1, 2, 'R'], // 10: BR
-    [4, 1, 2, 'B', 5, 1, 0, 'L'], // 11: BL
-  ];
-
-  /**
-   * Maps corner piece positions to their sticker locations in SimpleCubeState.
-   * Each entry: [face1, row1, col1, dir1, face2, row2, col2, dir2, face3, row3, col3, dir3]
-   * Order matches original piece indices 12-19: UFR, UBR, UBL, UFL, DFR, DFL, DBL, DBR
-   */
-  private readonly cornerPositions: [number, number, number, DirectionChar, number, number, number, DirectionChar, number, number, number, DirectionChar][] = [
-    [0, 2, 2, 'U', 2, 0, 2, 'F', 3, 0, 0, 'R'], // 12: UFR
-    [0, 0, 2, 'U', 4, 0, 0, 'B', 3, 0, 2, 'R'], // 13: UBR
-    [0, 0, 0, 'U', 4, 0, 2, 'B', 5, 0, 0, 'L'], // 14: UBL
-    [0, 2, 0, 'U', 2, 0, 0, 'F', 5, 0, 2, 'L'], // 15: UFL
-    [1, 0, 2, 'D', 2, 2, 2, 'F', 3, 2, 0, 'R'], // 16: DFR
-    [1, 0, 0, 'D', 2, 2, 0, 'F', 5, 2, 2, 'L'], // 17: DFL
-    [1, 2, 0, 'D', 4, 2, 2, 'B', 5, 2, 0, 'L'], // 18: DBL
-    [1, 2, 2, 'D', 4, 2, 0, 'B', 3, 2, 2, 'R'], // 19: DBR
-  ];
-
-  /**
-   * Maps center piece positions to their sticker locations.
-   * Each entry: [face, row, col, direction]
-   * Order: U, L, F, R, B, D (indices 20-25)
-   */
-  private readonly centerPositions: [number, number, number, DirectionChar][] = [
-    [0, 1, 1, 'U'], // 20: U center
-    [5, 1, 1, 'L'], // 21: L center
-    [2, 1, 1, 'F'], // 22: F center
-    [3, 1, 1, 'R'], // 23: R center
-    [4, 1, 1, 'B'], // 24: B center
-    [1, 1, 1, 'D'], // 25: D center
-  ];
+  private pieceColorMapping: PieceColorMapping = new Map();
 
   private LLinterpreter = new LLinterpreter();
 
-  // maps faceIdx to effective faceIdx after rotation
-  // indices: 0=U(white), 1=D(yellow), 2=F(green), 3=R(red), 4=B(blue), 5=L(orange)
-  private readonly rotationColorMap = new Map<string, number[]>([
-    ["no_rotation", [0, 1, 2, 3, 4, 5]],
-    ["y", [0, 1, 3, 4, 5, 2]],
-    ["y2", [0, 1, 4, 5, 2, 3]],
-    ["y'", [0, 1, 5, 2, 3, 4]],
-    ["x", [2, 4, 1, 3, 0, 5]],
-    ["x y", [2, 4, 3, 0, 5, 1]],
-    ["x y2", [2, 4, 0, 5, 1, 3]],
-    ["x y'", [2, 4, 5, 1, 3, 0]],
-    ["x2", [1, 0, 4, 3, 2, 5]],
-    ["x2 y", [1, 0, 3, 2, 5, 4]],
-    ["z2", [1, 0, 2, 5, 4, 3]],
-    ["x2 y'", [1, 0, 5, 4, 3, 2]],
-    ["x'", [4, 2, 0, 3, 1, 5]],
-    ["x' y", [4, 2, 3, 1, 5, 0]],
-    ["x' y2", [4, 2, 1, 5, 0, 3]],
-    ["x' y'", [4, 2, 5, 0, 3, 1]],
-    ["z", [5, 3, 2, 0, 4, 1]],
-    ["z y", [5, 3, 0, 4, 1, 2]],
-    ["z y2", [5, 3, 4, 1, 2, 0]],
-    ["z y'", [5, 3, 1, 2, 0, 4]],
-    ["z'", [3, 5, 2, 1, 4, 0]],
-    ["z' y", [3, 5, 1, 4, 0, 2]],
-    ["z' y2", [3, 5, 4, 0, 2, 1]],
-    ["z' y'", [3, 5, 0, 2, 1, 4]],
-  ]);
-
-  // maps U center color + F center color to rotation name
-  private readonly cubeRotationMap = new Map<string, string>([
-    ["W,G", "no_rotation"],
-    ["W,R", "y"],
-    ["W,B", "y2"],
-    ["W,O", "y'"],
-    ["G,Y", "x"],
-    ["G,R", "x y"],
-    ["G,W", "x y2"],
-    ["G,O", "x y'"],
-    ["Y,B", "x2"],
-    ["Y,R", "x2 y"],
-    ["Y,G", "z2"],
-    ["Y,O", "x2 y'"],
-    ["B,W", "x'"],
-    ["B,R", "x' y"],
-    ["B,Y", "x' y2"],
-    ["B,O", "x' y'"],
-    ["O,G", "z"],
-    ["O,W", "z y"],
-    ["O,B", "z y2"],
-    ["O,Y", "z y'"],
-    ["R,G", "z'"],
-    ["R,Y", "z' y"],
-    ["R,B", "z' y2"],
-    ["R,W", "z' y'"],
-  ]);
-
   private crossColorsSolved: string[] = [];
   private blocksSolved: Block[] = [];
-  private topInfo: { actualColor: string; effectiveColor: string; direction: string } = { actualColor: '', effectiveColor: '', direction: '' };
+  private topInfo: TopInfo = { actualColor: '', effectiveColor: '', direction: '' };
   private eoValue: number = -1;
-
-  private readonly edgePieceDirections: { [key: string]: number } = {
-    'UF': 0, 'UR': 1, 'UB': 2, 'UL': 3,
-    'DF': 4, 'DR': 5, 'DB': 6, 'DL': 7,
-    'FR': 8, 'FL': 9, 'BR': 10, 'BL': 11,
-    'FU': 12, 'RU': 13, 'BU': 14, 'LU': 15,
-    'FD': 16, 'RD': 17, 'BD': 18, 'LD': 19,
-    'RF': 20, 'LF': 21, 'RB': 22, 'LB': 23
-  };
-
-  private readonly centerPieceDirections: { [key: string]: number } = {
-    'U': 0,
-    'L': 1,
-    'F': 2,
-    'R': 3,
-    'B': 4,
-    'D': 5
-  };
-
-  /**
-   * characters in each key sorted alphabetically
-   *  */
-  private readonly cornerPieceDirections: { [key: string]: number } = {
-    'FLU': 0, // 'UFL': 0,
-    'FRU': 1, // 'URF': 1,
-    'BRU': 2, // 'UBR': 2,
-    'BLU': 3, // 'ULB': 3,
-    'DFR': 4, // 'DFR': 4,
-    'DFL': 5, // 'DLF': 5,
-    'BDL': 6, // 'DBL': 6,
-    'BDR': 7, // 'DRB': 7,
-  };
 
   // reverse mappings for hash decoding (initialized in constructor)
   private readonly edgeIdxToDir: string[];
@@ -369,20 +178,6 @@ export class SimpleCubeInterpreter {
     'orange': ['green', 'white', 'blue', 'yellow'],
   };
 
-  /**
-   * In practice, since cross is mostly on down face, effective color for cross
-   * is mostly yellow.
-   */
-  private readonly crossPieceIndices: { [key: string]: string } = {
-    // colors returned are the effective colors after cube rotation
-    '0,1,2,3': 'white', // up
-    '4,5,6,7': 'yellow', // down
-    '0,4,8,9': 'green', // front
-    '1,5,8,10': 'red', // right
-    '2,6,10,11': 'blue', // back
-    '3,7,9,11': 'orange' // left
-  };
-
   private readonly eoLinePieceIndices: { [key: string]: string } = {
     // only down face edges are valid, because who would possibly do
     // EOLine on side? No, we're not going to support that behavior.
@@ -390,66 +185,20 @@ export class SimpleCubeInterpreter {
     '5,7': 'yellow,horizontal', // down right, down left
   };
 
-  /**
-   * F2L slots organized by corner-edge pairs
-   * Each slot contains a corner and edge that solve together
-   * In the current form, only yellow should be used because we assume cross on bottom.
-   */
-  private readonly f2lSlots: { [key: string]: { corner: number, edge: number, slotColors: [string, string] }[] } = {
-    'white': [ // unused
-      { corner: 12, edge: 8, slotColors: ['green', 'red'] },  // UFR corner + FR edge
-      { corner: 15, edge: 9, slotColors: ['orange', 'green'] },  // UFL corner + FL edge
-      { corner: 14, edge: 11, slotColors: ['blue', 'orange'] }, // UBL corner + BL edge
-      { corner: 13, edge: 10, slotColors: ['red', 'blue'] }  // UBR corner + BR edge
-    ],
-    'yellow': [ // cross on bottom
-      { corner: 16, edge: 8, slotColors: ['red', 'green'] },  // DFR corner + FR edge
-      { corner: 17, edge: 9, slotColors: ['green', 'orange'] },  // DFL corner + FL edge  
-      { corner: 18, edge: 11, slotColors: ['orange', 'blue'] }, // DBL corner + BL edge
-      { corner: 19, edge: 10, slotColors: ['blue', 'red'] }  // DBR corner + BR edge
-    ],
-    'green': [ // rest of colors unused
-      { corner: 12, edge: 1, slotColors: ['red', 'white'] },  // UFR corner + UR edge
-      { corner: 15, edge: 3, slotColors: ['white', 'orange'] },  // UFL corner + UL edge
-      { corner: 16, edge: 5, slotColors: ['yellow', 'red'] },  // DFR corner + DR edge
-      { corner: 17, edge: 7, slotColors: ['orange', 'yellow'] }   // DFL corner + DL edge
-    ],
-    'red': [
-      { corner: 12, edge: 0, slotColors: ['white', 'green'] },  // UFR corner + UF edge
-      { corner: 13, edge: 2, slotColors: ['blue', 'white'] },  // UBR corner + UB edge
-      { corner: 16, edge: 4, slotColors: ['green', 'yellow'] },  // DFR corner + DF edge
-      { corner: 19, edge: 6, slotColors: ['yellow', 'blue'] }   // DBR corner + DB edge
-    ],
-    'blue': [
-      { corner: 13, edge: 1, slotColors: ['white', 'red'] },  // UBR corner + UR edge
-      { corner: 14, edge: 3, slotColors: ['orange', 'white'] },  // UBL corner + UL edge
-      { corner: 19, edge: 5, slotColors: ['red', 'yellow'] },  // DBR corner + DR edge
-      { corner: 18, edge: 7, slotColors: ['yellow', 'orange'] }   // DBL corner + DL edge
-    ],
-    'orange': [
-      { corner: 15, edge: 0, slotColors: ['green', 'white'] },  // UFL corner + UF edge
-      { corner: 14, edge: 2, slotColors: ['white', 'blue'] },  // UBL corner + UB edge
-      { corner: 17, edge: 4, slotColors: ['yellow', 'green'] },  // DFL corner + DF edge
-      { corner: 18, edge: 6, slotColors: ['blue', 'yellow'] }   // DBL corner + DL edge
-    ]
-  };
-
   constructor(algs: Doc[] = []) {
-    this.solvedState = { hash: this.solved3x3Hash };
-
     // build reverse mappings for hash decoding
     this.edgeIdxToDir = [];
-    for (const [dir, idx] of Object.entries(this.edgePieceDirections)) {
+    for (const [dir, idx] of Object.entries(EDGE_PIECE_DIRECTIONS)) {
       this.edgeIdxToDir[idx] = dir;
     }
 
     this.centerIdxToDir = [];
-    for (const [dir, idx] of Object.entries(this.centerPieceDirections)) {
+    for (const [dir, idx] of Object.entries(CENTER_PIECE_DIRECTIONS)) {
       this.centerIdxToDir[idx] = dir;
     }
 
     this.cornerLocToDir = [];
-    for (const [dir, slot] of Object.entries(this.cornerPieceDirections)) {
+    for (const [dir, slot] of Object.entries(CORNER_PIECE_DIRECTIONS)) {
       this.cornerLocToDir[slot] = dir;
     }
 
@@ -493,175 +242,15 @@ export class SimpleCubeInterpreter {
     return this.loadedAlgsets.has(name) && this.loadedAlgsets.get(name) === variant;
   }
 
-  /**
-   * Extracts pieces from the SimpleCubeState using position mappings.
-   * Pieces are indexed by their colors (not location), matching the hash paradigm.
-   */
-  private getPieces(): PieceState[] {
-    if (!this.cubeState) {
-      console.warn('No cube state available');
-      return [];
+  public getF2LScoreIndex(handedness: Handedness): F2LScoreIndex | null {
+    if (!this.algSuggester || !this.isAlgsetLoaded('f2l')) return null;
+
+    let index = this.f2lScoreIndexes.get(handedness);
+    if (!index) {
+      index = new F2LScoreIndex(this.algSuggester, handedness);
+      this.f2lScoreIndexes.set(handedness, index);
     }
-
-    // color sets that define each piece index (sorted for matching)
-    // edges 0-11
-    const edgeColors: [number, number][] = [
-      [0, 2], // 0: UF → white, green
-      [0, 3], // 1: UR → white, red
-      [0, 4], // 2: UB → white, blue
-      [0, 5], // 3: UL → white, orange
-      [1, 2], // 4: DF → yellow, green
-      [1, 3], // 5: DR → yellow, red
-      [1, 4], // 6: DB → yellow, blue
-      [1, 5], // 7: DL → yellow, orange
-      [2, 3], // 8: FR → green, red
-      [2, 5], // 9: FL → green, orange
-      [4, 3], // 10: BR → blue, red
-      [4, 5], // 11: BL → blue, orange
-    ];
-
-    // corners 12-19
-    const cornerColors: [number, number, number][] = [
-      [0, 2, 3], // 12: UFR → white, green, red
-      [0, 4, 3], // 13: UBR → white, blue, red
-      [0, 4, 5], // 14: UBL → white, blue, orange
-      [0, 2, 5], // 15: UFL → white, green, orange
-      [1, 2, 3], // 16: DFR → yellow, green, red
-      [1, 2, 5], // 17: DFL → yellow, green, orange
-      [1, 4, 5], // 18: DBL → yellow, blue, orange
-      [1, 4, 3], // 19: DBR → yellow, blue, red
-    ];
-
-    // center colors 20-25: U, L, F, R, B, D
-    const centerColors: number[] = [0, 5, 2, 3, 4, 1];
-
-    // extract all edges by location first
-    const edgesByLocation: PieceState[] = [];
-    for (let i = 0; i < this.edgePositions.length; i++) {
-      const [f1, r1, c1, d1, f2, r2, c2, d2] = this.edgePositions[i];
-      const color1 = this.cubeState[f1][r1][c1];
-      const color2 = this.cubeState[f2][r2][c2];
-
-      edgesByLocation.push({
-        type: 'edge',
-        origin: d1 + d2,
-        stickers: [
-          { faceIdx: this.colorCharToFaceIdx(color1), colorName: colorCharToName[color1], direction: d1 },
-          { faceIdx: this.colorCharToFaceIdx(color2), colorName: colorCharToName[color2], direction: d2 },
-        ]
-      });
-    }
-
-    // extract all corners by location
-    const cornersByLocation: PieceState[] = [];
-    for (let i = 0; i < this.cornerPositions.length; i++) {
-      const [f1, r1, c1, d1, f2, r2, c2, d2, f3, r3, c3, d3] = this.cornerPositions[i];
-      const color1 = this.cubeState[f1][r1][c1];
-      const color2 = this.cubeState[f2][r2][c2];
-      const color3 = this.cubeState[f3][r3][c3];
-
-      cornersByLocation.push({
-        type: 'corner',
-        origin: d1 + d2 + d3,
-        stickers: [
-          { faceIdx: this.colorCharToFaceIdx(color1), colorName: colorCharToName[color1], direction: d1 },
-          { faceIdx: this.colorCharToFaceIdx(color2), colorName: colorCharToName[color2], direction: d2 },
-          { faceIdx: this.colorCharToFaceIdx(color3), colorName: colorCharToName[color3], direction: d3 },
-        ]
-      });
-    }
-
-    // extract all centers by location
-    const centersByLocation: PieceState[] = [];
-    for (let i = 0; i < this.centerPositions.length; i++) {
-      const [f, r, c, d] = this.centerPositions[i];
-      const color = this.cubeState[f][r][c];
-
-      centersByLocation.push({
-        type: 'center',
-        origin: d,
-        stickers: [
-          { faceIdx: this.colorCharToFaceIdx(color), colorName: colorCharToName[color], direction: d },
-        ]
-      });
-    }
-
-    // now assign pieces to correct indices based on their colors
-    const pieces: PieceState[] = new Array(26);
-
-    // assign edges by color, reordering stickers so primary color is first
-    for (let targetIdx = 0; targetIdx < 12; targetIdx++) {
-      const [primaryColor, secondaryColor] = edgeColors[targetIdx];
-      const targetSet = [primaryColor, secondaryColor].sort().join(',');
-
-      for (const edge of edgesByLocation) {
-        const edgeSet = edge.stickers.map(s => s.faceIdx).sort().join(',');
-        if (edgeSet === targetSet) {
-          // reorder stickers so primary color sticker is first
-          const reorderedStickers = edge.stickers[0].faceIdx === primaryColor
-            ? [...edge.stickers]
-            : [edge.stickers[1], edge.stickers[0]];
-
-          pieces[targetIdx] = {
-            ...edge,
-            stickers: reorderedStickers
-          };
-          break;
-        }
-      }
-    }
-
-    // assign corners by color, reordering stickers so primary color is first
-    for (let targetIdx = 0; targetIdx < 8; targetIdx++) {
-      const [primaryColor, secondaryColor, tertiaryColor] = cornerColors[targetIdx];
-      const targetSet = [primaryColor, secondaryColor, tertiaryColor].sort().join(',');
-
-      for (const corner of cornersByLocation) {
-        const cornerSet = corner.stickers.map(s => s.faceIdx).sort().join(',');
-        if (cornerSet === targetSet) {
-          // reorder stickers so primary color sticker is first
-          const primaryIdx = corner.stickers.findIndex(s => s.faceIdx === primaryColor);
-          const reorderedStickers = [
-            corner.stickers[primaryIdx],
-            ...corner.stickers.filter((_, i) => i !== primaryIdx)
-          ];
-
-          pieces[12 + targetIdx] = {
-            ...corner,
-            stickers: reorderedStickers
-          };
-          break;
-        }
-      }
-    }
-
-    // assign centers by color
-    for (let targetIdx = 0; targetIdx < 6; targetIdx++) {
-      const targetColor = centerColors[targetIdx];
-
-      for (const center of centersByLocation) {
-        if (center.stickers[0].faceIdx === targetColor) {
-          pieces[20 + targetIdx] = center;
-          break;
-        }
-      }
-    }
-
-    return pieces;
-  }
-
-  /**
-   * Maps color character to face index (the face that color belongs to when solved).
-   */
-  private colorCharToFaceIdx(color: Color): number {
-    switch (color) {
-      case 'W': return 0; // U
-      case 'Y': return 1; // D
-      case 'G': return 2; // F
-      case 'R': return 3; // R
-      case 'B': return 4; // B
-      case 'O': return 5; // L
-    }
+    return index;
   }
 
   /**
@@ -674,79 +263,6 @@ export class SimpleCubeInterpreter {
       return null;
     }
     return piece.stickers[stickerIndex].direction;
-  }
-
-  /**
-   * Uses current rotation to map colors to their effective colors.
-   * Then maps each piece in currentPieces to its corresponding piece of effective colors.
-   */
-  private mapPiecesByColor = (): Map<number, { effectivePieceIndex: number, stickerOrder: string[] }> => {
-
-    const pieceMapping = new Map<number, { effectivePieceIndex: number, stickerOrder: string[] }>();
-    const colorMapping = this.rotationColorMap.get(this.currentCubeRotation as string);
-
-    if (!colorMapping) {
-      console.error('No color mapping found for current rotation:', this.currentCubeRotation);
-      return pieceMapping;
-    }
-
-    this.currentPieces.forEach((currentPiece, currentIndex) => {
-
-      // save order of colors on each piece for later
-      const stickerOrder: string[] = [];
-      currentPiece.stickers.forEach((sticker) => {
-        const effectiveColorIdx = colorMapping[sticker.faceIdx].toString();
-        stickerOrder.push(effectiveColorIdx);
-      });
-
-      // find which piece these colors match
-      const sortedStickers = [...stickerOrder].sort().join(',');
-
-      for (let i = 0; i < this.currentPieces.length; i++) {
-        const pieceToCheck = this.currentPieces[i];
-        if (pieceToCheck.type !== currentPiece.type) {
-          continue; // types must match
-        }
-        const stickersToCheck = pieceToCheck.stickers.map(s => s.faceIdx).sort().join(',');
-        if (stickersToCheck === sortedStickers) {
-          pieceMapping.set(currentIndex, { effectivePieceIndex: i, stickerOrder });
-          break;
-        }
-        if (i === this.currentPieces.length - 1) {
-          console.warn('No matching original piece found for current piece:', currentPiece);
-        }
-      }
-    });
-
-    return pieceMapping;
-  }
-
-  private calcCrossColorsSolved(): string[] {
-    const solvedPieces = this.getSolvedPieces();
-
-    const effectiveColorsSolved: string[] = [];
-
-    Object.keys(this.crossPieceIndices).forEach((key) => {
-      let piecesSolved = 0;
-      key.split(',').forEach((indexStr) => {
-        const index = parseInt(indexStr, 10);
-        if (solvedPieces.includes(index)) {
-          piecesSolved++;
-        }
-      });
-
-      if (piecesSolved === key.split(',').length) {
-        // entire cross is solved
-        effectiveColorsSolved.push(this.crossPieceIndices[key]);
-      }
-    });
-
-    // Map effective colors to actual colors based on cube rotation
-    const actualColorsSolved = effectiveColorsSolved.map(effectiveColor =>
-      this.mapEffectiveColorToActual(effectiveColor)
-    );
-
-    return actualColorsSolved;
   }
 
   /**
@@ -1508,7 +1024,7 @@ export class SimpleCubeInterpreter {
     }
 
     const topColor = this.topInfo.actualColor;
-    const lineColor = this.getOppositeColor(topColor);
+    const lineColor = getOppositeColor(topColor);
 
     if (this.crossColorsSolved.includes(lineColor)) {
       // handled by CFOP
@@ -1652,13 +1168,16 @@ export class SimpleCubeInterpreter {
    * Updates all internally cached state values derived from the current cube state.
    * Must be called after cubeState is set and before any step calculation.
    */
-  private updateCachedState(): void {
-    this.currentCubeRotation = this.getCubeRotation();
-    this.currentState = this.calcCurrentState();
-    const topInfo = this.getTopCenterInfo();
-    if (!topInfo) throw new Error('Failed to determine top center info');
-    this.topInfo = topInfo;
-    this.eoValue = this.getEOvalue();
+  private updateCachedState(cubeState: SimpleCubeState): HashState {
+    const reading = readCube(cubeState);
+    if (!reading) throw new Error('Failed to read cube state');
+    this.currentCubeRotation = reading.state.rotation;
+    this.currentState = reading.state;
+    this.currentPieces = reading.pieces;
+    this.pieceColorMapping = reading.pieceColorMapping;
+    this.topInfo = reading.topInfo;
+    this.eoValue = reading.state.eoValue;
+    return reading.state;
   }
 
   /**
@@ -1674,7 +1193,7 @@ export class SimpleCubeInterpreter {
       return [];
     }
 
-    this.updateCachedState();
+    const state = this.updateCachedState(this.cubeState);
 
     const steps: StepInfo[] = [];
 
@@ -1682,7 +1201,7 @@ export class SimpleCubeInterpreter {
     steps.push({ step: this.eoValue.toString(), type: 'genericEO', colors: [] });
 
     if (method === 'CFOP' || method === 'ZZ' || method === 'All') {
-      this.crossColorsSolved = this.calcCrossColorsSolved();
+      this.crossColorsSolved = calcCrossColorsSolved(state);
       steps.push(...this.calcCFOPstepsCompleted(breakdownSolved));
     }
 
@@ -1715,154 +1234,7 @@ export class SimpleCubeInterpreter {
       console.warn('No cube state available for rotation detection');
       return -1;
     }
-
-    const uCenter = this.cubeState[0][1][1]; // U center
-    const fCenter = this.cubeState[2][1][1]; // F center
-    const key = `${uCenter},${fCenter}`;
-
-    const rotation = this.cubeRotationMap.get(key);
-    if (!rotation) {
-      console.warn(`Unknown rotation for U=${uCenter}, F=${fCenter}`);
-      return -1;
-    }
-
-    return rotation;
-  }
-
-  /**
-   * Captures the current state of all cube pieces and generates a hash.
-   */
-  private calcCurrentState(): CubeState | null {
-    if (typeof this.currentCubeRotation !== 'string') {
-      console.warn('Current cube rotation is not determined');
-      return null;
-    }
-
-    this.currentPieces = this.getPieces();
-
-    this.pieceColorMapping = this.mapPiecesByColor();
-
-    if (this.pieceColorMapping.size !== this.currentPieces.length) {
-      console.warn('Piece mapping size does not match current pieces length');
-      return null;
-    }
-
-    const hash = this.hashRecoloredPieces(this.pieceColorMapping);
-
-    if (!hash) {
-      console.warn('Failed to generate hash from recolored pieces');
-      return null;
-    }
-
-    return { hash };
-  }
-
-  /**
-   * Generates hash from piece colors and orientations.
-   */
-  private hashRecoloredPieces(pieceColorMapping: Map<number, { effectivePieceIndex: number, stickerOrder: string[] }>): string | null {
-    let hash = '';
-
-    pieceColorMapping.forEach(({ effectivePieceIndex, stickerOrder }, currentIndex) => {
-
-      const leadColorIdx = stickerOrder[0]; // effective color
-      const piece = this.currentPieces[effectivePieceIndex];
-
-      const leadStickerIndex = this.currentPieces[effectivePieceIndex].stickers.findIndex(s => s.faceIdx.toString() === leadColorIdx);
-      const leadSticker = leadStickerIndex !== -1 ? this.currentPieces[effectivePieceIndex].stickers[leadStickerIndex] : null;
-
-      if (!leadSticker) {
-        console.warn(`Lead sticker with color index ${leadColorIdx} not found on piece at current index ${currentIndex}`);
-        return null;
-      }
-
-      switch (this.currentPieces[effectivePieceIndex].type) {
-        case 'corner': {
-          const leadStickerDirection = this.getFaceletDirection(effectivePieceIndex, leadStickerIndex);
-          const axis = leadStickerDirection ? this.mapDirectionToAxis(leadStickerDirection) : null;
-          const axisIndex = axis === 'x' ? 0 : axis === 'y' ? 1 : axis === 'z' ? 2 : null;
-
-          if (axisIndex === null) {
-            console.warn(`Invalid axis for lead sticker direction ${leadStickerDirection} on corner piece at current index ${currentIndex}`);
-            return null;
-          }
-
-          const directions: string[] = [];
-          const stickers = this.currentPieces[effectivePieceIndex].stickers;
-          stickers.forEach((sticker) => {
-            const dir = this.getFaceletDirection(effectivePieceIndex, stickers.indexOf(sticker));
-            if (dir) {
-              directions.push(dir);
-            } else {
-              console.warn(`Direction not found for sticker on corner piece at current index ${currentIndex}`);
-              return null;
-            }
-          });
-          directions.sort();
-          const locationKey = directions.join('');
-          const locationIndex = this.cornerPieceDirections[locationKey];
-
-          const charIndex = (locationIndex * 3 + axisIndex);
-          const hashChar = String.fromCharCode('a'.charCodeAt(0) + charIndex);
-          hash += hashChar;
-          break;
-        }
-
-        case 'edge': {
-          const leadStickerDirection = this.getFaceletDirection(effectivePieceIndex, leadStickerIndex);
-          const secondStickerDirection = this.getFaceletDirection(effectivePieceIndex, leadStickerIndex === 0 ? 1 : 0);
-
-          if (!leadStickerDirection || !secondStickerDirection) {
-            console.warn(`Invalid sticker directions on edge piece at current index ${currentIndex}`);
-            return null;
-          }
-          const dirKey = leadStickerDirection + secondStickerDirection;
-          const dirIndex = this.edgePieceDirections[dirKey];
-
-          if (dirIndex === undefined) {
-            console.warn(`Direction key ${dirKey} not found in edgePieceDirections for edge piece at current index ${currentIndex}`);
-            return null;
-          }
-
-          const hashChar = String.fromCharCode('a'.charCodeAt(0) + dirIndex);
-          hash += hashChar;
-          break;
-        }
-
-        case 'center': {
-          const leadStickerDirection = this.getFaceletDirection(effectivePieceIndex, leadStickerIndex);
-          const dirIndex = leadStickerDirection ? this.centerPieceDirections[leadStickerDirection] : null;
-
-          if (dirIndex === null || dirIndex === undefined) {
-            console.warn(`Invalid direction for lead sticker on center piece at current index ${currentIndex}`);
-            return null;
-          }
-          const hashChar = String.fromCharCode('a'.charCodeAt(0) + dirIndex);
-          hash += hashChar;
-          break;
-        }
-      }
-    });
-
-    return hash;
-  }
-
-  private mapDirectionToAxis(direction: string): string {
-    const normalDirection = direction.toUpperCase();
-    switch (normalDirection) {
-      case 'U':
-      case 'D':
-        return 'y';
-      case 'L':
-      case 'R':
-        return 'x';
-      case 'F':
-      case 'B':
-        return 'z';
-      default:
-        console.warn(`Unknown direction: ${direction}`);
-        return '';
-    }
+    return readCubeRotation(this.cubeState) ?? -1;
   }
 
   private mapEffectiveColorToActual(effectiveColor: string): string {
@@ -1870,22 +1242,7 @@ export class SimpleCubeInterpreter {
       console.warn('Current cube rotation not determined');
       return effectiveColor;
     }
-
-    const colorMapping = this.rotationColorMap.get(this.currentCubeRotation);
-    if (!colorMapping) {
-      console.warn('No color mapping found for current rotation:', this.currentCubeRotation);
-      return effectiveColor;
-    }
-
-    const effectiveColorIdx = this.facelets.findIndex(f => f.colorName === effectiveColor);
-    if (effectiveColorIdx === -1) {
-      console.warn('Effective color not found in facelets:', effectiveColor);
-      return effectiveColor;
-    }
-
-    const actualColorIdx = colorMapping[effectiveColorIdx];
-
-    return this.facelets[actualColorIdx].colorName;
+    return effectiveToActualColor(this.currentCubeRotation, effectiveColor);
   }
 
   private mapActualColorToEffective(actualColor: string): string {
@@ -1893,27 +1250,7 @@ export class SimpleCubeInterpreter {
       console.warn('Current cube rotation not determined');
       return actualColor;
     }
-
-    const colorMapping = this.rotationColorMap.get(this.currentCubeRotation);
-    if (!colorMapping) {
-      console.warn('No color mapping found for current rotation:', this.currentCubeRotation);
-      return actualColor;
-    }
-
-    const actualColorIdx = this.facelets.findIndex(f => f.colorName === actualColor);
-    if (actualColorIdx === -1) {
-      console.warn('Actual color not found in facelets:', actualColor);
-      return actualColor;
-    }
-
-    // Find the effective color index by looking for which position in colorMapping maps to actualColorIdx
-    const effectiveColorIdx = colorMapping.findIndex(mappedIdx => mappedIdx === actualColorIdx);
-    if (effectiveColorIdx === -1) {
-      console.warn('No effective color mapping found for actual color:', actualColor);
-      return actualColor;
-    }
-
-    return this.facelets[effectiveColorIdx].colorName;
+    return actualToEffectiveColor(this.currentCubeRotation, actualColor);
   }
 
   private getPieceEffectiveColors(pieceIndex: number): string[] | null {
@@ -2087,25 +1424,6 @@ export class SimpleCubeInterpreter {
     return faceDirMap[effectiveColor] || 'D';
   }
 
-  private getOppositeColor(color: ColorName | string): ColorName {
-    switch (color.toLowerCase()) {
-      case 'white':
-        return 'yellow';
-      case 'yellow':
-        return 'white';
-      case 'green':
-        return 'blue';
-      case 'blue':
-        return 'green';
-      case 'red':
-        return 'orange';
-      case 'orange':
-        return 'red';
-      default:
-        throw new Error(`Unknown top color: ${color}`);
-    }
-  }
-
   private effectiveColorToDirection(effectiveColor: string): F2LDirection | null {
     switch (effectiveColor.toLowerCase()) {
       case 'green': return 'front';
@@ -2130,7 +1448,7 @@ export class SimpleCubeInterpreter {
     const topInfo = this.topInfo;
 
     const topColor = topInfo.actualColor;
-    const bottomColor = this.getOppositeColor(topColor);
+    const bottomColor = getOppositeColor(topColor);
 
     if (crossColors.find(c => c.toLowerCase() === bottomColor) === undefined) {
       return [];
@@ -2140,7 +1458,7 @@ export class SimpleCubeInterpreter {
     const result: { colors: string[], f2lDirections: Partial<Record<F2LDirection, string>> }[] = [];
 
     const effectiveColor = this.mapActualColorToEffective(crossColor);
-    const slots = this.f2lSlots[effectiveColor.toLowerCase()];
+    const slots = F2L_SLOTS[effectiveColor.toLowerCase()];
     if (!slots) {
       return [];
     }
@@ -2202,21 +1520,7 @@ export class SimpleCubeInterpreter {
    * @returns Array of piece indices that are solved. Index is hash position.
    */
   public getSolvedPieces(): number[] {
-    if (!this.solvedState || !this.currentState) {
-      return [];
-    }
-
-    const solvedPieces: number[] = [];
-
-    this.currentState.hash.split('').forEach((currentChar, idx) => {
-      const solvedChar = this.solvedState ? this.solvedState.hash[idx] : null;
-      if (currentChar === solvedChar) {
-        // position matches
-        solvedPieces.push(idx);
-      }
-    });
-
-    return solvedPieces;
+    return this.currentState ? findSolvedPieces(this.currentState) : [];
   }
 
   private ensureState(): boolean {
@@ -2226,25 +1530,6 @@ export class SimpleCubeInterpreter {
     }
 
     return !!this.currentState && this.currentPieces.length > 0;
-  }
-
-  private getTopCenterInfo(): { actualColor: string; effectiveColor: string; direction: string } | null {
-    for (let i = 20; i <= 25; i++) {
-      const centerPiece = this.currentPieces[i];
-      if (!centerPiece || centerPiece.type !== 'center' || centerPiece.stickers.length === 0) {
-        continue;
-      }
-
-      const direction = this.getFaceletDirection(i, 0);
-      if (direction && direction === 'U') {
-        const actualColor = centerPiece.stickers[0].colorName;
-        const effectiveColor = this.mapActualColorToEffective(actualColor);
-        return { actualColor, effectiveColor, direction };
-      }
-    }
-
-    console.warn('Unable to determine top center orientation');
-    return null;
   }
 
   // derives top info from any corner with a sticker facing Down.
@@ -2258,7 +1543,7 @@ export class SimpleCubeInterpreter {
         const direction = this.getFaceletDirection(i, stickerIndex);
         if (direction === 'D') {
           const bottomActualColor = piece.stickers[stickerIndex].colorName;
-          const topActualColor = this.getOppositeColor(bottomActualColor);
+          const topActualColor = getOppositeColor(bottomActualColor);
           const topEffectiveColor = this.mapActualColorToEffective(topActualColor);
           return { actualColor: topActualColor, effectiveColor: topEffectiveColor, direction: 'U' };
         }
@@ -2278,113 +1563,7 @@ export class SimpleCubeInterpreter {
       console.warn('Current state not available for EO calculation');
       return -1;
     }
-
-    const topInfo = this.getTopCenterInfo();
-    if (!topInfo) {
-      console.warn('Top center info not available for EO calculation');
-      return -1;
-    }
-
-    const verticalColors: ColorName[] = [topInfo.actualColor as ColorName, this.getOppositeColor(topInfo.actualColor) as ColorName];
-
-    const xDirections: DirectionChar[] = ['R', 'L'];
-    const xColors: ColorName[] = [];
-
-    for (let i = 20; i <= 25; i++) {
-      const centerPiece = this.currentPieces[i];
-      if (!centerPiece || centerPiece.type !== 'center' || centerPiece.stickers.length === 0) {
-        console.warn(`Center piece at index ${i} is not standard`);
-        continue;
-      }
-      const direction = this.getFaceletDirection(i, 0);
-      if (direction && xDirections.includes(direction)) {
-        const actualColor: ColorName = centerPiece.stickers[0].colorName;
-        xColors.push(actualColor);
-      }
-    }
-
-    if (xColors.length !== 2) {
-      console.warn('Unable to determine x-direction colors for EO calculation');
-      return -1;
-    }
-
-    let eoValue = 0;
-
-    for (let i = 0; i < 12; i++) {
-      const piece = this.currentPieces[i];
-      if (!piece || piece.type !== 'edge') {
-        console.warn(`Piece at index ${i} is not a valid edge for EO calculation`);
-        return -1;
-      }
-
-      const directions: DirectionChar[] = piece.stickers.map((_, stickerIndex) => {
-        const direction = this.getFaceletDirection(i, stickerIndex);
-        if (!direction) {
-          throw new Error(`Missing direction for edge piece ${i}, sticker ${stickerIndex}`);
-        }
-        return direction;
-      });
-
-      const directionKey = directions.join('');
-      const edgeIndex = this.edgePieceDirections[directionKey] % 12; // Normalize to 0-11
-
-      const isEdgeOriginVertical = piece.stickers.some(sticker => {
-        const color: ColorName = sticker.colorName;
-        return verticalColors.includes(color);
-      });
-
-      let isOriented: boolean;
-      const isEdgeInVertical = directions.includes('U') || directions.includes('D');
-
-      if (isEdgeOriginVertical) {
-        // must be a top/bottom edge
-
-        if (isEdgeInVertical) {
-          // vertical edge in vertical position: good if vertical sticker faces top or bottom only
-          const isVerticalStickerUD = piece.stickers.some((sticker, stickerIndex) => {
-            const color: ColorName = sticker.colorName;
-            const direction = this.getFaceletDirection(i, stickerIndex);
-            return verticalColors.includes(color) && (direction === 'U' || direction === 'D');
-          });
-          isOriented = isVerticalStickerUD;
-        } else {
-          // vertical edge not in vertical position: good if vertical sticker faces up-down or front-back
-          const isVerticalStickerYZ = piece.stickers.some((sticker, stickerIndex) => {
-            const color: ColorName = sticker.colorName;
-            const direction = this.getFaceletDirection(i, stickerIndex);
-            return verticalColors.includes(color) &&
-              (direction === 'U' || direction === 'D'
-                || direction === 'F' || direction === 'B');
-          });
-          isOriented = isVerticalStickerYZ;
-        }
-      } else {
-        // must be f2l edge, must have x-color
-
-        // f2l edge good if x-color faces x-direction in 2nd layer or x-color faces side direction in top/bottom layer
-        // we can tell it is in 2nd layer if neither sticker is vertical
-        const xColorSticker = piece.stickers.find((sticker) => {
-          const color: ColorName = sticker.colorName;
-          return xColors.includes(color);
-        });
-        if (!xColorSticker) throw new Error('X color sticker not found on edge piece during EO calculation');
-
-        if (isEdgeInVertical) {
-          // top/bottom layer
-          const xStickerDirection = this.getFaceletDirection(i, piece.stickers.indexOf(xColorSticker));
-          const isXStickerFacingSide = xStickerDirection ? ['L', 'R', 'F', 'B'].includes(xStickerDirection) : false;
-          isOriented = isXStickerFacingSide;
-        } else {
-          const xStickerDirection = this.getFaceletDirection(i, piece.stickers.indexOf(xColorSticker));
-          const isXStickerFacingX = xStickerDirection ? xDirections.includes(xStickerDirection as DirectionChar) : false;
-          isOriented = isXStickerFacingX;
-        }
-      }
-      if (!isOriented) {
-        eoValue ^= (1 << edgeIndex);
-      }
-    }
-    return eoValue;
+    return this.currentState.eoValue;
   }
 
   public isTopEOsolved(): boolean {
@@ -2709,7 +1888,7 @@ export class SimpleCubeInterpreter {
     // presume cross color on bottom, if multiple
     if (this.crossColorsSolved.length > 1) {
       const topColor = this.topInfo.actualColor;
-      const bottomColor = this.getOppositeColor(topColor);
+      const bottomColor = getOppositeColor(topColor);
       const bottomCross = this.crossColorsSolved.find(c => c.toLowerCase() === bottomColor);
       const color = bottomCross ?? this.crossColorsSolved[0];
       const faceDir = this.getCrossFaceDir(color);
@@ -2832,174 +2011,8 @@ export class SimpleCubeInterpreter {
   /**
    * Debug method to log current state
    */
-  public getCurrentState(): CubeState | null {
+  public getCurrentState(): HashState | null {
     return this.currentState;
-  }
-
-  /**
-   * Get the indices of pieces where their f2l pair is not solved.
-   * @param color The actual color of the cross
-   * @returns Dictionary for each pair, containing colors, indices, and solve status
-   */
-  private getF2LPairStatus(color: string): { pairColors: [string, string], pairIndices: [number, number], isSolved: boolean }[] | [] {
-
-    const effectiveColor = this.mapActualColorToEffective(color);
-
-    const slots = this.f2lSlots[effectiveColor];
-    if (!slots) {
-      console.warn(`No F2L slots found for color: ${color}`);
-      return [{ pairColors: ['', ''], pairIndices: [-1, -1], isSolved: false }];
-    }
-
-
-    const status: { pairColors: [string, string], pairIndices: [number, number], isSolved: boolean }[] = [];
-    const solvedIndices = this.getSolvedPieces();
-
-    slots.forEach(slot => {
-      const cornerIndex = slot.corner;
-      const edgeIndex = slot.edge;
-      const pairColors: [string, string] = [
-        this.mapEffectiveColorToActual(slot.slotColors[0]),
-        this.mapEffectiveColorToActual(slot.slotColors[1])
-      ];
-
-      const isCornerSolved: boolean = !!solvedIndices.find((index) => index === cornerIndex) // undefined is false
-      const isEdgeSolved: boolean = !!solvedIndices.find((index) => index === edgeIndex)
-      if (isCornerSolved && isEdgeSolved) {
-        status.push({ pairColors, pairIndices: [cornerIndex, edgeIndex], isSolved: true })
-      } else {
-        status.push({ pairColors, pairIndices: [cornerIndex, edgeIndex], isSolved: false })
-      }
-    });
-
-    return status
-
-  }
-
-  /**
-   * Generates separate queries for each unsolved F2L slot.
-   * Each query requires only that specific slot to be solved.
-   * @returns Array of query objects with the related pair colors (max 4)
-   */
-  private getQueriesForF2L(): F2LPairQuery[] {
-    if (!this.currentState) {
-      console.warn('Current state not available for query generation');
-      return [];
-    }
-    if (typeof this.currentCubeRotation !== 'string') {
-      console.warn('Current cube rotation not determined');
-      return [];
-    }
-
-    const queries: F2LPairQuery[] = [];
-
-    // assume cross must be on bottom
-    const effectiveDownColor = 'yellow';
-    const downColor = this.mapEffectiveColorToActual(effectiveDownColor);
-
-    let isDownCrossSolved = false;
-    let color = '';
-    if (this.crossColorsSolved.length === 0) {
-      // just proceed as though effective yellow cross is solved
-      isDownCrossSolved = true;
-      color = this.mapEffectiveColorToActual('yellow');
-    } else {
-      this.crossColorsSolved.forEach(crossColor => {
-        if (crossColor === downColor) {
-          isDownCrossSolved = true;
-          color = crossColor;
-        }
-      });
-    }
-
-    if (!isDownCrossSolved) {
-      console.warn('No cross solved on bottom. Cannot generate F2L queries.');
-      return [];
-    }
-
-
-    const crossIndices: string = Object
-      .keys(this.crossPieceIndices)
-      .find(key => this.crossPieceIndices[key] === effectiveDownColor)!;
-
-    const pairStatus = this.getF2LPairStatus(color);
-    const crossArray = crossIndices.split(',').map(Number);
-
-    // Create a query for each unsolved slot
-    pairStatus.forEach((pair) => {
-      if (pair.isSolved) {
-        return;
-      }
-
-      const query: Query = {
-        positions: {}
-      };
-
-      // Cross pieces must stay solved
-      crossArray.forEach((index) => {
-        const position = this.currentState!.hash[index];
-        if (typeof position !== 'string') {
-          console.warn(`Position for index ${index} is not a string: ${position}`);
-          return;
-        }
-        query.positions[index] = {
-          must: [position],
-        };
-      });
-
-      // Already solved F2L pairs must stay solved
-      pairStatus.forEach((otherPair) => {
-        if (otherPair.isSolved) {
-          const cornerIndex = otherPair.pairIndices[0];
-          const cornerPosition = this.currentState!.hash[cornerIndex];
-          if (typeof cornerPosition !== 'string') return;
-
-          const edgeIndex = otherPair.pairIndices[1];
-          const edgePosition = this.currentState!.hash[edgeIndex];
-          if (typeof edgePosition !== 'string') return;
-
-          query.positions[edgeIndex] = {
-            must: [edgePosition]
-          };
-          query.positions[cornerIndex] = {
-            must: [cornerPosition]
-          };
-        }
-      });
-
-      // query must look for pieces in this unsolved position
-      const cornerIndex = pair.pairIndices[0];
-      const cornerPosition = this.currentState!.hash[cornerIndex];
-      if (typeof cornerPosition !== 'string') return;
-
-      const edgeIndex = pair.pairIndices[1];
-      const edgePosition = this.currentState!.hash[edgeIndex];
-      if (typeof edgePosition !== 'string') return;
-
-      // canonicalize this pair's own two characters so a single exact-match search works
-      // regardless of which of the four U-layer positions the live pair is in (see
-      // docs/auf-canonical-search.md section 4). Cross and solved-pair pieces sit in the E and D
-      // layers, so no U turn moves them and they don't need this.
-      const isTopLayer = isTopLayerChar('corner', cornerPosition) || isTopLayerChar('edge', edgePosition);
-      const { cornerChar: canonicalCorner, edgeChar: canonicalEdge, q } = canonicalizePair(cornerPosition, edgePosition);
-
-      query.positions[edgeIndex] = {
-        must: [canonicalEdge]
-      };
-      query.positions[cornerIndex] = {
-        must: [canonicalCorner]
-      };
-
-      queries.push({
-        query,
-        pairColors: [pair.pairColors[0], pair.pairColors[1]],
-        q,
-        isTopLayer,
-        isZBLSrelevant: this.checkZBLSrelevance(cornerIndex, edgeIndex),
-      });
-    });
-
-    return queries;
   }
 
   /**
@@ -3056,9 +2069,9 @@ export class SimpleCubeInterpreter {
         const color2 = Object.keys(colorOrdering).find(k => colorOrdering[k] === 2)!;
         const color3 = Object.keys(colorOrdering).find(k => colorOrdering[k] === 3)!;
 
-        const opposite1 = this.getOppositeColor(color1);
-        const opposite2 = this.getOppositeColor(color2);
-        const opposite3 = this.getOppositeColor(color3);
+        const opposite1 = getOppositeColor(color1);
+        const opposite2 = getOppositeColor(color2);
+        const opposite3 = getOppositeColor(color3);
 
         colorOrdering[opposite1] = 6; // should never be used
         colorOrdering[opposite2] = 4;
@@ -3492,95 +2505,6 @@ export class SimpleCubeInterpreter {
     return keptIndexes.map(k => suggestions[k]);
   }
 
-  /**
-   * Reconstructs the preAUF-correct alg text and EO-solved signal for a matched compiled alg,
-   * per the two cases in docs/auf-canonical-search.md section 5. `algText`/`algEOvalue` are the
-   * matched compiled entry's own stored alg text and eoValue; `q` is this pair's canonicalizing
-   * turn from getQueriesForF2L.
-   */
-  private reconstructF2LAlg(
-    algText: string,
-    algEOvalue: number | undefined,
-    q: number,
-    isTopLayer: boolean,
-    wantsEORanking: boolean,
-    currentEO: number,
-  ): { alg: string; hasEOsolved: boolean } {
-    const prependAuf = (token: string, text: string): string => {
-      const tokens = [token, ...text.trim().split(/\s+/)].filter(Boolean);
-      const combined = combineMoves(tokens).join(' ').trim();
-      // U and y rotate about the same axis and always commute; reorder to the codebase's
-      // established "y before U" display convention (see reorderAnglingInAlg in AlgCompiler.tsx)
-      return combined.replace(/^(U'?2?)\s+(y'?2?)/, '$2 $1');
-    };
-
-    const eoSolvedAt = (m: number): boolean =>
-      algEOvalue !== undefined && currentEO >= 0 && rotateEOBits(currentEO, m) === algEOvalue;
-
-    if (isTopLayer) {
-      // the piece is forced to move under any leading AUF, so the reconstructed rotation m is
-      // forced too: strip the compiled alg's own leading rotation and recombine it with q.
-      const { coreKey, aufPart } = splitLeadingAuf(algText);
-      const m = combineAuf(q, aufTokenToVal(aufPart));
-      const alg = prependAuf(aufValToToken(m), coreKey);
-      return { alg, hasEOsolved: eoSolvedAt(q) };
-    }
-
-    // neither of this pair's pieces is in the U layer, so no AUF is needed to solve the pair
-    // itself: the matched entry's own leading AUF only distinguished other pairs during
-    // canonicalization, so drop it and shift its effect out of the stored eoValue. When we want
-    // EO ranking, a leading AUF may still be worth adding purely to also solve EO. Try smallest
-    // AUF first ('', U, U', U2); a currentEO whose low 4 bits are all-0 or all-1 is
-    // rotation-invariant and could match more than one candidate, so order matters there.
-    const { coreKey, aufPart } = splitLeadingAuf(algText);
-    const coreEOsolvedAt = (m: number): boolean =>
-      algEOvalue !== undefined && currentEO >= 0
-      && rotateEOBits(currentEO, m) === rotateEOBits(algEOvalue, aufTokenToVal(aufPart));
-
-    if (wantsEORanking) {
-      for (const candidateToken of ['', 'U', "U'", 'U2'] as const) {
-        if (coreEOsolvedAt(aufTokenToVal(candidateToken))) {
-          return { alg: prependAuf(candidateToken, coreKey), hasEOsolved: true };
-        }
-      }
-    }
-
-    return { alg: coreKey, hasEOsolved: coreEOsolvedAt(0) };
-  }
-
-  /**
-   * Whether a zbls alg could apply to this slot at all. Zbls entries are compiled with the other
-   * three slots solved, so they can only match when this pair's own pieces sit in the top layer
-   * or their own slot, and when every middle-layer edge outside this slot is already oriented.
-   */
-  private checkZBLSrelevance(cornerIndex: number, edgeIndex: number): boolean {
-    if (!this.currentState || this.eoValue < 0) {
-      return false;
-    }
-
-    const firstMiddleEdgePos = 8;
-    const firstBottomCornerPos = 4;
-    const middleEdgeEOmask = 0b1111 << firstMiddleEdgePos;
-
-    const charIndex = (char: string) => char.charCodeAt(0) - 'a'.charCodeAt(0);
-    const hash = this.currentState.hash;
-    const solvedHash = this.solvedState.hash;
-
-    const edgePos = charIndex(hash[edgeIndex]) % 12;
-    const homeEdgePos = charIndex(solvedHash[edgeIndex]) % 12;
-    if (edgePos >= firstMiddleEdgePos && edgePos !== homeEdgePos) {
-      return false;
-    }
-
-    const cornerPos = Math.floor(charIndex(hash[cornerIndex]) / 3);
-    const homeCornerPos = Math.floor(charIndex(solvedHash[cornerIndex]) / 3);
-    if (cornerPos >= firstBottomCornerPos && cornerPos !== homeCornerPos) {
-      return false;
-    }
-
-    return (this.eoValue & middleEdgeEOmask & ~(1 << homeEdgePos)) === 0;
-  }
-
   private runF2LQueries(queries: F2LPairQuery[]): Suggestion[] {
 
     let suggestions: Suggestion[] = [];
@@ -3599,7 +2523,7 @@ export class SimpleCubeInterpreter {
 
       query.scoreBy = 'exact';
 
-      const wantsEORanking = this.enabledAlgsets === 'all' || this.enabledAlgsets.has('zbls');
+      const wantsEO = wantsEORanking(this.enabledAlgsets);
 
       // if E layer EO is all good, or good except relevant pairs, then ZBLS algs are relevant even if not final pair
       // zbls never relevant if a piece is misslotted
@@ -3614,8 +2538,8 @@ export class SimpleCubeInterpreter {
         const secondLetter = secondColor ? secondColor.charAt(0).toUpperCase() : '';
         const pairLabel = firstLetter && secondLetter ? `${firstLetter}${secondLetter} pair` : 'pair';
 
-        const { alg: finalAlg, hasEOsolved } = this.reconstructF2LAlg(
-          alg.id, alg.eoValue, q, isTopLayer, wantsEORanking, currentEO
+        const { alg: finalAlg, hasEOsolved } = reconstructF2LAlg(
+          alg.id, alg.eoValue, q, isTopLayer, wantsEO, currentEO
         );
 
         // zbls algs are only valid suggestions when they actually solve EO
@@ -3668,7 +2592,7 @@ export class SimpleCubeInterpreter {
   }
 
   private getF2LSuggestions(steps: StepInfo[], targetPair?: [string, string]): Suggestion[] {
-    let queries = this.getQueriesForF2L();
+    let queries = this.currentState ? buildF2LPairQueries(this.currentState) : [];
 
     if (targetPair) {
       const want = new Set(targetPair.map(c => c.toLowerCase()));

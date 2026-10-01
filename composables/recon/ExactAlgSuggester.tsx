@@ -232,6 +232,49 @@ export default class AlgSuggester {
     return results.slice(0, limit).map(r => ({ id: r.doc.alg, hash: r.doc.hash, eoValue: r.doc.eoValue as number | undefined, step: r.doc.step as string | undefined, score: r.score, matches: r.matches }));
   }
 
+  matchingDocIndices(q: Query): number[] {
+    if (!this.indexData) {
+      throw new Error('Index not built. Call buildIndex() first or provide docs in constructor.');
+    }
+
+    const { index, docs } = this.indexData;
+    const constraints = Object.keys(q.positions).map(k => ({
+      pos: Number(k),
+      must: this.toCharSet(q.positions[k].must),
+      not: this.toCharSet(q.positions[k].not),
+    }));
+
+    const mustConstraints = constraints.filter(c => c.must && c.must.size > 0);
+    const isSingleCharMust = mustConstraints.every(c => c.must!.size === 1);
+
+    let candidateIds: Iterable<number> = docs.keys();
+    if (isSingleCharMust) {
+      for (const { pos, must } of mustConstraints) {
+        const [char] = must!;
+        const ids = index.get(pos)?.get(char);
+        if (!ids) return [];
+        if (!(candidateIds instanceof Set) || ids.size < candidateIds.size) candidateIds = ids;
+      }
+    } else {
+      candidateIds = this.getNarrowestMustMatches(mustConstraints);
+    }
+
+    const passes = (hash: string | undefined) => {
+      for (const { pos, must, not } of constraints) {
+        const rawChar = hash?.[pos];
+        if (must && must.size > 0 && (!rawChar || !must.has(rawChar))) return false;
+        if (not && not.size > 0 && rawChar && not.has(rawChar)) return false;
+      }
+      return true;
+    };
+
+    const matches: number[] = [];
+    for (const id of candidateIds) {
+      if (passes(docs[id].hash)) matches.push(id);
+    }
+    return matches;
+  }
+
   /**
    * Get the current index data
    */
