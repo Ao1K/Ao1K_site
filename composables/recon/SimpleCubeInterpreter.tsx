@@ -14,8 +14,9 @@ import {
   rotateEOBits,
   aufTokenToVal,
   aufValToToken,
-  combineAuf,
+  eoAngleOfAlg,
 } from '../../utils/canonicalizeAuf';
+import type { EOAngle } from '../../utils/canonicalizeAuf';
 import { combineMoves } from '../../utils/moveUtils';
 import { algsetPriority, dedupeByAlgsetPriority, rankSuggestions, suggestionRank } from './suggestionRanking';
 import type { SavedAlgKeys } from './suggestionRanking';
@@ -2273,7 +2274,7 @@ export class SimpleCubeInterpreter {
    * EO value is a 12-bit number. The location of the bit is determined by (edgePieceDirections Mod 12)
    * Edge Oriented = 0, Not Oriented = 1.
    */
-  public getEOvalue(): number {
+  public getEOvalue(angle: EOAngle = 'y0'): number {
     if (!this.ensureState() || !this.currentState) {
       console.warn('Current state not available for EO calculation');
       return -1;
@@ -2287,7 +2288,7 @@ export class SimpleCubeInterpreter {
 
     const verticalColors: ColorName[] = [topInfo.actualColor as ColorName, this.getOppositeColor(topInfo.actualColor) as ColorName];
 
-    const xDirections: DirectionChar[] = ['R', 'L'];
+    const xDirections: DirectionChar[] = angle === 'y' ? ['F', 'B'] : ['R', 'L'];
     const xColors: ColorName[] = [];
 
     for (let i = 20; i <= 25; i++) {
@@ -2348,15 +2349,13 @@ export class SimpleCubeInterpreter {
           });
           isOriented = isVerticalStickerUD;
         } else {
-          // vertical edge not in vertical position: good if vertical sticker faces up-down or front-back
-          const isVerticalStickerYZ = piece.stickers.some((sticker, stickerIndex) => {
+          // vertical edge not in vertical position: good if vertical sticker faces a side off the x-direction axis
+          const isVerticalStickerOffXAxis = piece.stickers.some((sticker, stickerIndex) => {
             const color: ColorName = sticker.colorName;
             const direction = this.getFaceletDirection(i, stickerIndex);
-            return verticalColors.includes(color) &&
-              (direction === 'U' || direction === 'D'
-                || direction === 'F' || direction === 'B');
+            return verticalColors.includes(color) && !!direction && !xDirections.includes(direction);
           });
-          isOriented = isVerticalStickerYZ;
+          isOriented = isVerticalStickerOffXAxis;
         }
       } else {
         // must be f2l edge, must have x-color
@@ -3514,16 +3513,18 @@ export class SimpleCubeInterpreter {
       return combined.replace(/^(U'?2?)\s+(y'?2?)/, '$2 $1');
     };
 
-    const eoSolvedAt = (m: number): boolean =>
-      algEOvalue !== undefined && currentEO >= 0 && rotateEOBits(currentEO, m) === algEOvalue;
+    const { coreKey, aufPart } = splitLeadingAuf(algText);
+
+    const isCoreEOsolvedAt = (m: number): boolean =>
+      algEOvalue !== undefined && currentEO >= 0
+      && rotateEOBits(currentEO, m) === rotateEOBits(algEOvalue, aufTokenToVal(aufPart));
 
     if (isTopLayer) {
       // the piece is forced to move under any leading AUF, so the reconstructed rotation m is
       // forced too: strip the compiled alg's own leading rotation and recombine it with q.
-      const { coreKey, aufPart } = splitLeadingAuf(algText);
-      const m = combineAuf(q, aufTokenToVal(aufPart));
+      const m = (q + aufTokenToVal(aufPart)) % 4;
       const alg = prependAuf(aufValToToken(m), coreKey);
-      return { alg, hasEOsolved: eoSolvedAt(q) };
+      return { alg, hasEOsolved: isCoreEOsolvedAt(m) };
     }
 
     // neither of this pair's pieces is in the U layer, so no AUF is needed to solve the pair
@@ -3532,26 +3533,20 @@ export class SimpleCubeInterpreter {
     // EO ranking, a leading AUF may still be worth adding purely to also solve EO. Try smallest
     // AUF first ('', U, U', U2); a currentEO whose low 4 bits are all-0 or all-1 is
     // rotation-invariant and could match more than one candidate, so order matters there.
-    const { coreKey, aufPart } = splitLeadingAuf(algText);
-    const coreEOsolvedAt = (m: number): boolean =>
-      algEOvalue !== undefined && currentEO >= 0
-      && rotateEOBits(currentEO, m) === rotateEOBits(algEOvalue, aufTokenToVal(aufPart));
-
     if (wantsEORanking) {
       for (const candidateToken of ['', 'U', "U'", 'U2'] as const) {
-        if (coreEOsolvedAt(aufTokenToVal(candidateToken))) {
+        if (isCoreEOsolvedAt(aufTokenToVal(candidateToken))) {
           return { alg: prependAuf(candidateToken, coreKey), hasEOsolved: true };
         }
       }
     }
 
-    return { alg: coreKey, hasEOsolved: coreEOsolvedAt(0) };
+    return { alg: coreKey, hasEOsolved: isCoreEOsolvedAt(0) };
   }
 
   /**
-   * Whether a zbls alg could apply to this slot at all. Zbls entries are compiled with the other
-   * three slots solved, so they can only match when this pair's own pieces sit in the top layer
-   * or their own slot, and when every middle-layer edge outside this slot is already oriented.
+   * Whether a zbls alg could apply to this slot at all. Only relevant when this pair's own pieces sit in the 
+   * top layer or their own slot, and when every middle-layer edge outside this slot is already oriented.
    */
   private checkZBLSrelevance(cornerIndex: number, edgeIndex: number): boolean {
     if (!this.currentState || this.eoValue < 0) {
@@ -3583,12 +3578,11 @@ export class SimpleCubeInterpreter {
 
   private runF2LQueries(queries: F2LPairQuery[]): Suggestion[] {
 
-    let suggestions: Suggestion[] = [];
-
     const speedEstimator = new AlgSpeedEstimator(this.handedness);
-    const algSet = new Set<string>();
-    const currentEO = this.eoValue;
+    const suggestionsByAlg = new Map<string, Suggestion>();
+    const currentEOByAngle: Record<EOAngle, number> = { y0: this.eoValue, y: this.getEOvalue('y') };
     const labelsByAufFreeCore = new Map<string, Set<string>>();
+    const wantsEORanking = this.enabledAlgsets === 'all' || this.enabledAlgsets.has('zbls');
 
     // iterate and collect suggestions
     queries.forEach(({ query, pairColors, q, isTopLayer, isZBLSrelevant }) => {
@@ -3599,7 +3593,10 @@ export class SimpleCubeInterpreter {
 
       query.scoreBy = 'exact';
 
-      const wantsEORanking = this.enabledAlgsets === 'all' || this.enabledAlgsets.has('zbls');
+      const [firstColor, secondColor] = pairColors;
+      const firstLetter = firstColor ? firstColor.charAt(0).toUpperCase() : '';
+      const secondLetter = secondColor ? secondColor.charAt(0).toUpperCase() : '';
+      const pairLabel = firstLetter && secondLetter ? `${firstLetter}${secondLetter} pair` : 'pair';
 
       // if E layer EO is all good, or good except relevant pairs, then ZBLS algs are relevant even if not final pair
       // zbls never relevant if a piece is misslotted
@@ -3609,13 +3606,8 @@ export class SimpleCubeInterpreter {
       .filter(alg => isZBLSrelevant || alg.step !== 'zbls');
 
       algs.forEach(alg => {
-        const [firstColor, secondColor] = pairColors;
-        const firstLetter = firstColor ? firstColor.charAt(0).toUpperCase() : '';
-        const secondLetter = secondColor ? secondColor.charAt(0).toUpperCase() : '';
-        const pairLabel = firstLetter && secondLetter ? `${firstLetter}${secondLetter} pair` : 'pair';
-
         const { alg: finalAlg, hasEOsolved } = this.reconstructF2LAlg(
-          alg.id, alg.eoValue, q, isTopLayer, wantsEORanking, currentEO
+          alg.id, alg.eoValue, q, isTopLayer, wantsEORanking, currentEOByAngle[eoAngleOfAlg(alg.id)]
         );
 
         // zbls algs are only valid suggestions when they actually solve EO
@@ -3630,26 +3622,22 @@ export class SimpleCubeInterpreter {
           labelsByAufFreeCore.set(core, labels);
         }
 
-        if (!algSet.has(finalAlg)) {
-          algSet.add(finalAlg);
-
-          suggestions.push({
+        const existingSuggestion = suggestionsByAlg.get(finalAlg);
+        if (!existingSuggestion) {
+          suggestionsByAlg.set(finalAlg, {
             alg: finalAlg,
             time: speedEstimator.calcScore(finalAlg),
             steps: [pairLabel],
             hasEOsolved,
             algset: alg.step,
           });
-        } else {
-          // Algorithm already exists - add this step to the existing suggestion
-          const existingSuggestion = suggestions.find(s => s.alg === finalAlg);
-          if (existingSuggestion && !existingSuggestion.steps.includes(pairLabel)) {
-            existingSuggestion.steps.push(pairLabel);
-          }
+        } else if (!existingSuggestion.steps.includes(pairLabel)) {
+          existingSuggestion.steps.push(pairLabel);
         }
       });
     });
 
+    const suggestions = [...suggestionsByAlg.values()];
     suggestions.forEach(suggestion => {
       const labels = labelsByAufFreeCore.get(splitLeadingAuf(suggestion.alg).coreKey);
       labels?.forEach(label => {

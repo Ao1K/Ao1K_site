@@ -2117,7 +2117,7 @@
   {"new":false,"value":"R U R' d R' U R U' R' U R","step":"zbls","add_y":false},
   {"new":false,"value":"y L' U L U L' U L2 F' L' F","step":"zbls","add_y":false},
   {"new":false,"value":"R U' R2 F' U' F U R2 U' R'","step":"zbls","add_y":false},
-  {"new":false,"value":"R U R' U R U' l U' R' U R'","step":"zbls","add_y":false},
+  {"new":false,"value":"R U R' U R U' l U' R' U R' x","step":"zbls","add_y":false},
   {"new":false,"value":"F' r' F r F R U R'","step":"zbls","add_y":false},
   {"new":false,"value":"y' M' U2 R' U' R U' r' U R","step":"zbls","add_y":false},
   {"new":false,"value":"r U' r' U2 r U r' R U2 R' U R U' R'","step":"zbls","add_y":false},

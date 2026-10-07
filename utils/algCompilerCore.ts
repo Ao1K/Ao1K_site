@@ -17,6 +17,7 @@ import type { CompilableLLStep } from '../composables/recon/LLinterpreter';
 import { ollFrequencies, pllFrequencies } from './algFrequencies';
 import { collapseAufGroups, canonicalizeAufHashes } from './collapseAufVariants';
 import { combineMoves, formatMove, parseMove } from './moveUtils';
+import { eoAngleOfAlg } from './canonicalizeAuf';
 
 const LL_REPAIR_ROTATIONS = ['x', "x'", 'x2', 'z', "z'", 'z2'];
 const ANGLE_MOVE = /^[Uy](?:'|2'?)?$/;
@@ -1030,7 +1031,7 @@ export function compileAlgs({ types, emit, shouldContinue = () => true }: Compil
       }
       const cubeState = cubeInterpreter.getCurrentState();
       const hash = cubeState?.hash || 'unknown';
-      const eoValue = cubeInterpreter.getEOvalue();
+      const eoValue = cubeInterpreter.getEOvalue(eoAngleOfAlg(completeAlg));
 
       // console.log(`Algorithm: ${completeAlg}, Hash: ${hash}`);
 

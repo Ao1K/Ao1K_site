@@ -4,7 +4,7 @@ import { SimpleCube } from '../composables/recon/SimpleCube';
 import { SimpleCubeInterpreter } from '../composables/recon/SimpleCubeInterpreter';
 import { reverseMove } from '../composables/recon/transformHTML';
 import { splitLeadingAuf } from '../utils/collapseAufVariants';
-import { canonicalizePair, aufTokenToVal, aufValToToken, combineAuf, rotateEOBits } from '../utils/canonicalizeAuf';
+import { canonicalizePair, aufTokenToVal, aufValToToken, rotateEOBits, eoAngleOfAlg } from '../utils/canonicalizeAuf';
 
 const SOLVED_HASH = 'abcdefghijklehkbnqtwabcdef';
 
@@ -106,7 +106,7 @@ for (const entry of withAuf) {
 
       tested++;
 
-      const mAdd = combineAuf(qLive, aufTokenToVal(cWinning));
+      const mAdd = (qLive + aufTokenToVal(cWinning)) % 4;
       const mSub = (((aufTokenToVal(cWinning) - qLive) % 4) + 4) % 4;
 
       const checkReconstruction = (m: number): boolean => {
@@ -124,3 +124,61 @@ for (const entry of withAuf) {
 console.log(`tested=${tested} additionPasses=${additionPasses} subtractionPasses=${subtractionPasses}`);
 console.log(`canonicalization mismatches: ${failures.length}`);
 failures.slice(0, 10).forEach((f) => console.log('  ' + f));
+
+function verifyEOsolvedSignal(): void {
+  const F2L_SETUP_TRIGGERS = [
+    "R U R'", "R U' R'", "R U2 R'", "R' U R", "R' U' R", "L' U L", "L' U' L", "L U L'", "L U' L'",
+    "F R U R' U' F'", 'U', "U'", 'U2', 'y', "y'", 'y2',
+  ];
+  const SAMPLE_COUNT = 400;
+  const SETUP_LENGTH = 8;
+
+  let seed = 20261007;
+  const randomIndex = (n: number): number => {
+    seed = (seed * 1103515245 + 12345) % 2147483648;
+    return seed % n;
+  };
+
+  const loadCompiled = (name: string) =>
+    JSON.parse(fs.readFileSync(path.join(process.cwd(), 'public', 'recon', `compiled-${name}-algs.json`), 'utf-8')).algorithms;
+
+  const interpreter = new SimpleCubeInterpreter();
+  interpreter.addAlgset('f2l', loadCompiled('f2l'));
+  interpreter.addAlgset('zbls', loadCompiled('zbls'));
+
+  const exampleEightSetup = "R' B L2 U' B2 R' B2 D B R2 L2 U' L2 D2 R2 F2 D F2 D2 B2 D2 L2 R2 F D F' R' U L' U2 L U' L' U L";
+  const setups = [
+    exampleEightSetup,
+    ...Array.from({ length: SAMPLE_COUNT }, () =>
+      Array.from({ length: SETUP_LENGTH }, () => F2L_SETUP_TRIGGERS[randomIndex(F2L_SETUP_TRIGGERS.length)]).join(' ')),
+  ];
+
+  let checked = 0;
+  const mismatches: string[] = [];
+  const checkedByAngle = { y0: 0, y: 0 };
+
+  for (const setup of setups) {
+    const setupMoves = setup.split(' ');
+    interpreter.getStepsCompleted(new SimpleCube().getCubeState(setupMoves));
+    const pairsBefore = interpreter.getPairsSolved().length;
+    const suggestions = interpreter.getAlgSuggestions();
+
+    for (const suggestion of suggestions) {
+      const afterMoves = [...setupMoves, ...suggestion.alg.split(' ')];
+      interpreter.getStepsCompleted(new SimpleCube().getCubeState(afterMoves));
+      if (interpreter.getPairsSolved().length <= pairsBefore) continue;
+
+      const isEOsolvedAfter = interpreter.getEOvalue() === 0;
+      checked++;
+      checkedByAngle[eoAngleOfAlg(suggestion.alg)]++;
+      if (Boolean(suggestion.hasEOsolved) !== isEOsolvedAfter) {
+        mismatches.push(`${suggestion.alg} | hasEOsolved=${suggestion.hasEOsolved} actual=${isEOsolvedAfter} | setup: ${setup}`);
+      }
+    }
+  }
+
+  console.log(`hasEOsolved: checked=${checked} (y0=${checkedByAngle.y0}, y=${checkedByAngle.y}) mismatches=${mismatches.length}`);
+  mismatches.slice(0, 10).forEach((m) => console.log('  ' + m));
+}
+
+verifyEOsolvedSignal();
