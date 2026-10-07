@@ -41,7 +41,6 @@ interface SolveBreakdownProps {
 export default function SolveBreakdown({ session, crossReview, playingRequest, onPlay, onStop }: SolveBreakdownProps) {
   const { lines, viewTransition } = session;
   const [isFlightDone, setIsFlightDone] = useState(viewTransition === null);
-
   const waitForFlight = useCallback((root: HTMLOListElement | null) => {
     if (root) viewTransition?.finished.then(() => setIsFlightDone(true));
   }, [viewTransition]);
@@ -52,7 +51,7 @@ export default function SolveBreakdown({ session, crossReview, playingRequest, o
     <div className="flex flex-col gap-6">
       <ol
         ref={waitForFlight}
-        className={`flex flex-col gap-4 ${FLIGHT_BOX_CLASS}`}
+        className={`flex flex-col gap-4 pt-2 ${FLIGHT_BOX_CLASS}`}
         style={flightStyle(PAGE_TRANSITION_NAMES.solutionBox)}
       >
         {lines.map(line => {
@@ -102,8 +101,8 @@ export default function SolveBreakdown({ session, crossReview, playingRequest, o
         })}
       </ol>
       <section className={revealClass}>
-        <h3 className="text-xl text-dark_accent font-medium">General Feedback</h3>
-        <p className="text-primary-200">Feedback about the whole solve goes here.</p>
+        <h3 className="text-xl text-dark_accent font-medium">Key Takeaways</h3>
+        <p className="text-primary-200">Biggest concerns go here.</p>
       </section>
     </div>
   );
