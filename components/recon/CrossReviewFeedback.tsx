@@ -173,7 +173,7 @@ export default function CrossReviewFeedback({ review, ...playback }: { review: C
         </ul>
         {review.others.length > 0 && (
           <details className={closedButSizedClass}>
-            <summary className="cursor-pointer text-dark_accent">+{review.others.length} alternatives</summary>
+            <summary className="cursor-pointer text-neutral-400">+{review.others.length} alternative{review.others.length === 1 ? '' : 's'}</summary>
             <ul className={`mt-2 ${cardGridClass} overflow-y-auto max-h-100`}>
               {review.others.map(cross => <CrossPanel key={cross.shownMoves.join(' ')} cross={cross} {...playback} />)}
             </ul>
