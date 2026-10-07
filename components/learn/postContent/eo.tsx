@@ -6,6 +6,23 @@ import LessonLink from "../LessonLink";
 import TitleBar from "../TitleBar";
 import CubeScene from "../CubeScene";
 import CubeImage from "../CubeImage";
+import InfoIcon from "../../icons/info";
+import FurtherLearning,{ Citation, type Source } from "../FurtherLearning";
+
+const SOURCES = [
+  {
+    id: "zz-eo",
+    title: "Introduction to EO and ZZ",
+    author: "crystalcuber",
+    href: "https://www.zzmethod.com/tutorial/eo",
+  },
+  {
+    id: "jperm-eo",
+    title: "A faster lookahead technique",
+    author: "J Perm",
+    href: "https://youtu.be/za9RvM1bS0k",
+  }
+] as const satisfies readonly Source[];
 
 const ORBIT_FACELETS = "WWWWWWWWWYWYWYWYWYGGGWGWGGGRRRRRRRRRBBBWBWBBBOOOOOOOOO";
 
@@ -44,6 +61,21 @@ export default function EO() {
   return (
     <>
       <TitleBar title="Edge Orientation" subtitle="A hidden lens for good cubing" seconds={30} />
+      <div className="flex flex-row items-center gap-3 mb-6 rounded-sm bg-dark_accent px-3 py-2 text-base text-primary-900 sm:text-md">
+        <InfoIcon className="min-w-8 min-h-8 text-light_accent" />
+        <div>
+          {"This lesson explains EO using the orbit system from "}
+          <a
+            href="https://www.zzmethod.com/tutorial/eo"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-2"
+          >
+            {"crystalcuber's ZZ EO tutorial"}
+          </a>
+          {"."}
+        </div>
+      </div>
       <LessonBody>
         <Story storyParagraphs={[
           "There is danger. A young adventurer, Peaku, is trying to rescue his sister. In the heart of a labyrinth filled with monsters, he's found a clue to her whereabouts, and now he needs to escape before the whole place collapses.",
@@ -251,18 +283,8 @@ export default function EO() {
         </span>
 
         <h2>Aside: the ZZ method</h2>
-        <p>{"EO is useful for CFOP, but it is an integral part of the ZZ method. It also provides great intuition for how EO really works."}</p>
-        <span>
-          You can find an excellent{' '}
-          <a 
-            href="https://www.zzmethod.com/tutorial/eo"
-            target="_blank"
-            rel="noopener noreferrer" 
-          >
-              introduction to EO and ZZ
-          </a>
-          {' '}here by crystalcuber. His guide inspired parts of this one.
-        </span>
+        <p>{"EO is useful for CFOP, but it is an integral part of the ZZ method. Learning ZZ provides great intuition for how EO really works. Check here"}<Citation sources={SOURCES} id="zz-eo" />{" for an excellent introduction to EO and ZZ by crystalcuber. His guide is the source of the idea of orbits and related concepts."}</p>
+
 
 
 
@@ -314,7 +336,7 @@ export default function EO() {
             {" and comes toe-to-toe with an orc. They fight, and Peaku defeats it unharmed. He decides it's as good a time as any to drink that potion."}
           </>,
           "Peaku opens his bag to shattered glass and the last drips of the potion. He curses his luck.",
-          "A shard of the glass glimmers in the torchlight. Peaku picks it out and holds it in front of his eye. The world appears to open up. The glass has some property that makes the hedges look almost invisible! He has no more need to rush. He heads for the exit, navigating without any more wrong turns or guesses.",
+          "A shard of the glass glimmers in the torchlight. Peaku picks it out and holds it in front of his eye. The world appears to open up. The glass has some property that makes the hedges look almost invisible! He heads for the exit without any more guesses or wrong turns.",
         ]} />
 
         <h2>Improving efficiency</h2>
@@ -365,7 +387,9 @@ export default function EO() {
         <p>{`Say in the last example you decide to solve the orange-blue pair first. You see orange-green is a bad edge. Since you'll use `}<code>RULD</code>{` moves to solve orange-blue, you know, whatever happens to orange-green, it'll still be a bad edge. So you might choose to rotate immediately after you solve orange-blue even if you don't know exactly what case it is.`}</p>
         <p>{`This example is a bit too simple, since you'll be able to keep track of orange-green in other ways just as easily. A more realistic example might be remembering the orientation of the red-green edge as you solve these two other pairs.`}</p>
         <p>{`Additionally, keeping track of whether an edge is good or bad might make it easier to recognize the case. After all, you no longer need to look very closely at it.`}</p>
-        <p>{`This is all pretty hard to do, because it means remembering details about an edge while you solve something else.`}</p>
+        <p>{`A video by J Perm goes into much more detail on these ideas.`}<Citation sources={SOURCES} id="jperm-eo"/>{` He relates EO more strongly to lookahead concepts. Using EO with lookahead is pretty hard to do because it means remembering details about an edge while you solve something else. If you are still working on pair solutions, it may make sense to first focus on how EO can help you improve efficiency and pair choice.`}</p>
+
+        <FurtherLearning sources={SOURCES} />
       </LessonBody>
     </>
   );
