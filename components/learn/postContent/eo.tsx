@@ -11,21 +11,26 @@ import FurtherLearning,{ Citation, type Source } from "../FurtherLearning";
 
 const SOURCES = [
   {
+    id: "zbls",
+    title: "ZBLS",
+    attribution: "on the Speedsolving Wiki",
+    href: "https://www.speedsolving.com/wiki/index.php/ZBLS",
+  },
+  {
     id: "zz-eo",
     title: "Introduction to EO and ZZ",
-    author: "crystalcuber",
+    attribution: "by crystalcuber",
     href: "https://www.zzmethod.com/tutorial/eo",
   },
   {
     id: "jperm-eo",
     title: "A faster lookahead technique",
-    author: "J Perm",
+    attribution: "by J Perm",
     href: "https://youtu.be/za9RvM1bS0k",
   }
 ] as const satisfies readonly Source[];
 
 const ORBIT_FACELETS = "WWWWWWWWWYWYWYWYWYGGGWGWGGGRRRRRRRRRBBBWBWBBBOOOOOOOOO";
-
 const F2L_TOP_EDGE_FACELETS = "RGYRYOYGGYWWWWWWWWBRRBGGGGGWYROOOOOOGYYBBBBBBBYORRYRRO";
 const F2L_MIDDLE_EDGE_FACELETS = "RGYGYORROYWOWWWWWWBYGBGGGGYWYRROOBOOGOWBBBBBBGYYRRYRRO";
 const OLL_EDGE_FACELETS = "BOOWWWBWBYYWYYYYYYWOYBBGBBRORGWOOGOOWBWGGGGGGRBORRRRRR";
@@ -61,8 +66,8 @@ export default function EO() {
   return (
     <>
       <TitleBar title="Edge Orientation" subtitle="A hidden lens for good cubing" seconds={30} />
-      <div className="flex flex-row items-center gap-3 mb-6 rounded-sm bg-dark_accent px-3 py-2 text-base text-primary-900 sm:text-md">
-        <InfoIcon className="min-w-8 min-h-8 text-light_accent" />
+      <div className="flex flex-row items-center gap-3 mb-6 rounded-sm border border-dark_accent px-5 py-2 text-base text-dark_accent sm:text-md">
+        <InfoIcon className="min-w-8 min-h-8 text-dark_accent" />
         <div>
           {"This lesson explains EO using the orbit system from "}
           <a
@@ -270,18 +275,47 @@ export default function EO() {
         <div className="opacity-0 peer-checked/eo5:opacity-100 transition-opacity duration-500 text-neutral-400 mb-4">
           {`It's a bad edge. The sticker in the magenta orbit is green, and green doesn't match the top center color. You can verify by doing`} <code>R</code>{`, which puts the wrong color on top.`}
         </div>
-        <span className="mb-6">
-          Influencing OLL edges during F2L can be done in an unstructured way or in algorithm sets like{' '}
-          <a 
-            href="https://www.speedsolving.com/wiki/index.php/ZBLS"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-              ZBLS
-          </a>
-          .
-        </span>
+        <p>
+          {`Influencing OLL edges during F2L can be done in a structured way using algorithm sets like ZBLS`}<Citation sources={SOURCES} id="zbls" />{`.`}
+        </p>
+        <p>
+          {`A less structured way is to sometimes use triggers like sledgehammer `}<code>{`(R' F R F')`}</code>{` to insert a pair and orient some edges. This technique is often called partial edge control. Compare the EO of OLL after inserting normally and after inserting with sledgehammer.`}
+        </p>
+        <div className="flex flex-row flex-wrap pb-6 gap-4">
+          <div className="flex flex-col gap-1">
+            <span className="text-sm font-bold">Basic insert</span>
+            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
+              <CubeScene
+                scramble="x2 U2 F B' R' U2 F' R B L2 F2 U' F2 D F2 D' F2 L2 U' F2 U2 F2 L2"
+                hints
+                lines={[
+                  { moves: ["U", "R", "U'", "R'"], durations: [1000, 1000, 1000, 1000], delay: 400 }
+                ]}
+                progress
+              />
+            </div>
+          </div>
+          <div className="flex flex-col gap-1">
+            <span className="text-sm font-bold">Sledgehammer insert</span>
+            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
+              <CubeScene
+                scramble="x2 U2 F B' R' U2 F' R B L2 F2 U' F2 D F2 D' F2 L2 U' F2 U2 F2 L2"
+                hints
+                lines={[
+                  { moves: ["R'", "F", "R", "F'"], durations: [1000, 1000, 1000, 1000], delay: 400 }
+                ]}
+                progress
+              />
+            </div>
+          </div>
+        </div>
 
+        <p>{`Using sledgehammer flips the orientation of the front and right edges. If those edges weren't oriented to start, they would be after doing sledge.`}</p>
+        <p>{`OLLs with more edges oriented tend to be slightly better. There are a couple other inserts worth considering for this reason:`}</p>
+        <LessonList items={["F R' F' R", "R f' U' f"]} style={"decimal"}/>
+        <p>{`You can also mirror these inserts to use lefty moves. You should start all of them with your thumbs on the front face of the cube. They can be done without regripping.`}</p>
+        <p>{`The main downside of these is that they can add a pause. You can't always use these inserts because you won't always get a connected pair with certain edges not oriented. And then you might need to pause and determine what insert to use.`}</p>
+        <p>{`You can get better at determining what insert you will use in advance, eliminating the pause. But the amount of practice this takes is significant. You might decide it's not worth it for you.`}</p>
         <h2>Aside: the ZZ method</h2>
         <p>{"EO is useful for CFOP, but it is an integral part of the ZZ method. Learning ZZ provides great intuition for how EO really works. Check here"}<Citation sources={SOURCES} id="zz-eo" />{" for an excellent introduction to EO and ZZ by crystalcuber. His guide is the source of the idea of orbits and related concepts."}</p>
 

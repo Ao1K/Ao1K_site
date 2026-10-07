@@ -2,11 +2,7 @@ export interface Source {
   id: string;
   title: string;
   href: string;
-  author?: string;
-}
-
-function sourceAnchorId(id: string) {
-  return `source-${id}`;
+  attribution?: string;
 }
 
 export function Citation<S extends Source>({
@@ -20,7 +16,7 @@ export function Citation<S extends Source>({
 
   return (
     <sup className="">
-      <a href={`#${sourceAnchorId(id)}`} className="text-dark_accent font-bold no-underline! hover:text-primary-100">
+      <a href={`#source-${id}`} className="text-dark_accent font-bold no-underline! hover:text-primary-100">
         {sourceNumber}
       </a>
     </sup>
@@ -33,7 +29,7 @@ export default function FurtherLearning({ sources }: { sources: readonly Source[
       <h1>Further learning</h1>
       <ol className="list-decimal list-inside space-y-2 mb-4 rounded-sm bg-dark_accent px-4 py-3 text-base text-primary-900 sm:text-md">
         {sources.map((source) => (
-          <li key={source.id} id={sourceAnchorId(source.id)} className="scroll-mt-24">
+          <li key={source.id} id={`source-${source.id}`} className="scroll-mt-24">
             <a
               href={source.href}
               target="_blank"
@@ -42,7 +38,7 @@ export default function FurtherLearning({ sources }: { sources: readonly Source[
             >
               {source.title}
             </a>
-            {source.author && <span className="text-primary-700">{` by ${source.author}`}</span>}
+            {source.attribution && <span className="text-primary-700">{` ${source.attribution}`}</span>}
           </li>
         ))}
       </ol>
