@@ -255,6 +255,11 @@ input[type='range']::-moz-range-track {
   animation-name: bd-label-in;
 }
 
+::view-transition-old(bd-review-button),
+::view-transition-new(bd-review-button) {
+  height: 100%;
+}
+
 .bd-flight-box {
   view-transition-group: contain;
 }

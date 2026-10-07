@@ -137,8 +137,8 @@ function buildXCrossMoveFeedback(moveCount: number, alternatives: readonly Revie
   }
   const moveGap = moveCount - fewestCrossPlusOneMoves;
   const text = moveGap === 0
-    ? 'Same move count as cross+1'
-    : `${pluralMoves(Math.abs(moveGap))} ${moveGap < 0 ? 'under' : 'over'} cross+1`;
+    ? 'Same move count as shortest cross+1'
+    : `${pluralMoves(Math.abs(moveGap))} ${moveGap < 0 ? 'less than' : 'more than'} shortest cross+1`;
   const note: FeedbackNote = { category: extraMovesNoteCategory(moveGap), text };
   return { moveGap, note };
 }

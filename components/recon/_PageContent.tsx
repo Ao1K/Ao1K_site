@@ -1940,7 +1940,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
             className="flex flex-row items-end mb-2 gap-3 w-full z-10"
             style={{ viewTransitionName: PAGE_TRANSITION_NAMES.heading }}
           >
-            <div className="text-xl text-dark_accent leading-none font-medium">{isBreakdownOpen ? 'Breakdown' : 'Solution'}</div>
+            <div className="text-xl text-dark_accent leading-none font-medium">{isBreakdownOpen ? 'Review' : 'Solution'}</div>
             <button
               type="button"
               autoComplete="off"

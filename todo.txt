@@ -54,3 +54,39 @@ CP then EP -> Full PLL
 EO then CO, but still full PLL -> Full OLL
 Didn't use 5 mover to solve that same pair -> 5 movers
 Check if cross has any xyz moves in it. If yes, needs work and link tutorial.
+
+F2L Feedback:
+ - Good/bad: solution to pair chosen
+ - Good/bad: pair choice
+ - Good: Solve back slot when had the option to not, and opened front slots
+  - Bad: Did opposite
+ - Bad: Extra y moves
+  - Bad: Ignored EO
+ - Bad: Extra U moves
+ - Good/Bad: Oriented/misoriented some edges
+   - Including partial edge control on OLL
+ - Lefty when should have been righty, or vice versa? (no good/bad, just call it out in the feedback)
+   - Actually, lefty is significantly less common in the data, see https://basilio.dev/cubing/recons/ReconStats-v0.pdf pg 32
+   - But the data is still so messy. What can you actually say about it?
+   - Should we just try to tune an algorithm based on the available data?
+ - Bad: Didn't use keyhole and should have
+
+Minimize feedback if it's all good? Really you just need to see negative stuff. Kinda.
+
+We can hide review load time if we make some assumptions about the area needed for each line based on the step info already available.
+ - Can we re-orient animation midway through? Maybe not. And it'd look pretty bad if we couldn't.
+ - We could preload the review when solve is done
+ - We could preload the review on hover of the review btn
+
+OLL/PLL/Alg feedback
+ - Is popular:
+  ++ Standard alg
+   + Common alg
+   - Uncommon alg
+  -- Unknown alg
+
+  List most common algs
+  Maybe give some disclaimer that only the user can really know if an alg is Good
+ - Extra U/y moves
+ - Moves cancel -> Mistake made
+ - Did only EO/CO/CP/EP -> Learn OLL/PLL. Only suggest full OLL if full PLL was done.
