@@ -65,11 +65,12 @@ export const titlePlaceholders = [
   "No.",
   "UwU",
   'Cat.',
+  'RTFM',
   "Nerd!",
   'PB!!!!!',
   "Minceraft", // not a typo
   "Sub-Yiheng?",
-  "Sub-Teodor?",
+  "Sub-Xuanyi?",
   "Don't slide!",
   "I don't know",
   "Source: vibes",

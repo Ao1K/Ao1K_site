@@ -6,9 +6,31 @@ import LessonLink from "../LessonLink";
 import TitleBar from "../TitleBar";
 import CubeScene from "../CubeScene";
 import CubeImage from "../CubeImage";
+import InfoIcon from "../../icons/info";
+import FurtherLearning,{ Citation, type Source } from "../FurtherLearning";
+
+const SOURCES = [
+  {
+    id: "zbls",
+    title: "ZBLS",
+    attribution: "on the Speedsolving Wiki",
+    href: "https://www.speedsolving.com/wiki/index.php/ZBLS",
+  },
+  {
+    id: "zz-eo",
+    title: "Introduction to EO and ZZ",
+    attribution: "by crystalcuber",
+    href: "https://www.zzmethod.com/tutorial/eo",
+  },
+  {
+    id: "jperm-eo",
+    title: "A faster lookahead technique",
+    attribution: "by J Perm",
+    href: "https://youtu.be/za9RvM1bS0k",
+  }
+] as const satisfies readonly Source[];
 
 const ORBIT_FACELETS = "WWWWWWWWWYWYWYWYWYGGGWGWGGGRRRRRRRRRBBBWBWBBBOOOOOOOOO";
-
 const F2L_TOP_EDGE_FACELETS = "RGYRYOYGGYWWWWWWWWBRRBGGGGGWYROOOOOOGYYBBBBBBBYORRYRRO";
 const F2L_MIDDLE_EDGE_FACELETS = "RGYGYORROYWOWWWWWWBYGBGGGGYWYRROOBOOGOWBBBBBBGYYRRYRRO";
 const OLL_EDGE_FACELETS = "BOOWWWBWBYYWYYYYYYWOYBBGBBRORGWOOGOOWBWGGGGGGRBORRRRRR";
@@ -44,6 +66,21 @@ export default function EO() {
   return (
     <>
       <TitleBar title="Edge Orientation" subtitle="A hidden lens for good cubing" seconds={30} />
+      <div className="flex flex-row items-center gap-3 mb-6 rounded-sm border border-dark_accent px-5 py-2 text-base text-dark_accent sm:text-md">
+        <InfoIcon className="min-w-8 min-h-8 text-dark_accent" />
+        <div>
+          {"This lesson explains EO using the orbit system from "}
+          <a
+            href="https://www.zzmethod.com/tutorial/eo"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-2"
+          >
+            {"crystalcuber's ZZ EO tutorial"}
+          </a>
+          {"."}
+        </div>
+      </div>
       <LessonBody>
         <Story storyParagraphs={[
           "There is danger. A young adventurer, Peaku, is trying to rescue his sister. In the heart of a labyrinth filled with monsters, he's found a clue to her whereabouts, and now he needs to escape before the whole place collapses.",
@@ -238,31 +275,9 @@ export default function EO() {
         <div className="opacity-0 peer-checked/eo5:opacity-100 transition-opacity duration-500 text-neutral-400 mb-4">
           {`It's a bad edge. The sticker in the magenta orbit is green, and green doesn't match the top center color. You can verify by doing`} <code>R</code>{`, which puts the wrong color on top.`}
         </div>
-        <span className="mb-6">
-          Influencing OLL edges during F2L can be done in an unstructured way or in algorithm sets like{' '}
-          <a 
-            href="https://www.speedsolving.com/wiki/index.php/ZBLS"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-              ZBLS
-          </a>
-          .
-        </span>
-
         <h2>Aside: the ZZ method</h2>
-        <p>{"EO is useful for CFOP, but it is an integral part of the ZZ method. It also provides great intuition for how EO really works."}</p>
-        <span>
-          You can find an excellent{' '}
-          <a 
-            href="https://www.zzmethod.com/tutorial/eo"
-            target="_blank"
-            rel="noopener noreferrer" 
-          >
-              introduction to EO and ZZ
-          </a>
-          {' '}here by crystalcuber. His guide inspired parts of this one.
-        </span>
+        <p>{"EO is useful for CFOP, but it is an integral part of the ZZ method. Learning ZZ provides great intuition for how EO really works. Check here"}<Citation sources={SOURCES} id="zz-eo" />{" for an excellent introduction to EO and ZZ by crystalcuber. His guide is the source of the idea of orbits and related concepts."}</p>
+
 
 
 
@@ -300,10 +315,52 @@ export default function EO() {
             </div>
           </div>
         </div>
-        <p>{"Notice how the red-green edge is highlighted in both images, and how the orange-green edge between the red and blue centers is highlighted in neither. If you apply the EO recognition rules from earlier, you'll see that rotating only flips EO of the top and bottom layer edges! The middle F2L edges are unaffected."}</p>
+        <p>{"Notice how the "}<strong>red-green</strong>{" edge is highlighted in both images, and how the "}<strong>orange-green</strong>{" edge between the red and blue centers is highlighted in neither. If you apply the EO recognition rules from earlier, you'll see that rotating only flips EO of the top and bottom layer edges! The middle F2L edges are unaffected."}</p>
         <p>{"Due to this difficulty with altering their EO, bad F2L edges in the middle layer are some of the worst cases you can get. Often, you'll want to solve something else and destroy this case in the process."}</p>
-        <p>{"If you do have to solve them, you either use F moves, or you can take the edge out of the middle layer before you rotate and then solve it. Which of these you choose can depend on the case, the pairs after it, and your own preferences."}</p>
+        <p>{"If you do have to solve them, you either use "}<code>F</code>{" moves, or you can take the edge out of the middle layer before you rotate and then solve it. Which of these you choose can depend on the case, the pairs after it, and your own preferences."}</p>
 
+        <h2>Partial OLL edge control</h2>
+        <p>
+          {`Influencing OLL edges during F2L can be done in a structured way using algorithm sets like ZBLS`}<Citation sources={SOURCES} id="zbls" />{`.`}
+        </p>
+        <p>
+          {`A less structured way is to sometimes use triggers like sledgehammer `}<code>{`(R' F R F')`}</code>{` to insert a pair and orient some edges. This technique is often called partial edge control. Compare the EO of OLL after inserting normally and after inserting with sledgehammer.`}
+        </p>
+        <div className="flex flex-row flex-wrap pb-6 gap-4">
+          <div className="flex flex-col gap-1">
+            <span className="text-sm font-bold">Basic insert</span>
+            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
+              <CubeScene
+                scramble="x2 U2 F B' R' U2 F' R B L2 F2 U' F2 D F2 D' F2 L2 U' F2 U2 F2 L2"
+                hints
+                lines={[
+                  { moves: ["U", "R", "U'", "R'"], durations: [1000, 1000, 1000, 1000], delay: 400 }
+                ]}
+                progress
+              />
+            </div>
+          </div>
+          <div className="flex flex-col gap-1">
+            <span className="text-sm font-bold">Sledgehammer insert</span>
+            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
+              <CubeScene
+                scramble="x2 U2 F B' R' U2 F' R B L2 F2 U' F2 D F2 D' F2 L2 U' F2 U2 F2 L2"
+                hints
+                lines={[
+                  { moves: ["R'", "F", "R", "F'"], durations: [1000, 1000, 1000, 1000], delay: 400 }
+                ]}
+                progress
+              />
+            </div>
+          </div>
+        </div>
+
+        <p>{`Using sledgehammer flips the orientation of the front and right edges. If those edges weren't oriented to start, they would be after doing sledge.`}</p>
+        <p>{`OLLs with more edges oriented tend to be slightly better. There are a couple other inserts worth considering for this reason:`}</p>
+        <LessonList items={["F R' F' R", "R f' U' f"]} style={"decimal"}/>
+        <p>{`You can also mirror these inserts to use lefty moves. You should start all of them with your thumbs on the front face of the cube, and do all of them without regripping. However, you don't have to use these.`}</p>
+        <p>{`The main downside of partial edge control is that it can add a pause. You can't always use these inserts because you won't always get a connected pair with certain edges not oriented. And then you might need to pause and determine what insert to use.`}</p>
+        <p>{`You can get better at determining what insert you will use in advance, eliminating the pause. But the amount of practice this takes is significant. You might decide it's not worth it for you.`}</p>
 
 
         <h1>The hidden magic of EO</h1>
@@ -314,14 +371,14 @@ export default function EO() {
             {" and comes toe-to-toe with an orc. They fight, and Peaku defeats it unharmed. He decides it's as good a time as any to drink that potion."}
           </>,
           "Peaku opens his bag to shattered glass and the last drips of the potion. He curses his luck.",
-          "A shard of the glass glimmers in the torchlight. Peaku picks it out and holds it in front of his eye. The world appears to open up. The glass has some property that makes the hedges look almost invisible! He has no more need to rush. He heads for the exit, navigating without any more wrong turns or guesses.",
+          "A shard of the glass glimmers in the torchlight. Peaku picks it out and holds it in front of his eye. The world appears to open up. The glass has some property that makes the hedges look almost invisible! He heads for the exit without any more guesses or wrong turns.",
         ]} />
 
         <h2>Improving efficiency</h2>
         <p>
-          {"Recognizing the orientation of the edge gives information on how to solve that edge. This might not help you solve the cube faster, but it can make you more "}
-          <strong>efficient</strong>
-          {". A good edge will "}
+          {"Recognizing the orientation of the edge gives information on how to solve that edge. You can use this info to reduce the number of moves or rotations in your solves."}
+        </p>
+        <p>{"If your solution to a pair with a good edge doesn't use only "}<code>RULD</code>{" moves, you typically would have made a mistake. A good edge will "}
           <strong>never</strong>
           {" require you to:"}
         </p>
@@ -336,13 +393,13 @@ export default function EO() {
             "Use slower F or B moves",
           ]} />
         </div>
-        <p>{"If your solution to a pair with a good edge doesn't use only "}<code>RULD</code>{" moves, you typically would have made a mistake."}</p>
-        <p>{"From there, you can experiment to try to find a better solution, or look up an alg or tutorial."}</p>
-        <p>{"EO is one of only a few tools you can use to help tell if you are being efficient. It may give you many things to fix. Fixing them will slow you down at first, but as you get familiar with the solutions, you will eventually get faster as well."}</p>
+        <p>{"Once you've identified a bad solution, you can experiment to try to find a better one, or look up an alg or tutorial."}</p>
+        <p>{"On rare occasions, you might rotate or use "}<code>F</code>{" moves anyway. For example, with "}<LessonLink text="this case" href="/algs/?a=f2l&c=y330700000" />{", you could rotate to avoid a longer, clunkier "}<code>RUL</code>{" solution."}</p>
+        <p>{"Using EO this way may give you many things to fix. Fixing them will slow you down at first, but as you get familiar with the solutions, you will eventually get faster as well."}</p>
 
         <h2>Improving pair choice</h2>
         <p>{"Pairs with good edges are typically faster to solve than bad-edge pairs, so when there's multiple pairs to solve, it's nice to solve good-edge pairs first."}</p>
-        <p>{"Doing x, y, and z rotations in a solve is essentially time spent doing nothing. In a perfect world, only one y rotation would be needed in a solve. You can solve cross and all good-edge pairs, rotate to turn all the bad edges into good edges, and finally solve the remaining pairs. And indeed, EO is a powerful tool for you to see how to reduce unnecessary rotations and F moves."}</p>
+        <p>{"Doing x, y, and z rotations in a solve is essentially time spent doing nothing. In a perfect world, only one y rotation would be needed in a solve. You can solve cross and all good-edge pairs, rotate to turn all the bad edges into good edges, and finally solve the remaining pairs. And indeed, EO is a powerful tool for you to see how to reduce unnecessary rotations and "}<code>F</code>{" moves."}</p>
         <p>{"But reality is more complicated. What if a very fast pair would require a rotation before all good-edge pairs are solved? What if you have multiple bad edges in the middle layer? The choice is yours."}</p>
 
         <p>{"Here's a hard example. Which pair is better to solve here: orange-blue, orange-green, or are they about the same? Why?"}</p>
@@ -365,7 +422,9 @@ export default function EO() {
         <p>{`Say in the last example you decide to solve the orange-blue pair first. You see orange-green is a bad edge. Since you'll use `}<code>RULD</code>{` moves to solve orange-blue, you know, whatever happens to orange-green, it'll still be a bad edge. So you might choose to rotate immediately after you solve orange-blue even if you don't know exactly what case it is.`}</p>
         <p>{`This example is a bit too simple, since you'll be able to keep track of orange-green in other ways just as easily. A more realistic example might be remembering the orientation of the red-green edge as you solve these two other pairs.`}</p>
         <p>{`Additionally, keeping track of whether an edge is good or bad might make it easier to recognize the case. After all, you no longer need to look very closely at it.`}</p>
-        <p>{`This is all pretty hard to do, because it means remembering details about an edge while you solve something else.`}</p>
+        <p>{`A video by J Perm goes into much more detail on these ideas.`}<Citation sources={SOURCES} id="jperm-eo"/>{` He relates EO more strongly to lookahead concepts. Using EO with lookahead is pretty hard to do because lookahead itself is hard. You would have to remember details about an edge while you solve something else. If you are still working on pair solutions, it may make sense to first focus on how EO can help you improve efficiency and pair choice.`}</p>
+
+        <FurtherLearning sources={SOURCES} />
       </LessonBody>
     </>
   );

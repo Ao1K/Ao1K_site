@@ -24,6 +24,7 @@ export type SceneIsland = {
 }
 
 export const SCENE_DATA_ATTR = 'data-cube-scene'
+export const SCENE_MOUNTED_ATTR = 'data-cube-scene-mounted'
 export const CUBE_SVG_CLASS = 'cube-svg'
 export const DEFAULT_TURN_MS = 550
 export const DIM_FADE_MS = 300
