@@ -21,6 +21,7 @@ import {
   DIM_FADE_MS,
   restHighlight,
   SCENE_DATA_ATTR,
+  SCENE_MOUNTED_ATTR,
   type SceneIsland,
 } from './cubeSceneIsland'
 
@@ -317,10 +318,12 @@ export function createScene(root: HTMLElement, island: SceneIsland): void {
 
 export function mountScenes(scope: ParentNode = document): void {
   scope.querySelectorAll<HTMLElement>(`[${SCENE_DATA_ATTR}]`).forEach(root => {
+    if (root.hasAttribute(SCENE_MOUNTED_ATTR)) return
     const script = root.querySelector<HTMLScriptElement>('script[type="application/json"]')
     if (!script || !script.textContent) return
     try {
       createScene(root, JSON.parse(script.textContent) as SceneIsland)
+      root.setAttribute(SCENE_MOUNTED_ATTR, '')
     } catch (e) {
       console.error('cube scene failed to mount', e)
     }
