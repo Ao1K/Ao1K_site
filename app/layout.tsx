@@ -73,7 +73,7 @@ export default async function RootLayout({
           aria-label="Close sidebar"
         />
         {/* Sidebar dropdown - also a sibling of checkbox */}
-        <div className="hidden peer-checked:flex sm:hidden flex-col text-dark bg-primary-100 space-y-4 absolute top-15 right-0 p-4 z-50 border border-primary-300 mt-1">
+        <div className="hidden peer-checked:flex md:hidden flex-col text-dark bg-primary-100 space-y-4 absolute top-15 right-0 p-4 z-50 border border-primary-300 mt-1">
           {/* <label htmlFor="sidebar-toggle" className="whitespace-nowrap cursor-pointer">
             <HeaderNavLink href="/recon" title="Learn" icon={<GlassesIcon />} version={versionList["learn"]} />
           </label> */}
