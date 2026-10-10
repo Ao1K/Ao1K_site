@@ -26,6 +26,7 @@ import TitleWithPlaceholder from "../../components/recon/TitleInput";
 import TopButton from "../../components/recon/TopButton";
 import CopySolveDropdown from "../../components/recon/CopySolveDropdown";
 import CubeGifDialog from "../../components/recon/CubeGifDialog";
+import ScrambleDropdown from "../../components/recon/ScrambleDropdown";
 import { customDecodeURL } from '../../composables/recon/urlEncoding';
 import InfoPanel from '../../components/recon/InfoPanel';
 import IconStack, { computeLineIconData } from './IconStack';
@@ -995,6 +996,10 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
 
   const handleRemoveComments = () => handleTransform(removeComments);
 
+  const handleScrambleChange = (scrambleContent: string) => {
+    scrambleMethodsRef.current?.setContent(scrambleContent);
+  };
+
   const takePageSnapshot = (): ClearedPageSnapshot => ({
     scrambleHTML,
     solutionHTML,
@@ -1085,7 +1090,6 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     clearedPageToastIdRef.current = showToast({
       closable: false,
       duration: CLEAR_UNDO_DURATION,
-      icon: <TrashIcon className="w-6 h-6 text-primary-800" />,
       message: (
         <span className="flex items-center justify-between gap-3">
           <span>Page cleared</span>
@@ -1763,7 +1767,12 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
         <TitleWithPlaceholder solveTitle={solveTitle} handleTitleChange={handleTitleChange} />
       </div>
       <div id="scramble-area" className="px-3 mt-3 flex flex-col">
-        <div className="text-xl text-dark_accent font-medium">Scramble</div>
+        <ScrambleDropdown
+          scramble={allMovesRef.current[0].flat().join(' ')}
+          solution={allMovesRef.current[1].flat().join(' ')}
+          scrambleOfTheDay={dailyScramble}
+          onScrambleChange={handleScrambleChange}
+        />
         <div className="lg:max-h-[15.1rem] max-h-40 overflow-y-auto" id="scramble">
           <MovesTextEditor
             name={`scramble`}

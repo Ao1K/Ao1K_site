@@ -1,20 +1,29 @@
-import { initialize as initializeCubeSolver, solve as solveCube } from 'cube-solver';
+import { initialize as initializeCubeSolver, solve as solveCube, scramble as randomScramble } from 'cube-solver';
 
-type SolveRequest = { id: number; scramble: string | null };
-type SolveResponse = { id: number; solution: string | null };
+export type CubeSolverRequest =
+  | { id: number; type: 'warmUp' }
+  | { id: number; type: 'solve'; scramble: string }
+  | { id: number; type: 'scramble' };
+export type CubeSolverResponse = { id: number; result: string | null };
 
-self.onmessage = (event: MessageEvent<SolveRequest>) => {
-  const { id, scramble } = event.data;
-
-  if (scramble === null) {
-    initializeCubeSolver('kociemba');
-    self.postMessage({ id, solution: null } satisfies SolveResponse);
-    return;
+const handleRequest = (request: CubeSolverRequest): string | null => {
+  switch (request.type) {
+    case 'warmUp':
+      initializeCubeSolver('kociemba');
+      return null;
+    case 'solve':
+      return solveCube(request.scramble, 'kociemba');
+    case 'scramble':
+      return randomScramble('3x3');
   }
+};
+
+self.onmessage = (event: MessageEvent<CubeSolverRequest>) => {
+  const { id } = event.data;
 
   try {
-    self.postMessage({ id, solution: solveCube(scramble, 'kociemba') } satisfies SolveResponse);
+    self.postMessage({ id, result: handleRequest(event.data) } satisfies CubeSolverResponse);
   } catch {
-    self.postMessage({ id, solution: null } satisfies SolveResponse);
+    self.postMessage({ id, result: null } satisfies CubeSolverResponse);
   }
 };
