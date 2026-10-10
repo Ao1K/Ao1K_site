@@ -10,13 +10,13 @@ import { versionList } from '../utils/sharedConstants';
 
 export default function Header() {
   return (
-    <div className="absolute bg-primary-200 flex flex-row text-light_accent w-full z-45 h-16 top-0">
+    <div className="absolute bg-primary-200 grid grid-cols-[1fr_auto_1fr] text-light_accent w-full z-45 h-16 top-0">
       <img
         src="/Ao1K-Logo-v2.svg"
-        className="h-16 w-auto overflow-visible"
+        className="h-16 w-auto max-w-none overflow-visible justify-self-start"
       />
-      <nav className="w-full flex sm:justify-center relative justify-start">
-       <div className="hidden sm:flex sm:flex-row items-center space-x-10">
+      <nav className="flex">
+       <div className="hidden md:flex md:flex-row items-center space-x-10">
           {/* <HeaderNavLink href="/" title="Practice" icon={<TimerIcon />} /> */}
           {/* <HeaderNavLink href="/learn" title="Learn" icon={<GlassesIcon />} version={versionList['learn']}/> */}
           <HeaderNavLink href="/recon/" title="Reconstruct" version={versionList['recon']}
@@ -30,7 +30,7 @@ export default function Header() {
 
 
       </nav>
-      <div className="flex items-center">
+      <div className="flex items-center justify-self-end">
         {/* <Link href="https://login-ao1k.auth.us-east-1.amazoncognito.com">Profile</Link> */}
         <SettingsMenuWrapper />
         <HeaderSidebar />
