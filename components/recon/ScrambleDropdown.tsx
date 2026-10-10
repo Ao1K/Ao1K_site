@@ -6,7 +6,7 @@ import ArrowClockwiseIcon from '../icons/arrow-clockwise';
 import InvertIcon from '../icons/invert';
 import Parrot from '../icons/parrot';
 import { prefetchRandomScramble, takeRandomScramble } from '../../composables/recon/cubeSolverClient';
-import { invertAlgMoves, removeRotations, simplifySetupMoves } from '../../composables/recon/setupMoves';
+import { inferScrambleFromSolution, removeRotations } from '../../composables/recon/setupMoves';
 import { SimpleCube } from '../../composables/recon/SimpleCube';
 
 interface ScrambleDropdownProps {
@@ -61,7 +61,7 @@ export default function ScrambleDropdown({ scramble, solution, scrambleOfTheDay,
   });
 
   const handleGenerateFromSolution = () => runWithLoadingIndicator('infer', async () => {
-    onScrambleChange(await simplifySetupMoves(invertAlgMoves(rotationFreeSolution)));
+    onScrambleChange(await inferScrambleFromSolution(solution));
   });
 
   const handleScrambleOfTheDay = () => {
