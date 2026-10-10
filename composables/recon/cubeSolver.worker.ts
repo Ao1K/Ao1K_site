@@ -14,6 +14,7 @@ const handleRequest = (request: CubeSolverRequest): string | null => {
     case 'solve':
       return solveCube(request.scramble, 'kociemba');
     case 'scramble':
+      // unused. Scrambles now come from the cubing.js route at /api/scramble.
       return randomScramble('3x3');
   }
 };

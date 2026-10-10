@@ -45,15 +45,3 @@ export const warmUpCubeSolver = () => {
 };
 
 export const solveKociemba = (scramble: string) => request({ type: 'solve', scramble });
-
-let prefetchedScramble: Promise<string | null> | null = null;
-
-export const prefetchRandomScramble = () => {
-  prefetchedScramble ??= request({ type: 'scramble' });
-};
-
-export const takeRandomScramble = () => {
-  const scramble = prefetchedScramble ?? request({ type: 'scramble' });
-  prefetchedScramble = request({ type: 'scramble' });
-  return scramble;
-};
