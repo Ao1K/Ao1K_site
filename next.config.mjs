@@ -19,6 +19,7 @@ const nextConfig = {
       three: 'three/src/Three.js',
     },
   },
+  serverExternalPackages: ['cubing'],
   devIndicators: false,
   reactStrictMode: true, // Optional but recommended
   // output: 'standalone', // Ensures it builds correctly for deployment
