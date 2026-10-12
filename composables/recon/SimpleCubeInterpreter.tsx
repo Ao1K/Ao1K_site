@@ -4,7 +4,7 @@ import AlgSpeedEstimator from './AlgSpeedEstimator';
 import type { Grid, CompilableLLStep, SuggestableLLStep, LLCaseInfo } from './LLinterpreter';
 import LLinterpreter from './LLinterpreter';
 import LLsuggester from './LLsuggester';
-import type { CompiledLLAlg } from './LLsuggester';
+import type { CompiledLLAlg, KnownLLAlg } from './LLsuggester';
 import type { CubeState as SimpleCubeState, Color } from './SimpleCube';
 import type { Handedness } from '../useSettings';
 import { splitLeadingAuf } from '../../utils/collapseAufVariants';
@@ -260,6 +260,18 @@ export class SimpleCubeInterpreter {
 
   public isOffHandAlgsetLoaded(name: CompilableLLStep, variant: string): boolean {
     return this.offHandAlgsets.get(name) === variant;
+  }
+
+  public findKnownLLAlgs(alg: string, enabledAlgsets: AlgsetFilter, handedness: Handedness): KnownLLAlg[] {
+    const matches = this.LLsuggester?.findKnownAlgs(alg) ?? [];
+    const enabledMatches = enabledAlgsets === 'all' ? matches : matches.filter(match => enabledAlgsets.has(match.algset));
+    const handedFrequency = ({ alg, frequency = 0 }: CompiledLLAlg) => this.applyHandednessModifier(alg, frequency, handedness);
+
+    return enabledMatches.map(({ algset, compiledAlg, caseAlgs }) => ({
+      algset,
+      frequency: handedFrequency(compiledAlg),
+      topCaseFrequency: Math.max(...caseAlgs.map(handedFrequency)),
+    }));
   }
 
   public getF2LScoreIndex(handedness: Handedness): F2LScoreIndex | null {
@@ -2672,14 +2684,14 @@ export class SimpleCubeInterpreter {
     );
   }
 
-  private applyHandednessModifier(alg: string, frequency: number): number {
+  private applyHandednessModifier(alg: string, frequency: number, handedness: Handedness): number {
     const hasRighty = /[Rr]/.test(alg);
     const hasLefty = /[Ll]/.test(alg);
 
-    if (this.handedness === 'right' && hasLefty && !hasRighty) {
+    if (handedness === 'right' && hasLefty && !hasRighty) {
       return frequency * 0.01;
     }
-    if (this.handedness === 'left' && hasRighty && !hasLefty) {
+    if (handedness === 'left' && hasRighty && !hasLefty) {
       return frequency * 0.01;
     }
     return frequency;
@@ -2714,7 +2726,7 @@ export class SimpleCubeInterpreter {
       time: speedEstimator.calcScore(alg.alg),
       steps: alg.steps,
       name: alg.name,
-      frequency: this.applyHandednessModifier(alg.alg, alg.frequency),
+      frequency: this.applyHandednessModifier(alg.alg, alg.frequency, this.handedness),
       algset: alg.algset
     }));
 

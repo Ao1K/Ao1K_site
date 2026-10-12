@@ -3,7 +3,7 @@ import type { Color, CubeState, Face, Line } from '../composables/recon/SimpleCu
 
 export type RotationInfo = { axis: Axis; layers: number[]; angle: number }
 
-const MOVE_TABLE: Record<string, { axis: Axis; layers: number[]; baseSign: number }> = {
+export const MOVE_TABLE: Record<string, { axis: Axis; layers: number[]; baseSign: number }> = {
   U: { axis: 'y', layers: [-1], baseSign: -1 },
   D: { axis: 'y', layers: [+1], baseSign: +1 },
   R: { axis: 'x', layers: [+1], baseSign: +1 },

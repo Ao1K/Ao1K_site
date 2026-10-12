@@ -1,6 +1,7 @@
 import { flushSync } from 'react-dom';
 import { highlightClass } from '../../utils/sharedConstants';
 import type { LineIconDatum } from '../../components/recon/IconStack';
+import type { LineReview } from './solveReview';
 
 export interface BreakdownWord {
   text: string;
@@ -12,6 +13,7 @@ export interface BreakdownLine {
   index: number;
   words: BreakdownWord[];
   iconDatum: LineIconDatum | undefined;
+  review: LineReview | undefined;
 }
 
 export interface BreakdownSession {
@@ -68,11 +70,16 @@ const captureWords = (lineElement: HTMLElement): BreakdownWord[] => {
   return words;
 };
 
-const captureLines = (editor: HTMLElement, lineIconData: LineIconDatum[]): BreakdownLine[] =>
+const captureLines = (editor: HTMLElement, lineIconData: LineIconDatum[], reviews: Map<number, LineReview>): BreakdownLine[] =>
   Array.from(editor.children)
     .map((element, index) => ({ element: element as HTMLElement, index }))
     .filter(({ element }) => (element.textContent ?? '').trim() !== '')
-    .map(({ element, index }) => ({ index, words: captureWords(element), iconDatum: lineIconData[index] }));
+    .map(({ element, index }) => ({
+      index,
+      words: captureWords(element),
+      iconDatum: lineIconData[index],
+      review: reviews.get(index),
+    }));
 
 const nameForViewTransition = (element: HTMLElement | SVGSVGElement, name: string | null) => {
   element.style.viewTransitionName = name ?? '';
@@ -97,9 +104,10 @@ const canViewTransition = () => typeof document.startViewTransition === 'functio
 export function startBreakdown(
   editorView: EditorView,
   lineIconData: LineIconDatum[],
+  reviews: Map<number, LineReview>,
   commit: (session: BreakdownSession) => void,
 ) {
-  const lines = captureLines(editorView.editor, lineIconData);
+  const lines = captureLines(editorView.editor, lineIconData, reviews);
 
   if (!canViewTransition()) {
     commit({ lines, viewTransition: null });

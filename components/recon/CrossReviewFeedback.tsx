@@ -1,14 +1,10 @@
-import { useRef, useState } from 'react';
 import { useSyncedSettings } from '../../composables/useSettings';
 import { crossStepInfo } from '../../composables/recon/crossAutocomplete';
-import type { CrossFeedbackCategory, CrossPickCategory, CrossReview, ReviewedCross } from '../../composables/recon/crossReview';
+import type { CrossPickCategory, CrossReview, ReviewedCross } from '../../composables/recon/crossReview';
 import { ContinuationIcon, CrossIcon } from './SuggestionCard';
 import FeedbackNotes from './FeedbackNotes';
+import { CopyAlgButton, PlayAlgButton, type PlaybackControls } from './ReviewAlgButtons';
 import DropdownIcon from '../icons/dropdown';
-import CopyIcon from '../icons/copy';
-import PlayIcon from '../icons/play';
-import StopIcon from '../icons/stop';
-import ReplayIcon from '../icons/replay';
 
 const CATEGORY_LABELS: Record<CrossPickCategory, string> = {
   fastest: 'Best',
@@ -22,46 +18,16 @@ const CATEGORY_MEANINGS: Record<CrossPickCategory, string> = {
   easiestContinuation: 'Easier to find cross+1',
 };
 
-const iconButtonClass = 'shrink-0 text-neutral-500 hover:text-neutral-200 focus-visible:outline-none';
-
-interface PlaybackControls {
-  playingAlg: string | null;
-  isPlaybackFinished: boolean;
-  onPlay: (alg: string) => void;
-  onStop: () => void;
-}
-
 interface CrossPanelProps extends PlaybackControls {
   cross: ReviewedCross;
   categories?: CrossPickCategory[];
 }
 
-function CrossPanel({ cross, categories = [], playingAlg, isPlaybackFinished, onPlay, onStop }: CrossPanelProps) {
+function CrossPanel({ cross, categories = [], ...playback }: CrossPanelProps) {
   const { settings: { cubeColors } } = useSyncedSettings();
-  const [copied, setCopied] = useState(false);
-  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { solution, shownMoves } = cross;
   const alg = shownMoves.join(' ');
-  const isShown = playingAlg === alg;
-  const isPlaying = isShown && !isPlaybackFinished;
-  const isFinished = isShown && isPlaybackFinished;
-
-  const handleCopy = (event: React.MouseEvent) => {
-    event.preventDefault();
-    navigator.clipboard?.writeText(alg).then(() => {
-      setCopied(true);
-      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
-      copyTimerRef.current = setTimeout(() => setCopied(false), 1200);
-    });
-  };
-
-  const handlePlay = (event: React.MouseEvent) => {
-    event.preventDefault();
-    if (isPlaying) onStop();
-    else onPlay(alg);
-  };
-
-  const playbackLabel = isPlaying ? 'Stop cross' : isFinished ? 'Replay cross' : 'Play cross';
+  const isShown = playback.playingAlg === alg;
 
   return (
     <li>
@@ -79,34 +45,8 @@ function CrossPanel({ cross, categories = [], playingAlg, isPlaybackFinished, on
             <CrossIcon stepInfo={crossStepInfo(solution)} cubeColors={cubeColors} />
             <span className="grow ff-space-adjust text-primary-100">{shownMoves.join(' ')}</span>
             <ContinuationIcon cross={solution} cubeColors={cubeColors} />
-            <span className="relative flex shrink-0 items-center">
-              {copied && (
-                <span
-                  aria-hidden="true"
-                  className="absolute right-full top-1/2 mr-1 -translate-y-1/2 whitespace-nowrap rounded border border-primary-400 bg-neutral-800 px-1.5 py-0.5 text-xs font-medium text-primary-100"
-                >
-                  Copied!
-                </span>
-              )}
-              <button
-                type="button"
-                aria-label={copied ? 'Copied' : 'Copy cross'}
-                title={copied ? 'Copied' : 'Copy cross'}
-                className={`${iconButtonClass} ${copied ? 'text-primary-400' : ''}`}
-                onClick={handleCopy}
-              >
-                <CopyIcon />
-              </button>
-            </span>
-            <button
-              type="button"
-              aria-label={playbackLabel}
-              title={playbackLabel}
-              className={`${iconButtonClass} ${isShown ? 'text-primary-400' : ''}`}
-              onClick={handlePlay}
-            >
-              {isPlaying ? <StopIcon className="translate-x-[0.13em]" /> : isFinished ? <ReplayIcon /> : <PlayIcon />}
-            </button>
+            <CopyAlgButton alg={alg} noun="cross" />
+            <PlayAlgButton alg={alg} noun="cross" {...playback} />
             <DropdownIcon className="shrink-0 text-lg transition-transform duration-300 rotate-180 group-open:rotate-0" />
           </div>
         </summary>
@@ -128,33 +68,9 @@ function CrossPanel({ cross, categories = [], playingAlg, isPlaybackFinished, on
   );
 }
 
-const FEEDBACK_LABELS: Record<CrossFeedbackCategory, string> = {
-  great: 'Great',
-  good: 'Good',
-  okay: 'Okay',
-  needsWork: 'Needs work',
-  unknown: 'Unknown',
-};
+export const cardGridClass = 'grid items-start gap-2 grid-cols-[repeat(1,1fr)] @xl:grid-cols-[repeat(2,1fr)] @5xl:grid-cols-[repeat(3,1fr)] pr-4 [scrollbar-gutter:stable]';
 
-const FEEDBACK_COLOR_CLASSES: Record<CrossFeedbackCategory, string> = {
-  great: 'text-cube-blue',
-  good: 'text-cube-green',
-  okay: 'text-cube-orange',
-  needsWork: 'text-cube-red',
-  unknown: 'text-neutral-400',
-};
-
-export function CrossFeedbackLabel({ category, className }: { category: CrossFeedbackCategory; className?: string }) {
-  return (
-    <span className={`font-medium whitespace-nowrap ${FEEDBACK_COLOR_CLASSES[category]} ${className ?? ''}`}>
-      {FEEDBACK_LABELS[category]}
-    </span>
-  );
-}
-
-const cardGridClass = 'grid items-start gap-2 grid-cols-[repeat(1,1fr)] @xl:grid-cols-[repeat(2,1fr)] @5xl:grid-cols-[repeat(3,1fr)] pr-4 [scrollbar-gutter:stable]';
-
-const closedButSizedClass = [
+export const closedButSizedClass = [
   '[&:not([open])::details-content]:[content-visibility:visible]',
   '[&:not([open])::details-content]:h-0',
   '[&:not([open])::details-content]:overflow-hidden',

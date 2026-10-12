@@ -75,11 +75,11 @@ const getCFOPStep = (currentSteps: StepInfo[], prevSteps: StepInfo[], prevGridPa
   }
 
   // Individual LL steps
-  if(currentSteps.length === 1 && llSteps.length === 1) {
+  if (llSteps.length === 1) {
     const step = llSteps[0];
-    if (step.step === 'eo') return { step: '1st look oll', type: 'last layer', colors: step.colors, gridPattern: prevGridPattern, ...named('oll') };
+    if (step.step === 'eo') return { step: '1st look oll', type: 'last layer', colors: step.colors, gridPattern: prevGridPattern };
     if (step.step === 'co') return { step: '2nd look oll', type: 'last layer', colors: step.colors, gridPattern: prevGridPattern, ...named('oll') };
-    if (step.step === 'cp') return { step: '1st look pll', type: 'last layer', colors: step.colors, gridPattern: prevGridPattern, ...named('pll') };
+    if (step.step === 'cp') return { step: '1st look pll', type: 'last layer', colors: step.colors, gridPattern: prevGridPattern };
     if (step.step === 'ep') return { step: '2nd look pll', type: 'last layer', colors: step.colors, gridPattern: prevGridPattern, ...named('pll') };
   }
 

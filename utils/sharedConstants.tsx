@@ -1,5 +1,3 @@
-// for avoiding circular dependencies
-
 export const versionList = {
   "learn": "",
   "recon": "v0.9",
@@ -21,6 +19,10 @@ export const editorAliases: Record<string, string[]> = {
   scramble: ['setup'],
 };
 
+export const FEEDBACK_CATEGORY_ORDER = ['great', 'good', 'okay', 'bad'] as const;
+
+export type FeedbackCategory = typeof FEEDBACK_CATEGORY_ORDER[number];
+
 export const colorDict = {
   move: 'text-primary-100',
   comment: 'text-gray-500',
@@ -32,3 +34,15 @@ export const colorDict = {
   suggestion: 'text-dark_accent',
   highlight: highlightClass,
 };
+
+export const DEFAULT_CUBE_COLORS = {
+  up: '#FFFFFF',     // white
+  down: '#EEFF00',   // yellow
+  front: '#3EF600',  // green
+  back: '#2870FF',   // blue
+  right: '#FF0000',  // red
+  left: '#FFA914',   // orange
+  eo: '#FF00FF',     // magenta
+};
+
+export type CubeColors = typeof DEFAULT_CUBE_COLORS;

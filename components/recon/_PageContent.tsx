@@ -41,7 +41,9 @@ import type { CompiledLLAlg } from '../../composables/recon/LLsuggester';
 import type { CompilableLLStep } from '../../composables/recon/LLinterpreter';
 import { savedAlgKey, savedAlgKeys } from '../../composables/recon/suggestionRanking';
 import { applyMovesUntilCross, getCrossSuggestions } from '../../composables/recon/crossAutocomplete';
-import { hasCrossFeedback, reviewCross, type CrossReview } from '../../composables/recon/crossReview';
+import { hasCrossFeedback } from '../../composables/recon/crossReview';
+import { reviewSolve } from '../../composables/recon/solveReview';
+import type { CubeStateReader } from '../../composables/recon/algReview';
 import { readFavorites } from '../../composables/algs/algFavorites';
 import { llStepsForAlg } from '../../composables/algs/classifyAlg';
 import { getNewSteps } from '../../composables/recon/getLineStepInfo';
@@ -202,8 +204,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   const [isGifDialogOpen, setIsGifDialogOpen] = useState<boolean>(false);
   const [isHtmlSceneDialogOpen, setIsHtmlSceneDialogOpen] = useState<boolean>(false);
   const [htmlImageData, setHtmlImageData] = useState<{ cubeState: CubeState; setupMovesForFilename: string } | null>(null);
-  const [breakdownSession, setBreakdownSession] = useState<BreakdownSession | null>(null);
-  const [crossReview, setCrossReview] = useState<CrossReview | null>(null);
+  const [breakdownSession,setBreakdownSession] = useState<BreakdownSession | null>(null);
   const [breakdownPlayRequest, setBreakdownPlayRequest] = useState<BreakdownPlayRequest | null>(null);
   const isBreakdownOpen = breakdownSession !== null;
   const hasReviewFeedback = hasCrossFeedback(allMovesRef.current[0].flat(), allMovesRef.current[1]);
@@ -288,6 +289,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   });
 
   const cubeInterpreter = useRef<SimpleCubeInterpreter | null>(null);
+  const oppositeHandInterpreterRef = useRef<SimpleCubeInterpreter | null>(null);
   const simpleCubeRef = useRef<SimpleCube>(new SimpleCube());
 
   const ctrlKey = useSyncExternalStore(noopSubscribe, getCtrlKeySnapshot, getCtrlKeyServerSnapshot);
@@ -800,11 +802,6 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
 
   /**
    * Creates and pushes out cross suggestions. Returns true or false based on if operation was successful.
-   * @param solutionMoves 
-   * @param lineIndex 
-   * @param enabledAlgsets 
-   * @param handedness 
-   * @returns 
    */
   const handleCrossSuggestions = (
     solutionMoves: string[][],
@@ -1436,6 +1433,17 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     return editor && scrollBox ? { editor, scrollBox } : null;
   }
 
+  const loadOppositeHandInterpreter = async (oppositeHandedness: Handedness) => {
+    oppositeHandInterpreterRef.current ??= new SimpleCubeInterpreter();
+    const interpreter = oppositeHandInterpreterRef.current;
+    const toLoad = [...enabledAlgsets].filter(name => HANDED_ALGSETS.some(handed => handed === name) &&!interpreter.isAlgsetLoaded(name, oppositeHandedness));
+    await Promise.all(toLoad.map(async name => {
+      const mod = await ALGSET_LOADERS[name](oppositeHandedness);
+      interpreter.addAlgset(name, mod.default.algorithms as CompiledLLAlg[], oppositeHandedness);
+    }));
+    return interpreter;
+  }
+
   const handleOpenBreakdown = async () => {
     const editorView = getSolutionEditorView();
     const interpreter = cubeInterpreter.current;
@@ -1444,16 +1452,26 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       const f2lModule = await ALGSET_LOADERS.f2l(handedness);
       interpreter.addAlgset('f2l', f2lModule.default.algorithms as Doc[]);
     }
+    const oppositeHandedness: Handedness = handedness === 'right' ? 'left' : 'right';
+    const oppositeHandInterpreter = await loadOppositeHandInterpreter(oppositeHandedness);
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
 
     // create empty index
     const index = interpreter.getF2LScoreIndex(handedness);
-    
-    setCrossReview(index ? reviewCross(allMovesRef.current[0].flat(), allMovesRef.current[1], index) : null);
+    const readSteps = (moves: readonly string[]) => interpreter.getStepsCompleted(simpleCubeRef.current.getCubeState([...moves]));
+    const reader: CubeStateReader = {
+      handedness,
+      readSteps,
+      readSuggestions: moves => interpreter.getAlgSuggestions(readSteps(moves), { enabledAlgsets, handedness }),
+      findKnownAlgs: alg => interpreter.findKnownLLAlgs(alg, enabledAlgsets, handedness),
+      findOppositeHandKnownAlgs: alg => oppositeHandInterpreter.findKnownLLAlgs(alg, enabledAlgsets, oppositeHandedness),
+    };
+
+    const reviews = reviewSolve(allMovesRef.current[0].flat(), allMovesRef.current[1], lineIconData, index, reader);
     clearLoopTimeout();
     isLoopingRef.current = false;
     setControllerButtonsStatus(status => status.playPause === 'play' ? { ...status, playPause: 'pause' } : status);
-    startBreakdown(editorView, lineIconData, setBreakdownSession);
+    startBreakdown(editorView, lineIconData, reviews, setBreakdownSession);
   }
 
   const handleBreakdownPlay = (request: BreakdownPlayRequest) => {
@@ -1934,6 +1952,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
           solution={allMovesRef.current[1].flat().join(' ')}
           scrambleOfTheDay={dailyScramble}
           onScrambleChange={handleScrambleChange}
+          isLabelOnly={isBreakdownOpen}
         />
         <div className="lg:max-h-[15.1rem] max-h-40 overflow-y-auto" id="scramble">
           <MovesTextEditor
@@ -2014,7 +2033,6 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
           {breakdownSession && (
             <SolveBreakdown
               session={breakdownSession}
-              crossReview={crossReview}
               playingRequest={breakdownPlayRequest}
               onPlay={handleBreakdownPlay}
               onStop={handleBreakdownStop}

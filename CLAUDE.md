@@ -54,7 +54,7 @@ If a function has multiple different return blocks, assign the return value to a
 - `/app` - Next.js App Router pages and API routes
 - `/components` - React components, organized by page (`/recon`, `/changeblog`, `/notimer`, `/algs`)
 - `/composables` - React hooks and business logic utilities
-- `/utils` - General utilities and data (algorithm database, constants)
+- `/utils` - General utilities and data (algorithm database, constants). Use sharedConstants.tsx for constants that are used across the project.
 - `/scripts` - Development scripts (algorithm sorting, combo generation)
 - `/docs` - Project documentation markdown files.
 
