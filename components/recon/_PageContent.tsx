@@ -1485,11 +1485,11 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       findOppositeHandKnownAlgs: alg => oppositeHandInterpreter.findKnownLLAlgs(alg, enabledAlgsets, oppositeHandedness),
     };
 
-    const reviews = reviewSolve(allMovesRef.current[0].flat(), allMovesRef.current[1], lineIconData, index, reader);
+    const solveReview = reviewSolve(allMovesRef.current[0].flat(), allMovesRef.current[1], lineIconData, index, reader);
     clearLoopTimeout();
     isLoopingRef.current = false;
     setControllerButtonsStatus(status => status.playPause === 'play' ? { ...status, playPause: 'pause' } : status);
-    startBreakdown(editorView, lineIconData, reviews, setBreakdownSession);
+    startBreakdown(editorView, lineIconData, solveReview, setBreakdownSession);
   }
 
   const handleBreakdownPlay = (request: BreakdownPlayRequest) => {

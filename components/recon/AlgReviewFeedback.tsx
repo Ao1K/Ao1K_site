@@ -29,7 +29,7 @@ function AlgPanel({ reviewedAlg: { alg, algset }, ...playback }: { reviewedAlg: 
   );
 }
 
-function RedundantMoves({ moveGroups }: { moveGroups: readonly MoveGroup[] }) {
+export function RedundantMoves({ moveGroups }: { moveGroups: readonly MoveGroup[] }) {
   const hasExtraMoves = moveGroups.some(({ category }) => category === 'combine' || category === 'cancel');
   if (!hasExtraMoves) return null;
 
@@ -51,7 +51,7 @@ export default function AlgReviewFeedback({ review, ...playback }: { review: Alg
 
   return (
     <div className="@container flex flex-col gap-2">
-      <RedundantMoves moveGroups={review.moveGroups} />
+      <RedundantMoves moveGroups={review.redundancy.moveGroups} />
       <FeedbackNotes notes={review.notes} />
       {shownAlgs.length > 0 && (
         <div className="inline-grid w-fit gap-2">

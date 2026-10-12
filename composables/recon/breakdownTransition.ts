@@ -1,7 +1,8 @@
 import { flushSync } from 'react-dom';
 import { highlightClass } from '../../utils/sharedConstants';
 import type { LineIconDatum } from '../../components/recon/IconStack';
-import type { LineReview } from './solveReview';
+import type { ReviewFeedback } from '../../components/recon/FeedbackNotes';
+import type { LineReview, SolveReview } from './solveReview';
 
 export interface BreakdownWord {
   text: string;
@@ -18,6 +19,7 @@ export interface BreakdownLine {
 
 export interface BreakdownSession {
   lines: BreakdownLine[];
+  takeaways: ReviewFeedback;
   viewTransition: ViewTransition | null;
 }
 
@@ -104,20 +106,20 @@ const canViewTransition = () => typeof document.startViewTransition === 'functio
 export function startBreakdown(
   editorView: EditorView,
   lineIconData: LineIconDatum[],
-  reviews: Map<number, LineReview>,
+  { lines: reviews, takeaways }: SolveReview,
   commit: (session: BreakdownSession) => void,
 ) {
   const lines = captureLines(editorView.editor, lineIconData, reviews);
 
   if (!canViewTransition()) {
-    commit({ lines, viewTransition: null });
+    commit({ lines, takeaways, viewTransition: null });
     return;
   }
 
   nameVisibleEditorLines(editorView, lines, true);
   const viewTransition = document.startViewTransition(() => {
     nameVisibleEditorLines(editorView, lines, false);
-    flushSync(() => commit({ lines, viewTransition }));
+    flushSync(() => commit({ lines, takeaways, viewTransition }));
   });
 }
 

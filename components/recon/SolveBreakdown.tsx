@@ -3,9 +3,10 @@ import { Fragment, useCallback, useState } from 'react';
 import { ICON_SIZE_CONFIG } from '../../composables/useSettings';
 import { StepIconSvg } from './IconStack';
 import CrossReviewFeedback from './CrossReviewFeedback';
-import { FeedbackLabel } from './FeedbackNotes';
+import FeedbackNotes, { FeedbackLabel } from './FeedbackNotes';
 import F2LReviewFeedback from './F2LReviewFeedback';
 import AlgReviewFeedback from './AlgReviewFeedback';
+import AUFReviewFeedback from './AUFReviewFeedback';
 import type { LineReview } from '../../composables/recon/solveReview';
 import { colorDict } from '../../utils/sharedConstants';
 import {
@@ -21,6 +22,7 @@ import {
 const { lineHeight, iconWidth } = ICON_SIZE_CONFIG.medium;
 
 const stepLabel = (line: BreakdownLine) => {
+  if (line.review?.kind === 'auf') return 'AUF';
   const info = line.iconDatum?.compiledStepInfo;
   if (!info || info.type === 'cross' || info.type === 'f2l') return null;
   if (info.name) return info.nameType ? `${info.nameType.toUpperCase()} ${info.name}` : info.name;
@@ -56,13 +58,15 @@ function LineReviewFeedback({ review, ...playback }: LineReviewFeedbackProps) {
       return <F2LReviewFeedback review={review.value} />;
     case 'alg':
       return <AlgReviewFeedback review={review.value} {...playback} />;
+    case 'auf':
+      return <AUFReviewFeedback review={review.value} />;
     default:
-      return <p>You shouldn&apos;t see this. Oops!</p>;
+      return <p></p>;
   }
 }
 
 export default function SolveBreakdown({ session, playingRequest, onPlay, onStop }: SolveBreakdownProps) {
-  const { lines, viewTransition } = session;
+  const { lines, takeaways, viewTransition } = session;
   const [isFlightDone, setIsFlightDone] = useState(viewTransition === null);
   const waitForFlight = useCallback((root: HTMLOListElement | null) => {
     if (root) viewTransition?.finished.then(() => setIsFlightDone(true));
@@ -81,7 +85,9 @@ export default function SolveBreakdown({ session, playingRequest, onPlay, onStop
           const descriptor = line.iconDatum?.isEmptyIcon ? null : line.iconDatum?.descriptor;
           const label = stepLabel(line);
           const stepInfo = line.iconDatum?.compiledStepInfo;
-          const isUnknownStep = !stepInfo || stepInfo.step === 'unknown';
+          const isUnknownStep = !line.review && (!stepInfo || stepInfo.step === 'unknown');
+          const hasNotes = (line.review?.value.notes.length ?? 0) > 0;
+          const hasGrade = hasNotes || (line.review?.value.category ?? null) !== null;
           const hasNonRotationMove = line.words.some(word => word.className === colorDict.move && !/^[xyz]/.test(word.text));
           return (
             <li key={line.index} className="grid gap-x-3" style={{ gridTemplateColumns: `${iconWidth}px minmax(0, 1fr)` }}>
@@ -100,17 +106,14 @@ export default function SolveBreakdown({ session, playingRequest, onPlay, onStop
                     </Fragment>
                   ))}
                 </div>
-                {line.review?.kind === 'cross' && (
-                  <FeedbackLabel category={line.review.value.feedback.category} className={revealClass} />
-                )}
-                {line.review?.kind === 'alg' && (
+                {line.review && hasGrade && (
                   <FeedbackLabel category={line.review.value.category} className={revealClass} />
                 )}
                 {isUnknownStep && hasNonRotationMove && (
                   <span className={`font-medium whitespace-nowrap text-primary-400 ${revealClass}`}>Unknown step</span>
                 )}
               </div>
-              {!isUnknownStep && <div className={`col-start-2 mt-1 px-3 py-2 rounded-sm border border-neutral-600 bg-primary-800 text-sm text-primary-200 ${revealClass}`}>
+              {hasNotes && <div className={`col-start-2 mt-1 px-3 py-2 rounded-sm border border-neutral-600 bg-primary-800 text-sm text-primary-200 ${revealClass}`}>
                 {label && <div className="font-medium text-primary-100">{label}</div>}
                 <LineReviewFeedback
                   review={line.review}
@@ -126,7 +129,9 @@ export default function SolveBreakdown({ session, playingRequest, onPlay, onStop
       </ol>
       <section className={revealClass}>
         <h3 className="text-xl text-dark_accent font-medium">Key Takeaways</h3>
-        <p className="text-primary-200">Biggest concerns go here.</p>
+        {takeaways.notes.length > 0
+          ? <FeedbackNotes notes={takeaways.notes} />
+          : <p className="text-primary-200">Biggest concerns go here.</p>}
       </section>
     </div>
   );

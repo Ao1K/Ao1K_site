@@ -3,7 +3,8 @@ import type { Grid, CompilableLLStep } from './LLinterpreter';
 
 const getCFOPStep = (currentSteps: StepInfo[], prevSteps: StepInfo[], prevGridPattern?: Grid): StepInfo | null => {
     // Check for complex LL combinations
-  const llSteps = currentSteps.filter(step => step.type === 'last layer');
+  const wasSolved = prevSteps.some(step => step.type === 'solved');
+  const llSteps = wasSolved ? [] : currentSteps.filter(step => step.type === 'last layer');
   const llStepNames = llSteps.map(s => s.step);
   const prevLLStepNames = prevSteps.filter(step => step.type === 'last layer').map(s => s.step);
   const f2lSteps = currentSteps.filter(step => step.type === 'f2l');

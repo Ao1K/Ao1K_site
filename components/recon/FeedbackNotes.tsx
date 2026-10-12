@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { FEEDBACK_CATEGORY_ORDER, type FeedbackCategory } from '../../utils/sharedConstants';
+import type { RedundancyReview } from '../../composables/recon/redundantMoves';
 
 export interface NoteLink {
   text: string;
@@ -11,6 +12,12 @@ export type NoteSegment = string | NoteLink;
 export interface FeedbackNote {
   category: FeedbackCategory | null;
   text: string | readonly NoteSegment[];
+}
+
+export interface ReviewFeedback {
+  category: FeedbackCategory | null;
+  notes: FeedbackNote[];
+  redundancy?: RedundancyReview;
 }
 
 const NOTE_SYMBOLS: Record<FeedbackCategory, string> = {
