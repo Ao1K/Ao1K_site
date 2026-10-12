@@ -14,6 +14,7 @@ interface ScrambleDropdownProps {
   solution: string;
   scrambleOfTheDay: string;
   onScrambleChange: (scrambleContent: string) => void;
+  isLabelOnly?: boolean;
 }
 
 const normalizeAlg = (alg: string) => alg.trim().split(/\s+/).join(' ');
@@ -29,7 +30,7 @@ const isSolvedBy = (scramble: string, solution: string) => new SimpleCube()
 
 type LoadingAction = 'new' | 'infer';
 
-export default function ScrambleDropdown({ scramble, solution, scrambleOfTheDay, onScrambleChange }: ScrambleDropdownProps) {
+export default function ScrambleDropdown({ scramble, solution, scrambleOfTheDay, onScrambleChange, isLabelOnly = false }: ScrambleDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [loadingAction, setLoadingAction] = useState<LoadingAction | null>(null);
   const isLoading = loadingAction !== null;
@@ -68,6 +69,10 @@ export default function ScrambleDropdown({ scramble, solution, scrambleOfTheDay,
     setIsOpen(false);
     onScrambleChange(scrambleOfTheDay);
   };
+
+  if (isLabelOnly) {
+    return <div className="pb-1 text-xl text-dark_accent font-medium select-none">Scramble</div>;
+  }
 
   return (
     <div className="relative w-fit">

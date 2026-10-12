@@ -1,6 +1,6 @@
 import type { Color } from '../composables/recon/SimpleCube'
 import { SimpleCube } from '../composables/recon/SimpleCube'
-import { DEFAULT_CUBE_COLORS, type CubeColors } from './cubeColors'
+import { DEFAULT_CUBE_COLORS, type CubeColors } from './sharedConstants'
 import { faceletsFromState, parseMoveRotation, type RotationInfo } from './cubeMoves'
 import { DEFAULT_TURN_MS, type SceneIsland, type SceneLine } from './cubeSceneIsland'
 

@@ -7,16 +7,16 @@ import type { RatedCrossSolution } from './crossContinuations';
 import type { F2LScoreIndex } from './f2lPairLookup';
 import { combineMoves } from '../../utils/moveUtils';
 import simplifyRotations from './simplifyRotations';
-import type { FeedbackNote, FeedbackNoteCategory } from '../../components/recon/FeedbackNotes';
+import type { FeedbackNote } from '../../components/recon/FeedbackNotes';
+import type { FeedbackCategory } from '../../utils/sharedConstants';
 
 export type CrossPickCategory = 'fewestMoves' | 'fastest' | 'easiestContinuation';
 
-export type CrossFeedbackCategory = 'great' | 'good' | 'okay' | 'needsWork' | 'unknown';
 
-type ContinuationFeedbackCategory = Exclude<CrossFeedbackCategory, 'needsWork' | 'unknown'>;
+type ContinuationFeedbackCategory = Exclude<FeedbackCategory, 'bad'>;
 
 export interface CrossFeedback {
-  category: CrossFeedbackCategory;
+  category: FeedbackCategory | null;
   notes: FeedbackNote[];
 }
 
@@ -45,7 +45,7 @@ const D_CENTER_FACELET = 13;
 const ROTATIONS_TO_D = [[], ['x'], ["x'"], ['x2'], ['z'], ["z'"]];
 
 const MOVES_PER_CONTINUATION_SECOND = 4;
-const SCORE_CEILINGS: readonly [CrossFeedbackCategory, number][] = [
+const SCORE_CEILINGS: readonly [FeedbackCategory, number][] = [
   ['great', 1.25],
   ['good', 2.25],
   ['okay', 3.25],
@@ -138,20 +138,20 @@ function buildXCrossMoveFeedback(moveCount: number, alternatives: readonly Revie
   const moveGap = moveCount - fewestCrossPlusOneMoves;
   const text = moveGap === 0
     ? 'Same move count as shortest cross+1'
-    : `${pluralMoves(Math.abs(moveGap))} ${moveGap < 0 ? 'less than' : 'more than'} shortest cross+1`;
+    : `${pluralMoves(Math.abs(moveGap))} ${moveGap < 0 ? 'fewer than' : 'more than'} shortest cross+1`;
   const note: FeedbackNote = { category: extraMovesNoteCategory(moveGap), text };
   return { moveGap, note };
 }
 
-const extraMovesNoteCategory = (extraMoves: number): FeedbackNoteCategory =>
+const extraMovesNoteCategory = (extraMoves: number): FeedbackCategory =>
   extraMoves <= 0 ? 'great' : extraMoves === 1 ? 'good' : extraMoves === 2 ? 'okay' : 'bad';
 
-function categorizeCross(moveGap: number, continuationGap: number | null): CrossFeedbackCategory {
+function categorizeCross(moveGap: number, continuationGap: number | null): FeedbackCategory {
   const continuationMoveEquivalent = continuationGap !== null && Number.isFinite(continuationGap)
     ? continuationGap * MOVES_PER_CONTINUATION_SECOND
     : 0;
   const score = moveGap + continuationMoveEquivalent;
-  return SCORE_CEILINGS.find(([, ceiling]) => score <= ceiling)?.[0] ?? 'needsWork';
+  return SCORE_CEILINGS.find(([, ceiling]) => score <= ceiling)?.[0] ?? 'bad';
 }
 
 function buildCrossFeedback(
@@ -174,12 +174,12 @@ function buildCrossFeedback(
   if (user.solvedPairCount > 1) {
     const crossName = `${'x'.repeat(user.solvedPairCount)}cross`;
     const moveCountNote: FeedbackNote = { category: null, text: `Can't compare ${crossName} move count yet` };
-    return { category: 'unknown', notes: [moveCountNote, ...continuationNotes] };
+    return { category: null, notes: [moveCountNote, ...continuationNotes] };
   }
 
   if (user.solvedPairCount === 1) {
     const { moveGap, note } = buildXCrossMoveFeedback(user.moveCount, otherCrosses);
-    const category = moveGap === null ? 'unknown' : categorizeCross(moveGap, continuationGap);
+    const category = moveGap === null ? null : categorizeCross(moveGap, continuationGap);
     return { category, notes: [note, ...continuationNotes] };
   }
 
@@ -225,6 +225,26 @@ export function hasCrossFeedback(scrambleMoves: readonly string[], solutionLines
   return countSolvedPairs(faceletsAfterLine, crossLine.crossColor) <= MAX_PAIRS;
 }
 
+const CROSS_CACHE_SIZE = 8;
+const crossSolutionCache = new WeakMap<F2LScoreIndex, Map<string, RatedCrossSolution[]>>();
+
+function rateCrossSolutionsCached(crossDownFacelets: Facelets, index: F2LScoreIndex): RatedCrossSolution[] {
+  const solutionsByState = crossSolutionCache.get(index) ?? new Map<string, RatedCrossSolution[]>();
+  crossSolutionCache.set(index, solutionsByState);
+
+  const stateKey = crossDownFacelets.join(',');
+  const cached = solutionsByState.get(stateKey);
+  if (cached) return cached;
+
+  const solutions = rateCrossSolutions(crossDownFacelets, index, { limit: Infinity, yRotations: Y_ROTATIONS });
+  if (solutionsByState.size >= CROSS_CACHE_SIZE) {
+    const oldestKey = solutionsByState.keys().next().value!;
+    solutionsByState.delete(oldestKey);
+  }
+  solutionsByState.set(stateKey, solutions);
+  return solutions;
+}
+
 export function reviewCross(
   scrambleMoves: readonly string[],
   solutionLines: readonly (readonly string[])[],
@@ -247,7 +267,7 @@ export function reviewCross(
     return crossFacelets.every((sticker, position) => sticker === userFaceletsAtAngle[position]);
   };
 
-  const crosses: ReviewedCross[] = rateCrossSolutions(applyMoves(userOrientation, extraRotation), index, { limit: Infinity, yRotations: Y_ROTATIONS })
+  const crosses: ReviewedCross[] = rateCrossSolutionsCached(applyMoves(userOrientation, extraRotation), index)
     .map(solution => {
       const setupRotations = [...setupMoves, solution.yRotation].filter(Boolean);
       const simplifiedRotations = setupRotations.length > 0

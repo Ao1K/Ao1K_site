@@ -4,7 +4,7 @@ import Cookies from 'js-cookie';
 import { useState, useEffect, useCallback } from 'react';
 
 // Default cube colors matching the original CUBE_COLORS
-import { DEFAULT_CUBE_COLORS, type CubeColors } from '../utils/cubeColors';
+import { DEFAULT_CUBE_COLORS, type CubeColors } from '../utils/sharedConstants';
 
 export { DEFAULT_CUBE_COLORS };
 export type { CubeColors };

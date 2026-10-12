@@ -2,8 +2,11 @@
 import { Fragment, useCallback, useState } from 'react';
 import { ICON_SIZE_CONFIG } from '../../composables/useSettings';
 import { StepIconSvg } from './IconStack';
-import CrossReviewFeedback, { CrossFeedbackLabel } from './CrossReviewFeedback';
-import type { CrossReview } from '../../composables/recon/crossReview';
+import CrossReviewFeedback from './CrossReviewFeedback';
+import { FeedbackLabel } from './FeedbackNotes';
+import F2LReviewFeedback from './F2LReviewFeedback';
+import AlgReviewFeedback from './AlgReviewFeedback';
+import type { LineReview } from '../../composables/recon/solveReview';
 import { colorDict } from '../../utils/sharedConstants';
 import {
   FLIGHT_BOX_CLASS,
@@ -32,13 +35,33 @@ export interface BreakdownPlayRequest {
 
 interface SolveBreakdownProps {
   session: BreakdownSession;
-  crossReview: CrossReview | null;
   playingRequest: BreakdownPlayRequest | null;
   onPlay: (request: BreakdownPlayRequest) => void;
   onStop: () => void;
 }
 
-export default function SolveBreakdown({ session, crossReview, playingRequest, onPlay, onStop }: SolveBreakdownProps) {
+interface LineReviewFeedbackProps {
+  review: LineReview | undefined;
+  playingAlg: string | null;
+  isPlaybackFinished: boolean;
+  onPlay: (alg: string) => void;
+  onStop: () => void;
+}
+
+function LineReviewFeedback({ review, ...playback }: LineReviewFeedbackProps) {
+  switch (review?.kind) {
+    case 'cross':
+      return <CrossReviewFeedback review={review.value} {...playback} />;
+    case 'f2l':
+      return <F2LReviewFeedback review={review.value} />;
+    case 'alg':
+      return <AlgReviewFeedback review={review.value} {...playback} />;
+    default:
+      return <p>You shouldn&apos;t see this. Oops!</p>;
+  }
+}
+
+export default function SolveBreakdown({ session, playingRequest, onPlay, onStop }: SolveBreakdownProps) {
   const { lines, viewTransition } = session;
   const [isFlightDone, setIsFlightDone] = useState(viewTransition === null);
   const waitForFlight = useCallback((root: HTMLOListElement | null) => {
@@ -77,8 +100,11 @@ export default function SolveBreakdown({ session, crossReview, playingRequest, o
                     </Fragment>
                   ))}
                 </div>
-                {crossReview?.lineIndex === line.index && (
-                  <CrossFeedbackLabel category={crossReview.feedback.category} className={revealClass} />
+                {line.review?.kind === 'cross' && (
+                  <FeedbackLabel category={line.review.value.feedback.category} className={revealClass} />
+                )}
+                {line.review?.kind === 'alg' && (
+                  <FeedbackLabel category={line.review.value.category} className={revealClass} />
                 )}
                 {isUnknownStep && hasNonRotationMove && (
                   <span className={`font-medium whitespace-nowrap text-primary-400 ${revealClass}`}>Unknown step</span>
@@ -86,15 +112,13 @@ export default function SolveBreakdown({ session, crossReview, playingRequest, o
               </div>
               {!isUnknownStep && <div className={`col-start-2 mt-1 px-3 py-2 rounded-sm border border-neutral-600 bg-primary-800 text-sm text-primary-200 ${revealClass}`}>
                 {label && <div className="font-medium text-primary-100">{label}</div>}
-                {crossReview?.lineIndex === line.index
-                  ? <CrossReviewFeedback
-                      review={crossReview}
-                      playingAlg={playingRequest?.lineIndex === line.index ? playingRequest.alg : null}
-                      isPlaybackFinished={playingRequest?.isFinished ?? false}
-                      onPlay={alg => onPlay({ lineIndex: line.index, alg })}
-                      onStop={onStop}
-                    />
-                  : <p>Advice for this line goes here.</p>}
+                <LineReviewFeedback
+                  review={line.review}
+                  playingAlg={playingRequest?.lineIndex === line.index ? playingRequest.alg : null}
+                  isPlaybackFinished={playingRequest?.isFinished ?? false}
+                  onPlay={alg => onPlay({ lineIndex: line.index, alg })}
+                  onStop={onStop}
+                />
               </div>}
             </li>
           );

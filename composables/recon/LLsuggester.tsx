@@ -1,4 +1,5 @@
 import type { CompilableLLStep, SuggestableLLStep } from './LLinterpreter';
+import { savedAlgKey } from './suggestionRanking';
 
 export interface CompiledLLAlg {
   caseIndex: number;
@@ -8,10 +9,26 @@ export interface CompiledLLAlg {
   frequency?: number; // how often this alg is used in competition solves
 }
 
+export interface KnownLLAlg {
+  algset: CompilableLLStep;
+  frequency: number;
+  topCaseFrequency: number;
+}
+
+export interface KnownLLAlgMatch {
+  algset: CompilableLLStep;
+  compiledAlg: CompiledLLAlg;
+  caseAlgs: CompiledLLAlg[];
+}
+
 const AUF_PREFIX = ['', 'U ', 'U2 ', "U' "];
 const AUF_SUFFIX = ['', ' U', ' U2', " U'"];
 const AUF_COST = [0, 1, 2, 1]; // none, U, U2, U'
 const AUF_PREFERENCE = [0, 1, 3, 2]; // tiebreaker: prefer no AUF, then U, U', U2
+
+const TRAILING_ROTATIONS = /( [xyz](?:'|2|2')?)+$/;
+
+const knownAlgKey = (alg: string): string => savedAlgKey(alg.trim().replace(TRAILING_ROTATIONS, ''));
 
 const ROTATION_AUF_FACE: Record<string, string> = {
   x: 'F',
@@ -26,8 +43,10 @@ export default class LLsuggester {
   private ollAlgs: CompiledLLAlg[] = [];
   private pllAlgs: CompiledLLAlg[] = [];
   private zbllAlgs: CompiledLLAlg[] = [];
+  private knownAlgsByKey: Map<string, KnownLLAlgMatch[]> | null = null;
 
   public addAlgs(step: CompilableLLStep, algs: CompiledLLAlg[]): void {
+    this.knownAlgsByKey = null;
     if (step === 'oll') {
       this.ollAlgs = algs;
     } else if (step === 'pll') {
@@ -78,9 +97,8 @@ export default class LLsuggester {
   }
 
   private fixPostAUFrotation(alg: string): string {
-    const trailingRotationsRegex = /( [xyz](?:'|2|2')?)+$/;
-    if (trailingRotationsRegex.test(alg)) {
-      return alg.replace(trailingRotationsRegex, '');
+    if (TRAILING_ROTATIONS.test(alg)) {
+      return alg.replace(TRAILING_ROTATIONS, '');
     }
 
     const rotationAUFregex = / ([xyz](?:'|2|2')?) (U2|U'|U)$/;
@@ -150,5 +168,25 @@ export default class LLsuggester {
     }
   }
 
-  
+  public findKnownAlgs(alg: string): KnownLLAlgMatch[] {
+    this.knownAlgsByKey ??= this.indexKnownAlgs();
+    return this.knownAlgsByKey.get(knownAlgKey(alg)) ?? [];
+  }
+
+  private indexKnownAlgs(): Map<string, KnownLLAlgMatch[]> {
+    const knownAlgsByKey = new Map<string, KnownLLAlgMatch[]>();
+    const algsets: [CompilableLLStep, CompiledLLAlg[]][] = [['oll', this.ollAlgs], ['pll', this.pllAlgs], ['zbll', this.zbllAlgs]];
+
+    algsets.forEach(([algset, algs]) => {
+      const algsByCase = Map.groupBy(algs, ({ caseIndex }) => caseIndex);
+
+      algs.forEach(compiledAlg => {
+        const key = knownAlgKey(compiledAlg.alg);
+        const match: KnownLLAlgMatch = { algset, compiledAlg, caseAlgs: algsByCase.get(compiledAlg.caseIndex) ?? [] };
+        knownAlgsByKey.set(key, [...(knownAlgsByKey.get(key) ?? []), match]);
+      });
+    });
+
+    return knownAlgsByKey;
+  }
 }

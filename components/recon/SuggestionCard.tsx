@@ -142,10 +142,7 @@ const renderStepIcon = (steps: string[], letterToColor: Record<string, string>, 
   return renderTextIcon(steps[0] || '?');
 };
 
-export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolved, algset, cross, onSelect, onAccept }: SuggestionCardProps) => {
-  const { settings } = useSyncedSettings();
-  const { cubeColors } = settings;
-
+export function useFavoriteToggle(alg: string, algset?: Algset) {
   const { isFavorite, toggleFavorite } = useAlgFavorites();
 
   // WARNING: This could cause problems if we ever have a step type where AUFs have significant meaning
@@ -153,20 +150,9 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
   const favoriteAlg = splitLeadingAuf(alg).coreKey || alg;
 
   const favorited = isFavorite(favoriteAlg);
-
   const [animating, setAnimating] = useState(false);
-  const keeperRef = useRef<HTMLSpanElement>(null);
-  const activationPointerType = useRef<string | null>(null);
 
-  const focusKeyboardKeeper = () => {
-    keeperRef.current?.focus();
-  };
-
-  const handleFavoritePointerDown = (event: React.PointerEvent) => {
-    activationPointerType.current = event.pointerType;
-  };
-
-  const applyFavoriteToggle = () => {
+  const toggle = () => {
     toggleFavorite(favoriteAlg, algset);
     if (favorited) return;
 
@@ -185,6 +171,30 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
         </span>
       ),
     });
+  };
+
+  const handleAnimationEnd = (event: React.AnimationEvent) => {
+    if (event.animationName === 'parrot-squawk') setAnimating(false);
+  };
+
+  return { favorited, animating, toggle, handleAnimationEnd };
+}
+
+export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolved, algset, cross, onSelect, onAccept }: SuggestionCardProps) => {
+  const { settings } = useSyncedSettings();
+  const { cubeColors } = settings;
+
+  const { favorited, animating, toggle: applyFavoriteToggle, handleAnimationEnd } = useFavoriteToggle(alg, algset);
+
+  const keeperRef = useRef<HTMLSpanElement>(null);
+  const activationPointerType = useRef<string | null>(null);
+
+  const focusKeyboardKeeper = () => {
+    keeperRef.current?.focus();
+  };
+
+  const handleFavoritePointerDown = (event: React.PointerEvent) => {
+    activationPointerType.current = event.pointerType;
   };
 
   const handleFavoriteClick = (event: React.MouseEvent) => {
@@ -287,7 +297,7 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
         <Parrot
           filled={favorited}
           animating={animating}
-          onAnimationEnd={(event) => { if (event.animationName === 'parrot-squawk') setAnimating(false); }}
+          onAnimationEnd={handleAnimationEnd}
           className="w-6 h-6"
         />
       </button>

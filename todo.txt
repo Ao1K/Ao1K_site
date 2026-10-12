@@ -78,15 +78,17 @@ We can hide review load time if we make some assumptions about the area needed f
  - We could preload the review when solve is done
  - We could preload the review on hover of the review btn
 
-OLL/PLL/Alg feedback
- - Is popular:
-  ++ Standard alg
-   + Common alg
-   - Uncommon alg
-  -- Unknown alg
 
-  List most common algs
-  Maybe give some disclaimer that only the user can really know if an alg is Good
- - Extra U/y moves
- - Moves cancel -> Mistake made
- - Did only EO/CO/CP/EP -> Learn OLL/PLL. Only suggest full OLL if full PLL was done.
+Create new cross speed estimator. Current generic one penalizes new movetypes a lot.
+  Test case: http://localhost:3000/recon/?scramble=R-_D2_F-_U2_L-_B2_L-_F2_B2_L2_U_L2_D-_B2_U_R2_U_R2_B-_R_D2&solution=x_z2_B_U-_R2_F_R-_B%0AR_U_R-%0AU-_L_U-_L2_U_L%0AU-_D_L_U_L-_D-%0AR-_S-_R_U-_R-_S_R%0AR-_U-_F_U_R_U-_R-_F-_R%0AM2-_U_M2-_U2_M2-_U_M2-_U
+
+Cycling through suggestions with arrow keys doesn't scroll page, meaning you can select suggestion that's off the page.
+
+Should be good cross not great:
+  http://localhost:3000/recon/?scramble=R-_D2_F-_U2_L-_B2_L-_F2_B2_L2_U_L2_D-_B2_U_R2_U_R2_B-_R_D2&solution=x-_R_D-_R2_F_D-_F_R
+
+
+v0.10 completed feature list:
+- Cross autocomplete
+- "Time Outdated?" warning when you click to copy or share a solve
+- Cross, alg... review

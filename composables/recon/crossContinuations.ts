@@ -27,7 +27,7 @@ export interface RatedCrossSolution {
 }
 
 const F2L_ONLY = new Set(['f2l']);
-const DEFAULT_LIMIT = 20;
+const DEFAULT_LIMIT = 10;
 const EFFECTIVE_DOWN_COLOR = 'yellow';
 export const Y_ROTATIONS: readonly string[] = ['', 'y', 'y2', "y'"];
 const NO_Y_ROTATION: readonly string[] = [''];

@@ -5,7 +5,6 @@ import { rateCrossSolutions, Y_ROTATIONS } from './crossContinuations';
 import type { ContinuationCategory, PairColors, RatedCrossSolution } from './crossContinuations';
 import type { F2LScoreIndex } from './f2lPairLookup';
 import type { StepInfo, Suggestion } from './SimpleCubeInterpreter';
-import { MAX_SHOWN_SUGGESTIONS } from './suggestionRanking';
 
 export interface LastInputMoveMerge {
   inputMove: string;
@@ -22,6 +21,7 @@ export interface CrossSuggestionDetails {
   lastInputMoveMerge: LastInputMoveMerge | null;
 }
 
+const MAX_CROSS_SUGGESTIONS = 10;
 const AXIS_OF_FACE: Record<string, string> = { U: 'UD', D: 'UD', F: 'FB', B: 'FB', L: 'LR', R: 'LR' };
 const MERGE_SUFFIX_BY_MOVE_SUFFIX: Record<string, string> = { '': '2', '2': "'" };
 const Y_ROTATIONS_MERGEABLE_INTO_Y = ['', 'y', 'y2'];
@@ -215,8 +215,8 @@ export function getCrossSuggestions(facelets: Facelets, lineMoves: readonly stri
         || a.solution.totalScore - b.solution.totalScore),
   );
 
-  const plainCandidates = candidates.filter(candidate => !candidate.lastInputMoveMerge).slice(0, MAX_SHOWN_SUGGESTIONS);
-  const mergeCandidates = candidates.filter(candidate => candidate.lastInputMoveMerge).slice(0, MAX_SHOWN_SUGGESTIONS);
+  const plainCandidates = candidates.filter(candidate => !candidate.lastInputMoveMerge).slice(0, MAX_CROSS_SUGGESTIONS);
+  const mergeCandidates = candidates.filter(candidate => candidate.lastInputMoveMerge).slice(0, MAX_CROSS_SUGGESTIONS);
   const shownCandidates = new Set([...plainCandidates, ...mergeCandidates]);
   return candidates
     .filter(candidate => shownCandidates.has(candidate))
