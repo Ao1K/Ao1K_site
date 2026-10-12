@@ -7,18 +7,13 @@ import type { RatedCrossSolution } from './crossContinuations';
 import type { F2LScoreIndex } from './f2lPairLookup';
 import { combineMoves } from '../../utils/moveUtils';
 import simplifyRotations from './simplifyRotations';
-import type { FeedbackNote } from '../../components/recon/FeedbackNotes';
+import type { FeedbackNote, ReviewFeedback } from '../../components/recon/FeedbackNotes';
 import type { FeedbackCategory } from '../../utils/sharedConstants';
 
 export type CrossPickCategory = 'fewestMoves' | 'fastest' | 'easiestContinuation';
 
 
 type ContinuationFeedbackCategory = Exclude<FeedbackCategory, 'bad'>;
-
-export interface CrossFeedback {
-  category: FeedbackCategory | null;
-  notes: FeedbackNote[];
-}
 
 export interface ReviewedCross {
   solution: RatedCrossSolution;
@@ -32,9 +27,7 @@ export interface CrossPick {
   cross: ReviewedCross;
 }
 
-export interface CrossReview {
-  lineIndex: number;
-  feedback: CrossFeedback;
+export interface CrossReview extends ReviewFeedback {
   picks: CrossPick[];
   others: ReviewedCross[];
 }
@@ -72,13 +65,13 @@ const downColor = (facelets: Facelets) => FACE_COLOR_NAMES[faceOfSticker(facelet
 const rotationToDown = (facelets: Facelets, color: string) =>
   ROTATIONS_TO_D.find(rotation => downColor(applyMoves(facelets, rotation)) === color)!;
 
-interface CrossLine {
+export interface CrossLine {
   lineIndex: number;
   faceletsBeforeLine: Facelets;
   crossColor: string;
 }
 
-function findCrossLine(scrambleMoves: readonly string[], solutionLines: readonly (readonly string[])[]): CrossLine | null {
+export function findCrossLine(scrambleMoves: readonly string[], solutionLines: readonly (readonly string[])[]): CrossLine | null {
   let facelets = applyMovesSafely(solvedFacelets(), scrambleMoves);
   if (!facelets || solvedCrossColors(facelets).length > 0) return null;
 
@@ -158,7 +151,7 @@ function buildCrossFeedback(
   user: UserCrossScores,
   alternatives: readonly ReviewedCross[],
   otherCrosses: readonly ReviewedCross[],
-): CrossFeedback {
+): ReviewFeedback {
   const comparable = otherCrosses.filter(({ solution }) => solution.solvedPairs.length >= user.solvedPairCount);
   const fastestComparable = comparable.length > 0
     ? lowest(comparable, (a, b) => a.solution.totalScore - b.solution.totalScore)
@@ -245,15 +238,7 @@ function rateCrossSolutionsCached(crossDownFacelets: Facelets, index: F2LScoreIn
   return solutions;
 }
 
-export function reviewCross(
-  scrambleMoves: readonly string[],
-  solutionLines: readonly (readonly string[])[],
-  index: F2LScoreIndex,
-): CrossReview | null {
-  const crossLine = findCrossLine(scrambleMoves, solutionLines);
-  if (!crossLine) return null;
-
-  const userLine = solutionLines[crossLine.lineIndex];
+export function reviewCross(crossLine: CrossLine, userLine: readonly string[], index: F2LScoreIndex): CrossReview | null {
   const leadingRotationCount = userLine.findIndex(move => !isRotation(move));
   const userRotations = userLine.slice(0, leadingRotationCount === -1 ? userLine.length : leadingRotationCount);
   const userOrientation = applyMoves(crossLine.faceletsBeforeLine, userRotations);
@@ -296,5 +281,5 @@ export function reviewCross(
   const otherCrosses = crosses.filter(cross => !cross.isUserCross);
   const feedback = buildCrossFeedback(userScores, crosses, otherCrosses);
 
-  return { lineIndex: crossLine.lineIndex, feedback, picks, others };
+  return { ...feedback, picks, others };
 }

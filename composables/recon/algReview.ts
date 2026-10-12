@@ -1,9 +1,9 @@
-import type { FeedbackNote } from '../../components/recon/FeedbackNotes';
+import type { FeedbackNote, ReviewFeedback } from '../../components/recon/FeedbackNotes';
 import { FEEDBACK_CATEGORY_ORDER, type FeedbackCategory } from '../../utils/sharedConstants';
 import type { Algset, StepInfo, Suggestion } from './SimpleCubeInterpreter';
 import type { Handedness } from '../useSettings';
 import AlgSpeedEstimator from './AlgSpeedEstimator';
-import { groupRedundantMoves, removeRedundantMoves, type MoveGroup, type RedundancyCategory } from './redundantMoves';
+import { removeRedundantMoves, reviewRedundantMoves, type RedundancyReview } from './redundantMoves';
 import { MAX_SHOWN_SUGGESTIONS } from './suggestionRanking';
 import type { KnownLLAlg } from './LLsuggester';
 import type { CompilableLLStep } from './LLinterpreter';
@@ -27,10 +27,8 @@ export interface ReviewedAlg {
   algset?: Algset;
 }
 
-export interface AlgReview {
-  category: FeedbackCategory | null;
-  notes: FeedbackNote[];
-  moveGroups: MoveGroup[];
+export interface AlgReview extends ReviewFeedback {
+  redundancy: RedundancyReview;
   suggestions: ReviewedAlg[];
 }
 
@@ -162,13 +160,6 @@ function gradeAlg(selectionCategory: FeedbackCategory | null, mistakeCount: numb
   return FEEDBACK_CATEGORY_ORDER[gradeIndex];
 }
 
-const countGroups =(moveGroups: readonly MoveGroup[], category: RedundancyCategory) =>
-  new Set(moveGroups.filter(group => group.category === category).map(group => group.group)).size;
-
-const mistakeNoteCategory = (count: number): FeedbackCategory => count === 1 ? 'okay' : 'bad';
-
-const pluralTimes = (count: number) => count === 1 ? `${count} time` : `${count} times`;
-
 export function reviewAlg(algLine: AlgLine, reader: CubeStateReader): AlgReview {
   const userAlg = removeRedundantMoves(algLine.lineMoves).join(' ');
   const before = readLLSteps(reader, algLine.movesBefore);
@@ -183,9 +174,7 @@ export function reviewAlg(algLine: AlgLine, reader: CubeStateReader): AlgReview 
 
   const selectionNote = reviewSelection(userAlg, knownAlg, partialCompletion, shownSuggestions, reader);
   const popularity = knownAlg && popularityNote(knownAlg);
-  const moveGroups = groupRedundantMoves(algLine.lineMoves);
-  const combineCount = countGroups(moveGroups, 'combine');
-  const cancelCount = countGroups(moveGroups, 'cancel');
+  const redundancy = reviewRedundantMoves(algLine.lineMoves);
 
   const notes: FeedbackNote[] = [];
   if (partialCompletion) {
@@ -194,14 +183,13 @@ export function reviewAlg(algLine: AlgLine, reader: CubeStateReader): AlgReview 
   }
   notes.push(selectionNote);
   if (popularity) notes.push(popularity);
-  if (combineCount > 0) notes.push({ category: mistakeNoteCategory(combineCount), text: `Moves could have combined ${pluralTimes(combineCount)}` });
-  if (cancelCount > 0) notes.push({ category: mistakeNoteCategory(cancelCount), text: `Moves could have canceled ${pluralTimes(cancelCount)}` });
+  notes.push(...redundancy.notes);
 
-  const category = gradeAlg(selectionNote.category, combineCount + cancelCount, partialCompletion !== null);
+  const category = gradeAlg(selectionNote.category, redundancy.mistakeCount, partialCompletion !== null);
 
   const reviewedSuggestions = shownSuggestions
     .toSorted((a, b) => (b.frequency ?? 0) - (a.frequency ?? 0))
     .map(suggestion => ({ alg: suggestion.alg, algset: suggestion.algset }));
 
-  return { category, notes, moveGroups, suggestions: reviewedSuggestions };
+  return { category, notes, redundancy, suggestions: reviewedSuggestions };
 }

@@ -1,5 +1,7 @@
 import { MOVE_TABLE } from '../../utils/cubeMoves';
 import { formatMove, parseMove } from '../../utils/moveUtils';
+import type { FeedbackCategory } from '../../utils/sharedConstants';
+import type { FeedbackNote } from '../../components/recon/FeedbackNotes';
 
 export type RedundancyCategory = 'none' | 'combine' | 'cancel' | 'exception';
 
@@ -112,6 +114,31 @@ function mergeRedundantMovesOnce(moves: readonly string[]): string[] {
     mergedKeys.add(redundancy.key);
     return redundancy.category === 'cancel' ? [] : [formatMove(redundancy.base, redundancy.totalAmount)];
   });
+}
+
+export interface RedundancyReview {
+  moveGroups: MoveGroup[];
+  notes: FeedbackNote[];
+  mistakeCount: number;
+}
+
+const countGroups = (moveGroups: readonly MoveGroup[], category: RedundancyCategory) =>
+  new Set(moveGroups.filter(group => group.category === category).map(group => group.group)).size;
+
+const mistakeNoteCategory = (count: number): FeedbackCategory => count === 1 ? 'okay' : 'bad';
+
+const pluralTimes = (count: number) => count === 1 ? `${count} time` : `${count} times`;
+
+export function reviewRedundantMoves(moves: readonly string[]): RedundancyReview {
+  const moveGroups = groupRedundantMoves(moves);
+  const combineCount = countGroups(moveGroups, 'combine');
+  const cancelCount = countGroups(moveGroups, 'cancel');
+
+  const notes: FeedbackNote[] = [];
+  if (combineCount > 0) notes.push({ category: mistakeNoteCategory(combineCount), text: `Moves could have combined ${pluralTimes(combineCount)}` });
+  if (cancelCount > 0) notes.push({ category: mistakeNoteCategory(cancelCount), text: `Moves could have canceled ${pluralTimes(cancelCount)}` });
+
+  return { moveGroups, notes, mistakeCount: combineCount + cancelCount };
 }
 
 export function removeRedundantMoves(moves: readonly string[]): string[] {

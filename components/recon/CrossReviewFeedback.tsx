@@ -80,7 +80,7 @@ export const closedButSizedClass = [
 export default function CrossReviewFeedback({ review, ...playback }: { review: CrossReview } & PlaybackControls) {
   return (
     <div className="@container flex flex-col gap-2">
-      <FeedbackNotes notes={review.feedback.notes} />
+      <FeedbackNotes notes={review.notes} />
       <div className="inline-grid w-fit gap-2">
         <ul className={`${cardGridClass} overflow-y-hidden`}>
           {review.picks.map(({ categories, cross }) => (
