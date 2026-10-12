@@ -197,6 +197,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   const isWhiteSpaceLineRef = useRef<boolean[]>([]);
   const twistyPlayerRef = useRef<TwistyPlayerImperativeRef>(null);
   const clearedPageRef = useRef<ClearedPageSnapshot | null>(null);
+  const lastCopiedSolveRef = useRef<{ moves: string; solveTime: number | string } | null>(null);
   const clearedPageToastIdRef = useRef<number | null>(null);
   const clearedPageTimeoutRef = useRef<number | null>(null);
   const clearLoopTimeout = useCallback(() => {
@@ -1209,6 +1210,23 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     if (!isCompletedSolve) {
       return {
         message: 'Copied, Solve Incomplete',
+        messageType: 'warn'
+      };
+    }
+
+    const moves = `${scrambleMoves.join(' ')}|${solutionMoves.join(' ')}`;
+    const lastCopiedSolve = lastCopiedSolveRef.current;
+    if (lastCopiedSolve?.solveTime !== solveTime) {
+      lastCopiedSolveRef.current = { moves, solveTime };
+    }
+
+    const isTimeOutdated = solveTime !== ''
+      && lastCopiedSolve?.solveTime === solveTime
+      && lastCopiedSolve.moves !== moves;
+
+    if (isTimeOutdated) {
+      return {
+        message: 'Copied, Time Outdated?',
         messageType: 'warn'
       };
     }
