@@ -40,8 +40,7 @@ import type { Doc } from '../../composables/recon/ExactAlgSuggester';
 import type { CompiledLLAlg } from '../../composables/recon/LLsuggester';
 import { savedAlgKeys } from '../../composables/recon/suggestionRanking';
 import { applyMovesUntilCross, getCrossSuggestions } from '../../composables/recon/crossAutocomplete';
-import { hasCrossFeedback } from '../../composables/recon/crossReview';
-import { reviewSolve } from '../../composables/recon/solveReview';
+import { hasReviewContent, reviewSolve } from '../../composables/recon/solveReview';
 import type { CubeStateReader } from '../../composables/recon/algReview';
 import { readFavorites } from '../../composables/algs/algFavorites';
 import { getNewSteps } from '../../composables/recon/getLineStepInfo';
@@ -171,12 +170,6 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   const [breakdownSession,setBreakdownSession] = useState<BreakdownSession | null>(null);
   const [breakdownPlayRequest, setBreakdownPlayRequest] = useState<BreakdownPlayRequest | null>(null);
   const isBreakdownOpen = breakdownSession !== null;
-  const hasReviewFeedback = hasCrossFeedback(allMovesRef.current[0].flat(), allMovesRef.current[1]);
-  const reviewButtonClass = !hasReviewFeedback
-    ? 'text-neutral-500 border-neutral-700'
-    : isSolveComplete(lineSteps.map(line => line.stepInfo))
-      ? 'text-primary-900 border-primary-100 animate-review-highlight'
-      : 'text-primary-100 border-neutral-600 hover:border-primary-100';
 
   const [playerParams, setPlayerParams] = useState<PlayerParams>({ animationTimes: [], solution: '', scramble: '' });
 
@@ -214,6 +207,12 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   const solutionLines = allMovesRef.current[1]?.map((move: string[]) => move.join(' ')) || [''];
   const lineIconData = computeLineIconData(solutionLines, lineSteps.map(item => item.stepInfo), cubeColors);
   const hasIcons = lineIconData.some(d => !d.isEmptyIcon);
+  const hasReviewFeedback = hasReviewContent(allMovesRef.current[0].flat(), allMovesRef.current[1], lineIconData);
+  const reviewButtonClass = !hasReviewFeedback
+    ? 'text-neutral-500 border-neutral-700'
+    : isSolveComplete(lineSteps.map(line => line.stepInfo))
+      ? 'text-primary-900 border-primary-100 animate-review-highlight'
+      : 'text-primary-100 border-neutral-600 hover:border-primary-100';
 
   const showSplitsColumn = showSplitsSetting;
 
