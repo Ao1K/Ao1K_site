@@ -69,7 +69,8 @@ F2L Feedback:
    - Actually, lefty is significantly less common in the data, see https://basilio.dev/cubing/recons/ReconStats-v0.pdf pg 32
    - But the data is still so messy. What can you actually say about it?
    - Should we just try to tune an algorithm based on the available data?
- - Bad: Didn't use keyhole and should have
+ - Bad: Didn't use keyhole and should have: "Missed __keyhole__"
+ - Bad: "Missed a __five mover__", "Missed a free pair".
 
 Minimize feedback if it's all good? Really you just need to see negative stuff. Kinda.
 
@@ -91,4 +92,11 @@ Should be good cross not great:
 v0.10 completed feature list:
 - Cross autocomplete
 - "Time Outdated?" warning when you click to copy or share a solve
-- Cross, alg... review
+- Cross, alg, auf... review
+
+
+Best f2l:
+1. Take top solves
+2. Assume that their pair choice was optimal. Or manually filter weird solves.
+3. Tune an algorithm's weights so you get the max number of matches between top solves pair choice and the algorithm's pair choice
+4. ship that

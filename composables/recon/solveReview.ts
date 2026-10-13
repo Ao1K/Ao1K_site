@@ -1,7 +1,7 @@
 import type { LineIconDatum } from '../../components/recon/IconStack';
 import type { ReviewFeedback } from '../../components/recon/FeedbackNotes';
 import type { StepInfo } from './SimpleCubeInterpreter';
-import { findCrossLine, reviewCross, type CrossLine, type CrossReview } from './crossReview';
+import { findCrossLine, hasCrossFeedback, reviewCross, type CrossLine, type CrossReview } from './crossReview';
 import { reviewF2L, type F2LReview } from './f2lReview';
 import { reviewAlg, type AlgReview, type CubeStateReader } from './algReview';
 import { isOneAUFAway, isLastLayerDone, reviewAUF, WRONG_AUF_NOTE, type AUFReview } from './aufReview';
@@ -46,12 +46,29 @@ function pickLineReview(line: SolveLine, { crossLine, index, reader }: SolveCont
   if (!stepInfo) return null;
   if (stepInfo.type === 'f2l') return { kind: 'f2l', value: reviewF2L(lineMoves, stepInfo) };
 
-  const isSolvingLastStep = stepInfo.type === 'solved' && stepInfo.step === 'solved' && stepInfo.nameType !== undefined;
-  if (stepInfo.type === 'last layer' || isSolvingLastStep) {
+  if (isLastLayerAlgStep(stepInfo)) {
     return { kind: 'alg', value: reviewAlg({ movesBefore, lineMoves, nextLineMoves }, reader) };
   }
 
   return null;
+}
+
+function isLastLayerAlgStep(stepInfo: StepInfo): boolean {
+  const isSolvingLastStep = stepInfo.type === 'solved' && stepInfo.step === 'solved' && stepInfo.nameType !== undefined;
+  return stepInfo.type === 'last layer' || isSolvingLastStep;
+}
+
+export function hasReviewContent(
+  scrambleMoves: readonly string[],
+  solutionLines: readonly (readonly string[])[],
+  lineIconData: readonly LineIconDatum[],
+): boolean {
+  if (hasCrossFeedback(scrambleMoves, solutionLines)) return true;
+
+  return solutionLines.some((lineMoves, lineIndex) => {
+    const stepInfo = lineIconData[lineIndex]?.compiledStepInfo;
+    return lineMoves.length > 0 && !!stepInfo && (stepInfo.type === 'f2l' || isLastLayerAlgStep(stepInfo));
+  });
 }
 
 function reviewLine(line: SolveLine, context: SolveContext): LineReview | null {
