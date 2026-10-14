@@ -122,8 +122,9 @@ export default function WhatToLearn() {
         </div>
         <p>{`This step is a mix of creativity and algorithms. The last two steps are purely about algorithms.`}</p>
         <h2>OLL</h2>
-        <p>{`OLL stands for Orientation of the Last Layer. In this step, you make the top face all one color. This is also called "orienting" the pieces, hense OLL. The top pieces won't usually be in the correct spots relative to each other, so the cube won't be completely solved yet.`}</p>
-        <p>{`In the full version of OLL, you choose from a selection of 57 algorithms that you've already memorized, and use just 1 of those algs to orient the top face.`}</p>
+        <p>{`OLL stands for Orientation of the Last Layer. In this step, you make the top face all one color. This is also called "orienting" the pieces, hense the name OLL. The top pieces won't usually be in the correct spots relative to each other, so the cube won't be completely solved yet.`}</p>
+        <p>{`In the full version of OLL, you choose from a selection of 57 algorithms that you've already memorized and use just one of those algs to orient the top face.`}</p>
+        <p>{`Fifty-seven algorithms is a lot to learn. So for beginners, it's broken into two steps, called "looks". In the first look, you use one of three algorithms to orient the edges. In the second, you use one of seven algorithms to orient the corners. Each and every two-look OLL algorithm can be later used in full OLL, so there's no downside to learning this "two-look" version first.`}</p>
         <div className="flex flex-row flex-wrap pb-6 gap-4">
           <div className="flex flex-col gap-1">
             <span className="text-sm font-bold">Goal</span>
@@ -152,7 +153,6 @@ export default function WhatToLearn() {
             </div>
           </div>
         </div>
-        <p>{`Fifty-seven algorithms is a lot to memorize. So to begin, it's broken into two steps, called "looks". In the first look, you use one of four algorithms to orient the edges. In the second, you use one of ten algorithms to orient the corners. Each and every two-look OLL algorithm can be later used in full OLL, so there's no downside to learning this "two-look" version first.`}</p>
         <h2>PLL</h2>
         <p>{`PLL stands for Permutation of the Last Layer. This final step gets all the top pieces into the correct location, thereby solving the cube.`}</p>
         <div className="flex flex-row flex-wrap pb-6 gap-4">
@@ -186,32 +186,33 @@ export default function WhatToLearn() {
 
         <h1>What order do I learn CFOP in?</h1>
         <Story storyParagraphs={[
-          `Peaku left home with nothing but his clothes. It is a beautiful day, the town in its quiet motion, only the most distant whine of fairies against the clear sky to disturb it. His sister's absence did not yet feel real.`,
-          `He walks a few cottages down and knocks at a rickety door. He haltingly tells his old neighbor Yamison what happened. Jamison is quiet.`,
+          `It is a beautiful day, the village in its quiet motion, only the most distant whine of fairies to disturb it. Jera's absence did not yet feel real.`,
+          `He walks a few cottages down and knocks at a rickety door. He haltingly tells his old neighbor Yamison what happened. Yamison is quiet.`,
           `"Where do I even begin?" Peaku says.`,
           `Yamison seems to glower at him, though that was just his face, then turns and begins washing vegetables.`,
           `"Doesn't matter," Yamison says.`,
-          `"But she's getting further away! I need to hurry!"`,
-          `"That seems unlikely. Here, you wash these."`,
+          `"But she's getting further away!"`,
+          `"Here, you wash these."`,
           `Peaku glowers in turn.`,
-          `Yamison sighs. "I have seen many impossible things. Beasts much too heavy to float, floating. A woman controlling things with just her voice. Not to mention the link you formed with your sister, like other families before you. But no. You will not find your sister quickly."`,
+          `Yamison sighs. "I have seen many impossible things. Floating beasts much too heavy to float. A woman controlling things with just her voice. Not to mention the link you formed with your sister, like those in your family before you. But no. You will not find your sister quickly."`,
           `"I need to start somewhere."`,
           `"You'll need to follow your link with her and see where it leads you. Surely you must have known that."`,
           `Peaku nods.`,
-          `"Then think! You will be out there in the world for who-knows-how-long. You'll need a basic control of magic. You will need to learn to use a blade. Ahh. Much to do, yes indeed. Now, wash these beats, would you?"`,
+          `"Then think. You will be out there in the world for who-knows-how-long. You'll need a basic control of magic. You will need to learn to use a blade. Ahh. Much to do, yes indeed. Now, wash the rest of these beats, would you?"`,
         ]} />
 
         <p>{`There are some ways in which order matters.`}</p>
         <p>{`You should learn the two-look version of OLL and PLL before you learn the full versions of both. There's no cost to doing it this way, and you benefit by starting to do CFOP solves sooner.`}</p>
-        <p>{`You should learn full PLL before you learn full OLL. There are fewer PLL algs, and learning full PLL helps your times more than full OLL.`}</p>
-        <p>{`Beyond that, it doesn't matter. You can learn two-look algorithms before you learn F2L, or the other way around. You can improve at cross at any point. There will be enough time for all of it.`}</p>
+        <p>{`You should learn full PLL before you learn full OLL. There are fewer PLL algs, and learning full PLL helps your times more than full OLL. People usually learn full OLL when they solve the cube on average somewhere between 15 to 20 seconds.`}</p>
+        <p>{`Beyond that, it doesn't matter. The time people learn full PLL differs a lot more than full OLL, but you can generally learn it as early as you want. You can learn two-look algorithms before you learn a basic version of F2L, or the other way around. You can improve at cross at any point. There will be enough time for all of it.`}</p>
         <h1>More than a name</h1>
         <p>{`It would be easy to assume that once you've learned cross, F2L, full OLL, and full PLL, that you've learned CFOP. In reality, CFOP is more than the steps that make it up. `}</p>
         <h2>Learn fingertricks</h2>
         <p>{`Arguably the most important extra skill is how you turn the cube. This is closely related to learning special ways to turn the cube called fingertricks. With good fingertricks and practice, it is possible to turn the cube quickly and with low risk.`}</p>
-        <h2>{`Don't learn lookahead early`}</h2>
-        <p>{`"Lookahead" is one skill that you may have already heard about. It is the ability to turn to complete one step while also looking ahead to the next step. This can eliminate the pauses between steps because you've already identified the next step before it began. Lookahead is first applied in solves during F2L, though advanced solvers can look ahead to parts of last layer.`}</p>
-        <p>{`This is a difficult skill to learn. It is best to learn it only when you're already comfortable with easier things, like full OLL and full PLL.`}</p>
+        <h2>{`Don't learn lookahead (yet)`}</h2>
+        <p>{`"Lookahead" is one skill that you may have already heard about. It is the ability to look ahead to the next step while you solve something else. This can eliminate the pauses between steps because you've already identified the next step before it began.`}</p>
+        <p>{`Cubers first learn to use lookahead during F2L. This lesson series recommends practicing lookahead only when you have good F2L solutions to most cases, or roughly when you average about 15 second solves, though you could learn it as early as 20 second average.`}</p>
+        <p>{`This is a difficult skill to learn, and most never master it.`}</p>
         <h2>Much more</h2>
         <p>{`Each step also has additional concepts that might not be obvious from the outset. One example is recognition strategies. With F2L, OLL, and PLL, it is possible to learn ways to make it faster to recognize what you have to do next.`}</p>
         <p>{`There's plenty of other examples. For now, just know that there is a lot out there to learn. Explore the space however you see fit, or just do a lot of solves and have fun. But either way, now we can begin.`}</p>
