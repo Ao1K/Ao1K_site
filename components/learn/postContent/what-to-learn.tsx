@@ -44,7 +44,7 @@ export default function WhatToLearn() {
           <p>{`From now on, we will assume you want to learn CFOP.`}</p>
         </ol>
         <h1>CFOP Overview</h1>
-        <p><b>CFOP</b>{` is an acronymn. It stands for the components that make it up: `}</p>
+        <p><b>CFOP</b>{` is an acronym. It stands for the components that make it up: `}</p>
         <div><b>C</b>ross</div>
         <div><b>F</b>2L,</div>
         <div><b>O</b>LL, and</div>
@@ -58,7 +58,6 @@ export default function WhatToLearn() {
             <span className="text-sm font-bold">Goal</span>
             <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
               <CubeImage
-                hints
                 labels
                 scramble="z2"
                 highlight={CROSS_PIECES}
@@ -83,7 +82,7 @@ export default function WhatToLearn() {
             </div>
           </div>
         </div>
-        <p>{`CFOP user will of course try to solve cross as fast as possible, which tends to mean doing it in as few moves as possible.`}</p>
+        <p>{`CFOP users will of course try to solve cross as fast as possible, which tends to mean doing it in as few moves as possible.`}</p>
         <p>{`This step is the most creative.`}</p>
         <h2>F2L</h2>
         <p>{`F2L is the second step, and it stands for First Two (2) Layers.`}</p>
@@ -122,7 +121,7 @@ export default function WhatToLearn() {
         </div>
         <p>{`This step is a mix of creativity and algorithms. The last two steps are purely about algorithms.`}</p>
         <h2>OLL</h2>
-        <p>{`OLL stands for Orientation of the Last Layer. In this step, you make the top face all one color. This is also called "orienting" the pieces, hense the name OLL. The top pieces won't usually be in the correct spots relative to each other, so the cube won't be completely solved yet.`}</p>
+        <p>{`OLL stands for Orientation of the Last Layer. In this step, you make the top face all one color. This is also called "orienting" the pieces, hence the name OLL. The top pieces won't usually be in the correct spots relative to each other, so the cube won't be completely solved yet.`}</p>
         <p>{`In the full version of OLL, you choose from a selection of 57 algorithms that you've already memorized and use just one of those algs to orient the top face.`}</p>
         <p>{`Fifty-seven algorithms is a lot to learn. So for beginners, it's broken into two steps, called "looks". In the first look, you use one of three algorithms to orient the edges. In the second, you use one of seven algorithms to orient the corners. Each and every two-look OLL algorithm can be later used in full OLL, so there's no downside to learning this "two-look" version first.`}</p>
         <div className="flex flex-row flex-wrap pb-6 gap-4">
