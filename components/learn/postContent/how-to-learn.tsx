@@ -28,7 +28,8 @@ export default function HowToLearn() {
         <h1>The learning cycle</h1>
         <Story storyParagraphs={[
           `"With the right chemistry, it activates. Look!" Jera waves the wand around, colors shifting on its surfaces. `,
-          `Their footsteps ring where metal reaches from the ground. Peaku inspects a decaying tree amidst the greenery. Insects writhe through the crumbling wood. He has a bad feeling. "And what do you plan to do with it?" he asks.`,
+          `Their footsteps ring where metal reaches from the ground. Peaku inspects a decaying tree amidst the greenery. Insects writhe through the crumbling wood. He has a bad feeling.`,
+          `"And what do you plan to do with it?" he asks.`,
           `"Experiment. Most wands are different. Most don't do anything."`,
           `"And you tell me my studies are pointless."`,
           `"Hush." Jera pokes at the wand's flat surface. Runes flash. "Fortune favors the bold. We keep trying, and the world reveals its secrets."`,
@@ -37,17 +38,17 @@ export default function HowToLearn() {
           `Peaku waits. He stares at trees and birds and contemplates his studies.`,
           `"I think I got it," Jera says at last.`,
           `Metal screeches. When Peaku looks back, Jera has vanished. A hole is in the ground where she once sat, but it is already closing up behind her.`,
-          `He pries at where the entrance was. Her presence beats beside his own heart, growing more faint. She isn't gone entirely, but his strength just isn't enough to recover her. When his fingers are bloody and his body exhausted, he admits to himself he needs a new approach. `,
-          `He walks home. His sister is stupid, foolhardy, but she said one true thing: you keep trying.`
+          `He pries at where the entrance was. Her presence beats beside his own heart, growing more faint, but never gone. His strength just isn't enough to recover her. When his fingers are bloody and his body exhausted, he admits to himself he needs a new approach. `,
+          `He walks home. His sister is stupid, foolhardy, but she said one true thing. He will keep trying.`
         ]}/>
 
-        <p>{`It is not enough to merely practice. A common trap cubers will fall into is practicing but not improving. Sometimes, undoubtedly, this is because they do not practice enough. But other times, it is because they practice the wrong things. Practice doesn't make perfect. It makes your habits more engrained, good or bad.`}</p>
+        <p>{`It is not enough to merely practice. A common trap cubers will fall into is practicing but not improving. Sometimes this is because they do not practice enough. But other times, it is because they practice the wrong things. Practice doesn't make perfect. It makes your habits more engrained, good or bad.`}</p>
         <p>{`But you also can't practice everything correctly right away. There would be too much to focus on. So instead you find something to learn, learn it, and then practice it in various ways. Then you repeat the cycle.`}</p>
         <LearningCycleDiagram />
 
         <h2>Finding things to learn</h2>
-        <p>{`Never fall into the assumption that you have "mastered" a topic. There is always something to improve at.`}</p>
-        <p>{`One of the key design philosophies of this lesson series is that it does not exist on its own. In many lessons, you will see links to other tutorials on the internet. You should also explore on your own. YouTube in particular is a great place to find tutorials and walkthroughs of solves. Good ideas can come from anywhere, but also try to take advice from people you trust.`}</p>
+        <p>{`Never fall into the assumption that you have "mastered" a topic. There is always something you can improve at. The lessons on this website are here to give you an idea about what some of those things might be.`}</p>
+        <p>{`In many of these lessons, you will see links to other tutorials on the internet. You should also explore on your own. YouTube in particular is a great place to find tutorials and walkthroughs of solves. Good ideas can come from anywhere, but also try to take advice from people you trust.`}</p>
         <p>{`Here are some specific people worth checking out. Not a complete list!`}</p>
         <ol className="list-inside list-decimal text-base text-neutral-400 leading-relaxed sm:text-md space-y-2 mb-4 pb-4">
           <li>
@@ -62,7 +63,7 @@ export default function HowToLearn() {
           </li>
         </ol>
         <p>
-          {`As you get faster, it might also benefit you to look at breakdowns (reconstructions) of fast people's solves. One of the largest collections of recons is at `}
+          {`As you get faster, it might also benefit you to look at breakdowns (reconstructions) of fast people's solves. These recons can show you what's really possible. One of the largest collections of recons is at `}
           <ExternalLink href="https://reco.nz" text="reco.nz" />
           {`.`}
         </p>
@@ -84,11 +85,11 @@ export default function HowToLearn() {
         <h2>Learning things</h2>
         <p>{`After you've immersed yourself in all this content, the next step is to actually learn something. Try not to get too caught up on this step. You won't be wasting much time if you learn things a bit out of order.`}</p>
         <p>{`Be sure to go through a tutorial all the way so you don't miss anything. Stay persistent, but when you get stuck, you may want to ask the community for help. Don't say:`}</p>
-        <p><i>{`I'm stuck.`}</i></p>
+        <p>{`"I'm stuck."`}</p>
         <p>{`Say:`}</p>
-        <p><i>{`I was following `}<b>[tutorial]</b>{` and can't figure out how to do `}<b>[thing]</b>{`. Help?`}</i></p>
+        <p>{`"I was following `}<b>[tutorial]</b>{` and can't figure out how to do `}<b>[thing]</b>{`. Help?"`}</p>
         {/* TODO: link to first alg tutorial */}
-        <p>{`The best way to learn something changes depending on how you are and what you're learning. If you're learning algorithms (algs), there's all sorts of techniques you can use to make it go smoother. We'll talk more about these and other techniques when they become relevant.`}</p>
+        <p>{`The best way to learn something changes depending on who you are and what you're learning. If you're learning algorithms (algs), there's all sorts of techniques you can use to make it go smoother. We'll talk more about these and other techniques when they become relevant.`}</p>
         <h2>Practicing</h2>
         {/* TODO: link to F2L tutorial */}
         <p>{`Practicing is how you remember and get fast at something. Without enough practice, that new thing you learned might actually make your times go up. But as you practice it more, your times should hopefully go down, and eventually they might even level off as you get truly familiar with it.`}</p>
@@ -198,7 +199,7 @@ function GraphFigure({ title, children }: { title: string; children: React.React
 
 function SolveTimeDecayGraph() {
   return (
-    <GraphFigure title="Improvement Curve (Version 1)">
+    <GraphFigure title="Improvement Curve (Simplified)">
       <svg
         viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
         className="w-full"
@@ -375,7 +376,7 @@ function LearnedMarker({ x, y1, y2 }: { x: number; y1: number; y2: number }) {
 function LearningJumpsGraph() {
   const segments = practiceSegments();
   return (
-    <GraphFigure title="Improvement Curve (Version 2)">
+    <GraphFigure title="Improvement Curve (More Realistic)">
       <div
         className="flex w-full max-w-(--graph-width) flex-col items-end lg:max-w-none lg:flex-row lg:items-center lg:justify-center lg:gap-4"
         style={GRAPH_WITH_LEGEND_SIZES}
