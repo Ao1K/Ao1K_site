@@ -96,7 +96,7 @@ function renderColoredText(text: string): React.ReactNode {
     // if type changes, push the accumulated string with the previous type's color
     if (type !== 'space' && type !== lastType) {
       elements.push(
-        <span key={elements.length} style={{ color: getColor(lastType) }}>{currentString}</span>
+        <span key={elements.length} style={{ color: getColor(lastType) }}>{currentString.replace(/\s+/g, "\u00a0")}</span>
       );
       currentString = '';
       lastType = type;
@@ -106,7 +106,7 @@ function renderColoredText(text: string): React.ReactNode {
   
   if (currentString.length > 0) {
     elements.push(
-      <span key={elements.length} style={{ color: getColor(lastType) }}>{currentString}</span>
+      <span key={elements.length} style={{ color: getColor(lastType) }}>{currentString.replace(/\s+/g, "\u00a0")}</span>
     );
   }
 
@@ -126,7 +126,7 @@ export async function GET(request: Request) {
       const aliases = editorAliases[name] ?? [];
       return searchParams.get(name) ?? aliases.reduce<string | null>((found, alias) => found ?? searchParams.get(alias), null) ?? '';
     };
-    console.log('Raw scramble param:', getRawParam('scramble'));
+    // console.log('Raw scramble param:', getRawParam('scramble'));
     const scramble = decodeURIComponent(customDecodeURL(getRawParam('scramble')));
     const solution = decodeURIComponent(customDecodeURL(getRawParam('solution')));
     const time = searchParams.get('time');
