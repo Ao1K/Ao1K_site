@@ -16,12 +16,12 @@ export default function WhatToLearn() {
       <TitleBar title="What to Learn" subtitle="Getting started with CFOP" audience="all" />
       <LessonBody>
         <Story storyParagraphs={[
-          `It is difficult to tell his father. His father blames him for the loss of his sister, says he should have been protecting her, throws things at the wall. What came next was even more difficult.`,
+          `It is difficult to tell his father. His father blames him for the loss of his sister, says he should have been protecting her, throws things at the wall.`,
           `"I'll find her!" Peaku says.`,
           `"Alright then. Go."`,
-          `"What?"`,
-          `His face is red, tears collecting below his chin. "Leave this house at once. Go find Jera. Do not return until you do."`,
-          `"How am I supposed to--?"`,
+          `Peaku doesn't move.`,
+          `His father's face is red, tears collecting below his chin. "Go find Jera. Do not return until you do."`,
+          `"How am I supposed to—?"`,
           `"Go. Go! How could you lose her?"`,
         ]} />
         <p>{`The world is a big place. It can be difficult to tell where to begin. But the important part is that you do.`}</p>
