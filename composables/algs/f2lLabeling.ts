@@ -430,6 +430,8 @@ const LONG_INSERTS = new Set<string>([
   "M' U R U' r'",
   "R f' U' f",
   "L' f U f'",
+  "R B U' B' R'",
+  "L' B' U B L",  
 ]);
 
 const isValidInsert = (moves: string[]): boolean => {
