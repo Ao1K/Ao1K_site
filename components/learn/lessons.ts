@@ -15,7 +15,7 @@ export const lessons: Lesson[] = [
   {
     slug: "what-to-learn",
     title: "What to Learn",
-    description: "There is so much to do! Where to start? Learn how to get started with CFOP.",
+    description: "It's an overwhelming, beautiful day. Learn all about CFOP and what's in it.",
     category: "CFOP",
   },
   {
