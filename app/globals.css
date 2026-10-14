@@ -119,13 +119,15 @@ input[type='checkbox']:checked {
   background-position: center;
 }
 
-input[type='range'] {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
-  height: 8px;
-  background: transparent;
-  align-items: middle; 
+@layer base {
+  input[type='range'] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 8px;
+    background: transparent;
+    align-items: middle;
+  }
 }
 
 input[type='range']::-webkit-slider-thumb {

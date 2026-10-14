@@ -26,6 +26,7 @@ import TitleWithPlaceholder from "../../components/recon/TitleInput";
 import TopButton from "../../components/recon/TopButton";
 import CopySolveDropdown from "../../components/recon/CopySolveDropdown";
 import CubeGifDialog from "../../components/recon/CubeGifDialog";
+import ScrambleDropdown from "../../components/recon/ScrambleDropdown";
 import { customDecodeURL } from '../../composables/recon/urlEncoding';
 import InfoPanel from '../../components/recon/InfoPanel';
 import IconStack, { computeLineIconData } from './IconStack';
@@ -709,7 +710,12 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     return { fullLeft, stepLeft, stepRight, fullRight, playPause }
   };
 
-  const handleEmptyLineSuggestions = (solutionMoves: string[][], trueLineIndex: number, enabledAlgsets: Set<string>) => {
+  const handleEmptyLineSuggestions = (
+    solutionMoves: string[][],
+    trueLineIndex: number,
+    enabledAlgsets: Set<string>,
+    handedness: Handedness,
+  ) => {
     if (!cubeInterpreter.current) {
       return;
     }
@@ -725,27 +731,25 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     const allMoves = [...scrambleMoves, ...solutionMovesUpToPoint];
     const cubeState = simpleCubeRef.current.getCubeState(allMoves as any);
 
-    const steps = cubeInterpreter.current!.getStepsCompleted(cubeState);
+    const steps = cubeInterpreter.current.getStepsCompleted(cubeState);
     const savedAlgs = savedAlgKeys(readFavorites());
     const newSuggestions: Suggestion[] = cubeInterpreter.current.getAlgSuggestions(steps, { enabledAlgsets, handedness, savedAlgs });
 
     solutionMethodsRef.current?.setSuggestions(newSuggestions, trueLineIndex);
   };
 
-  const refreshCurrentLineSuggestions = (enabled: Set<string>) => {
-    const [idIndex, lineIndex] = trueCaretRef.current;
-    if (idIndex !== 1) return;
+  const refreshLineSuggestions = (lineIndex: number, enabledAlgsets: Set<string>, handedness: Handedness) => {
     const moves = allMovesRef.current[1];
     if (moves[lineIndex]?.length === 0) {
-      handleEmptyLineSuggestions(moves, lineIndex, enabled);
+      handleEmptyLineSuggestions(moves, lineIndex, enabledAlgsets, handedness);
     }
   };
 
-  const loadEnabledAlgsets = async (enabled: Set<string>, forHandedness: Handedness) => {
+  const loadEnabledAlgsets = async (enabledAlgsets: Set<string>, forHandedness: Handedness) => {
     const interpreter = cubeInterpreter.current;
     if (!interpreter) return;
 
-    const toLoad = [...enabled].filter(name =>
+    const toLoad = [...enabledAlgsets].filter(name =>
       ALGSET_LOADERS[name] && !interpreter.isAlgsetLoaded(name, algsetVariant(name, forHandedness))
     );
     if (toLoad.length > 0) {
@@ -755,7 +759,8 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       }));
     }
 
-    refreshCurrentLineSuggestions(enabled);
+    const [idIndex, lineIndex] = trueCaretRef.current;
+    if (idIndex === 1) refreshLineSuggestions(lineIndex, enabledAlgsets, forHandedness);
   };
 
   useEffect(() => {
@@ -794,7 +799,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       if (isLineEmpty) {
 
         // only allowing suggestions on empty line simplifies logic and leads to more beautiful recons
-        idIndex === 0 ? null : handleEmptyLineSuggestions(moves, lineIndex, enabledAlgsets);
+        if (idIndex === 1) handleEmptyLineSuggestions(moves, lineIndex, enabledAlgsets, handedness);
 
         // pretend caret is at end of the last line that has a move
         const adjustedLineIndex = findPrevNonEmptyLine(moves, lineIndex);
@@ -838,6 +843,11 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       }
 
       allMovesRef.current[idIndex] = [...moves];
+      if (idIndex === 0 && !isMovesSame) {
+        const suggestionLineIndex = solutionMethodsRef.current?.getSuggestionLineIndex();
+        if (suggestionLineIndex != null) refreshLineSuggestions(suggestionLineIndex, enabledAlgsets, handedness);
+      }
+
       const sol = allMovesRef.current[1].flat().join(' ');
       const scram = allMovesRef.current[0].flat().join(' ');
 
@@ -986,6 +996,10 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
 
   const handleRemoveComments = () => handleTransform(removeComments);
 
+  const handleScrambleChange = (scrambleContent: string) => {
+    scrambleMethodsRef.current?.setContent(scrambleContent);
+  };
+
   const takePageSnapshot = (): ClearedPageSnapshot => ({
     scrambleHTML,
     solutionHTML,
@@ -1076,7 +1090,6 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     clearedPageToastIdRef.current = showToast({
       closable: false,
       duration: CLEAR_UNDO_DURATION,
-      icon: <TrashIcon className="w-6 h-6 text-primary-800" />,
       message: (
         <span className="flex items-center justify-between gap-3">
           <span>Page cleared</span>
@@ -1754,7 +1767,12 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
         <TitleWithPlaceholder solveTitle={solveTitle} handleTitleChange={handleTitleChange} />
       </div>
       <div id="scramble-area" className="px-3 mt-3 flex flex-col">
-        <div className="text-xl text-dark_accent font-medium">Scramble</div>
+        <ScrambleDropdown
+          scramble={allMovesRef.current[0].flat().join(' ')}
+          solution={allMovesRef.current[1].flat().join(' ')}
+          scrambleOfTheDay={dailyScramble}
+          onScrambleChange={handleScrambleChange}
+        />
         <div className="lg:max-h-[15.1rem] max-h-40 overflow-y-auto" id="scramble">
           <MovesTextEditor
             name={`scramble`}

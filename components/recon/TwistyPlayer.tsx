@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { TwistyPlayer } from 'cubing/twisty';
-import { warmUpCubeSolver, solveKociemba } from '../../composables/recon/cubeSolverClient';
+import { warmUpCubeSolver } from '../../composables/recon/cubeSolverClient';
+import { simplifySetupMoves } from '../../composables/recon/setupMoves';
 import {
   Scene,
   PerspectiveCamera,
@@ -66,52 +67,6 @@ const getQueueTempo = (pendingCount: number, baseTempo: number): number => {
   return Math.max(baseTempo, 100);
 };
 
-const splitAlgMoves = (alg: string) => alg.split(' ').filter((move) => move !== '');
-
-const joinAlgMoves = (...algs: string[]) => algs.flatMap(splitAlgMoves).join(' ');
-
-const normalizeMoveForCubeSolver = (move: string) => {
-  if (!move) {
-    return '';
-  }
-
-  const rootMove = move[0];
-  const suffix = move.slice(1);
-
-  switch (suffix) {
-    case "2'":
-      return `${rootMove}2`;
-    case '3':
-      return `${rootMove}'`;
-    case "3'":
-      return rootMove;
-    default:
-      return move;
-  }
-};
-
-const invertAlgMoves = (alg: string) => splitAlgMoves(alg)
-  .reverse()
-  .map(reverseMove)
-  .map(normalizeMoveForCubeSolver)
-  .join(' ');
-
-const simplifySetupMoves = async (setupMoves: string) => {
-  if (!setupMoves) {
-    return '';
-  }
-
-  if (splitAlgMoves(setupMoves).length < 10) {
-    return setupMoves;
-  }
-
-  const kociembaSolution = await solveKociemba(invertAlgMoves(setupMoves));
-  if (kociembaSolution && splitAlgMoves(kociembaSolution).length < splitAlgMoves(setupMoves).length) {
-    return kociembaSolution;
-  }
-  return setupMoves;
-};
-
 const AVAILABLE_SCREENSHOT_SETUP_STATUS: ScreenshotSetupStatus = {
   status: 'available',
   message: '',
@@ -127,7 +82,7 @@ const getDisplayedSolutionAlg = (solution: string, animationTimes: number[]) => 
   }
 
   const appliedMoveCount = animationTimes.filter((time) => time > 0).length;
-  return splitAlgMoves(solution).slice(0, appliedMoveCount).join(' ');
+  return solution.split(' ').slice(0, appliedMoveCount).join(' ');
 };
 
 const Player = React.memo(({
@@ -226,7 +181,7 @@ const Player = React.memo(({
   };
 
   const syncDisplayedSetupMoves = async (scramble: string, displayedSolutionAlg: string) => {
-    const nextUnsimplifiedSetupMoves = joinAlgMoves(scramble, displayedSolutionAlg);
+    const nextUnsimplifiedSetupMoves = `${scramble} ${displayedSolutionAlg}`.trim();
     pendingSetupMovesRef.current = nextUnsimplifiedSetupMoves;
 
     if (setupMoveSimplificationCacheRef.current.unsimplified === nextUnsimplifiedSetupMoves) {

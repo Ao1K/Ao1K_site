@@ -85,7 +85,7 @@ const replacementTable_S: { [key: string]: string } = {
   "S": "S", "S2": "S2", "S'": "S'", "S2'": "S2'"
 };
 
-const replacementTable_X: { [key: string]: string } = {
+export const replacementTable_X: { [key: string]: string } = {
   "U": "B", "U2": "B2", "U3": "B3", "U'": "B'", "U2'": "B2", "U3'": "B3'", // for double moves (ex: x2) that don't change, preserve the apostrophe. Else, remove.
   "u": "b", "u2": "b2", "u3": "b3", "u'": "b'", "u2'": "b2", "u3'": "b3'",
   "D": "F", "D2": "F2", "D3": "F3", "D'": "F'", "D2'": "F2", "D3'": "F3'",
@@ -127,7 +127,7 @@ export const replacementTable_Y: { [key: string]: string } = {
   "S": "M", "S2": "M2", "S'": "M'", "S2'": "M2"
 };
 
-const replacementTable_Z: { [key: string]: string } = {
+export const replacementTable_Z: { [key: string]: string } = {
   "U": "R", "U2": "R2", "U3": "R3", "U'": "R'", "U2'": "R2", "U3'": "R3'",
   "u": "r", "u2": "r2", "u3": "r3", "u'": "r'", "u2'": "r2", "u3'": "r3'",
   "D": "L", "D2": "L2", "D3": "L3", "D'": "L'", "D2'": "L2", "D3'": "L3'",

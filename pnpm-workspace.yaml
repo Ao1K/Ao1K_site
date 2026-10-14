@@ -29,5 +29,8 @@ overrides:
   postcss@8: ^8.5.23
   sanitize-html@2: ^2.17.7
   sharp: ^0.35.0
+  # cubing only accepts three 0.170.x. A different version loads a second copy of three, and
+  # materials from the two copies can share an id, which makes the renderer skip color updates.
+  three: 0.170.0
   uuid: ^14.0.0
   ws@7: ^7.5.13

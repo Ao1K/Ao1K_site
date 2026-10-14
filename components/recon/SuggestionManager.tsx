@@ -2,6 +2,7 @@ import React, { useImperativeHandle, useRef, useState, type Ref } from 'react';
 import { createPortal } from 'react-dom';
 
 import type { Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
+import { MAX_SHOWN_SUGGESTIONS } from '../../composables/recon/suggestionRanking';
 import { SuggestionBox } from './SuggestionBox';
 import { SuggestionGhost } from './SuggestionGhost';
 import { colorDict } from '../../utils/sharedConstants';
@@ -29,6 +30,7 @@ export interface SuggestionManagerHandle {
   // so updating it re-renders only the ghost, never the editor's contentEditable.
   updateCaretRect: (left: number, top: number, height: number) => void;
   setSuggestions: (suggestions: Suggestion[], lineIndex: number | null) => void;
+  getSuggestionLineIndex: () => number | null;
 }
 
 interface SuggestionState {
@@ -115,7 +117,8 @@ const filterSuggestionsForDisplay = ({
 
   return suggestions
     ?.map((suggestion, originalIndex) => ({ suggestion, originalIndex }))
-    .filter(({ suggestion }) => resolveRemaining(suggestion.alg, visibleText).trim().length > 0);
+    .filter(({ suggestion }) => resolveRemaining(suggestion.alg, visibleText).trim().length > 0)
+    .slice(0, MAX_SHOWN_SUGGESTIONS);
 };
 
 export function SuggestionManager({
@@ -204,6 +207,7 @@ export function SuggestionManager({
           : { suggestions: next, lineIndex: nextLineIndex },
       );
     },
+    getSuggestionLineIndex: () => suggestionLineIndex,
   }));
 
   const acceptByOriginalIndex = (originalIndex: number) => {

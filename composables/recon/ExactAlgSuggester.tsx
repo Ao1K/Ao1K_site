@@ -115,6 +115,37 @@ export default class AlgSuggester {
     return new Set(x);
   }
 
+  private getIdSetsForMust(pos: number, mustChars: CharSet): Set<number>[] {
+    const posMap = this.indexData!.index.get(pos);
+    const idSets: Set<number>[] = [];
+    for (const ch of mustChars) {
+      const idsWithChar = posMap?.get(ch);
+      if (idsWithChar) idSets.push(idsWithChar);
+    }
+    return idSets;
+  }
+
+  private countIds(idSets: Set<number>[]): number {
+    let count = 0;
+    for (const ids of idSets) count += ids.size;
+    return count;
+  }
+
+  private getNarrowestMustMatches(mustConstraints: { pos: number; must?: CharSet }[]): Set<number> {
+    let narrowest: Set<number>[] | null = null;
+    for (const c of mustConstraints) {
+      const idSets = this.getIdSetsForMust(c.pos, c.must!);
+      if (narrowest === null || this.countIds(idSets) < this.countIds(narrowest)) {
+        narrowest = idSets;
+      }
+    }
+
+    const ids: number[] = [];
+    for (const idSet of narrowest!) ids.push(...idSet);
+    const ascendingIds = ids.sort((a, b) => a - b);
+    return new Set(ascendingIds);
+  }
+
   /**
    * Search using position-based constraints
    */
@@ -139,20 +170,10 @@ export default class AlgSuggester {
 
     let candidateIds: Set<number> | null = null;
 
-    // Use MUST constraints to narrow aggressively.
     const mustConstraints = constraintEntries.filter(c => c.must && c.must.size > 0);
     if (mustConstraints.length > 0) {
-      for (const c of mustConstraints) {
-        const posMap = index.get(c.pos);
-        let posUnion = new Set<number>();
-        for (const ch of c.must!) {
-          const s = posMap?.get(ch);
-          if (s) for (const id of s) posUnion.add(id);
-        }
-        if (candidateIds === null) candidateIds = posUnion;
-        else candidateIds = this.intersectSets(candidateIds, posUnion);
-        if (candidateIds.size === 0) return [];
-      }
+      candidateIds = this.getNarrowestMustMatches(mustConstraints);
+      if (candidateIds.size === 0) return [];
     } else {
       // No MUST constraints -> use MAY constraints union if available to reduce work
       const mayConstraints = constraintEntries.filter(c => c.may && c.may.size > 0);
@@ -168,19 +189,6 @@ export default class AlgSuggester {
       } else {
         // fallback to all documents
         candidateIds = new Set<number>(Array.from(Array(docs.length).keys()));
-      }
-    }
-
-    // Exclude NOT constraints
-    for (const c of constraintEntries) {
-      if (c.not && c.not.size > 0) {
-        const posMap = index.get(c.pos);
-        for (const ch of c.not) {
-          const s = posMap?.get(ch);
-          if (s) {
-            for (const id of s) candidateIds?.delete(id);
-          }
-        }
       }
     }
 
@@ -222,16 +230,6 @@ export default class AlgSuggester {
     results.sort((a, b) => b.score - a.score);
     const limit = q.limit ?? 100;
     return results.slice(0, limit).map(r => ({ id: r.doc.alg, hash: r.doc.hash, eoValue: r.doc.eoValue as number | undefined, step: r.doc.step as string | undefined, score: r.score, matches: r.matches }));
-  }
-
-  /**
-   * Helper method to intersect two sets
-   */
-  private intersectSets(a: Set<number>, b: Set<number>): Set<number> {
-    if (a.size > b.size) [a, b] = [b, a];
-    const out = new Set<number>();
-    for (const v of a) if (b.has(v)) out.add(v);
-    return out;
   }
 
   /**

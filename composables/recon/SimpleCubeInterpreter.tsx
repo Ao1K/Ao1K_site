@@ -14,8 +14,9 @@ import {
   rotateEOBits,
   aufTokenToVal,
   aufValToToken,
-  combineAuf,
+  eoAngleOfAlg,
 } from '../../utils/canonicalizeAuf';
+import type { EOAngle } from '../../utils/canonicalizeAuf';
 import { combineMoves } from '../../utils/moveUtils';
 import { algsetPriority, dedupeByAlgsetPriority, rankSuggestions, suggestionRank } from './suggestionRanking';
 import type { SavedAlgKeys } from './suggestionRanking';
@@ -2273,7 +2274,7 @@ export class SimpleCubeInterpreter {
    * EO value is a 12-bit number. The location of the bit is determined by (edgePieceDirections Mod 12)
    * Edge Oriented = 0, Not Oriented = 1.
    */
-  public getEOvalue(): number {
+  public getEOvalue(angle: EOAngle = 'y0'): number {
     if (!this.ensureState() || !this.currentState) {
       console.warn('Current state not available for EO calculation');
       return -1;
@@ -2287,7 +2288,7 @@ export class SimpleCubeInterpreter {
 
     const verticalColors: ColorName[] = [topInfo.actualColor as ColorName, this.getOppositeColor(topInfo.actualColor) as ColorName];
 
-    const xDirections: DirectionChar[] = ['R', 'L'];
+    const xDirections: DirectionChar[] = angle === 'y' ? ['F', 'B'] : ['R', 'L'];
     const xColors: ColorName[] = [];
 
     for (let i = 20; i <= 25; i++) {
@@ -2348,15 +2349,13 @@ export class SimpleCubeInterpreter {
           });
           isOriented = isVerticalStickerUD;
         } else {
-          // vertical edge not in vertical position: good if vertical sticker faces up-down or front-back
-          const isVerticalStickerYZ = piece.stickers.some((sticker, stickerIndex) => {
+          // vertical edge not in vertical position: good if vertical sticker faces a side off the x-direction axis
+          const isVerticalStickerOffXAxis = piece.stickers.some((sticker, stickerIndex) => {
             const color: ColorName = sticker.colorName;
             const direction = this.getFaceletDirection(i, stickerIndex);
-            return verticalColors.includes(color) &&
-              (direction === 'U' || direction === 'D'
-                || direction === 'F' || direction === 'B');
+            return verticalColors.includes(color) && !!direction && !xDirections.includes(direction);
           });
-          isOriented = isVerticalStickerYZ;
+          isOriented = isVerticalStickerOffXAxis;
         }
       } else {
         // must be f2l edge, must have x-color
@@ -3439,8 +3438,7 @@ export class SimpleCubeInterpreter {
   }
 
   /**
-   * Filters out redundant algorithms that are extensions of shorter ones without unique steps.
-   * Handles edge case where L' doesn't match L L (but should when L2 is spread).
+   * Filters out redundant algorithms that are extensions of shorter ones. The steps each solves is also considered.
    */
   private filterOverlongAlgorithms(suggestions: Suggestion[]): Suggestion[] {
 
@@ -3452,77 +3450,45 @@ export class SimpleCubeInterpreter {
       return countMoves(a.alg) - countMoves(b.alg);
     });
 
-    // Helper function to spread double and triple moves
-    const spreadAlg = (alg: string): string => {
-      return alg.replace(/([A-Za-z])([23])('?)/g, (_, letter, num, prime) => {
-        if (num === '2') return `${letter} ${letter}`;
-        return prime ? letter : `${letter}'`; // 3' → letter, 3 → letter'
-      });
+    const toMoves = (alg: string): string[] =>
+      alg.trim().split(/\s+/).map(move => move.replace(/2'$/, '2'));
+
+    const movesPerSuggestion = suggestions.map(suggestion => toMoves(suggestion.alg));
+
+    const sharesAnyStep = (a: Suggestion, b: Suggestion): boolean =>
+      a.steps.some(step => b.steps.includes(step));
+
+    const addsNoNewStep = (longer: Suggestion, shorter: Suggestion): boolean =>
+      longer.steps.every(step => shorter.steps.includes(step));
+
+    const isRedundantExtension = (longer: number, shorter: number): boolean => {
+      const shortMoves = movesPerSuggestion[shorter];
+      const longMoves = movesPerSuggestion[longer];
+      const lastIndex = shortMoves.length - 1;
+      if (!shortMoves.slice(0, lastIndex).every((move, i) => move === longMoves[i])) return false;
+
+      const lastShortMove = shortMoves[lastIndex];
+      const matchingLongMove = longMoves[lastIndex];
+      if (lastShortMove === matchingLongMove) {
+        // if R U R' and R U R' L U L' match on last common move R', 
+        // longer alg redundant if they have any step in common
+        return sharesAnyStep(suggestions[longer], suggestions[shorter]);
+      }
+
+      // if we have L' U' L and L' U' L2 U L', 
+      // longer alg redundant if shorter alg has all of the longer alg's steps
+      const isHalfOfDouble = matchingLongMove === `${lastShortMove.replace(/'$/, '')}2`;
+      return isHalfOfDouble && addsNoNewStep(suggestions[longer], suggestions[shorter]);
     };
 
-    // Check if longAlg starts with shortAlg (with special handling for last move)
-    const isPrefix = (shortAlg: string, longAlg: string): boolean => {
-      const shortMoves = shortAlg.split(/\s+/);
-      const longMoves = longAlg.split(/\s+/);
+    const keptIndexes: number[] = [];
 
-      if (shortMoves.length > longMoves.length) return false;
-      if (shortMoves.length === 0) return false;
+    suggestions.forEach((_, i) => {
+      const isRedundant = keptIndexes.some(k => isRedundantExtension(i, k));
+      if (!isRedundant) keptIndexes.push(i);
+    });
 
-      // Compare all moves except the last one
-      for (let i = 0; i < shortMoves.length - 1; i++) {
-        if (shortMoves[i] !== longMoves[i]) return false;
-      }
-
-      // Handle last move specially
-      const lastShortMove = shortMoves[shortMoves.length - 1];
-      const lastShortIndex = shortMoves.length - 1;
-      const correspondingLongMove = longMoves[lastShortIndex];
-
-      // If last move has prime and the corresponding position has repeated move
-      if (lastShortMove.endsWith("'")) {
-        const letter = lastShortMove.slice(0, -1);
-        // Check if long alg has "L L" at this position (meaning L2 was spread)
-        if (correspondingLongMove === letter && longMoves[lastShortIndex + 1] === letter) {
-          // L' matches the start of "L L", so it's a prefix
-          return true;
-        }
-      }
-
-      // Otherwise, just check if the moves match
-      return lastShortMove === correspondingLongMove;
-    };
-
-    const spreadSuggestions = suggestions.map(suggestion => spreadAlg(suggestion.alg));
-    const filteredSuggestions: Suggestion[] = [];
-    const filteredSpreadAlgs: string[] = [];
-
-    for (let i = 0; i < suggestions.length; i++) {
-      const suggestion = suggestions[i];
-      const spreadCurrent = spreadSuggestions[i];
-      let isRedundant = false;
-
-      for (let j = 0; j < filteredSuggestions.length; j++) {
-        const spreadFiltered = filteredSpreadAlgs[j];
-
-        // Check if current spread alg starts with an existing spread alg
-        if (isPrefix(spreadFiltered, spreadCurrent)) {
-          // Check if current alg has any unique steps compared to existing
-          const hasUniqueSteps = suggestion.steps.some(step => !filteredSuggestions[j].steps.includes(step));
-
-          if (!hasUniqueSteps) {
-            isRedundant = true;
-            break;
-          }
-        }
-      }
-
-      if (!isRedundant) {
-        filteredSuggestions.push(suggestion);
-        filteredSpreadAlgs.push(spreadCurrent);
-      }
-    }
-
-    return filteredSuggestions;
+    return keptIndexes.map(k => suggestions[k]);
   }
 
   /**
@@ -3547,16 +3513,18 @@ export class SimpleCubeInterpreter {
       return combined.replace(/^(U'?2?)\s+(y'?2?)/, '$2 $1');
     };
 
-    const eoSolvedAt = (m: number): boolean =>
-      algEOvalue !== undefined && currentEO >= 0 && rotateEOBits(currentEO, m) === algEOvalue;
+    const { coreKey, aufPart } = splitLeadingAuf(algText);
+
+    const isCoreEOsolvedAt = (m: number): boolean =>
+      algEOvalue !== undefined && currentEO >= 0
+      && rotateEOBits(currentEO, m) === rotateEOBits(algEOvalue, aufTokenToVal(aufPart));
 
     if (isTopLayer) {
       // the piece is forced to move under any leading AUF, so the reconstructed rotation m is
       // forced too: strip the compiled alg's own leading rotation and recombine it with q.
-      const { coreKey, aufPart } = splitLeadingAuf(algText);
-      const m = combineAuf(q, aufTokenToVal(aufPart));
+      const m = (q + aufTokenToVal(aufPart)) % 4;
       const alg = prependAuf(aufValToToken(m), coreKey);
-      return { alg, hasEOsolved: eoSolvedAt(q) };
+      return { alg, hasEOsolved: isCoreEOsolvedAt(m) };
     }
 
     // neither of this pair's pieces is in the U layer, so no AUF is needed to solve the pair
@@ -3565,26 +3533,20 @@ export class SimpleCubeInterpreter {
     // EO ranking, a leading AUF may still be worth adding purely to also solve EO. Try smallest
     // AUF first ('', U, U', U2); a currentEO whose low 4 bits are all-0 or all-1 is
     // rotation-invariant and could match more than one candidate, so order matters there.
-    const { coreKey, aufPart } = splitLeadingAuf(algText);
-    const coreEOsolvedAt = (m: number): boolean =>
-      algEOvalue !== undefined && currentEO >= 0
-      && rotateEOBits(currentEO, m) === rotateEOBits(algEOvalue, aufTokenToVal(aufPart));
-
     if (wantsEORanking) {
       for (const candidateToken of ['', 'U', "U'", 'U2'] as const) {
-        if (coreEOsolvedAt(aufTokenToVal(candidateToken))) {
+        if (isCoreEOsolvedAt(aufTokenToVal(candidateToken))) {
           return { alg: prependAuf(candidateToken, coreKey), hasEOsolved: true };
         }
       }
     }
 
-    return { alg: coreKey, hasEOsolved: coreEOsolvedAt(0) };
+    return { alg: coreKey, hasEOsolved: isCoreEOsolvedAt(0) };
   }
 
   /**
-   * Whether a zbls alg could apply to this slot at all. Zbls entries are compiled with the other
-   * three slots solved, so they can only match when this pair's own pieces sit in the top layer
-   * or their own slot, and when every middle-layer edge outside this slot is already oriented.
+   * Whether a zbls alg could apply to this slot at all. Only relevant when this pair's own pieces sit in the 
+   * top layer or their own slot, and when every middle-layer edge outside this slot is already oriented.
    */
   private checkZBLSrelevance(cornerIndex: number, edgeIndex: number): boolean {
     if (!this.currentState || this.eoValue < 0) {
@@ -3616,12 +3578,11 @@ export class SimpleCubeInterpreter {
 
   private runF2LQueries(queries: F2LPairQuery[]): Suggestion[] {
 
-    let suggestions: Suggestion[] = [];
-
     const speedEstimator = new AlgSpeedEstimator(this.handedness);
-    const algSet = new Set<string>();
-    const currentEO = this.eoValue;
+    const suggestionsByAlg = new Map<string, Suggestion>();
+    const currentEOByAngle: Record<EOAngle, number> = { y0: this.eoValue, y: this.getEOvalue('y') };
     const labelsByAufFreeCore = new Map<string, Set<string>>();
+    const wantsEORanking = this.enabledAlgsets === 'all' || this.enabledAlgsets.has('zbls');
 
     // iterate and collect suggestions
     queries.forEach(({ query, pairColors, q, isTopLayer, isZBLSrelevant }) => {
@@ -3632,7 +3593,10 @@ export class SimpleCubeInterpreter {
 
       query.scoreBy = 'exact';
 
-      const wantsEORanking = this.enabledAlgsets === 'all' || this.enabledAlgsets.has('zbls');
+      const [firstColor, secondColor] = pairColors;
+      const firstLetter = firstColor ? firstColor.charAt(0).toUpperCase() : '';
+      const secondLetter = secondColor ? secondColor.charAt(0).toUpperCase() : '';
+      const pairLabel = firstLetter && secondLetter ? `${firstLetter}${secondLetter} pair` : 'pair';
 
       // if E layer EO is all good, or good except relevant pairs, then ZBLS algs are relevant even if not final pair
       // zbls never relevant if a piece is misslotted
@@ -3642,13 +3606,8 @@ export class SimpleCubeInterpreter {
       .filter(alg => isZBLSrelevant || alg.step !== 'zbls');
 
       algs.forEach(alg => {
-        const [firstColor, secondColor] = pairColors;
-        const firstLetter = firstColor ? firstColor.charAt(0).toUpperCase() : '';
-        const secondLetter = secondColor ? secondColor.charAt(0).toUpperCase() : '';
-        const pairLabel = firstLetter && secondLetter ? `${firstLetter}${secondLetter} pair` : 'pair';
-
         const { alg: finalAlg, hasEOsolved } = this.reconstructF2LAlg(
-          alg.id, alg.eoValue, q, isTopLayer, wantsEORanking, currentEO
+          alg.id, alg.eoValue, q, isTopLayer, wantsEORanking, currentEOByAngle[eoAngleOfAlg(alg.id)]
         );
 
         // zbls algs are only valid suggestions when they actually solve EO
@@ -3663,26 +3622,22 @@ export class SimpleCubeInterpreter {
           labelsByAufFreeCore.set(core, labels);
         }
 
-        if (!algSet.has(finalAlg)) {
-          algSet.add(finalAlg);
-
-          suggestions.push({
+        const existingSuggestion = suggestionsByAlg.get(finalAlg);
+        if (!existingSuggestion) {
+          suggestionsByAlg.set(finalAlg, {
             alg: finalAlg,
             time: speedEstimator.calcScore(finalAlg),
             steps: [pairLabel],
             hasEOsolved,
             algset: alg.step,
           });
-        } else {
-          // Algorithm already exists - add this step to the existing suggestion
-          const existingSuggestion = suggestions.find(s => s.alg === finalAlg);
-          if (existingSuggestion && !existingSuggestion.steps.includes(pairLabel)) {
-            existingSuggestion.steps.push(pairLabel);
-          }
+        } else if (!existingSuggestion.steps.includes(pairLabel)) {
+          existingSuggestion.steps.push(pairLabel);
         }
       });
     });
 
+    const suggestions = [...suggestionsByAlg.values()];
     suggestions.forEach(suggestion => {
       const labels = labelsByAufFreeCore.get(splitLeadingAuf(suggestion.alg).coreKey);
       labels?.forEach(label => {
@@ -3717,30 +3672,38 @@ export class SimpleCubeInterpreter {
 
     const filteredSuggestions = this.filterF2LSuggestions(suggestions);
 
-    // Calculate cutoff time for each pair
-    const cutoffTimes = new Map<string, number>();
+    const bestTimes = new Map<string, number>();
     filteredSuggestions.forEach(suggestion => {
       suggestion.steps.forEach(pairLabel => {
-        const currentBest = cutoffTimes.get(pairLabel);
-        if (currentBest === undefined || suggestion.time < currentBest) {
-          cutoffTimes.set(pairLabel, suggestion.time * 1.5);
-        }
+        const currentBest = bestTimes.get(pairLabel) ?? Infinity;
+        bestTimes.set(pairLabel, Math.min(currentBest, suggestion.time));
       });
     });
 
-    // Filter suggestions based on their pair's cutoff time
+    const cutoffMultiplier = 1.5;
+    const isWithinCutoff = (suggestion: Suggestion, pairLabel: string) =>
+      suggestion.time <= (bestTimes.get(pairLabel) ?? Infinity) * cutoffMultiplier;
+
     const fastSuggestions = filteredSuggestions.filter(suggestion =>
       suggestion.hasEOsolved ||
       suggestionRank(suggestion, this.savedAlgs) > 0 ||
-      suggestion.steps.some(pairLabel => suggestion.time <= (cutoffTimes.get(pairLabel) || Infinity))
+      suggestion.steps.some(pairLabel => isWithinCutoff(suggestion, pairLabel))
     );
 
-    // Sort EO-solving algs first, then by time (low is better)
+    const unsolvedPairCount = 4 - steps.filter(s => s.type === 'f2l').length;
+    const eoBonusByPairsLeft = [100, 1, 0.5, 0.25];
+
+    const rankingTime = (suggestion: Suggestion): number => {
+      if (!suggestion.hasEOsolved) return suggestion.time;
+      const pairsLeft = unsolvedPairCount - suggestion.steps.length;
+      return suggestion.time - (eoBonusByPairsLeft[pairsLeft] ?? 0);
+    };
+
     return rankSuggestions(
       fastSuggestions,
-      (a, b) => (Number(b.hasEOsolved) - Number(a.hasEOsolved)) || (a.time - b.time),
+      (a, b) => rankingTime(a) - rankingTime(b),
       this.savedAlgs,
-    ).splice(0, 20); // limit to top 20
+    );
   }
 
   private applyHandednessModifier(alg: string, frequency: number): number {

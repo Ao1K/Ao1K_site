@@ -1,10 +1,7 @@
 export type F2LPieceType = 'edge' | 'corner';
 
 /**
- * Effect of a single U turn on a hash character, derived and verified empirically against
- * SimpleCube (see scripts/verifyAufReconstruction.ts) rather than hand-derived, per
- * docs/auf-canonical-search.md section 1. Corner axis-swap behavior under repeated U turns is
- * not a simple mod-4 add, so this table is not reconstructable from the index math alone.
+ * Effect of a single U turn on a hash character
  */
 const EDGE_STEP: Record<string, string> = {
   a: 'd', b: 'a', c: 'b', d: 'c', e: 'e', f: 'f', g: 'g', h: 'h', i: 'i', j: 'j', k: 'k', l: 'l',
@@ -16,40 +13,12 @@ const CORNER_STEP: Record<string, string> = {
   m: 'm', n: 'n', o: 'o', p: 'p', q: 'q', r: 'r', s: 's', t: 't', u: 'u', v: 'v', w: 'w', x: 'x',
 };
 
-function stepTable(pieceType: F2LPieceType): Record<string, string> {
-  return pieceType === 'edge' ? EDGE_STEP : CORNER_STEP;
-}
-
-function normalizeAufIndex(amount: number): number {
-  return ((amount % 4) + 4) % 4;
-}
-
 /**
- * True when this character sits in a U-layer position (i.e. a single U turn actually moves it).
- * Matches the U-layer character ranges tabulated in docs/auf-canonical-search.md section 1.
+ * Check if appplying a U move via stepTable causes the character to changee
  */
 export function isTopLayerChar(pieceType: F2LPieceType, char: string): boolean {
-  return stepTable(pieceType)[char] !== char;
-}
-
-/**
- * canonicalizeChar(pieceType, char) -> smallest of the four characters char cycles through under
- * U turns, plus q, the AUF index that reaches it. Non-U-layer characters are an identity map
- * (q=0). Per docs/auf-canonical-search.md section 1, this is alg- and hash-position-independent.
- */
-export function canonicalizeChar(pieceType: F2LPieceType, char: string): { char: string; q: number } {
-  const step = stepTable(pieceType);
-  let cur = char;
-  let best = char;
-  let bestQ = 0;
-  for (let q = 0; q < 4; q++) {
-    if (cur < best) {
-      best = cur;
-      bestQ = q;
-    }
-    cur = step[cur] ?? cur;
-  }
-  return { char: best, q: bestQ };
+  const table = pieceType === 'edge' ? EDGE_STEP : CORNER_STEP;
+  return table[char] !== char;
 }
 
 /**
@@ -88,19 +57,7 @@ export function aufTokenToVal(token: string): number {
 }
 
 export function aufValToToken(val: number): AufToken {
-  return AUF_VAL_TO_TOKEN[normalizeAufIndex(val)];
-}
-
-/**
- * m = combine(q, c): the preAUF to prepend when executing a matched alg on the live cube.
- * q (the canonicalizing turn that puts the live pair in its canonical position) and c (the
- * matched entry's own canonical preAUF) are both AUF indices in the same convention as
- * EDGE_STEP/CORNER_STEP, so they simply add mod 4. Verified against compiled-f2l-algs.json
- * with zero counterexamples across 1800+ cleanly-collapsed cases in
- * scripts/verifyAufReconstruction.ts; the subtraction convention fails ~27% of those.
- */
-export function combineAuf(q: number, c: number): number {
-  return normalizeAufIndex(q + c);
+  return AUF_VAL_TO_TOKEN[val % 4];
 }
 
 /**
@@ -109,8 +66,33 @@ export function combineAuf(q: number, c: number): number {
  * direction as EDGE_STEP, verified empirically to match in scripts/verifyAufReconstruction.ts
  * (bit j after one U turn always equals the old bit (j+1) mod 4).
  */
+export type EOAngle = 'y0' | 'y';
+
+type Axis = 'x' | 'y' | 'z';
+
+const ROTATION_AXIS_OF_MOVE: Record<string, Axis> = {
+  x: 'x', r: 'x', l: 'x', M: 'x',
+  y: 'y', u: 'y', d: 'y', E: 'y',
+  z: 'z', f: 'z', b: 'z', S: 'z',
+};
+
+export function eoAngleOfAlg(alg: string): EOAngle {
+  const originalAxisAt: Record<Axis, Axis> = { x: 'x', y: 'y', z: 'z' };
+
+  for (const move of alg.trim().split(/\s+/)) {
+    const rotationAxis = ROTATION_AXIS_OF_MOVE[move[0]];
+    const isHalfTurn = move.includes('2');
+    if (!rotationAxis || isHalfTurn) continue;
+
+    const [a, b] = (['x', 'y', 'z'] as Axis[]).filter((axis) => axis !== rotationAxis);
+    [originalAxisAt[a], originalAxisAt[b]] = [originalAxisAt[b], originalAxisAt[a]];
+  }
+
+  return originalAxisAt.z === 'x' ? 'y' : 'y0';
+}
+
 export function rotateEOBits(eoValue: number, q: number): number {
-  const amount = normalizeAufIndex(q);
+  const amount = q % 4;
   const high = eoValue & ~0b1111;
   let low = eoValue & 0b1111;
   for (let i = 0; i < amount; i++) {
