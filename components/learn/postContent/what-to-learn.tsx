@@ -210,9 +210,9 @@ export default function WhatToLearn() {
         <h2>Learn fingertricks</h2>
         <p>{`Arguably the most important extra skill is how you turn the cube. This is closely related to learning special ways to turn the cube called fingertricks. With good fingertricks and practice, it is possible to turn the cube quickly and with low risk.`}</p>
         <h2>{`Don't learn lookahead (yet)`}</h2>
-        <p>{`"Lookahead" is one skill that you may have already heard about. It is the ability to look ahead to the next step while you solve something else. This can eliminate the pauses between steps because you've already identified the next step before it began.`}</p>
-        <p>{`Cubers first learn to use lookahead during F2L. This lesson series recommends practicing lookahead only when you have good F2L solutions to most cases, or roughly when you average about 15 second solves, though you could learn it as early as 20 second average.`}</p>
-        <p>{`This is a difficult skill to learn, and most never master it.`}</p>
+        <p>{`"Lookahead" is one skill that you may have already heard about. It is the ability to look ahead to the next step while you solve something else. This can eliminate the pauses between steps because you've already identified the next step before it began. In CFOP, it's mostly used during F2L.`}</p>
+        <p>{`This sounds very attractive, because beginners pause during F2L a lot. But it's very hard to get good at lookahead. There are easier ways to reduce pauses, as we'll discuss.`}</p>
+        <p>{`This lesson series recommends practicing lookahead only when you have good F2L solutions to most cases, or roughly when you average about 15 second solves.`}</p>
         <h2>Much more</h2>
         <p>{`Each step also has additional concepts that might not be obvious from the outset. One example is recognition strategies. With F2L, OLL, and PLL, it is possible to learn ways to make it faster to recognize what you have to do next.`}</p>
         <p>{`There's plenty of other examples. For now, just know that there is a lot out there to learn. Explore the space however you see fit, or just do a lot of solves and have fun. But either way, now we can begin.`}</p>
