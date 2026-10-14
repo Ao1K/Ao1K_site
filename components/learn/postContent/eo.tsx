@@ -394,7 +394,7 @@ export default function EO() {
           ]} />
         </div>
         <p>{"Once you've identified a bad solution, you can experiment to try to find a better one, or look up an alg or tutorial."}</p>
-        <p>{"On rare occasions, you might rotate or use "}<code>F</code>{" moves anyway. For example, with "}<LessonLink text="this case" href="/algs/?a=f2l&c=y330700000" />{", you could rotate to avoid a longer, clunkier "}<code>RUL</code>{" solution."}</p>
+        <p>{"On rare occasions, you might rotate or use "}<code>F</code>{" moves anyway. For example, with "}<LessonLink text="this case" href="/algs/?a=f2l&c=y332700000" />{", you should rotate to avoid a longer, clunkier "}<code>RUL</code>{" solution."}</p>
         <p>{"Using EO this way may give you many things to fix. Fixing them will slow you down at first, but as you get familiar with the solutions, you will eventually get faster as well."}</p>
 
         <h2>Improving pair choice</h2>
