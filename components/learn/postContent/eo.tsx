@@ -1,11 +1,12 @@
 import LessonList from "../LessonList";
 import LessonBody from "../LessonBody";
-import S from "../LessonSpan";
 import Story from "../LessonStory";
 import LessonLink from "../LessonLink";
 import TitleBar from "../TitleBar";
+import { H1, H2 } from "../LessonHeading";
 import CubeScene from "../CubeScene";
 import CubeImage from "../CubeImage";
+import type { PieceName } from "../cubeProps";
 import InfoIcon from "../../icons/info";
 import FurtherLearning,{ Citation, type Source } from "../FurtherLearning";
 
@@ -38,7 +39,7 @@ const ROTATION_FACELETS = "YGGBYOOYBRWWWWWBWWBBWOBOYBRRBOGRRGRGYYRGGYOGOGRWROYYO
 const ROTATION_Y_FACELETS = "OBYYYGBOGWWWWWWRWBRBOGRRGRGYYRGGYOGOGRWROYYOBBBWOBOYBR";
 const PAIR_CHOICE_FACELETS = "WROYYGOGGYWBWWWGWBGRWYOOBOOOOWBBRYBRBBGYRYWRRRBYOGGYGR";
 
-const CENTERS = ["W", "Y", "G", "R", "B", "O"];
+const CENTERS: PieceName[] = ["W", "Y", "G", "R", "B", "O"];
 
 function OrbitReferenceImage() {
   return (
@@ -93,7 +94,7 @@ export default function EO() {
 
 
 
-        <h1>The good and the bad</h1>
+        <H1>The good and the bad</H1>
         <p>{"With edge orientation, we can define every edge on the cube as good or bad. An edge is good if it can be completely solved with just"}<code>R</code>, <code>L</code>, <code>U</code>, and <code>D</code>{"moves. Click on the two examples below to see what that looks like."}</p>
         <div className="flex flex-row flex-wrap gap-8 pb-6 pt-2">
           <div className="flex flex-col gap-1">
@@ -132,7 +133,7 @@ export default function EO() {
 
 
 
-        <h1>The point of all this</h1>
+        <H1>The point of all this</H1>
         <p>{"This ability to put every edge into one of two categories (good or bad) wouldn't be interesting, except that good edges are usually faster to solve."}</p>
         <p>
           {"We can use the ends of our fingers to do most"}<code>U</code> and <code>D</code>{"moves, and our wrists for "}<code>L</code> and <code>R</code>{`moves. It just so happens that we can use these four types of moves to solve any good edge. This is awesome since it means you can rapidly alternate between using your fingers and your wrists to solve good edges. Certain combinations of these moves are especially fast, like`}
@@ -142,11 +143,11 @@ export default function EO() {
 
 
 
-        <h1>EO recognition</h1>
+        <H1>EO recognition</H1>
         <p>{"In the videos earlier, we had to attempt to solve the edge to check if it was good or not. It'd be a lot more useful if we didn't have turn the cube to check. Then there's no wasted moves. But to do this, we'd need to find some relationship between the colors of cube."}</p>
         <p>{`We'll focus on CFOP in this lesson, but these concepts will apply to any method.`}</p>
 
-        <h2>Comparing colors</h2>
+        <H2>Comparing colors</H2>
         {/* TODO: Add links for CFOP and F2L pages below, when they exist. */}
         <p>{``}</p>
         <p>{`The cube's centers don't move much in CFOP. What if we recognized EO by comparing the edges to the centers in some way? Which sticker on the edge would you look at? Consider this problem before you keep reading.`}</p>
@@ -202,7 +203,7 @@ export default function EO() {
         </div>
         <p>{`In CFOP, this is useful for OLL, but especially F2L, for reasons we'll look at later.`}</p>
 
-        <h2>F2L and EO recognition</h2>
+        <H2>F2L and EO recognition</H2>
         <p>{`Using this new orbit knowledge, we can make some statements about F2L edges and recognizing EO:`}</p>
         <LessonList
           items={[
@@ -214,7 +215,7 @@ export default function EO() {
         <p>{"So which orbit do you use to recognize orientation? It's up to you. From the image above, you can see that the magenta orbit is more visible for top edges. For edges on the left or right sides, the white orbit is more visible."}</p>
         <p>{`If this is a bit confusing, don't worry. We'll go through some examples next. By the end of the lesson, you'll see several ways your new EO knowledge can help speed up your solves.`}</p>
 
-        <h2>F2L EO examples</h2>
+        <H2>F2L EO examples</H2>
         <p>{"Find the red-green edge on the cube below. Is it good or bad?"}</p>
         <p>{"Let's use the magenta orbit. The sticker on this edge that is within the magenta orbit is green. Green matches the front center color. That's enough to tell you it's a good edge, as long as you know that you're looking at an F2L edge."}</p>
         <p>{"We can confirm it's good by solving it with"} <code>R U L D</code>{" moves. Click the play button below."}</p>
@@ -258,7 +259,7 @@ export default function EO() {
         <p>{"These approaches show how one sticker can be used to determine EO. But you still need to know the color of both stickers. Otherwise, you might be looking at an OLL edge or a cross piece."}</p>
         <p>{"If a both stickers aren't visible, you can either try to remember what it was from past moves (lookahead, an advanced skill), deduce what the sticker is, or barring those options, tilt the cube to check directly. You should avoid rotating or doing moves to get information, since that is wasted effort and would slow you down."}</p>
 
-        <h2>OLL edges</h2>
+        <H2>OLL edges</H2>
         <p>{"If you know OLL, you already know how to orient last layer edges. You solve the top cross, which flips all the edges so that all of the same color is on top."}</p>
         <p>{"But it's useful to know that an OLL edge in the middle layer can still considered be oriented or not. Sometimes you'll try to influence OLL during F2L in various ways."}</p>
         <p>{`A correctly oriented OLL edge will always have the top center color in the magenta orbit. Knowing that, is the white-green edge good or bad? Try to remember the orbit diagram and how it was made rather than referring back to it.`}</p>
@@ -275,16 +276,16 @@ export default function EO() {
         <div className="opacity-0 peer-checked/eo5:opacity-100 transition-opacity duration-500 text-neutral-400 mb-4">
           {`It's a bad edge. The sticker in the magenta orbit is green, and green doesn't match the top center color. You can verify by doing`} <code>R</code>{`, which puts the wrong color on top.`}
         </div>
-        <h2>Aside: the ZZ method</h2>
+        <H2>Aside: the ZZ method</H2>
         <p>{"EO is useful for CFOP, but it is an integral part of the ZZ method. Learning ZZ provides great intuition for how EO really works. Check here"}<Citation sources={SOURCES} id="zz-eo" />{" for an excellent introduction to EO and ZZ by crystalcuber. His guide is the source of the idea of orbits and related concepts."}</p>
 
 
 
 
-        <h1>Changing EO</h1>
+        <H1>Changing EO</H1>
         <p>{"So far, we've only shown how to use "}<code>R</code>, <code>L</code>, <code>U</code>, and <code>D</code>{" moves to solve good edges. But if an edge is bad, what do you do?"}</p>
         
-        <h2>Changing F2L EO</h2>
+        <H2>Changing F2L EO</H2>
         <p>{"Doing y rotations is the most typical way to deal with bad edges. If the F2L edge is in the top layer, rotating flips F2L edge orientation. Good F2L edges turn into bad edges, and bad become good."}</p>
         <p>{"Below, we show the same cube with different rotations applied. Only the good F2L edges are highlighted."}</p>
         <div className="flex flex-row flex-wrap pb-6 gap-4">
@@ -319,7 +320,7 @@ export default function EO() {
         <p>{"Due to this difficulty with altering their EO, bad F2L edges in the middle layer are some of the worst cases you can get. Often, you'll want to solve something else and destroy this case in the process."}</p>
         <p>{"If you do have to solve them, you either use "}<code>F</code>{" moves, or you can take the edge out of the middle layer before you rotate and then solve it. Which of these you choose can depend on the case, the pairs after it, and your own preferences."}</p>
 
-        <h2>Partial OLL edge control</h2>
+        <H2>Partial OLL edge control</H2>
         <p>
           {`Influencing OLL edges during F2L can be done in a structured way using algorithm sets like ZBLS`}<Citation sources={SOURCES} id="zbls" />{`.`}
         </p>
@@ -364,7 +365,7 @@ export default function EO() {
         <p>{`You can get better at determining what insert you will use in advance, eliminating the pause. But the amount of practice this takes is significant. You might decide it's not worth it for you.`}</p>
 
 
-        <h1>The hidden magic of EO</h1>
+        <H1>The hidden magic of EO</H1>
         <Story storyParagraphs={[
           <>
             {"Peaku runs through the labyrinth's "}
@@ -375,7 +376,7 @@ export default function EO() {
           "A shard of the glass glimmers in the torchlight. Peaku picks it out and holds it in front of his eye. The world appears to open up. The glass has some property that makes the hedges look almost invisible! He heads for the exit without any more guesses or wrong turns.",
         ]} />
 
-        <h2>Improving efficiency</h2>
+        <H2>Improving efficiency</H2>
         <p>
           {"Recognizing the orientation of the edge gives information on how to solve that edge. You can use this info to reduce the number of moves or rotations in your solves."}
         </p>
@@ -387,7 +388,7 @@ export default function EO() {
           "Rotate the entire cube",
         ]} />
         <div className="-mt-4 pl-5.5">
-          <S span="OR" />
+          <span>{"OR"}</span>
         </div>
         <div>
           <LessonList style='alpha' items={[
@@ -398,7 +399,7 @@ export default function EO() {
         <p>{"On rare occasions, you might rotate or use "}<code>F</code>{" moves anyway. For example, with "}<LessonLink text="this case" href="/algs/?a=f2l&c=y332700000" />{", you should rotate to avoid a longer, clunkier "}<code>RUL</code>{" solution."}</p>
         <p>{"Using EO this way may give you many things to fix. Fixing them will slow you down at first, but as you get familiar with the solutions, you will eventually get faster as well."}</p>
 
-        <h2>Improving pair choice</h2>
+        <H2>Improving pair choice</H2>
         <p>{"Pairs with good edges are typically faster to solve than bad-edge pairs, so when there's multiple pairs to solve, it's nice to solve good-edge pairs first."}</p>
         <p>{"Doing x, y, and z rotations in a solve is essentially time spent doing nothing. In a perfect world, only one y rotation would be needed in a solve. You can solve cross and all good-edge pairs, rotate to turn all the bad edges into good edges, and finally solve the remaining pairs. And indeed, EO is a powerful tool for you to see how to reduce unnecessary rotations and "}<code>F</code>{" moves."}</p>
         <p>{"But reality is more complicated. What if a very fast pair would require a rotation before all good-edge pairs are solved? What if you have multiple bad edges in the middle layer? The choice is yours."}</p>
@@ -418,7 +419,7 @@ export default function EO() {
           {`Green-orange is slightly better. It's typically better to solve good-edge pairs first, but the orange-blue edge is in the middle layer, so rotating won't change its EO. This means rotating and solving orange-green first is okay. Orange-blue is okay as well if you can avoid breaking up the free orange-green pair. There's actually `}<LessonLink text="a reasonable way of doing that!" href="https://www.ao1k.com/recon/?solution=D_R-_U-_R_D-%0AU2_F_U-_F-_%2F%2F_chose_not_to_rotate_because_blue%7E-red_pair_has_a_good_edge%0AU_R-_U_R_U-_R-_U_R%0Ay_U2_R_U2-_R2-_U-_R2_U-_R-%0A%2F%2F_last_layer_not_shown&scramble=D_L2_D2_F_L_B_L2_F_D_L_U-_F2_D_U2_L2_D2_L2_F2_L2_D_R2_B2_x2_y-" /> {`But speaking practically, orange-green is better because the thought process is so much simpler. It's a free pair!`}
         </div>
 
-        <h2>Simplifying your memory</h2>
+        <H2>Simplifying your memory</H2>
         <p>{`Once you've recognized an edge as good or bad, it's possible to keep that knowledge in your brain. At times, this can be easier than remembering both colors on the edge.`}</p>
         <p>{`Say in the last example you decide to solve the orange-blue pair first. You see orange-green is a bad edge. Since you'll use `}<code>RULD</code>{` moves to solve orange-blue, you know, whatever happens to orange-green, it'll still be a bad edge. So you might choose to rotate immediately after you solve orange-blue even if you don't know exactly what case it is.`}</p>
         <p>{`This example is a bit too simple, since you'll be able to keep track of orange-green in other ways just as easily. A more realistic example might be remembering the orientation of the red-green edge as you solve these two other pairs.`}</p>

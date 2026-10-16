@@ -19,6 +19,18 @@ export const lessons: Lesson[] = [
     category: "CFOP",
   },
   {
+    slug: "notation",
+    title: "Notation",
+    description: "There is a mysterious powerful language. Learn 3x3 cubing notation from just a few simple rules.",
+    category: "CFOP",
+  },
+  {
+    slug: "better-cross",
+    title: "Better Cross",
+    description: "There is no clear path. Let's find one. Learn how to find ways to improve at cross.",
+    category: "CFOP",
+  },
+  {
     slug: "keyhole",
     title: "Keyhole",
     description: "There is a long road. Learn how keyhole can set you down the path towards greater efficiency.",

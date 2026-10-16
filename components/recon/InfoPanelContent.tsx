@@ -9,7 +9,6 @@ import QuestionIcon from '../icons/info';
 import DropdownIcon from '../icons/dropdown';
 import Image from 'next/image';
 import InfoPanelSection from './InfoPanelSection';
-import LessonLink from '../learn/LessonLink';
 import ExternalLink from '../ExternalLink';
 
 const dummyButtons = [

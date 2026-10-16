@@ -3,6 +3,7 @@ import TitleBar from "../TitleBar";
 import Story from "../LessonStory";
 import LessonList from "../LessonList";
 import ExternalLink from "../../ExternalLink";
+import { H1, H2 } from "../LessonHeading";
 
 export default function HowToLearn() {
   return (
@@ -25,7 +26,7 @@ export default function HowToLearn() {
         <SolveTimeDecayGraph />
         <p>{`It's also important to have fun. If you stop having fun, you're more likely to not practice, and so you won't improve. But are practice and fun enough?`}</p>
 
-        <h1>The learning cycle</h1>
+        <H1>The learning cycle</H1>
         <Story storyParagraphs={[
           `"With the right chemistry, it activates. Look!" Jera waves the wand around, colors shifting on its surfaces. `,
           `Their footsteps ring where metal reaches from the ground. Peaku inspects a decaying tree amidst the greenery. Insects writhe through the crumbling wood. He has a bad feeling.`,
@@ -46,7 +47,7 @@ export default function HowToLearn() {
         <p>{`But you also can't practice everything correctly right away. There would be too much to focus on. So instead you find something to learn, learn it, and then practice it in various ways. Then you repeat the cycle.`}</p>
         <LearningCycleDiagram />
 
-        <h2>Finding things to learn</h2>
+        <H2>Finding things to learn</H2>
         <p>{`Never fall into the assumption that you have "mastered" a topic. There is always something you can improve at. The lessons on this website are here to give you an idea about what some of those things might be.`}</p>
         <p>{`In many of these lessons, you will see links to other tutorials on the internet. You should also explore on your own. YouTube in particular is a great place to find tutorials and walkthroughs of solves. Good ideas can come from anywhere, but also try to take advice from people you trust.`}</p>
         <p>{`Here are some specific people worth checking out. Not a complete list!`}</p>
@@ -82,7 +83,7 @@ export default function HowToLearn() {
             <ExternalLink href="https://discord.gg/cubehead" text="Cubehead discord server" />
           </li>
         </ol>
-        <h2>Learning things</h2>
+        <H2>Learning things</H2>
         <p>{`After you've immersed yourself in all this content, the next step is to actually learn something. Try not to get too caught up on this step. You won't be wasting much time if you learn things a bit out of order.`}</p>
         <p>{`Be sure to go through a tutorial all the way so you don't miss anything. Stay persistent, but when you get stuck, you may want to ask the community for help. Don't say:`}</p>
         <p>{`"I'm stuck."`}</p>
@@ -90,7 +91,7 @@ export default function HowToLearn() {
         <p>{`"I was following `}<b>[tutorial]</b>{` and can't figure out how to do `}<b>[thing]</b>{`. Help?"`}</p>
         {/* TODO: link to first alg tutorial */}
         <p>{`The best way to learn something changes depending on who you are and what you're learning. If you're learning algorithms (algs), there's all sorts of techniques you can use to make it go smoother. We'll talk more about these and other techniques when they become relevant.`}</p>
-        <h2>Practicing</h2>
+        <H2>Practicing</H2>
         {/* TODO: link to F2L tutorial */}
         <p>{`Practicing is how you remember and get fast at something. Without enough practice, that new thing you learned might actually make your times go up. But as you practice it more, your times should hopefully go down, and eventually they might even level off as you get truly familiar with it.`}</p>
         <LearningJumpsGraph />

@@ -1,4 +1,5 @@
-import { buildSceneIsland, type AuthoredScene } from "../../utils/cubeSceneAuthoring";
+import { buildSceneIsland } from "../../utils/cubeSceneAuthoring";
+import type { CubeLookProps, CubeSceneLine } from "./cubeProps";
 import { islandFrameZero, SCENE_DATA_ATTR, CUBE_SVG_CLASS } from "../../utils/cubeSceneIsland";
 import { buildCubeSvgBody, SCENE_PX } from "../../utils/cubeSvgRender";
 
@@ -9,22 +10,36 @@ function embeddableJson(value: unknown): string {
   return JSON.stringify(value).replace(/</g, "\\u003c");
 }
 
-export type CubeSceneProps = AuthoredScene & { className?: string };
+export type CubeSceneProps = CubeLookProps & {
+  /** Animation steps played in order. Click the scene to play or pause. No moves means a still image. */
+  lines?: CubeSceneLine[];
+  /** Restart after a 1s pause at the end. Otherwise it stops and shows the play button. Default `false`. */
+  loop?: boolean;
+  /** Show a progress bar under the cube. Default `false`. */
+  progress?: boolean;
+  /** Apply the first line's highlight before playback starts. Default `false`. */
+  startHighlighted?: boolean;
+  /** Drag the cube to rotate the view. Default `false`. */
+  orbit?: boolean;
+};
 
 export default function CubeScene({ className, ...scene }: CubeSceneProps) {
   const island = buildSceneIsland(scene);
   const frameZero = buildCubeSvgBody(islandFrameZero(island));
-  const interactive = island.lines.some((line) => line.moves.length > 0);
+  const hasMoves = island.lines.some((line) => line.moves.length > 0);
   const sceneAttr = { [SCENE_DATA_ATTR]: "" };
 
   return (
-    <div {...sceneAttr} className={`cube-scene${className ? ` ${className}` : ""}`}>
+    <div
+      {...sceneAttr}
+      className={`cube-scene${island.orbit ? " orbit" : ""}${className ? ` ${className}` : ""}`}
+    >
       <svg
         className={CUBE_SVG_CLASS}
         viewBox={`0 0 ${SCENE_PX} ${SCENE_PX}`}
         dangerouslySetInnerHTML={{ __html: frameZero }}
       />
-      {interactive && (
+      {hasMoves && (
         <div className="overlay" style={{ background: "rgba(0,0,0,0.45)" }}>
           <svg className="icon-play" viewBox="0 0 256 256" style={{ opacity: 0.85 }}>
             <path d={PLAY_PATH} />
@@ -36,7 +51,7 @@ export default function CubeScene({ className, ...scene }: CubeSceneProps) {
           <div className="progress-fill" />
         </div>
       )}
-      {interactive && (
+      {(hasMoves || island.orbit) && (
         <script
           type="application/json"
           dangerouslySetInnerHTML={{ __html: embeddableJson(island) }}
