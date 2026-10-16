@@ -21,7 +21,7 @@ export const lessons: Lesson[] = [
   {
     slug: "notation",
     title: "Notation",
-    description: "There is a mysterious powerful language. Learn 3x3 cubing notation from just a few simple rules.",
+    description: "There is a mysterious, powerful language. Learn 3x3 cubing notation from just a few simple rules.",
     category: "CFOP",
   },
   {
