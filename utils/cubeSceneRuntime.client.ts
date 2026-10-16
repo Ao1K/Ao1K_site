@@ -71,6 +71,8 @@ function bezierEase(x1: number, y1: number, x2: number, y2: number): (x: number)
 const easeMove = bezierEase(0.42, 0, 0.58, 1)
 const easeFade = bezierEase(0.25, 0.1, 0.25, 1)
 
+const ORBIT_DRAG_THRESHOLD_PX = 4
+
 function rotateSlot(pos: Slot, axis: Axis, angle: number): Slot {
   const [x, y, z] = pos
   const c = Math.round(Math.cos((angle * Math.PI) / 180))
@@ -87,11 +89,12 @@ function axisIndex(axis: Axis): number {
 export function createScene(root: HTMLElement, island: SceneIsland): void {
   const svgEl = root.querySelector<SVGElement>(`.${CUBE_SVG_CLASS}`)
   const overlayEl = root.querySelector<HTMLElement>('.overlay')
-  if (!svgEl || !overlayEl) return
-  const iconPlay = overlayEl.querySelector<HTMLElement>('.icon-play')
+  if (!svgEl) return
+  const iconPlay = overlayEl?.querySelector<HTMLElement>('.icon-play') ?? null
   const progressFill = island.progress ? root.querySelector<HTMLElement>('.progress-fill') : null
 
-  const geometry: SceneGeometry = sceneGeometry(island.angles)
+  let angles = island.angles
+  let geometry: SceneGeometry = sceneGeometry(angles)
   const looks: CubeLooks = cubeLooks(island.colors, island.shade, island.dim)
 
   const cubies: RuntimeCubie[] = cubiesFromState(stateFromFacelets(island.facelets)).map(c => {
@@ -206,7 +209,8 @@ export function createScene(root: HTMLElement, island: SceneIsland): void {
   }
 
   function updateOverlay(): void {
-    overlayEl!.style.background = paused ? 'rgba(0,0,0,0.45)' : 'transparent'
+    if (!overlayEl) return
+    overlayEl.style.background = paused ? 'rgba(0,0,0,0.45)' : 'transparent'
     if (iconPlay) iconPlay.style.opacity = paused ? '0.85' : '0'
   }
 
@@ -297,12 +301,47 @@ export function createScene(root: HTMLElement, island: SceneIsland): void {
     timeoutId = setTimeout(() => playLine(0), CYCLE_PAUSE_START_MS)
   }
 
+  let dragStart: { x: number; y: number; angles: { x: number; y: number } } | null = null
+  let dragged = false
+
+  if (island.orbit) {
+    root.addEventListener('pointerdown', e => {
+      if (e.button !== 0) return
+      dragStart = { x: e.clientX, y: e.clientY, angles }
+      dragged = false
+      root.setPointerCapture(e.pointerId)
+    })
+    root.addEventListener('pointermove', e => {
+      if (!dragStart) return
+      const dx = e.clientX - dragStart.x
+      const dy = e.clientY - dragStart.y
+      if (!dragged && Math.hypot(dx, dy) < ORBIT_DRAG_THRESHOLD_PX) return
+      dragged = true
+      const degPerPx = 360 / root.clientHeight
+      angles = {
+        x: Math.max(-90, Math.min(90, dragStart.angles.x + dy * degPerPx)),
+        y: dragStart.angles.y - dx * degPerPx,
+      }
+      geometry = sceneGeometry(angles)
+      scheduleFrame()
+    })
+    const endDrag = () => {
+      dragStart = null
+    }
+    root.addEventListener('pointerup', endDrag)
+    root.addEventListener('pointercancel', endDrag)
+  }
+
   setHighlight(restHighlight(island), false)
 
   if (totalMoves === 0) return
 
   updateOverlay()
   root.addEventListener('click', () => {
+    if (dragged) {
+      dragged = false
+      return
+    }
     paused = !paused
     updateOverlay()
     if (paused) {

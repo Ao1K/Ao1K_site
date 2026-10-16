@@ -21,6 +21,7 @@ export type SceneIsland = {
   loop: boolean
   progress: boolean
   startHighlighted: boolean
+  orbit: boolean
 }
 
 export const SCENE_DATA_ATTR = 'data-cube-scene'

@@ -110,7 +110,7 @@ export default function LessonSidebar() {
 
       {/* mobile drawer */}
       <aside
-        className={`md:hidden fixed top-0 left-0 z-40 h-screen w-64 bg-primary-900 border-r border-primary-700 overflow-y-auto pt-16 transition-transform duration-200 ${
+        className={`md:hidden fixed top-0 left-0 z-40 h-screen w-64 bg-primary-900 border-r border-neutral-700 overflow-y-auto pt-16 transition-transform duration-200 ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -118,7 +118,7 @@ export default function LessonSidebar() {
       </aside>
 
       {/* desktop sidebar */}
-      <aside className="hidden md:block sticky top-0 h-screen w-56 shrink-0 overflow-y-auto pt-16 border-r border-primary-700 bg-primary-900">
+      <aside className="hidden md:block sticky top-0 h-screen w-56 shrink-0 overflow-y-auto pt-16 border-r border-neutral-600 bg-primary-900">
         {sidebar}
       </aside>
     </>

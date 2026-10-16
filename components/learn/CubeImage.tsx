@@ -2,19 +2,11 @@ import { DEFAULT_SCENE_LOOK } from "../../utils/cubeSceneAuthoring";
 import { stateFromFacelets } from "../../utils/cubeMoves";
 import { SimpleCube } from "../../composables/recon/SimpleCube";
 import { buildCubeSvgBody, SCENE_PX, type CubeSvgOptions } from "../../utils/cubeSvgRender";
-import type { Color } from "../../composables/recon/SimpleCube";
+import type { CubeLookProps, PieceName } from "./cubeProps";
 
-export type CubeImageProps = {
-  scramble?: string;
-  facelets?: string;
-  angles?: { x: number; y: number };
-  colors?: Record<Color, string>;
-  shade?: string;
-  dim?: number;
-  hints?: boolean;
-  labels?: boolean;
-  highlight?: string[] | null;
-  className?: string;
+export type CubeImageProps = CubeLookProps & {
+  /** Pieces to keep bright. All others dim. `null` or omitted shows every piece bright. */
+  highlight?: PieceName[] | null;
 };
 
 export default function CubeImage({ className, ...image }: CubeImageProps) {
