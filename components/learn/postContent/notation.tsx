@@ -203,7 +203,7 @@ export default function Notation() {
             />
           </div>
         </div>
-        <p>{`You can remember these as `}<b>"MES follows LDF"</b>{`. Or you can remember that each slice move, such as `}<code>M</code>{`, follows the layer that's closer to it in the alphabet, such as`}<code>L</code>.</p>
+        <p>{`You can remember these as `}<b>"MES follows LDF"</b>{`. Or you can remember that each slice move follows the letter of the layer that's closer to it in the alphabet. For example, the letter L is closer to the letter M than R is, so `}<code>M</code>{` follows `}<code>L</code>.</p>
         <H1>Rule 6: Parentheses mean groups</H1>
         <p>{`Final one. Occasionally, you will see moves grouped together using parenthesis like this:`}</p>
         <p><code>{`F R U R' U' F`}</code><span className="text-4xl leading-0">{` → `}</span><code>{`F (R U R' U') F`}</code></p>
