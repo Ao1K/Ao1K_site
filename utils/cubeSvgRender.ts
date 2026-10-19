@@ -1,4 +1,4 @@
-import type { Color, CubeState } from '../composables/recon/SimpleCube'
+import type { Color } from '../composables/recon/SimpleCube'
 
 export const CUBIE_PX = 100
 export const CUBE_PX = CUBIE_PX * 3
@@ -157,7 +157,12 @@ const FACE_NAMES = ['up', 'down', 'front', 'right', 'back', 'left'] as const
 
 type FaceName = (typeof FACE_NAMES)[number]
 
-export const COLOR_ORDER: Color[] = ['W', 'Y', 'G', 'R', 'B', 'O']
+export type StickerColor = Color | 'X'
+export type StickerState = StickerColor[][][]
+
+const BLANK_STICKER_HEX = '#888888'
+
+export const COLOR_ORDER: StickerColor[] = ['W', 'Y', 'G', 'R', 'B', 'O', 'X']
 
 const FACE_ORIENT: Record<FaceName, Mat> = {
   up: chain(rotateX(90), translate(0, 0, HALF_CUBIE)),
@@ -189,16 +194,16 @@ const LABEL_ORIENT: Record<string, Mat> = {
 export const LABEL_FONT_PX = Math.round(LABEL_SIZE * 0.64)
 export const LABEL_STROKE_PX = Math.round(LABEL_SIZE * 0.06)
 
-function pieceNameOf(colors: Color[]): string {
+function pieceNameOf(colors: StickerColor[]): string {
   const primary = colors.includes('W') ? 'W' : colors.includes('Y') ? 'Y' : ''
   const rest = colors.filter(c => c !== 'W' && c !== 'Y').slice().sort().join('')
   return primary + rest
 }
 
-export type Sticker = { faceIndex: number; color: Color }
+export type Sticker = { faceIndex: number; color: StickerColor }
 export type Cubie = { x: number; y: number; z: number; piece: string; stickers: Sticker[] }
 
-export function cubiesFromState(state: CubeState): Cubie[] {
+export function cubiesFromState(state: StickerState): Cubie[] {
   const cubies: Cubie[] = []
   for (let x = -1; x <= 1; x++) {
     for (let y = -1; y <= 1; y++) {
@@ -233,7 +238,7 @@ export function cubeLooks(colorHex: Record<Color, string>, shadeColor: string, d
   const face: LookPair[] = []
   const hint: LookPair[] = []
   COLOR_ORDER.forEach(name => {
-    const color = parseColor(colorHex[name])
+    const color = parseColor(name === 'X' ? BLANK_STICKER_HEX : colorHex[name])
     const band = over(HINT_BORDER, color)
     face.push({
       bright: { frame: OPAQUE_BLACK, fill: color, opacity: 1 },
@@ -361,7 +366,7 @@ function svgDocument(body: string): string {
 type Drawable = { depth: number; markup: string }
 
 export type CubeSvgOptions = {
-  state: CubeState
+  state: StickerState
   angles: { x: number; y: number }
   colorHex: Record<Color, string>
   showFacelets: boolean

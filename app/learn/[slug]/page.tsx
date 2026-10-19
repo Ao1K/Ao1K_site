@@ -3,11 +3,20 @@ import { notFound } from "next/navigation";
 import { lessons } from "../../../components/learn/lessons";
 import EO from "../../../components/learn/postContent/eo";
 import Keyhole from "../../../components/learn/postContent/keyhole";
+import HowToLearn from "../../../components/learn/postContent/how-to-learn";
+import WhatToLearn from "../../../components/learn/postContent/what-to-learn";
+import BetterCross from "../../../components/learn/postContent/better-cross";
+import Notation from "../../../components/learn/postContent/notation";
 import CubeSceneLoader from "../../../components/learn/CubeSceneLoader";
+import LessonFooterNav from "../../../components/learn/LessonFooterNav";
 
 const lessonComponents: Record<string, React.ComponentType> = {
   eo: EO,
   keyhole: Keyhole,
+  "how-to-learn": HowToLearn,
+  "what-to-learn": WhatToLearn,
+  "better-cross": BetterCross,
+  notation: Notation,
 };
 
 export function generateStaticParams() {
@@ -26,7 +35,7 @@ export async function generateMetadata({
 
   return {
     title: lessonTitle,
-    description: lesson?.description ?? "Learn to cube",
+    description: lesson?.description ?? "Learn CFOP",
   };
 }
 
@@ -47,6 +56,7 @@ export default async function LearnLesson({
     >
       <link rel="preload" href="/learn/cubeScene.js" as="script" />
       <Component />
+      <LessonFooterNav slug={slug} />
       <CubeSceneLoader />
     </div>
   );

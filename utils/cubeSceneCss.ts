@@ -4,10 +4,25 @@ export const CUBE_SCENE_CSS = `.cube-scene {
   cursor: pointer;
 }
 
+.cube-scene.orbit {
+  cursor: grab;
+  touch-action: none;
+}
+
+.cube-scene.orbit:active {
+  cursor: grabbing;
+}
+
 .cube-scene .cube-svg {
   display: block;
   width: 100%;
   height: auto;
+}
+
+.cube-scene .cube-svg text {
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .cube-scene .overlay {

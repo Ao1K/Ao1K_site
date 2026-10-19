@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { toHeadingSlug } from "./LessonHeading";
 
 type LessonNavigatorItem = {
   slug: string;
@@ -10,10 +11,6 @@ type LessonNavigatorItem = {
 };
 
 const ACTIVE_OFFSET = 144;
-
-function toSlug(text: string) {
-  return text.toLowerCase().replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "-");
-}
 
 function collectHeadings(lessonContent: HTMLElement) {
   const usedSlugs = new Set<string>();
@@ -31,7 +28,7 @@ function collectHeadings(lessonContent: HTMLElement) {
       let slug = heading.id.trim();
 
       if (!slug) {
-        const baseSlug = toSlug(title);
+        const baseSlug = toHeadingSlug(title);
 
         if (!baseSlug) {
           return null;

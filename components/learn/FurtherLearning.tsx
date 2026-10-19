@@ -27,18 +27,18 @@ export default function FurtherLearning({ sources }: { sources: readonly Source[
   return (
     <section>
       <h1>Further learning</h1>
-      <ol className="list-decimal list-inside space-y-2 mb-4 rounded-sm bg-dark_accent px-4 py-3 text-base text-primary-900 sm:text-md">
+      <ol className="list-decimal list-inside space-y-2 mb-4 rounded-sm border border-dark_accent px-4 py-3 text-base text-primary-100 sm:text-md">
         {sources.map((source) => (
           <li key={source.id} id={`source-${source.id}`} className="scroll-mt-24">
             <a
               href={source.href}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-medium text-light_accent hover:text-primary-600!"
+              className="font-medium text-dark_accent hover:text-primary-300!"
             >
               {source.title}
             </a>
-            {source.attribution && <span className="text-primary-700">{` ${source.attribution}`}</span>}
+            {source.attribution && <span className="text-primary-200">{` ${source.attribution}`}</span>}
           </li>
         ))}
       </ol>

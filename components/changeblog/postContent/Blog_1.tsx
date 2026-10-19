@@ -1,4 +1,5 @@
 import LeadParagraph from "./LeadParagraph";
+import ExternalLink from "../../ExternalLink";
 
 export default function Blog_1() {
   return (
@@ -14,14 +15,7 @@ export default function Blog_1() {
           {`The issue is, some of the stuff you've made already exists. There's already databases of algorithms and reconstructions. There's already recon tools, alg trainers, analysis engines, and most certainly timers.`}
         </p>
         <p className="pt-6">
-          <a
-            href="https://cstimer.net"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline underline-offset-1"
-          >
-            cstimer.net
-          </a>
+          <ExternalLink href="https://cstimer.net" text="cstimer.net" />
           {` is a full-featured cubing timer for basically every use case. It's open source and simple to use. It runs locally in your browser, and it costs nothing. We don't need another cstimer, just shinier. Or a cstimer, just without the things that you don't personally use. And we certainly don't need to see a lesser version one that you made just for practice or for fun.`}
         </p>
         <p className="pt-6">

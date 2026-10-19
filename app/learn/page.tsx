@@ -6,7 +6,7 @@ import TitleBar from "../../components/learn/TitleBar";
 
 export const metadata: Metadata = {
   title: "Lessons",
-  description: "Learn to cube",
+  description: "Learn CFOP",
 };
 
 export default function Learn() {

@@ -69,11 +69,12 @@ export function formatCubeSceneJsx(scene: AuthoredScene): string {
   if (scene.loop) props.push({ name: 'loop', value: '' })
   if (scene.progress) props.push({ name: 'progress', value: '' })
   if (scene.startHighlighted) props.push({ name: 'startHighlighted', value: '' })
+  if (scene.orbit) props.push({ name: 'orbit', value: '' })
 
   return serialize('CubeScene', props)
 }
 
-export type AuthoredImage = Omit<AuthoredScene, 'lines' | 'loop' | 'progress' | 'startHighlighted'> & {
+export type AuthoredImage = Omit<AuthoredScene, 'lines' | 'loop' | 'progress' | 'startHighlighted' | 'orbit'> & {
   highlight?: string[] | null
 }
 

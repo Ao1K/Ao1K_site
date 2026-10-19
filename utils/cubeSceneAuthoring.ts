@@ -37,6 +37,7 @@ export type AuthoredScene = {
   loop?: boolean
   progress?: boolean
   startHighlighted?: boolean
+  orbit?: boolean
 }
 
 function faceletsOf(scene: AuthoredScene): string {
@@ -72,5 +73,6 @@ export function buildSceneIsland(scene: AuthoredScene): SceneIsland {
     loop: scene.loop ?? false,
     progress: scene.progress ?? false,
     startHighlighted: scene.startHighlighted ?? false,
+    orbit: scene.orbit ?? false,
   }
 }
