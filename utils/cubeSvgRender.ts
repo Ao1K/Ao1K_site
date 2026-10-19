@@ -26,49 +26,79 @@ export type SceneView = { hintElevation: number; cubeScale: number; perspective:
 
 export const DEFAULT_SCENE_VIEW: SceneView = { hintElevation: 1.5, cubeScale: 0.85, perspective: 1000 }
 
-export type Mat = number[][]
+export type Mat = number[]
 
 export function mul(a: Mat, b: Mat): Mat {
-  const out: Mat = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
-  for (let r = 0; r < 4; r++) {
+  const out: Mat = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  for (let row = 0; row < 16; row += 4) {
     for (let c = 0; c < 4; c++) {
-      out[r][c] = a[r][0] * b[0][c] + a[r][1] * b[1][c] + a[r][2] * b[2][c] + a[r][3] * b[3][c]
+      out[row + c] = a[row] * b[c] + a[row + 1] * b[4 + c] + a[row + 2] * b[8 + c] + a[row + 3] * b[12 + c]
     }
   }
   return out
 }
 
 function chain(...mats: Mat[]): Mat {
-  return mats.reduce(mul, [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
+  return mats.reduce(mul, [
+    1, 0, 0, 0,
+    0, 1, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, 1,
+  ])
 }
 
 export function translate(x: number, y: number, z: number): Mat {
-  return [[1, 0, 0, x], [0, 1, 0, y], [0, 0, 1, z], [0, 0, 0, 1]]
+  return [
+    1, 0, 0, x,
+    0, 1, 0, y,
+    0, 0, 1, z,
+    0, 0, 0, 1,
+  ]
 }
 
 function scaleXY(s: number): Mat {
-  return [[s, 0, 0, 0], [0, s, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
+  return [
+    s, 0, 0, 0,
+    0, s, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, 1,
+  ]
 }
 
 function rotateX(deg: number): Mat {
   const a = (deg * Math.PI) / 180
   const c = Math.cos(a)
   const s = Math.sin(a)
-  return [[1, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, 1]]
+  return [
+    1, 0, 0, 0,
+    0, c, -s, 0,
+    0, s, c, 0,
+    0, 0, 0, 1,
+  ]
 }
 
 function rotateY(deg: number): Mat {
   const a = (deg * Math.PI) / 180
   const c = Math.cos(a)
   const s = Math.sin(a)
-  return [[c, 0, s, 0], [0, 1, 0, 0], [-s, 0, c, 0], [0, 0, 0, 1]]
+  return [
+    c, 0, s, 0,
+    0, 1, 0, 0,
+    -s, 0, c, 0,
+    0, 0, 0, 1,
+  ]
 }
 
 function rotateZ(deg: number): Mat {
   const a = (deg * Math.PI) / 180
   const c = Math.cos(a)
   const s = Math.sin(a)
-  return [[c, -s, 0, 0], [s, c, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
+  return [
+    c, -s, 0, 0,
+    s, c, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, 1,
+  ]
 }
 
 export type Axis = 'x' | 'y' | 'z'
@@ -84,7 +114,12 @@ export function cubeRotation(axis: Axis, deg: number): Mat {
 }
 
 function perspective(d: number): Mat {
-  return [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, -1 / d, 1]]
+  return [
+    1, 0, 0, 0,
+    0, 1, 0, 0,
+    0, 0, 1, 0,
+    0, 0, -1 / d, 1,
+  ]
 }
 
 function aboutOrigin(ox: number, oy: number, m: Mat): Mat {
@@ -93,10 +128,10 @@ function aboutOrigin(ox: number, oy: number, m: Mat): Mat {
 
 export function apply(m: Mat, x: number, y: number, z: number) {
   return {
-    x: m[0][0] * x + m[0][1] * y + m[0][2] * z + m[0][3],
-    y: m[1][0] * x + m[1][1] * y + m[1][2] * z + m[1][3],
-    z: m[2][0] * x + m[2][1] * y + m[2][2] * z + m[2][3],
-    w: m[3][0] * x + m[3][1] * y + m[3][2] * z + m[3][3],
+    x: m[0] * x + m[1] * y + m[2] * z + m[3],
+    y: m[4] * x + m[5] * y + m[6] * z + m[7],
+    z: m[8] * x + m[9] * y + m[10] * z + m[11],
+    w: m[12] * x + m[13] * y + m[14] * z + m[15],
   }
 }
 
