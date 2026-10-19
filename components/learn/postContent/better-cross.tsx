@@ -11,7 +11,7 @@ export default function BetterCross() {
       <TitleBar title="Better Cross" subtitle="" audience="all" />
       <LessonBody>
         <H1>Disclaimer</H1>
-        <p>{`Cross is the first step of the CFOP method. This lesson is intended for people who already know a basic way of solving cross, but want to get better.`}</p>
+        <p>{`Cross is the first step of the CFOP method. This lesson is intended for people who already know a basic way of solving cross and want to get better.`}</p>
         <p>{`If you don't already know cross, you have two options for how to learn it:`}</p>
         <LessonList items={[
           <span className="font-normal">
