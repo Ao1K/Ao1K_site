@@ -108,7 +108,7 @@ export default function Notation() {
         <div className="grid grid-cols-[auto_auto_1fr] gap-x-3 gap-y-2 mb-4">
           <code>R</code><span>=</span><span>Turn the Right face clockwise</span>
           <code>U2'</code><span>=</span><span>Turn the Up face twice counterclockwise</span>
-          <code>R'</code><span>=</span><span>Turn Right face counterclockwise</span>
+          <code>R'</code><span>=</span><span>Turn the Right face counterclockwise</span>
         </div>
         <div className="flex flex-col gap-1 mb-4">
           <span className="text-sm font-bold">{`Modifiers example (alg shown: R U2' R')`}</span>
