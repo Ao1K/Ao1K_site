@@ -1,0 +1,1447 @@
+{
+  "url": "https://development.d1n9ggswreh25t.amplifyapp.com/recon/",
+  "profile": "mobile",
+  "date": "2026-10-19T05:21:16.975Z",
+  "results": [
+    {
+      "timing": {
+        "ttfb": 253.90087890625,
+        "fcp": 1346.0009765625,
+        "lcp": 3018.0009765625,
+        "domContentLoaded": 1365.10107421875,
+        "load": 2519.301025390625,
+        "cubeCanvas": 3412.5009765625
+      },
+      "rawPageTiming": {
+        "timeOrigin": 1792387229358.9,
+        "ttfb": 255.90000000037253,
+        "domContentLoaded": 1367.0999999996275,
+        "load": 2521.300000000745,
+        "fcp": 1348,
+        "lcp": 3020,
+        "cubeCanvas": 3414.5
+      },
+      "bytes": {
+        "total": 501235,
+        "totalBody": 499224,
+        "byLoad": 381197,
+        "byCube": 411999
+      },
+      "requestCount": 34,
+      "memory": {
+        "jsHeapUsed": 6877900,
+        "jsHeapTotal": 7282688,
+        "domNodes": 709,
+        "listeners": 398,
+        "processes": [
+          {
+            "type": "browser",
+            "pid": 45194,
+            "pssKb": 100643
+          },
+          {
+            "type": "renderer",
+            "pid": 45293,
+            "pssKb": 17570
+          },
+          {
+            "type": "renderer",
+            "pid": 45294,
+            "pssKb": 144576
+          },
+          {
+            "type": "renderer",
+            "pid": 45284,
+            "pssKb": 58852
+          },
+          {
+            "type": "GPU",
+            "pid": 45231,
+            "pssKb": 27221
+          },
+          {
+            "type": "network.mojom.NetworkService",
+            "pid": 45233,
+            "pssKb": 44782
+          },
+          {
+            "type": "storage.mojom.StorageService",
+            "pid": 45257,
+            "pssKb": 9552
+          }
+        ],
+        "totalPssKb": 403196
+      },
+      "requests": [
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/recon/",
+          "type": "document",
+          "failure": null,
+          "startEpoch": 1792387229360.899,
+          "endEpoch": 1792387229703.4968,
+          "transferBytes": 16800,
+          "bodyBytes": 16800,
+          "redirectedTo": null,
+          "startMs": 0,
+          "endMs": 342.597900390625
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/1s_1w5j9esopq.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387229692.1658,
+          "endEpoch": 1792387229924.8647,
+          "transferBytes": 855,
+          "bodyBytes": 855,
+          "redirectedTo": null,
+          "startMs": 331.266845703125,
+          "endMs": 563.9658203125
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/0suptwyh0h9c_.css",
+          "type": "stylesheet",
+          "failure": null,
+          "startEpoch": 1792387229682.697,
+          "endEpoch": 1792387229969.086,
+          "transferBytes": 913,
+          "bodyBytes": 913,
+          "redirectedTo": null,
+          "startMs": 321.798095703125,
+          "endMs": 608.18701171875
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/Ao1K-Logo-v2.svg",
+          "type": "image",
+          "failure": null,
+          "startEpoch": 1792387229656.722,
+          "endEpoch": 1792387230058.651,
+          "transferBytes": 2994,
+          "bodyBytes": 2994,
+          "redirectedTo": null,
+          "startMs": 295.822998046875,
+          "endMs": 697.751953125
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/3czpzqw-913hr.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387229690.5032,
+          "endEpoch": 1792387230130.2031,
+          "transferBytes": 3895,
+          "bodyBytes": 3895,
+          "redirectedTo": null,
+          "startMs": 329.604248046875,
+          "endMs": 769.30419921875
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/2ii9k4qkr3qqq.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387229683.8423,
+          "endEpoch": 1792387230189.3904,
+          "transferBytes": 3887,
+          "bodyBytes": 3887,
+          "redirectedTo": null,
+          "startMs": 322.943359375,
+          "endMs": 828.491455078125
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/turbopack-2jla5c1wdhzjp.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387229689.7969,
+          "endEpoch": 1792387230222.2969,
+          "transferBytes": 4503,
+          "bodyBytes": 4503,
+          "redirectedTo": null,
+          "startMs": 328.89794921875,
+          "endMs": 861.39794921875
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/3k0-1k1du7p94.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387229692.891,
+          "endEpoch": 1792387230396.2002,
+          "transferBytes": 8254,
+          "bodyBytes": 8254,
+          "redirectedTo": null,
+          "startMs": 331.9921875,
+          "endMs": 1035.30126953125
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/0taiof50tdv5q.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387229684.704,
+          "endEpoch": 1792387230440.599,
+          "transferBytes": 8855,
+          "bodyBytes": 8855,
+          "redirectedTo": null,
+          "startMs": 323.80517578125,
+          "endMs": 1079.7001953125
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/01ofyfahyrjru.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387229694.4302,
+          "endEpoch": 1792387230488.9202,
+          "transferBytes": 10437,
+          "bodyBytes": 10437,
+          "redirectedTo": null,
+          "startMs": 333.53125,
+          "endMs": 1128.021240234375
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/37rrrm1u-2rl-.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387229691.446,
+          "endEpoch": 1792387230587.79,
+          "transferBytes": 12444,
+          "bodyBytes": 12444,
+          "redirectedTo": null,
+          "startMs": 330.547119140625,
+          "endMs": 1226.89111328125
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/3tbtzmx9ie-zu.css",
+          "type": "stylesheet",
+          "failure": null,
+          "startEpoch": 1792387229681.714,
+          "endEpoch": 1792387230639.2942,
+          "transferBytes": 14302,
+          "bodyBytes": 14302,
+          "redirectedTo": null,
+          "startMs": 320.815185546875,
+          "endMs": 1278.395263671875
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/2gzk4ddnbalha.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387229696.511,
+          "endEpoch": 1792387230840.77,
+          "transferBytes": 20917,
+          "bodyBytes": 20917,
+          "redirectedTo": null,
+          "startMs": 335.612060546875,
+          "endMs": 1479.87109375
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/2-0f17asd1k-i.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387229693.657,
+          "endEpoch": 1792387230989.863,
+          "transferBytes": 25734,
+          "bodyBytes": 25734,
+          "redirectedTo": null,
+          "startMs": 332.758056640625,
+          "endMs": 1628.964111328125
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/0741aelzdpc9n.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387229695.851,
+          "endEpoch": 1792387231148.789,
+          "transferBytes": 31629,
+          "bodyBytes": 31629,
+          "redirectedTo": null,
+          "startMs": 334.9521484375,
+          "endMs": 1787.89013671875
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/35binswy8pzw5.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387229688.976,
+          "endEpoch": 1792387231309.143,
+          "transferBytes": 40715,
+          "bodyBytes": 40715,
+          "redirectedTo": null,
+          "startMs": 328.0771484375,
+          "endMs": 1948.244140625
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/media/c9f6ebf08ddd616b-s.0sv86lbjkn8rn.woff2",
+          "type": "font",
+          "failure": null,
+          "startEpoch": 1792387230688.951,
+          "endEpoch": 1792387231563.0078,
+          "transferBytes": 35635,
+          "bodyBytes": 35635,
+          "redirectedTo": null,
+          "startMs": 1328.052001953125,
+          "endMs": 2202.10888671875
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/0tyv1blr626ef.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387229685.4502,
+          "endEpoch": 1792387231663.2993,
+          "transferBytes": 68282,
+          "bodyBytes": 68282,
+          "redirectedTo": null,
+          "startMs": 324.55126953125,
+          "endMs": 2302.400390625
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/1nk-_2un4bg34.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387229695.082,
+          "endEpoch": 1792387231677.251,
+          "transferBytes": 70146,
+          "bodyBytes": 70146,
+          "redirectedTo": null,
+          "startMs": 334.18310546875,
+          "endMs": 2316.35205078125
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/Ao1K-Logo-Icon.png",
+          "type": "other",
+          "failure": null,
+          "startEpoch": 1792387231901.888,
+          "endEpoch": 1792387232066.409,
+          "transferBytes": 2452,
+          "bodyBytes": 2452,
+          "redirectedTo": null,
+          "startMs": 2540.989013671875,
+          "endMs": 2705.510009765625
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/12f3pesjh7ig9.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387232311.544,
+          "endEpoch": 1792387232520.312,
+          "transferBytes": 2394,
+          "bodyBytes": 2394,
+          "redirectedTo": null,
+          "startMs": 2950.64501953125,
+          "endMs": 3159.4130859375
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/09x94hc039f8h.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387232308.713,
+          "endEpoch": 1792387232528.781,
+          "transferBytes": 4115,
+          "bodyBytes": 4115,
+          "redirectedTo": null,
+          "startMs": 2947.81396484375,
+          "endMs": 3167.882080078125
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/19ltlid5ssf90.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387232328.1619,
+          "endEpoch": 1792387232670.109,
+          "transferBytes": 11304,
+          "bodyBytes": 11304,
+          "redirectedTo": null,
+          "startMs": 2967.262939453125,
+          "endMs": 3309.2099609375
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/41l3izv1_zukt.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387232328.249,
+          "endEpoch": 1792387232675.393,
+          "transferBytes": 10537,
+          "bodyBytes": 10537,
+          "redirectedTo": null,
+          "startMs": 2967.35009765625,
+          "endMs": 3314.494140625
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/2pu5okngf8z84.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387232306.6367,
+          "endEpoch": 1792387232781.8008,
+          "transferBytes": 35626,
+          "bodyBytes": 35626,
+          "redirectedTo": null,
+          "startMs": 2945.73779296875,
+          "endMs": 3420.90185546875
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/turbopack-20w2vy0ltup5w.js",
+          "type": "other",
+          "failure": null,
+          "startEpoch": 1792387233079.627,
+          "endEpoch": 1792387233270.677,
+          "transferBytes": 4453,
+          "bodyBytes": 4453,
+          "redirectedTo": null,
+          "startMs": 3718.72802734375,
+          "endMs": 3909.778076171875
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/1z9wa_774s3q2.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387232879.885,
+          "endEpoch": 1792387233261.925,
+          "transferBytes": 42264,
+          "bodyBytes": 42264,
+          "redirectedTo": null,
+          "startMs": 3518.986083984375,
+          "endMs": 3901.026123046875
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/3hs54rsb3-69h.js",
+          "type": "other",
+          "failure": null,
+          "startEpoch": 1792387233274.009,
+          "endEpoch": 1792387233462.236,
+          "transferBytes": 6294,
+          "bodyBytes": 6294,
+          "redirectedTo": null,
+          "startMs": 3913.110107421875,
+          "endMs": 4101.337158203125
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/turbopack-worker-2ru9m5gbh1na6.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387232897.581,
+          "endEpoch": 1792387233467.075,
+          "transferBytes": 307,
+          "bodyBytes": 307,
+          "redirectedTo": null,
+          "startMs": 3536.68212890625,
+          "endMs": 4106.176025390625
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/3tbtzmx9ie-zu.css",
+          "type": "stylesheet",
+          "failure": null,
+          "startEpoch": 1792387235845.186,
+          "endEpoch": 1792387235846.052,
+          "transferBytes": 0,
+          "bodyBytes": -501,
+          "redirectedTo": null,
+          "startMs": 6484.287109375,
+          "endMs": 6485.153076171875
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/0suptwyh0h9c_.css",
+          "type": "stylesheet",
+          "failure": null,
+          "startEpoch": 1792387235846.802,
+          "endEpoch": 1792387235848.227,
+          "transferBytes": 0,
+          "bodyBytes": -501,
+          "redirectedTo": null,
+          "startMs": 6485.903076171875,
+          "endMs": 6487.328125
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/2ii9k4qkr3qqq.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387235847.615,
+          "endEpoch": 1792387235847.795,
+          "transferBytes": 0,
+          "bodyBytes": -508,
+          "redirectedTo": null,
+          "startMs": 6486.716064453125,
+          "endMs": 6486.89599609375
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/media/c9f6ebf08ddd616b-s.0sv86lbjkn8rn.woff2",
+          "type": "font",
+          "failure": null,
+          "startEpoch": 1792387235854.446,
+          "endEpoch": 1792387235855.25,
+          "transferBytes": 0,
+          "bodyBytes": -501,
+          "redirectedTo": null,
+          "startMs": 6493.547119140625,
+          "endMs": 6494.35107421875
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/Ao1K-Logo-v2.svg",
+          "type": "image",
+          "failure": null,
+          "startEpoch": 1792387235838.4092,
+          "endEpoch": 1792387235994.122,
+          "transferBytes": 292,
+          "bodyBytes": 292,
+          "redirectedTo": null,
+          "startMs": 6477.51025390625,
+          "endMs": 6633.22314453125
+        }
+      ]
+    },
+    {
+      "timing": {
+        "ttfb": 174.34814453125,
+        "fcp": 1174.248046875,
+        "lcp": 2898.248046875,
+        "domContentLoaded": 1188.048095703125,
+        "load": 2405.14794921875,
+        "cubeCanvas": 3303.947998046875
+      },
+      "rawPageTiming": {
+        "timeOrigin": 1792387245253.7,
+        "ttfb": 176.09999999962747,
+        "domContentLoaded": 1189.7999999988824,
+        "load": 2406.89999999851,
+        "fcp": 1176,
+        "lcp": 2900,
+        "cubeCanvas": 3305.699999999255
+      },
+      "bytes": {
+        "total": 500941,
+        "totalBody": 498930,
+        "byLoad": 380895,
+        "byCube": 447329
+      },
+      "requestCount": 34,
+      "memory": {
+        "jsHeapUsed": 6874432,
+        "jsHeapTotal": 7544832,
+        "domNodes": 708,
+        "listeners": 398,
+        "processes": [
+          {
+            "type": "browser",
+            "pid": 45350,
+            "pssKb": 101058
+          },
+          {
+            "type": "renderer",
+            "pid": 45447,
+            "pssKb": 17268
+          },
+          {
+            "type": "renderer",
+            "pid": 45448,
+            "pssKb": 144955
+          },
+          {
+            "type": "renderer",
+            "pid": 45438,
+            "pssKb": 59568
+          },
+          {
+            "type": "GPU",
+            "pid": 45387,
+            "pssKb": 27569
+          },
+          {
+            "type": "network.mojom.NetworkService",
+            "pid": 45389,
+            "pssKb": 44752
+          },
+          {
+            "type": "storage.mojom.StorageService",
+            "pid": 45415,
+            "pssKb": 9714
+          }
+        ],
+        "totalPssKb": 404884
+      },
+      "requests": [
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/recon/",
+          "type": "document",
+          "failure": null,
+          "startEpoch": 1792387245255.452,
+          "endEpoch": 1792387245517.838,
+          "transferBytes": 16798,
+          "bodyBytes": 16798,
+          "redirectedTo": null,
+          "startMs": 0,
+          "endMs": 262.385986328125
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/0suptwyh0h9c_.css",
+          "type": "stylesheet",
+          "failure": null,
+          "startEpoch": 1792387245481.6611,
+          "endEpoch": 1792387245645.047,
+          "transferBytes": 912,
+          "bodyBytes": 912,
+          "redirectedTo": null,
+          "startMs": 226.209228515625,
+          "endMs": 389.59521484375
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/1s_1w5j9esopq.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387245494.463,
+          "endEpoch": 1792387245741.127,
+          "transferBytes": 855,
+          "bodyBytes": 855,
+          "redirectedTo": null,
+          "startMs": 239.010986328125,
+          "endMs": 485.675048828125
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/Ao1K-Logo-v2.svg",
+          "type": "image",
+          "failure": null,
+          "startEpoch": 1792387245474.065,
+          "endEpoch": 1792387245768.352,
+          "transferBytes": 2993,
+          "bodyBytes": 2993,
+          "redirectedTo": null,
+          "startMs": 218.613037109375,
+          "endMs": 512.900146484375
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/2ii9k4qkr3qqq.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387245491.3362,
+          "endEpoch": 1792387245889.2751,
+          "transferBytes": 3814,
+          "bodyBytes": 3814,
+          "redirectedTo": null,
+          "startMs": 235.88427734375,
+          "endMs": 633.8232421875
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/3czpzqw-913hr.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387245493.9539,
+          "endEpoch": 1792387245948.065,
+          "transferBytes": 3895,
+          "bodyBytes": 3895,
+          "redirectedTo": null,
+          "startMs": 238.501953125,
+          "endMs": 692.613037109375
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/turbopack-2jla5c1wdhzjp.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387245493.332,
+          "endEpoch": 1792387246018.877,
+          "transferBytes": 4504,
+          "bodyBytes": 4504,
+          "redirectedTo": null,
+          "startMs": 237.880126953125,
+          "endMs": 763.425048828125
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/0taiof50tdv5q.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387245491.716,
+          "endEpoch": 1792387246161.4321,
+          "transferBytes": 8775,
+          "bodyBytes": 8775,
+          "redirectedTo": null,
+          "startMs": 236.26416015625,
+          "endMs": 905.980224609375
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/3k0-1k1du7p94.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387245494.82,
+          "endEpoch": 1792387246183.051,
+          "transferBytes": 8251,
+          "bodyBytes": 8251,
+          "redirectedTo": null,
+          "startMs": 239.3681640625,
+          "endMs": 927.59912109375
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/01ofyfahyrjru.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387245496.0352,
+          "endEpoch": 1792387246291.724,
+          "transferBytes": 10436,
+          "bodyBytes": 10436,
+          "redirectedTo": null,
+          "startMs": 240.583251953125,
+          "endMs": 1036.272216796875
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/3tbtzmx9ie-zu.css",
+          "type": "stylesheet",
+          "failure": null,
+          "startEpoch": 1792387245481.2288,
+          "endEpoch": 1792387246346.3477,
+          "transferBytes": 14309,
+          "bodyBytes": 14309,
+          "redirectedTo": null,
+          "startMs": 225.77685546875,
+          "endMs": 1090.895751953125
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/37rrrm1u-2rl-.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387245494.087,
+          "endEpoch": 1792387246375.7449,
+          "transferBytes": 12444,
+          "bodyBytes": 12444,
+          "redirectedTo": null,
+          "startMs": 238.635009765625,
+          "endMs": 1120.29296875
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/2gzk4ddnbalha.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387245497.199,
+          "endEpoch": 1792387246606.13,
+          "transferBytes": 20915,
+          "bodyBytes": 20915,
+          "redirectedTo": null,
+          "startMs": 241.7470703125,
+          "endMs": 1350.677978515625
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/2-0f17asd1k-i.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387245495.1648,
+          "endEpoch": 1792387246777.338,
+          "transferBytes": 25733,
+          "bodyBytes": 25733,
+          "redirectedTo": null,
+          "startMs": 239.712890625,
+          "endMs": 1521.885986328125
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/0741aelzdpc9n.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387245497.075,
+          "endEpoch": 1792387246935.539,
+          "transferBytes": 31631,
+          "bodyBytes": 31631,
+          "redirectedTo": null,
+          "startMs": 241.623046875,
+          "endMs": 1680.087158203125
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/35binswy8pzw5.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387245492.852,
+          "endEpoch": 1792387247097.841,
+          "transferBytes": 40715,
+          "bodyBytes": 40715,
+          "redirectedTo": null,
+          "startMs": 237.400146484375,
+          "endMs": 1842.38916015625
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/media/c9f6ebf08ddd616b-s.0sv86lbjkn8rn.woff2",
+          "type": "font",
+          "failure": null,
+          "startEpoch": 1792387246416.777,
+          "endEpoch": 1792387247341.0142,
+          "transferBytes": 35635,
+          "bodyBytes": 35635,
+          "redirectedTo": null,
+          "startMs": 1161.3251953125,
+          "endMs": 2085.562255859375
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/0tyv1blr626ef.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387245492.377,
+          "endEpoch": 1792387247427.908,
+          "transferBytes": 68140,
+          "bodyBytes": 68140,
+          "redirectedTo": null,
+          "startMs": 236.925048828125,
+          "endMs": 2172.4560546875
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/1nk-_2un4bg34.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387245496.408,
+          "endEpoch": 1792387247442.638,
+          "transferBytes": 70140,
+          "bodyBytes": 70140,
+          "redirectedTo": null,
+          "startMs": 240.9560546875,
+          "endMs": 2187.18603515625
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/Ao1K-Logo-Icon.png",
+          "type": "other",
+          "failure": null,
+          "startEpoch": 1792387247676.606,
+          "endEpoch": 1792387247841.357,
+          "transferBytes": 2453,
+          "bodyBytes": 2453,
+          "redirectedTo": null,
+          "startMs": 2421.154052734375,
+          "endMs": 2585.905029296875
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/12f3pesjh7ig9.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387248084.099,
+          "endEpoch": 1792387248295.6182,
+          "transferBytes": 2395,
+          "bodyBytes": 2395,
+          "redirectedTo": null,
+          "startMs": 2828.647216796875,
+          "endMs": 3040.166259765625
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/09x94hc039f8h.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387248080.0168,
+          "endEpoch": 1792387248301.7988,
+          "transferBytes": 4117,
+          "bodyBytes": 4117,
+          "redirectedTo": null,
+          "startMs": 2824.56494140625,
+          "endMs": 3046.346923828125
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/19ltlid5ssf90.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387248099.507,
+          "endEpoch": 1792387248444.737,
+          "transferBytes": 11304,
+          "bodyBytes": 11304,
+          "redirectedTo": null,
+          "startMs": 2844.05517578125,
+          "endMs": 3189.28515625
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/41l3izv1_zukt.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387248099.012,
+          "endEpoch": 1792387248448.191,
+          "transferBytes": 10538,
+          "bodyBytes": 10538,
+          "redirectedTo": null,
+          "startMs": 2843.56005859375,
+          "endMs": 3192.739013671875
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/2pu5okngf8z84.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387248077.737,
+          "endEpoch": 1792387248555.464,
+          "transferBytes": 35627,
+          "bodyBytes": 35627,
+          "redirectedTo": null,
+          "startMs": 2822.28515625,
+          "endMs": 3300.01220703125
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/1z9wa_774s3q2.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387248657.2952,
+          "endEpoch": 1792387249028.694,
+          "transferBytes": 42264,
+          "bodyBytes": 42264,
+          "redirectedTo": null,
+          "startMs": 3401.84326171875,
+          "endMs": 3773.2421875
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/turbopack-20w2vy0ltup5w.js",
+          "type": "other",
+          "failure": null,
+          "startEpoch": 1792387248859.1199,
+          "endEpoch": 1792387249043.93,
+          "transferBytes": 4454,
+          "bodyBytes": 4454,
+          "redirectedTo": null,
+          "startMs": 3603.66796875,
+          "endMs": 3788.47802734375
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/3hs54rsb3-69h.js",
+          "type": "other",
+          "failure": null,
+          "startEpoch": 1792387249047.3088,
+          "endEpoch": 1792387249236.3867,
+          "transferBytes": 6296,
+          "bodyBytes": 6296,
+          "redirectedTo": null,
+          "startMs": 3791.85693359375,
+          "endMs": 3980.934814453125
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/turbopack-worker-2ru9m5gbh1na6.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387248675.404,
+          "endEpoch": 1792387249241.314,
+          "transferBytes": 306,
+          "bodyBytes": 306,
+          "redirectedTo": null,
+          "startMs": 3419.9521484375,
+          "endMs": 3985.862060546875
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/3tbtzmx9ie-zu.css",
+          "type": "stylesheet",
+          "failure": null,
+          "startEpoch": 1792387251610.975,
+          "endEpoch": 1792387251611.922,
+          "transferBytes": 0,
+          "bodyBytes": -501,
+          "redirectedTo": null,
+          "startMs": 6355.523193359375,
+          "endMs": 6356.47021484375
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/0suptwyh0h9c_.css",
+          "type": "stylesheet",
+          "failure": null,
+          "startEpoch": 1792387251611.811,
+          "endEpoch": 1792387251612.866,
+          "transferBytes": 0,
+          "bodyBytes": -501,
+          "redirectedTo": null,
+          "startMs": 6356.359130859375,
+          "endMs": 6357.4140625
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/2ii9k4qkr3qqq.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387251612.905,
+          "endEpoch": 1792387251613.666,
+          "transferBytes": 0,
+          "bodyBytes": -508,
+          "redirectedTo": null,
+          "startMs": 6357.453125,
+          "endMs": 6358.214111328125
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/media/c9f6ebf08ddd616b-s.0sv86lbjkn8rn.woff2",
+          "type": "font",
+          "failure": null,
+          "startEpoch": 1792387251620.105,
+          "endEpoch": 1792387251620.8389,
+          "transferBytes": 0,
+          "bodyBytes": -501,
+          "redirectedTo": null,
+          "startMs": 6364.653076171875,
+          "endMs": 6365.386962890625
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/Ao1K-Logo-v2.svg",
+          "type": "image",
+          "failure": null,
+          "startEpoch": 1792387251603.46,
+          "endEpoch": 1792387251810.502,
+          "transferBytes": 292,
+          "bodyBytes": 292,
+          "redirectedTo": null,
+          "startMs": 6348.008056640625,
+          "endMs": 6555.050048828125
+        }
+      ]
+    },
+    {
+      "timing": {
+        "ttfb": 212.42724609375,
+        "fcp": 1238.42724609375,
+        "lcp": 2938.42724609375,
+        "domContentLoaded": 1254.52734375,
+        "load": 2454.727294921875,
+        "cubeCanvas": 3333.727294921875
+      },
+      "rawPageTiming": {
+        "timeOrigin": 1792387261235.8,
+        "ttfb": 214,
+        "domContentLoaded": 1256.0999999996275,
+        "load": 2456.2999999988824,
+        "fcp": 1240,
+        "lcp": 2940,
+        "cubeCanvas": 3335.2999999988824
+      },
+      "bytes": {
+        "total": 501504,
+        "totalBody": 499493,
+        "byLoad": 381451,
+        "byCube": 412257
+      },
+      "requestCount": 34,
+      "memory": {
+        "jsHeapUsed": 6877204,
+        "jsHeapTotal": 7282688,
+        "domNodes": 709,
+        "listeners": 398,
+        "processes": [
+          {
+            "type": "browser",
+            "pid": 45517,
+            "pssKb": 101483
+          },
+          {
+            "type": "renderer",
+            "pid": 45611,
+            "pssKb": 17332
+          },
+          {
+            "type": "renderer",
+            "pid": 45612,
+            "pssKb": 144114
+          },
+          {
+            "type": "renderer",
+            "pid": 45602,
+            "pssKb": 58990
+          },
+          {
+            "type": "GPU",
+            "pid": 45556,
+            "pssKb": 27893
+          },
+          {
+            "type": "network.mojom.NetworkService",
+            "pid": 45558,
+            "pssKb": 45266
+          },
+          {
+            "type": "storage.mojom.StorageService",
+            "pid": 45584,
+            "pssKb": 9666
+          }
+        ],
+        "totalPssKb": 404744
+      },
+      "requests": [
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/recon/",
+          "type": "document",
+          "failure": null,
+          "startEpoch": 1792387261237.3728,
+          "endEpoch": 1792387261534.4348,
+          "transferBytes": 16799,
+          "bodyBytes": 16799,
+          "redirectedTo": null,
+          "startMs": 0,
+          "endMs": 297.06201171875
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/0suptwyh0h9c_.css",
+          "type": "stylesheet",
+          "failure": null,
+          "startEpoch": 1792387261506.0771,
+          "endEpoch": 1792387261686.965,
+          "transferBytes": 912,
+          "bodyBytes": 912,
+          "redirectedTo": null,
+          "startMs": 268.704345703125,
+          "endMs": 449.59228515625
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/1s_1w5j9esopq.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387261514.069,
+          "endEpoch": 1792387261741.725,
+          "transferBytes": 855,
+          "bodyBytes": 855,
+          "redirectedTo": null,
+          "startMs": 276.6962890625,
+          "endMs": 504.352294921875
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/Ao1K-Logo-v2.svg",
+          "type": "image",
+          "failure": null,
+          "startEpoch": 1792387261490.147,
+          "endEpoch": 1792387261794.717,
+          "transferBytes": 2993,
+          "bodyBytes": 2993,
+          "redirectedTo": null,
+          "startMs": 252.774169921875,
+          "endMs": 557.34423828125
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/2ii9k4qkr3qqq.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387261508.485,
+          "endEpoch": 1792387261924.4512,
+          "transferBytes": 3886,
+          "bodyBytes": 3886,
+          "redirectedTo": null,
+          "startMs": 271.1123046875,
+          "endMs": 687.078369140625
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/3czpzqw-913hr.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387261511.6838,
+          "endEpoch": 1792387262011.075,
+          "transferBytes": 3978,
+          "bodyBytes": 3978,
+          "redirectedTo": null,
+          "startMs": 274.31103515625,
+          "endMs": 773.7021484375
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/turbopack-2jla5c1wdhzjp.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387261511.8699,
+          "endEpoch": 1792387262097.421,
+          "transferBytes": 4578,
+          "bodyBytes": 4578,
+          "redirectedTo": null,
+          "startMs": 274.4970703125,
+          "endMs": 860.048095703125
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/0taiof50tdv5q.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387261509.9712,
+          "endEpoch": 1792387262189.8533,
+          "transferBytes": 8854,
+          "bodyBytes": 8854,
+          "redirectedTo": null,
+          "startMs": 272.598388671875,
+          "endMs": 952.48046875
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/3k0-1k1du7p94.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387261514.5881,
+          "endEpoch": 1792387262212.809,
+          "transferBytes": 8257,
+          "bodyBytes": 8257,
+          "redirectedTo": null,
+          "startMs": 277.21533203125,
+          "endMs": 975.436279296875
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/01ofyfahyrjru.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387261515.53,
+          "endEpoch": 1792387262292.208,
+          "transferBytes": 10438,
+          "bodyBytes": 10438,
+          "redirectedTo": null,
+          "startMs": 278.1572265625,
+          "endMs": 1054.835205078125
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/3tbtzmx9ie-zu.css",
+          "type": "stylesheet",
+          "failure": null,
+          "startEpoch": 1792387261505.665,
+          "endEpoch": 1792387262380.825,
+          "transferBytes": 14301,
+          "bodyBytes": 14301,
+          "redirectedTo": null,
+          "startMs": 268.292236328125,
+          "endMs": 1143.4521484375
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/37rrrm1u-2rl-.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387261513.619,
+          "endEpoch": 1792387262398.3738,
+          "transferBytes": 12449,
+          "bodyBytes": 12449,
+          "redirectedTo": null,
+          "startMs": 276.24609375,
+          "endMs": 1161.0009765625
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/2gzk4ddnbalha.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387261516.958,
+          "endEpoch": 1792387262635.382,
+          "transferBytes": 20919,
+          "bodyBytes": 20919,
+          "redirectedTo": null,
+          "startMs": 279.585205078125,
+          "endMs": 1398.00927734375
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/2-0f17asd1k-i.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387261515.067,
+          "endEpoch": 1792387262792.5488,
+          "transferBytes": 25732,
+          "bodyBytes": 25732,
+          "redirectedTo": null,
+          "startMs": 277.694091796875,
+          "endMs": 1555.176025390625
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/0741aelzdpc9n.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387261516.4631,
+          "endEpoch": 1792387262957.7712,
+          "transferBytes": 31630,
+          "bodyBytes": 31630,
+          "redirectedTo": null,
+          "startMs": 279.09033203125,
+          "endMs": 1720.3984375
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/35binswy8pzw5.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387261510.514,
+          "endEpoch": 1792387263133.4028,
+          "transferBytes": 40817,
+          "bodyBytes": 40817,
+          "redirectedTo": null,
+          "startMs": 273.14111328125,
+          "endMs": 1896.030029296875
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/media/c9f6ebf08ddd616b-s.0sv86lbjkn8rn.woff2",
+          "type": "font",
+          "failure": null,
+          "startEpoch": 1792387262451.4612,
+          "endEpoch": 1792387263376.214,
+          "transferBytes": 35635,
+          "bodyBytes": 35635,
+          "redirectedTo": null,
+          "startMs": 1214.08837890625,
+          "endMs": 2138.84130859375
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/0tyv1blr626ef.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387261509.717,
+          "endEpoch": 1792387263455.533,
+          "transferBytes": 68275,
+          "bodyBytes": 68275,
+          "redirectedTo": null,
+          "startMs": 272.34423828125,
+          "endMs": 2218.16015625
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/1nk-_2un4bg34.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387261515.9668,
+          "endEpoch": 1792387263472.4448,
+          "transferBytes": 70143,
+          "bodyBytes": 70143,
+          "redirectedTo": null,
+          "startMs": 278.593994140625,
+          "endMs": 2235.072021484375
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/Ao1K-Logo-Icon.png",
+          "type": "other",
+          "failure": null,
+          "startEpoch": 1792387263708.905,
+          "endEpoch": 1792387263874.87,
+          "transferBytes": 2453,
+          "bodyBytes": 2453,
+          "redirectedTo": null,
+          "startMs": 2471.5322265625,
+          "endMs": 2637.497314453125
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/12f3pesjh7ig9.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387264109.951,
+          "endEpoch": 1792387264320.594,
+          "transferBytes": 2396,
+          "bodyBytes": 2396,
+          "redirectedTo": null,
+          "startMs": 2872.578125,
+          "endMs": 3083.22119140625
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/09x94hc039f8h.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387264106.121,
+          "endEpoch": 1792387264326.876,
+          "transferBytes": 4116,
+          "bodyBytes": 4116,
+          "redirectedTo": null,
+          "startMs": 2868.748291015625,
+          "endMs": 3089.503173828125
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/19ltlid5ssf90.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387264126.098,
+          "endEpoch": 1792387264471.1218,
+          "transferBytes": 11303,
+          "bodyBytes": 11303,
+          "redirectedTo": null,
+          "startMs": 2888.72509765625,
+          "endMs": 3233.7490234375
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/41l3izv1_zukt.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387264125.344,
+          "endEpoch": 1792387264475.081,
+          "transferBytes": 10538,
+          "bodyBytes": 10538,
+          "redirectedTo": null,
+          "startMs": 2887.97119140625,
+          "endMs": 3237.708251953125
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/2pu5okngf8z84.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387264104.5872,
+          "endEpoch": 1792387264582.3152,
+          "transferBytes": 35629,
+          "bodyBytes": 35629,
+          "redirectedTo": null,
+          "startMs": 2867.21435546875,
+          "endMs": 3344.9423828125
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/1z9wa_774s3q2.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387264676.933,
+          "endEpoch": 1792387265049.5032,
+          "transferBytes": 42264,
+          "bodyBytes": 42264,
+          "redirectedTo": null,
+          "startMs": 3439.560302734375,
+          "endMs": 3812.13037109375
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/turbopack-20w2vy0ltup5w.js",
+          "type": "other",
+          "failure": null,
+          "startEpoch": 1792387264878.5908,
+          "endEpoch": 1792387265063.899,
+          "transferBytes": 4458,
+          "bodyBytes": 4458,
+          "redirectedTo": null,
+          "startMs": 3641.218017578125,
+          "endMs": 3826.526123046875
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/3hs54rsb3-69h.js",
+          "type": "other",
+          "failure": null,
+          "startEpoch": 1792387265067.166,
+          "endEpoch": 1792387265255.972,
+          "transferBytes": 6297,
+          "bodyBytes": 6297,
+          "redirectedTo": null,
+          "startMs": 3829.793212890625,
+          "endMs": 4018.59912109375
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/turbopack-worker-2ru9m5gbh1na6.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387264694.415,
+          "endEpoch": 1792387265261.225,
+          "transferBytes": 306,
+          "bodyBytes": 306,
+          "redirectedTo": null,
+          "startMs": 3457.042236328125,
+          "endMs": 4023.852294921875
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/3tbtzmx9ie-zu.css",
+          "type": "stylesheet",
+          "failure": null,
+          "startEpoch": 1792387267666.166,
+          "endEpoch": 1792387267667.269,
+          "transferBytes": 0,
+          "bodyBytes": -501,
+          "redirectedTo": null,
+          "startMs": 6428.793212890625,
+          "endMs": 6429.896240234375
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/0suptwyh0h9c_.css",
+          "type": "stylesheet",
+          "failure": null,
+          "startEpoch": 1792387267667.9412,
+          "endEpoch": 1792387267668.1482,
+          "transferBytes": 0,
+          "bodyBytes": -501,
+          "redirectedTo": null,
+          "startMs": 6430.568359375,
+          "endMs": 6430.775390625
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/chunks/2ii9k4qkr3qqq.js",
+          "type": "script",
+          "failure": null,
+          "startEpoch": 1792387267668.192,
+          "endEpoch": 1792387267669.5818,
+          "transferBytes": 0,
+          "bodyBytes": -508,
+          "redirectedTo": null,
+          "startMs": 6430.819091796875,
+          "endMs": 6432.208984375
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/_next/static/media/c9f6ebf08ddd616b-s.0sv86lbjkn8rn.woff2",
+          "type": "font",
+          "failure": null,
+          "startEpoch": 1792387267676.331,
+          "endEpoch": 1792387267677.058,
+          "transferBytes": 0,
+          "bodyBytes": -501,
+          "redirectedTo": null,
+          "startMs": 6438.958251953125,
+          "endMs": 6439.685302734375
+        },
+        {
+          "url": "https://development.d1n9ggswreh25t.amplifyapp.com/Ao1K-Logo-v2.svg",
+          "type": "image",
+          "failure": null,
+          "startEpoch": 1792387267659.3599,
+          "endEpoch": 1792387267816.3538,
+          "transferBytes": 293,
+          "bodyBytes": 293,
+          "redirectedTo": null,
+          "startMs": 6421.987060546875,
+          "endMs": 6578.98095703125
+        }
+      ]
+    }
+  ]
+}

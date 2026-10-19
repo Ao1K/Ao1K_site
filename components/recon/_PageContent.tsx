@@ -44,7 +44,8 @@ import type { CubeStateReader } from '../../composables/recon/algReview';
 import { readFavorites } from '../../composables/algs/algFavorites';
 import { getNewSteps } from '../../composables/recon/getLineStepInfo';
 import { ScreenshotManager, isSolveComplete } from '../../composables/recon/ScreenshotManager';
-import type { CubePlayerImperativeRef } from '../../components/recon/CubePlayer';
+import CubePlayer, { type CubePlayerImperativeRef } from '../../components/recon/CubePlayer';
+import type { CubePrerender } from '../../composables/recon/prerenderCube';
 import SolveBreakdown, { type BreakdownPlayRequest } from './SolveBreakdown';
 import {
   startBreakdown,
@@ -100,7 +101,6 @@ export interface ControllerRequestOptions {
   type: 'fullLeft' | 'stepLeft' | 'pause' | 'play' | 'replay' | 'stepRight' | 'fullRight';
 }
 
-const CubePlayer = lazy(() => import("../../components/recon/CubePlayer"));
 const CubeGifDialog = lazy(() => import("../../components/recon/CubeGifDialog"));
 
 type AlgsetModule = Promise<{ default: { algorithms: unknown[] } }>;
@@ -140,7 +140,15 @@ const noopSubscribe = () => () => {};
 const getCtrlKeySnapshot = () => (/Mac|iPod|iPhone|iPad/.test(navigator.userAgent) ? '⌘' : 'Ctrl');
 const getCtrlKeyServerSnapshot = () => 'Ctrl';
 
-export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScramble?: string, infoPanelSlot?: React.ReactNode }) {
+export default function Recon({
+  dailyScramble = "",
+  infoPanelSlot,
+  cubePrerender = null,
+}: {
+  dailyScramble?: string,
+  infoPanelSlot?: React.ReactNode,
+  cubePrerender?: CubePrerender | null,
+}) {
   const solutionLineHeight = ICON_SIZE_CONFIG['medium'].lineHeight;
   const [cubeColors] = useCubeColors();
   const [showSplitsSetting] = useShowSplits();
@@ -1951,18 +1959,17 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
         style={{ viewTransitionName: PAGE_TRANSITION_NAMES.player }}
       >
         <div id="cube_model" className="flex h-full aspect-video max-h-96 min-h-50 bg-primary-900 select-none z-20 w-full">
-          <Suspense fallback={<div className="flex text-xl w-full h-full justify-center items-center text-primary-100 border border-neutral-600 hover:border-primary-100 rounded-t-sm">Loading cube...</div>}>
-            <CubePlayer
-              ref={cubePlayerRef}
-              speed={speed}
-              scrambleRequest={playerParams.scramble}
-              solutionRequest={playerParams.solution}
-              animationTimesRequest={playerParams.animationTimes}
-              handleControllerRequest={handleControllerRequest}
-              controllerButtonsStatus={controllerButtonsStatus}
-              isControllerHidden={isBreakdownOpen}
-            />
-          </Suspense>
+          <CubePlayer
+            ref={cubePlayerRef}
+            speed={speed}
+            scrambleRequest={playerParams.scramble}
+            solutionRequest={playerParams.solution}
+            animationTimesRequest={playerParams.animationTimes}
+            handleControllerRequest={handleControllerRequest}
+            controllerButtonsStatus={controllerButtonsStatus}
+            isControllerHidden={isBreakdownOpen}
+            prerender={cubePrerender}
+          />
         </div>
       </div>
       <div id="bottom-box" className={`mx-3 relative flex-col justify-center items-center ${isBreakdownOpen ? 'hidden' : 'flex'}`}>

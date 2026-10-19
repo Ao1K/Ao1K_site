@@ -46,3 +46,5 @@ export const DEFAULT_CUBE_COLORS = {
 };
 
 export type CubeColors = typeof DEFAULT_CUBE_COLORS;
+
+export const DEFAULT_HINT_FACELETS_ELEVATION = 1.5;

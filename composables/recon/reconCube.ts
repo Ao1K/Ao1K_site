@@ -1,8 +1,12 @@
-import { DEFAULT_HINT_FACELETS_ELEVATION } from '../useSettings';
+import { DEFAULT_HINT_FACELETS_ELEVATION } from '../../utils/sharedConstants';
 import { parseMoveRotation, type RotationInfo } from '../../utils/cubeMoves';
 import { CUBE_PX, SCENE_PX, type SceneView } from '../../utils/cubeSvgRender';
 
 const CAMERA_FOV_DEG = 75;
+
+export const INITIAL_ANGLES = { x: 30, y: 0 };
+export const STICKER_ELEVATION = 0.503;
+export const CUBE_CONTAINER_NAME = 'recon-cube';
 
 export const smootherStep = (x: number) => x * x * x * (10 - x * (15 - 6 * x));
 

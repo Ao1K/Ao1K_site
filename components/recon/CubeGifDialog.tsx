@@ -9,7 +9,7 @@ import type { LineIconDatum } from './IconStack';
 import type { SvgShape } from '@/composables/recon/stepIconDescriptors';
 import { getAutoHighlight } from '@/composables/recon/autoHighlight';
 import { createGifEncoderPool, type GifEncoderPool } from '@/composables/recon/gifEncoderPool';
-import { cameraView, smootherStep, timelineMoveMs, turnRotation } from '@/composables/recon/reconCube';
+import { cameraView, INITIAL_ANGLES, smootherStep, timelineMoveMs, turnRotation } from '@/composables/recon/reconCube';
 import { SimpleCube } from '@/composables/recon/SimpleCube';
 import type { GifSettings } from '@/utils/gifEncoding';
 import { listFlatSceneColors, type Rgb, type SceneColors, type TranslucentLayer } from '@/utils/gifPalette';
@@ -68,7 +68,6 @@ const STEP_TYPE_TPS: Record<string, number> = {
   'none': 4,
 };
 
-const INITIAL_ANGLES: Angles = { x: 30, y: 0 };
 const ORBIT_DAMPING = 0.15;
 const DEFAULT_PREVIEW_PX = 360;
 

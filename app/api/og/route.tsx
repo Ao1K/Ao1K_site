@@ -7,6 +7,7 @@ import { SimpleCube } from '../../../composables/recon/SimpleCube';
 import { SimpleCubeInterpreter, type StepInfo } from '../../../composables/recon/SimpleCubeInterpreter';
 import parseText from '../../../composables/recon/validateTextInput';
 import validationToArray from '../../../composables/recon/validationToMoves';
+import { cleanMovesText, movesFromText } from '../../../composables/recon/parseMovesText';
 import { getLineStepInfo, getNewSteps } from '../../../composables/recon/getLineStepInfo';
 import { fetchDailyScramble } from '../../../utils/fetchDailyScramble';
 import { editorAliases, OG_PREVIEW_SCALE, OG_PREVIEW_SIZE } from '../../../utils/sharedConstants';
@@ -156,27 +157,8 @@ export async function GET(request: Request) {
 
     const imageOptions = OG_PREVIEW_SIZE;
 
-    // Scramble processing
-    // Parse lines separately to handle comments correctly, then merge valid parts
-    const scrambleLines = scramble.split('\n');
-    let cleanScramble = '';
-    
-    for (const line of scrambleLines) {
-      const parsedLine = parseText(line);
-      const validChars = parsedLine
-        .filter(([_, type]) => type !== 'comment' && type !== 'invalid')
-        .map(([char]) => char)
-        .join('')
-        .replace(/\s+/g, ' '); // normalize spaces
-      
-      if (validChars.trim()) {
-        cleanScramble += (cleanScramble ? ' ' : '') + validChars.trim();
-      }
-    }
-
-    const scrambleParsed = parseText(cleanScramble);
-    const scrambleTokens = validationToArray(scrambleParsed, 300);
-    const scrambleMoves = scrambleTokens.map(t => t.value);
+    const cleanScramble = cleanMovesText(scramble);
+    const scrambleMoves = movesFromText(scramble);
     const renderedScramble = renderColoredText(cleanScramble);
 
     // Solution processing

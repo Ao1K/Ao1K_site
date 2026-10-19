@@ -7,9 +7,18 @@ import { reverseMove } from '../../composables/recon/transformHTML';
 import type { ControllerRequestOptions } from './_PageContent';
 import type { PlayerParams as RenderRefProps } from './_PageContent';
 import { createCubeImageCapture, type ScreenshotSetupStatus } from '../../composables/recon/cubeImageCapture';
-import { useSyncedSettings, useShowControls, useHintFaceletsElevation } from '../../composables/useSettings';
+import { readSettingsFromCookie, useSyncedSettings, useShowControls, useHintFaceletsElevation } from '../../composables/useSettings';
 import { SimpleCube } from '../../composables/recon/SimpleCube';
-import { cameraView, smootherStep, timelineMoveMs, turnRotation } from '../../composables/recon/reconCube';
+import {
+  cameraView,
+  CUBE_CONTAINER_NAME,
+  INITIAL_ANGLES,
+  smootherStep,
+  STICKER_ELEVATION,
+  timelineMoveMs,
+  turnRotation,
+} from '../../composables/recon/reconCube';
+import type { CubePrerender } from '../../composables/recon/prerenderCube';
 import { createCubeScene, type CubeScene } from '../../utils/cubeSceneRuntime.client';
 import { CUBE_SVG_CLASS } from '../../utils/cubeSceneIsland';
 import { faceletsFromState, type RotationInfo } from '../../utils/cubeMoves';
@@ -27,9 +36,7 @@ export interface CubePlayerImperativeRef {
 
 const PREVIEW_TEMPO = 1;
 const CATCH_UP_MS = 500;
-const INITIAL_ANGLES = { x: 30, y: 0 };
 const ORBIT_DAMPING = 0.15;
-const STICKER_ELEVATION = 0.503;
 const HINT_RISE_DELAY_MS = 500;
 const HINT_RISE_MS = 1000;
 
@@ -47,6 +54,7 @@ interface PlayerProps {
     fullRight: string;
   };
   isControllerHidden: boolean;
+  prerender: CubePrerender | null;
   ref?: React.Ref<CubePlayerImperativeRef>;
 }
 
@@ -92,6 +100,7 @@ const Player = React.memo(({
   handleControllerRequest,
   controllerButtonsStatus,
   isControllerHidden,
+  prerender,
   ref,
 }: PlayerProps) => {
   const { settings } = useSyncedSettings();
@@ -745,10 +754,13 @@ const Player = React.memo(({
     const div = divRef.current;
     if (!svg || !orbitArea || !div) return;
 
+    const savedSettings = readSettingsFromCookie();
+    elevationRef.current = savedSettings.hintFaceletsElevation;
     sceneRef.current = createCubeScene(svg, {
-      facelets: faceletsAfter(scrambleRequest, getDisplayedSolutionAlg(solutionRequest, animationTimesRequest)),
+      facelets: prerender?.facelets
+        ?? faceletsAfter(scrambleRequest, getDisplayedSolutionAlg(solutionRequest, animationTimesRequest)),
       angles: INITIAL_ANGLES,
-      colors: buildColorHex(cubeColors),
+      colors: buildColorHex(savedSettings.cubeColors),
       shade: DEFAULT_SCENE_LOOK.shade,
       dim: DEFAULT_SCENE_LOOK.dim,
       hints: elevationRef.current !== 0,
@@ -756,7 +768,7 @@ const Player = React.memo(({
       ease: smootherStep,
       orbit: { target: orbitArea, damping: ORBIT_DAMPING },
     });
-    lastColorsRef.current = cubeColors;
+    lastColorsRef.current = savedSettings.cubeColors;
     lastElevationRef.current = elevationRef.current;
 
     const stopHintRise = startHintRise();
@@ -816,8 +828,17 @@ const Player = React.memo(({
         onKeyDown={handleKeyDown}
         tabIndex={2}
       >
-        <div ref={orbitRef} className="absolute inset-0 touch-none">
-          <svg ref={svgRef} className={`${CUBE_SVG_CLASS} block w-full h-full`} />
+        <div
+          ref={orbitRef}
+          className="absolute inset-0 touch-none"
+          style={{ containerType: 'size', containerName: CUBE_CONTAINER_NAME }}
+        >
+          <svg
+            ref={svgRef}
+            className={`${CUBE_SVG_CLASS} block w-full h-full`}
+            viewBox={`0 0 ${SCENE_PX} ${SCENE_PX}`}
+            dangerouslySetInnerHTML={prerender ? { __html: prerender.markup } : undefined}
+          />
         </div>
         {showControls && (
           <>
