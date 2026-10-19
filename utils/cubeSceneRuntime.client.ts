@@ -1,5 +1,4 @@
 import {
-  cornerAt,
   cubeLooks,
   cubeRotation,
   cubiesFromState,
@@ -13,6 +12,7 @@ import {
   type CubeLooks,
   type Mat,
   type PathAttrs,
+  type Point,
   type SceneDrawable,
   type SceneGeometry,
   type SceneRenderInput,
@@ -91,8 +91,7 @@ export function cubieWorld(geometry: SceneGeometry, cubie: { mat: Mat; live: Mat
   return mul(geometry.placement, spin ? mul(spin, local) : local)
 }
 
-function quadContains(screen: Mat, size: number, x: number, y: number): boolean {
-  const corners = [cornerAt(screen, 0, 0), cornerAt(screen, size, 0), cornerAt(screen, size, size), cornerAt(screen, 0, size)]
+function quadContains(corners: Point[], x: number, y: number): boolean {
   let winding = 0
   for (let i = 0; i < corners.length; i++) {
     const [ax, ay] = corners[i]
@@ -495,7 +494,7 @@ export function createCubeScene(paint: ScenePainter, options: CubeSceneOptions):
       for (let i = drawables.length - 1; i >= 0; i--) {
         const drawable = drawables[i]
         if (drawable.kind !== 'quad' || drawable.facelet === null) continue
-        if (quadContains(drawable.screen, drawable.size, x, y)) return drawable.facelet
+        if (quadContains(drawable.outer, x, y)) return drawable.facelet
       }
       return null
     },

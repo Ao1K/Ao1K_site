@@ -14,6 +14,7 @@
     "compile-algs": "npx tsx scripts/compileAlgs.ts",
     "build-cube-runtime": "npx tsx scripts/buildCubeRuntime.ts",
     "verify-cube-parity": "npx tsx scripts/verifyCubeFrameParity.ts",
+    "bench-cube-frame": "npx tsx scripts/benchCubeFrame.ts",
     "f2l-pair-distances": "npx tsx scripts/generateF2lPairDistances.ts",
     "autocomplete-solve": "npx tsx tests/autocompleteSolve.ts",
     "f2l-label-snapshot": "npx tsx tests/f2lLabelSnapshot.ts"

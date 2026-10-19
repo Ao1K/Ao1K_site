@@ -41,6 +41,9 @@ The alg pipeline flows from source data (`utils/raw*data.json`, `utils/ZBLL.xlsx
 
 ## Tests and measurement
 
+### `bench-cube-frame [frames=1000] [rounds=9] [cpuThrottle=1]`
+`scripts/benchCubeFrame.ts`. Bundles `scripts/benchCubeFrame.browser.ts` with esbuild and runs it in headless Chrome at `/usr/bin/google-chrome`. It builds `frames` scene inputs for a fixed scramble and solution: the camera sweeps two full turns while the solution plays, with hints and labels on and every third frame dimmed. Then it times three stages per frame: `sceneDrawables`, the canvas painter (1280×720), and the SVG painter. After one warmup round it prints the median of `rounds` rounds in µs per frame, plus the average drawable count. `cpuThrottle` sets Chrome's CPU throttling rate (4 approximates a mid-range phone). It only times main-thread work, not rasterization. Writes nothing. Run it before and after changes to `cubeSvgRender.ts`, `cubeCanvasRender.ts`, or the runtime painters. Expect about ±20 µs of variation between runs at 1x, so run it a few times.
+
 ### `f2l-label-snapshot [--record] [--tolerance=0.02] [--show=10]`
 `tests/f2lLabelSnapshot.ts`. A regression check on F2L alg suggestions and `labelF2lAlg` breakdown labels. With a fixed seed it picks 100 F2L case IDs that have suggestions, then fetches the shown suggestions (f2l + zbls, EO filtered when full EO is active) and labels each alg. `--record` **overwrites `tests/snapshots/f2lLabels.json`**. The default run compares against that file. It **fails** if any case's suggested alg list changed in content or order, or if more than `tolerance` of the alg labels changed. It prints up to `--show` before/after label diffs and the time spent labeling. Reads `public/recon/compiled-f2l-algs.json` and `compiled-zbls-algs.json`, so it detects changes made by `compile-algs`. Record again only after confirming a diff is intended.
 

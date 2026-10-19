@@ -1,43 +1,46 @@
-import { cornerAt, SCENE_PX, type Mat, type Rgba, type SceneDrawable } from './cubeSvgRender'
+import { SCENE_PX, type Point, type Rgba, type SceneDrawable } from './cubeSvgRender'
 import type { ScenePainter } from './cubeSceneRuntime.client'
 
 function rgbaString(color: Rgba, alpha: number): string {
   return `rgba(${color.r},${color.g},${color.b},${alpha})`
 }
 
-function traceQuad(ctx: CanvasRenderingContext2D, screen: Mat, size: number, inset: number): void {
-  const lo = inset
-  const hi = size - inset
-  const corners = [[lo, lo], [hi, lo], [hi, hi], [lo, hi]].map(([x, y]) => cornerAt(screen, x, y))
+function traceRing(ctx: CanvasRenderingContext2D, corners: Point[]): void {
   ctx.moveTo(corners[0][0], corners[0][1])
   for (let i = 1; i < corners.length; i++) ctx.lineTo(corners[i][0], corners[i][1])
   ctx.closePath()
 }
 
 function drawQuad(ctx: CanvasRenderingContext2D, quad: Extract<SceneDrawable, { kind: 'quad' }>): void {
-  const { screen, size, look, border } = quad
+  const { outer, inner, look } = quad
   const frameHiddenUnderFill = look.fill.a >= 1 && look.opacity >= 1
 
   ctx.beginPath()
-  traceQuad(ctx, screen, size, 0)
-  if (!frameHiddenUnderFill) traceQuad(ctx, screen, size, border)
+  traceRing(ctx, outer)
+  if (!frameHiddenUnderFill) traceRing(ctx, inner)
   ctx.fillStyle = rgbaString(look.frame, look.frame.a * look.opacity)
   ctx.fill('evenodd')
 
   ctx.beginPath()
-  traceQuad(ctx, screen, size, border)
+  traceRing(ctx, inner)
   ctx.fillStyle = rgbaString(look.fill, look.fill.a * look.opacity)
   ctx.fill()
 }
 
 function drawLabel(ctx: CanvasRenderingContext2D, label: Extract<SceneDrawable, { kind: 'label' }>): void {
-  const glyph = new Path2D(label.path)
+  ctx.beginPath()
+  for (const { command, points } of label.segments) {
+    if (command === 'M') ctx.moveTo(...points[0])
+    else if (command === 'L') ctx.lineTo(...points[0])
+    else if (command === 'C') ctx.bezierCurveTo(...points[0], ...points[1], ...points[2])
+    else ctx.closePath()
+  }
   ctx.lineJoin = 'round'
   ctx.lineWidth = label.outlineWidth
   ctx.strokeStyle = label.outline
-  ctx.stroke(glyph)
+  ctx.stroke()
   ctx.fillStyle = label.fill
-  ctx.fill(glyph)
+  ctx.fill()
 }
 
 export function drawSceneToCanvas(ctx: CanvasRenderingContext2D, drawables: SceneDrawable[]): void {

@@ -198,7 +198,9 @@ const LABEL_ORIENT: Record<string, Mat> = {
   B: chain(translate(0, 0, -LABEL_FLOAT), rotateY(180)),
 }
 
-type GlyphSegment = { command: 'M' | 'L' | 'C' | 'Z'; points: Array<[number, number]> }
+export type Point = [number, number]
+
+export type GlyphSegment = { command: 'M' | 'L' | 'C' | 'Z'; points: Point[] }
 
 function parseGlyph(d: string): GlyphSegment[] {
   const tokens = d.match(/[A-Za-z]|-?(?:\d*\.\d+|\d+)(?:e[-+]?\d+)?/g) ?? []
@@ -210,7 +212,7 @@ function parseGlyph(d: string): GlyphSegment[] {
   let x = 0
   let y = 0
   const read = () => Number(tokens[index++])
-  const point = (px: number, py: number): [number, number] => [px * scaleX, py * scaleY]
+  const point = (px: number, py: number): Point => [px * scaleX, py * scaleY]
 
   while (index < tokens.length) {
     if (/[A-Za-z]/.test(tokens[index])) command = tokens[index++]
@@ -372,16 +374,24 @@ export function sceneGeometry(angles: { x: number; y: number }, view: SceneView 
   }
 }
 
-export function cornerAt(screen: Mat, x: number, y: number): [number, number] {
+export function cornerAt(screen: Mat, x: number, y: number): Point {
   const q = apply(screen, x, y, 0)
   return [q.x / q.w, q.y / q.w]
 }
 
-export function ringPath(screen: Mat, size: number, inset: number): string {
-  const lo = inset
-  const hi = size - inset
-  const corners: Array<[number, number]> = [[lo, lo], [hi, lo], [hi, hi], [lo, hi]]
-  const points = corners.map(([x, y]) => cornerAt(screen, x, y).map(snap))
+function projectRect(screen: Mat, lo: number, hiX: number, hiY: number): { corners: Point[]; nearestW: number } {
+  let nearestW = Infinity
+  const rect: Point[] = [[lo, lo], [hiX, lo], [hiX, hiY], [lo, hiY]]
+  const corners = rect.map(([x, y]): Point => {
+    const q = apply(screen, x, y, 0)
+    nearestW = Math.min(nearestW, q.w)
+    return [q.x / q.w, q.y / q.w]
+  })
+  return { corners, nearestW }
+}
+
+function ringPath(corners: Point[]): string {
+  const points = corners.map(corner => corner.map(snap))
   const steps: number[] = []
   for (let i = 1; i < points.length; i++) {
     steps.push(snap(points[i][0] - points[i - 1][0]), snap(points[i][1] - points[i - 1][1]))
@@ -389,19 +399,11 @@ export function ringPath(screen: Mat, size: number, inset: number): string {
   return `M${joinCoords(points[0])}l${joinCoords(steps)}Z`
 }
 
+// stands in for Three.js near-plane clipping. High hint elevation or screenshot zoom can put a quad behind the camera, where it would draw inverted.
 const NEAR_PLANE_W = 0.05
 
-// stands in for Three.js near-plane clipping. High hint elevation or screenshot zoom can put a quad behind the camera, where it would draw inverted.
-function crossesNearPlane(screen: Mat, width: number, height: number): boolean {
-  const corners: Array<[number, number]> = [[0, 0], [width, 0], [width, height], [0, height]]
-  return corners.some(([x, y]) => apply(screen, x, y, 0).w < NEAR_PLANE_W)
-}
-
-export function facesCamera(screen: Mat, size: number): boolean {
-  const o = cornerAt(screen, 0, 0)
-  const px = cornerAt(screen, size, 0)
-  const py = cornerAt(screen, 0, size)
-  return (px[0] - o[0]) * (py[1] - o[1]) - (px[1] - o[1]) * (py[0] - o[0]) > 0
+function facesCamera([origin, alongX, , alongY]: Point[]): boolean {
+  return (alongX[0] - origin[0]) * (alongY[1] - origin[1]) - (alongX[1] - origin[1]) * (alongY[0] - origin[0]) > 0
 }
 
 function rgbString(c: Rgba): string {
@@ -416,9 +418,9 @@ export type PathAttrs = Record<string, string>
 
 export type DrawablePaths = { groupOpacity: string | null; paths: PathAttrs[] }
 
-function quadPaths(screen: Mat, size: number, look: Look, border: number): DrawablePaths {
-  const inner = ringPath(screen, size, border)
-  const outer = ringPath(screen, size, 0)
+function quadPaths(outerCorners: Point[], innerCorners: Point[], look: Look): DrawablePaths {
+  const inner = ringPath(innerCorners)
+  const outer = ringPath(outerCorners)
   const fillHidesFrameCenter = look.fill.a >= 1
   const framePath: PathAttrs = fillHidesFrameCenter
     ? { d: outer, fill: rgbString(look.frame), ...opacityAttrs(look.frame.a) }
@@ -430,10 +432,11 @@ function quadPaths(screen: Mat, size: number, look: Look, border: number): Drawa
   }
 }
 
-function labelGlyphPath(screen: Mat, letter: string): string {
-  return LABEL_GLYPH_SEGMENTS[letter]
-    .map(segment => segment.command + joinCoords(segment.points.flatMap(([x, y]) => cornerAt(screen, x, y))))
-    .join('')
+function labelGlyphSegments(screen: Mat, letter: string): GlyphSegment[] {
+  return LABEL_GLYPH_SEGMENTS[letter].map(segment => ({
+    command: segment.command,
+    points: segment.points.map(([x, y]) => cornerAt(screen, x, y)),
+  }))
 }
 
 function labelOutlineWidth(screen: Mat): number {
@@ -449,9 +452,9 @@ function labelOutlineWidth(screen: Mat): number {
 }
 
 export function drawablePaths(drawable: SceneDrawable): DrawablePaths {
-  if (drawable.kind === 'quad') return quadPaths(drawable.screen, drawable.size, drawable.look, drawable.border)
+  if (drawable.kind === 'quad') return quadPaths(drawable.outer, drawable.inner, drawable.look)
   const labelPath: PathAttrs = {
-    d: drawable.path,
+    d: drawable.segments.map(segment => segment.command + joinCoords(segment.points.flat())).join(''),
     fill: drawable.fill,
     stroke: drawable.outline,
     'stroke-width': ratio(drawable.outlineWidth),
@@ -475,8 +478,8 @@ function svgDocument(body: string): string {
 }
 
 export type SceneDrawable =
-  | { kind: 'quad'; depth: number; screen: Mat; size: number; look: Look; border: number; facelet: number | null }
-  | { kind: 'label'; depth: number; path: string; outlineWidth: number; fill: string; outline: string }
+  | { kind: 'quad'; depth: number; outer: Point[]; inner: Point[]; look: Look; facelet: number | null }
+  | { kind: 'label'; depth: number; segments: GlyphSegment[]; outlineWidth: number; fill: string; outline: string }
 
 export type CubeSvgOptions = {
   state: StickerState
@@ -537,9 +540,11 @@ export function sceneDrawables(input: SceneRenderInput): SceneDrawable[] {
 
   const addQuad = (world: Mat, size: number, look: Look, border: number, cull: boolean, facelet: number | null) => {
     const screen = mul(geometry.projection, world)
-    if (crossesNearPlane(screen, size, size)) return
-    if (cull && !facesCamera(screen, size)) return
-    drawables.push({ kind: 'quad', depth: apply(world, size / 2, size / 2, 0).z, screen, size, look, border, facelet })
+    const { corners: outer, nearestW } = projectRect(screen, 0, size, size)
+    if (nearestW < NEAR_PLANE_W) return
+    if (cull && !facesCamera(outer)) return
+    const inner = projectRect(screen, border, size - border, size - border).corners
+    drawables.push({ kind: 'quad', depth: apply(world, size / 2, size / 2, 0).z, outer, inner, look, facelet })
   }
 
   cubies.forEach(cubie => {
@@ -562,11 +567,12 @@ export function sceneDrawables(input: SceneRenderInput): SceneDrawable[] {
     geometry.labels.forEach(label => {
       const world = mul(geometry.placement, label.matrix)
       const screen = mul(geometry.projection, world)
-      if (crossesNearPlane(screen, LABEL_WIDTH, LABEL_HEIGHT) || !facesCamera(screen, LABEL_WIDTH)) return
+      const { corners, nearestW } = projectRect(screen, 0, LABEL_WIDTH, LABEL_HEIGHT)
+      if (nearestW < NEAR_PLANE_W || !facesCamera(corners)) return
       drawables.push({
         kind: 'label',
         depth: apply(world, LABEL_WIDTH / 2, LABEL_HEIGHT / 2, 0).z,
-        path: labelGlyphPath(screen, label.letter),
+        segments: labelGlyphSegments(screen, label.letter),
         outlineWidth: labelOutlineWidth(screen),
         fill: LABEL_FILL,
         outline: LABEL_OUTLINE,
