@@ -1,4 +1,6 @@
-import { PerspectiveCamera, WebGLRenderer, type Mesh, type Scene } from 'three';
+import type { CubeScene } from '../../utils/cubeSceneRuntime.client';
+import { drawSceneToCanvas } from '../../utils/cubeCanvasRender';
+import { SCENE_PX, type SceneView } from '../../utils/cubeSvgRender';
 
 export interface CubeScreenshotOptions {
   backgroundColor: string;
@@ -14,18 +16,14 @@ export interface ScreenshotSetupStatus {
   message: string;
 }
 
-interface CubeScreenshotContext {
-  scene: Scene | null;
-  camera: PerspectiveCamera | null;
+interface CubeImageContext {
+  scene: CubeScene | null;
   viewerElement: HTMLDivElement | null;
-  renderer: WebGLRenderer | null;
-  faceLabelMeshes: Mesh[];
-  hintStickerMeshes: any[];
+  sceneView: (zoom: number) => SceneView;
+  hintsVisible: boolean;
   setupMoves: string;
   setupStatus: ScreenshotSetupStatus;
 }
-
-type CubeScreenshotContextProvider = () => CubeScreenshotContext;
 
 interface ParsedBackgroundColor {
   colorValue: number;
@@ -46,7 +44,7 @@ interface SetupMovesTextLayout {
 
 const SETUP_MOVES_LABEL = 'Setup moves';
 
-const parseBackgroundColor = (value: string): ParsedBackgroundColor => {
+export const parseBackgroundColor = (value: string): ParsedBackgroundColor => {
   const sixDigitHex = /^#([0-9A-Fa-f]{6})$/;
   const eightDigitHex = /^#([0-9A-Fa-f]{8})$/;
 
@@ -72,7 +70,7 @@ const parseBackgroundColor = (value: string): ParsedBackgroundColor => {
   throw new Error('Background color must be a 6-digit or 8-digit hex value.');
 };
 
-const getViewerAspectRatioFromElement = (viewerElement: HTMLDivElement | null) => {
+export const getViewerAspectRatioFromElement = (viewerElement: HTMLDivElement | null) => {
   const viewerWidth = (viewerElement?.clientWidth ?? 0) - 1;
   const viewerHeight = (viewerElement?.clientHeight ?? 0) - 1;
 
@@ -83,7 +81,7 @@ const getViewerAspectRatioFromElement = (viewerElement: HTMLDivElement | null) =
   return viewerWidth / viewerHeight;
 };
 
-const getViewerScreenshotDimensions = (
+export const getViewerScreenshotDimensions = (
   viewerElement: HTMLDivElement | null,
   targetLongEdge: number,
 ): ViewerScreenshotDimensions => {
@@ -216,7 +214,7 @@ const strokeAndFillText = (
   context.fillText(text, x, y);
 };
 
-const drawSetupMovesOverlay = (
+export const drawSetupMovesOverlay = (
   sourceCanvas: HTMLCanvasElement,
   screenshotWidth: number,
   screenshotHeight: number,
@@ -303,109 +301,59 @@ const drawSetupMovesOverlay = (
   return exportCanvas;
 };
 
-export const createCubeScreenshotGenerator = (
-  getContext: CubeScreenshotContextProvider,
-) => {
-  let screenshotRenderer: WebGLRenderer | null = null;
-
-  const getOrCreateRenderer = () => {
-    if (!screenshotRenderer) {
-      screenshotRenderer = new WebGLRenderer({
-        antialias: true,
-        alpha: true,
-        preserveDrawingBuffer: true,
-      });
-    }
-
-    return screenshotRenderer;
-  };
-
-  const dispose = () => {
-    screenshotRenderer?.dispose();
-    screenshotRenderer = null;
-  };
-
+export const createCubeImageCapture = (getContext: () => CubeImageContext) => {
   const getViewerAspectRatio = () => {
     return getViewerAspectRatioFromElement(getContext().viewerElement);
   };
 
   const capture = (options: CubeScreenshotOptions) => {
-    const { scene, camera, viewerElement, renderer, faceLabelMeshes, hintStickerMeshes, setupMoves, setupStatus } = getContext();
+    const { scene, viewerElement, sceneView, hintsVisible, setupMoves, setupStatus } = getContext();
     const isSetupMovesUnavailable = setupStatus.status !== 'available';
 
-    if (!scene || !camera) {
+    if (!scene) {
       throw new Error('Cube scene is not ready yet.');
     }
 
-    const parsedBackground = parseBackgroundColor(options.backgroundColor);
-    const {
-      width: screenshotWidth,
-      height: screenshotHeight,
-      aspectRatio,
-    } = getViewerScreenshotDimensions(viewerElement, options.size);
+    const { colorValue, alpha } = parseBackgroundColor(options.backgroundColor);
+    const { width: screenshotWidth, height: screenshotHeight } = getViewerScreenshotDimensions(viewerElement, options.size);
     const scaleUnit = Math.min(screenshotWidth, screenshotHeight);
 
-    camera.updateMatrixWorld(true);
-    scene.updateMatrixWorld(true);
-
-    const screenshotCamera = camera.clone();
-    screenshotCamera.aspect = aspectRatio;
-    screenshotCamera.updateProjectionMatrix();
-    screenshotCamera.updateMatrixWorld(true);
-
-    if (options.zoom && options.zoom !== 1) {
-      screenshotCamera.position.multiplyScalar(1 / options.zoom);
-      screenshotCamera.updateMatrixWorld(true);
+    const canvas = document.createElement('canvas');
+    canvas.width = screenshotWidth;
+    canvas.height = screenshotHeight;
+    const context = canvas.getContext('2d');
+    if (!context) {
+      throw new Error('Failed to create cube image canvas.');
     }
 
-    const nextRenderer = getOrCreateRenderer();
-    nextRenderer.setPixelRatio(1);
-    nextRenderer.setSize(screenshotWidth, screenshotHeight, false);
-    nextRenderer.outputColorSpace = renderer?.outputColorSpace ?? nextRenderer.outputColorSpace;
-    nextRenderer.toneMapping = renderer?.toneMapping ?? nextRenderer.toneMapping;
-    nextRenderer.toneMappingExposure = renderer?.toneMappingExposure ?? nextRenderer.toneMappingExposure;
-    nextRenderer.setClearColor(parsedBackground.colorValue, parsedBackground.alpha);
+    context.fillStyle = `rgba(${(colorValue >> 16) & 255},${(colorValue >> 8) & 255},${colorValue & 255},${alpha})`;
+    context.fillRect(0, 0, screenshotWidth, screenshotHeight);
 
-    const previousFaceLabelVisibility = faceLabelMeshes.map((mesh) => mesh.visible);
-    const previousHintStickerVisibility = hintStickerMeshes.map((mesh) => mesh.visible);
+    const pxPerSceneUnit = screenshotHeight / SCENE_PX;
+    const sceneLeft = (screenshotWidth - SCENE_PX * pxPerSceneUnit) / 2;
+    context.setTransform(pxPerSceneUnit, 0, 0, pxPerSceneUnit, sceneLeft, 0);
+    drawSceneToCanvas(context, scene.drawables({
+      hints: hintsVisible && options.hintFacelets !== false,
+      labels: options.includeFaceLabels,
+      view: sceneView(options.zoom ?? 1),
+    }));
+    context.setTransform(1, 0, 0, 1, 0, 0);
 
-    try {
-      faceLabelMeshes.forEach((mesh) => {
-        mesh.visible = options.includeFaceLabels;
-      });
-
-      if (options.hintFacelets === false) {
-        hintStickerMeshes.forEach((mesh) => {
-          mesh.visible = false;
-        });
-      }
-
-      nextRenderer.render(scene, screenshotCamera);
-
-      if (!options.includeSetupMoves || !setupMoves || isSetupMovesUnavailable) {
-        return nextRenderer.domElement.toDataURL('image/png');
-      }
-
-      return drawSetupMovesOverlay(
-        nextRenderer.domElement,
-        screenshotWidth,
-        screenshotHeight,
-        scaleUnit,
-        setupMoves,
-      ).toDataURL('image/png');
-    } finally {
-      faceLabelMeshes.forEach((mesh, index) => {
-        mesh.visible = previousFaceLabelVisibility[index] ?? true;
-      });
-      hintStickerMeshes.forEach((mesh, index) => {
-        mesh.visible = previousHintStickerVisibility[index] ?? true;
-      });
+    if (!options.includeSetupMoves || !setupMoves || isSetupMovesUnavailable) {
+      return canvas.toDataURL('image/png');
     }
+
+    return drawSetupMovesOverlay(
+      canvas,
+      screenshotWidth,
+      screenshotHeight,
+      scaleUnit,
+      setupMoves,
+    ).toDataURL('image/png');
   };
 
   return {
     getViewerAspectRatio,
     capture,
-    dispose,
   };
 };

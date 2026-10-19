@@ -1,25 +1,30 @@
 import type { Color } from '../composables/recon/SimpleCube'
+import { LABEL_GLYPH_BOX, LABEL_GLYPHS } from './cubeLabelGlyphs'
 
 export const CUBIE_PX = 100
 export const CUBE_PX = CUBIE_PX * 3
 export const SCENE_PX = 640
-export const LABEL_SIZE = Math.round(CUBIE_PX * 1.5) // face label container size (50% larger than a sticker)
+const LABEL_WIDTH = CUBIE_PX * 1.1
+const LABEL_HEIGHT = CUBIE_PX * 1.6
+const LABEL_FILL = '#ECE6EF'
+const LABEL_OUTLINE = '#161018'
+const LABEL_OUTLINE_GLYPH_UNITS = 32
 export const FACE_BORDER_PX = 3
 export const HINT_BORDER_PX = 2
 
 const HINT_INSET = 3
 export const HINT_PX = CUBIE_PX - HINT_INSET * 2
 
-const HINT_OFFSET = CUBIE_PX // distance (px) hint facelets float outside the regular sticker (~1 sticker)
 const LABEL_OFFSET = 50 // distance (px) face direction labels float outside the cube
 const HALF_CUBIE = CUBIE_PX / 2
 const CUBE_MID = CUBE_PX / 2
 const CUBE_LEFT = (SCENE_PX - CUBE_PX) / 2
-const CUBE_SCALE = 0.85
-const PERSPECTIVE_PX = 1000
-const HINT_FLOAT = HALF_CUBIE + HINT_OFFSET
 const LABEL_FLOAT = CUBE_MID + LABEL_OFFSET
 const HINT_OPACITY = 0.55
+
+export type SceneView = { hintElevation: number; cubeScale: number; perspective: number }
+
+export const DEFAULT_SCENE_VIEW: SceneView = { hintElevation: 1.5, cubeScale: 0.85, perspective: 1000 }
 
 export type Mat = number[][]
 
@@ -95,7 +100,7 @@ export function apply(m: Mat, x: number, y: number, z: number) {
   }
 }
 
-type Rgba = { r: number; g: number; b: number; a: number }
+export type Rgba = { r: number; g: number; b: number; a: number }
 
 const OPAQUE_BLACK: Rgba = { r: 0, g: 0, b: 0, a: 1 }
 const HINT_BORDER: Rgba = { r: 0, g: 0, b: 0, a: 0.25 }
@@ -173,13 +178,15 @@ const FACE_ORIENT: Record<FaceName, Mat> = {
   left: chain(rotateY(-90), translate(0, 0, HALF_CUBIE)),
 }
 
-const HINT_ORIENT: Record<FaceName, Mat> = {
-  up: chain(rotateX(-90), translate(0, 0, -HINT_FLOAT)),
-  down: chain(rotateX(90), translate(0, 0, -HINT_FLOAT)),
-  front: chain(rotateY(180), translate(0, 0, -HINT_FLOAT)),
-  back: translate(0, 0, -HINT_FLOAT),
-  right: chain(rotateY(-90), translate(0, 0, -HINT_FLOAT)),
-  left: chain(rotateY(90), translate(0, 0, -HINT_FLOAT)),
+function hintOrient(hintFloat: number): Record<FaceName, Mat> {
+  return {
+    up: chain(rotateX(-90), translate(0, 0, -hintFloat)),
+    down: chain(rotateX(90), translate(0, 0, -hintFloat)),
+    front: chain(rotateY(180), translate(0, 0, -hintFloat)),
+    back: translate(0, 0, -hintFloat),
+    right: chain(rotateY(-90), translate(0, 0, -hintFloat)),
+    left: chain(rotateY(90), translate(0, 0, -hintFloat)),
+  }
 }
 
 const LABEL_ORIENT: Record<string, Mat> = {
@@ -191,8 +198,51 @@ const LABEL_ORIENT: Record<string, Mat> = {
   B: chain(translate(0, 0, -LABEL_FLOAT), rotateY(180)),
 }
 
-export const LABEL_FONT_PX = Math.round(LABEL_SIZE * 0.64)
-export const LABEL_STROKE_PX = Math.round(LABEL_SIZE * 0.06)
+type GlyphSegment = { command: 'M' | 'L' | 'C' | 'Z'; points: Array<[number, number]> }
+
+function parseGlyph(d: string): GlyphSegment[] {
+  const tokens = d.match(/[A-Za-z]|-?(?:\d*\.\d+|\d+)(?:e[-+]?\d+)?/g) ?? []
+  const scaleX = LABEL_WIDTH / LABEL_GLYPH_BOX.width
+  const scaleY = LABEL_HEIGHT / LABEL_GLYPH_BOX.height
+  const segments: GlyphSegment[] = []
+  let index = 0
+  let command = ''
+  let x = 0
+  let y = 0
+  const read = () => Number(tokens[index++])
+  const point = (px: number, py: number): [number, number] => [px * scaleX, py * scaleY]
+
+  while (index < tokens.length) {
+    if (/[A-Za-z]/.test(tokens[index])) command = tokens[index++]
+    if (command === 'Z') {
+      segments.push({ command: 'Z', points: [] })
+    } else if (command === 'M' || command === 'L') {
+      x = read()
+      y = read()
+      segments.push({ command, points: [point(x, y)] })
+      command = 'L'
+    } else if (command === 'H') {
+      x = read()
+      segments.push({ command: 'L', points: [point(x, y)] })
+    } else if (command === 'V') {
+      y = read()
+      segments.push({ command: 'L', points: [point(x, y)] })
+    } else if (command === 'C') {
+      const c1 = point(read(), read())
+      const c2 = point(read(), read())
+      x = read()
+      y = read()
+      segments.push({ command: 'C', points: [c1, c2, point(x, y)] })
+    } else {
+      throw new Error(`unsupported label glyph command "${command}"`)
+    }
+  }
+  return segments
+}
+
+const LABEL_GLYPH_SEGMENTS: Record<string, GlyphSegment[]> = Object.fromEntries(
+  Object.entries(LABEL_GLYPHS).map(([letter, d]) => [letter, parseGlyph(d)]),
+)
 
 function pieceNameOf(colors: StickerColor[]): string {
   const primary = colors.includes('W') ? 'W' : colors.includes('Y') ? 'Y' : ''
@@ -280,20 +330,22 @@ export type SceneGeometry = {
   labels: Array<{ letter: string; matrix: Mat }>
 }
 
-export function sceneGeometry(angles: { x: number; y: number }): SceneGeometry {
-  const labelInset = (CUBE_PX - LABEL_SIZE) / 2
+export function sceneGeometry(angles: { x: number; y: number }, view: SceneView = DEFAULT_SCENE_VIEW): SceneGeometry {
+  const labelInsetX = (CUBE_PX - LABEL_WIDTH) / 2
+  const labelInsetY = (CUBE_PX - LABEL_HEIGHT) / 2
+  const hintOrientByFace = hintOrient(view.hintElevation * CUBIE_PX)
   return {
-    projection: aboutOrigin(SCENE_PX / 2, SCENE_PX / 2, perspective(PERSPECTIVE_PX)),
+    projection: aboutOrigin(SCENE_PX / 2, SCENE_PX / 2, perspective(view.perspective)),
     placement: chain(
       translate(CUBE_LEFT, CUBE_LEFT, 0),
-      aboutOrigin(CUBE_MID, CUBE_MID, chain(scaleXY(CUBE_SCALE), rotateX(-angles.x), rotateY(-angles.y))),
+      aboutOrigin(CUBE_MID, CUBE_MID, chain(scaleXY(view.cubeScale), rotateX(-angles.x), rotateY(-angles.y))),
     ),
     faceLocal: FACE_NAMES.map(name => aboutOrigin(HALF_CUBIE, HALF_CUBIE, FACE_ORIENT[name])),
     hintLocal: FACE_NAMES.map(name =>
-      chain(translate(HINT_INSET, HINT_INSET, 0), aboutOrigin(HINT_PX / 2, HINT_PX / 2, HINT_ORIENT[name]))),
+      chain(translate(HINT_INSET, HINT_INSET, 0), aboutOrigin(HINT_PX / 2, HINT_PX / 2, hintOrientByFace[name]))),
     labels: Object.entries(LABEL_ORIENT).map(([face, orient]) => ({
       letter: face,
-      matrix: chain(aboutOrigin(CUBE_MID, CUBE_MID, orient), translate(labelInset, labelInset, 0)),
+      matrix: chain(aboutOrigin(CUBE_MID, CUBE_MID, orient), translate(labelInsetX, labelInsetY, 0)),
     })),
   }
 }
@@ -313,6 +365,14 @@ export function ringPath(screen: Mat, size: number, inset: number): string {
     steps.push(snap(points[i][0] - points[i - 1][0]), snap(points[i][1] - points[i - 1][1]))
   }
   return `M${joinCoords(points[0])}l${joinCoords(steps)}Z`
+}
+
+const NEAR_PLANE_W = 0.05
+
+// stands in for Three.js near-plane clipping. High hint elevation or screenshot zoom can put a quad behind the camera, where it would draw inverted.
+function crossesNearPlane(screen: Mat, width: number, height: number): boolean {
+  const corners: Array<[number, number]> = [[0, 0], [width, 0], [width, height], [0, height]]
+  return corners.some(([x, y]) => apply(screen, x, y, 0).w < NEAR_PLANE_W)
 }
 
 export function facesCamera(screen: Mat, size: number): boolean {
@@ -343,19 +403,27 @@ export function quadMarkup(screen: Mat, size: number, look: Look, border: number
     : `<g opacity="${ratio(look.opacity)}">${framePath}${fillPath}</g>`
 }
 
-export function labelMarkup(screen: Mat, letter: string): string {
-  const o = cornerAt(screen, 0, 0)
-  const px = cornerAt(screen, LABEL_SIZE, 0)
-  const py = cornerAt(screen, 0, LABEL_SIZE)
-  const m = [
-    (px[0] - o[0]) / LABEL_SIZE, (px[1] - o[1]) / LABEL_SIZE,
-    (py[0] - o[0]) / LABEL_SIZE, (py[1] - o[1]) / LABEL_SIZE,
-    o[0], o[1],
-  ].map(ratio).join(',')
-  return `<text transform="matrix(${m})" x="${LABEL_SIZE / 2}" y="${LABEL_SIZE / 2}"`
-    + ` font-family="sans-serif" font-size="${LABEL_FONT_PX}" font-weight="bold" fill="#fff"`
-    + ` stroke="#000" stroke-width="${LABEL_STROKE_PX}" paint-order="stroke" stroke-linejoin="round"`
-    + ` text-anchor="middle" dominant-baseline="central">${letter}</text>`
+function labelGlyphPath(screen: Mat, letter: string): string {
+  return LABEL_GLYPH_SEGMENTS[letter]
+    .map(segment => segment.command + joinCoords(segment.points.flatMap(([x, y]) => cornerAt(screen, x, y))))
+    .join('')
+}
+
+function labelOutlineWidth(screen: Mat): number {
+  const left = cornerAt(screen, 0, LABEL_HEIGHT / 2)
+  const right = cornerAt(screen, LABEL_WIDTH, LABEL_HEIGHT / 2)
+  const top = cornerAt(screen, LABEL_WIDTH / 2, 0)
+  const bottom = cornerAt(screen, LABEL_WIDTH / 2, LABEL_HEIGHT)
+  const xAxis = [(right[0] - left[0]) / LABEL_WIDTH, (right[1] - left[1]) / LABEL_WIDTH]
+  const yAxis = [(bottom[0] - top[0]) / LABEL_HEIGHT, (bottom[1] - top[1]) / LABEL_HEIGHT]
+  const screenScale = Math.sqrt(Math.abs(xAxis[0] * yAxis[1] - xAxis[1] * yAxis[0]))
+  const glyphUnitPx = Math.sqrt((LABEL_WIDTH / LABEL_GLYPH_BOX.width) * (LABEL_HEIGHT / LABEL_GLYPH_BOX.height))
+  return LABEL_OUTLINE_GLYPH_UNITS * glyphUnitPx * screenScale
+}
+
+export function labelMarkup(label: Extract<SceneDrawable, { kind: 'label' }>): string {
+  return `<path d="${label.path}" fill="${label.fill}" stroke="${label.outline}"`
+    + ` stroke-width="${ratio(label.outlineWidth)}" paint-order="stroke" stroke-linejoin="round"></path>`
 }
 
 function svgDocument(body: string): string {
@@ -363,7 +431,9 @@ function svgDocument(body: string): string {
     + ` width="${SCENE_PX}" height="${SCENE_PX}" style="display:block">${body}</svg>`
 }
 
-type Drawable = { depth: number; markup: string }
+export type SceneDrawable =
+  | { kind: 'quad'; depth: number; screen: Mat; size: number; look: Look; border: number }
+  | { kind: 'label'; depth: number; path: string; outlineWidth: number; fill: string; outline: string }
 
 export type CubeSvgOptions = {
   state: StickerState
@@ -415,16 +485,20 @@ export type SceneRenderInput = {
 }
 
 export function renderSceneMarkup(input: SceneRenderInput): string {
+  return sceneDrawables(input)
+    .map(d => d.kind === 'quad' ? quadMarkup(d.screen, d.size, d.look, d.border) : labelMarkup(d))
+    .join('')
+}
+
+export function sceneDrawables(input: SceneRenderInput): SceneDrawable[] {
   const { geometry, looks, showFacelets, showFaceLabels, cubies } = input
-  const drawables: Drawable[] = []
+  const drawables: SceneDrawable[] = []
 
   const addQuad = (world: Mat, size: number, look: Look, border: number, cull: boolean) => {
     const screen = mul(geometry.projection, world)
+    if (crossesNearPlane(screen, size, size)) return
     if (cull && !facesCamera(screen, size)) return
-    drawables.push({
-      depth: apply(world, size / 2, size / 2, 0).z,
-      markup: quadMarkup(screen, size, look, border),
-    })
+    drawables.push({ kind: 'quad', depth: apply(world, size / 2, size / 2, 0).z, screen, size, look, border })
   }
 
   cubies.forEach(cubie => {
@@ -446,14 +520,17 @@ export function renderSceneMarkup(input: SceneRenderInput): string {
     geometry.labels.forEach(label => {
       const world = mul(geometry.placement, label.matrix)
       const screen = mul(geometry.projection, world)
-      if (!facesCamera(screen, LABEL_SIZE)) return
+      if (crossesNearPlane(screen, LABEL_WIDTH, LABEL_HEIGHT) || !facesCamera(screen, LABEL_WIDTH)) return
       drawables.push({
-        depth: apply(world, LABEL_SIZE / 2, LABEL_SIZE / 2, 0).z,
-        markup: labelMarkup(screen, label.letter),
+        kind: 'label',
+        depth: apply(world, LABEL_WIDTH / 2, LABEL_HEIGHT / 2, 0).z,
+        path: labelGlyphPath(screen, label.letter),
+        outlineWidth: labelOutlineWidth(screen),
+        fill: LABEL_FILL,
+        outline: LABEL_OUTLINE,
       })
     })
   }
 
-  drawables.sort((a, b) => a.depth - b.depth)
-  return drawables.map(d => d.markup).join('')
+  return drawables.sort((a, b) => a.depth - b.depth)
 }

@@ -35,7 +35,8 @@ const initScript = () => {
   }).observe({ type: 'largest-contentful-paint', buffered: true });
   new MutationObserver((_, obs) => {
     const canvas = document.querySelector('#cube_model canvas');
-    if (canvas && canvas.width > 0) {
+    const svgSticker = document.querySelector('#cube_model svg.cube-svg path');
+    if ((canvas && canvas.width > 0) || svgSticker) {
       window.__bench.cubeCanvasAt = performance.now();
       obs.disconnect();
     }
