@@ -1,21 +1,10 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { RemoveScroll } from 'react-remove-scroll';
 import { HexAlphaColorPicker } from 'react-colorful';
-import {
-  AmbientLight,
-  BoxGeometry,
-  CanvasTexture,
-  MathUtils,
-  Mesh,
-  MeshBasicMaterial,
-  PerspectiveCamera,
-  Scene,
-  WebGLRenderer,
-} from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { useCubeColors, type CubeColors } from '../../composables/useSettings';
+import { useCubeColors } from '../../composables/useSettings';
+import CubeAnglePreview from './CubeAnglePreview';
 import { compileStaticCubeImage } from '../../app/devActions';
 import { formatCubeImageJsx } from '../../utils/cubeSceneJsx';
 import { buildColorHex } from '../../utils/cubeSceneAuthoring';
@@ -44,62 +33,6 @@ const SHADE_PRESETS = [
   { label: 'None', value: '#00000000' },
 ];
 
-const CAMERA_RADIUS = 3.5;
-
-function contrastText(hex: string): string {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.5 ? '#000' : '#fff';
-}
-
-// BoxGeometry material order: +X (right), -X (left), +Y (up), -Y (down), +Z (front), -Z (back)
-function buildFaceDefs(c: CubeColors) {
-  return [
-    { label: 'R', bg: c.right, text: contrastText(c.right) },
-    { label: 'L', bg: c.left,  text: contrastText(c.left)  },
-    { label: 'U', bg: c.up,    text: contrastText(c.up)    },
-    { label: 'D', bg: c.down,  text: contrastText(c.down)  },
-    { label: 'F', bg: c.front, text: contrastText(c.front) },
-    { label: 'B', bg: c.back,  text: contrastText(c.back)  },
-  ];
-}
-
-function makeFaceTexture(label: string, bg: string, text: string): CanvasTexture {
-  const size = 256;
-  const canvas = document.createElement('canvas');
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext('2d')!;
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, size, size);
-  ctx.strokeStyle = 'rgba(0,0,0,0.25)';
-  ctx.lineWidth = 12;
-  ctx.strokeRect(6, 6, size - 12, size - 12);
-  ctx.fillStyle = text;
-  ctx.font = `bold ${size * 0.55}px sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(label, size / 2, size / 2);
-  return new CanvasTexture(canvas);
-}
-
-function elevAzimToPosition(elevDeg: number, azimDeg: number) {
-  const elev = MathUtils.degToRad(elevDeg);
-  const azim = MathUtils.degToRad(azimDeg);
-  return {
-    x: CAMERA_RADIUS * Math.cos(elev) * Math.sin(azim),
-    y: CAMERA_RADIUS * Math.sin(elev),
-    z: CAMERA_RADIUS * Math.cos(elev) * Math.cos(azim),
-  };
-}
-
-function positionToElevAzim(x: number, y: number, z: number) {
-  const elev = MathUtils.radToDeg(Math.asin(Math.max(-1, Math.min(1, y / CAMERA_RADIUS))));
-  const azim = MathUtils.radToDeg(Math.atan2(x, z));
-  return { elev, azim };
-}
-
 interface HtmlImageDialogProps {
   onClose: () => void;
   cubeState: CubeState;
@@ -113,14 +46,6 @@ export default function HtmlImageDialog({
 }: HtmlImageDialogProps) {
   const [cubeColors] = useCubeColors();
 
-  const previewDivRef = useRef<HTMLDivElement | null>(null);
-  const rendererRef = useRef<WebGLRenderer | null>(null);
-  const cameraRef = useRef<PerspectiveCamera | null>(null);
-  const controlsRef = useRef<OrbitControls | null>(null);
-  const cubeMeshRef = useRef<Mesh | null>(null);
-  const animFrameRef = useRef<number>(0);
-  const suppressSyncRef = useRef(false);
-
   const [angles, setAngles] = useState({ x: 30, y: 30 });
   const [backgroundColor, setBackgroundColor] = useState('#00000000');
   const [backgroundInput, setBackgroundInput] = useState('#00000000');
@@ -133,8 +58,9 @@ export default function HtmlImageDialog({
   const [isCompiling, setIsCompiling] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [previewLoaded, setPreviewLoaded] = useState(false);
   const [highlightSelection, setHighlightSelection] = useState<Set<string>>(allHighlightSet);
+  const facelets = faceletsFromState(cubeState);
+  const highlight = highlightSelection.size > 0 ? Array.from(highlightSelection) : null;
 
   const toggleHighlightPiece = (piece: string) => {
     setHighlightSelection(prev => {
@@ -153,105 +79,9 @@ export default function HtmlImageDialog({
     return () => window.removeEventListener('keydown', handleEscape);
   }, [onClose]);
 
-  useEffect(() => {
-    const container = previewDivRef.current;
-    if (!container) return;
-
-    const scene = new Scene();
-    scene.background = null;
-
-    const camera = new PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 100);
-    const initPos = elevAzimToPosition(angles.x, angles.y);
-    camera.position.set(initPos.x, initPos.y, initPos.z);
-    camera.lookAt(0, 0, 0);
-    cameraRef.current = camera;
-
-    const renderer = new WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setPixelRatio(window.devicePixelRatio || 1);
-    renderer.setSize(container.clientWidth, container.clientHeight);
-    container.appendChild(renderer.domElement);
-    rendererRef.current = renderer;
-
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = false;
-    controls.enableZoom = false;
-    controls.enablePan = false;
-    controlsRef.current = controls;
-
-    const geometry = new BoxGeometry(1.5, 1.5, 1.5);
-    const materials = buildFaceDefs(cubeColors).map(({ label, bg, text }) =>
-      new MeshBasicMaterial({ map: makeFaceTexture(label, bg, text) }),
-    );
-    const cube = new Mesh(geometry, materials);
-    cubeMeshRef.current = cube;
-    scene.add(cube);
-    scene.add(new AmbientLight(0xffffff, 1));
-
-    controls.addEventListener('change', () => {
-      if (suppressSyncRef.current) return;
-      const { elev, azim } = positionToElevAzim(camera.position.x, camera.position.y, camera.position.z);
-      setAngles({ x: Math.round(elev * 100) / 100, y: Math.round(azim * 100) / 100 });
-    });
-
-    const animate = () => {
-      animFrameRef.current = requestAnimationFrame(animate);
-      controls.update();
-      renderer.render(scene, camera);
-    };
-    animate();
-    setPreviewLoaded(true);
-
-    const handleResize = () => {
-      if (!container || !rendererRef.current || !cameraRef.current) return;
-      cameraRef.current.aspect = container.clientWidth / container.clientHeight;
-      cameraRef.current.updateProjectionMatrix();
-      rendererRef.current.setSize(container.clientWidth, container.clientHeight);
-    };
-    window.addEventListener('resize', handleResize);
-
-    return () => {
-      cancelAnimationFrame(animFrameRef.current);
-      controls.dispose();
-      renderer.dispose();
-      if (container.contains(renderer.domElement)) container.removeChild(renderer.domElement);
-      window.removeEventListener('resize', handleResize);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    const cube = cubeMeshRef.current;
-    if (!cube) return;
-    const newMaterials = buildFaceDefs(cubeColors).map(({ label, bg, text }) =>
-      new MeshBasicMaterial({ map: makeFaceTexture(label, bg, text) }),
-    );
-    const old = Array.isArray(cube.material) ? cube.material : [cube.material];
-    old.forEach(m => {
-      if (m instanceof MeshBasicMaterial) {
-        if (m.map) m.map.dispose();
-        m.dispose();
-      }
-    });
-    cube.material = newMaterials;
-  }, [cubeColors]);
-
-  const applyAnglesToCamera = (next: { x: number; y: number }) => {
-    const camera = cameraRef.current;
-    const controls = controlsRef.current;
-    if (!camera || !controls) return;
-    suppressSyncRef.current = true;
-    const pos = elevAzimToPosition(next.x, next.y);
-    camera.position.set(pos.x, pos.y, pos.z);
-    camera.lookAt(0, 0, 0);
-    controls.update();
-    suppressSyncRef.current = false;
-  };
-
   const handleAngleChange = (axis: 'x' | 'y', raw: string) => {
     const num = parseFloat(raw);
-    const next = { ...angles, [axis]: isNaN(num) ? 0 : num };
-    setAngles(next);
-    applyAnglesToCamera(next);
+    setAngles({ ...angles, [axis]: isNaN(num) ? 0 : num });
   };
 
   const handleBackgroundInputChange = (value: string) => {
@@ -284,14 +114,14 @@ export default function HtmlImageDialog({
     setError(null);
     try {
       const jsx = formatCubeImageJsx({
-        facelets: faceletsFromState(cubeState),
+        facelets,
         angles,
         colors: buildColorHex(cubeColors),
         shade: shadeColor,
         dim: dimOpacityPercent / 100,
         hints: includeFacelets,
         labels: includeFaceLabels,
-        highlight: highlightSelection.size > 0 ? Array.from(highlightSelection) : null,
+        highlight,
       });
       await navigator.clipboard.writeText(jsx);
       setCopied(true);
@@ -307,10 +137,6 @@ export default function HtmlImageDialog({
     setError(null);
     setIsCompiling(true);
     try {
-      const highlight =
-        highlightSelection.size > 0
-          ? Array.from(highlightSelection)
-          : null;
       const html = await compileStaticCubeImage({
         initialState: cubeState,
         angles,
@@ -388,12 +214,17 @@ export default function HtmlImageDialog({
                   style={CHECKERBOARD_STYLE}
                 >
                   <div className="absolute inset-0" style={{ backgroundColor }} />
-                  <div ref={previewDivRef} className="absolute inset-0" style={{ touchAction: 'none' }} />
-                  {!previewLoaded ? (
-                    <div className="absolute inset-0 flex items-center justify-center text-sm text-neutral-300">
-                      Loading preview...
-                    </div>
-                  ) : null}
+                  <CubeAnglePreview
+                    facelets={facelets}
+                    angles={angles}
+                    onAnglesChange={setAngles}
+                    cubeColors={cubeColors}
+                    shade={shadeColor}
+                    dim={dimOpacityPercent / 100}
+                    hints={includeFacelets}
+                    labels={includeFaceLabels}
+                    highlight={highlight}
+                  />
                 </div>
                 <div className="mt-3 flex gap-3">
                   {(['x', 'y'] as const).map(axis => (

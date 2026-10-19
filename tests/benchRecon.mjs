@@ -23,9 +23,14 @@ const PROFILES = {
 const MIN_SETTLE_MS = 15000;
 const QUIET_MS = 3000;
 const MAX_MS = 120000;
+const LONG_TASK_MS = 50;
+const INTERACTIVE_QUIET_MS = 5000;
 
 const initScript = () => {
-  window.__bench = { fcp: null, lcp: null, cubeCanvasAt: null };
+  window.__bench = { fcp: null, lcp: null, cubeCanvasAt: null, cubeLiveAt: null, longTasks: [] };
+  new PerformanceObserver(list => {
+    for (const e of list.getEntries()) window.__bench.longTasks.push([e.startTime, e.startTime + e.duration]);
+  }).observe({ type: 'longtask', buffered: true });
   new PerformanceObserver(list => {
     for (const e of list.getEntries()) if (e.name === 'first-contentful-paint') window.__bench.fcp = e.startTime;
   }).observe({ type: 'paint', buffered: true });
@@ -38,6 +43,15 @@ const initScript = () => {
     const svgSticker = document.querySelector('#cube_model svg.cube-svg path');
     if ((canvas && canvas.width > 0) || svgSticker) {
       window.__bench.cubeCanvasAt = performance.now();
+      obs.disconnect();
+    }
+  }).observe(document, { childList: true, subtree: true });
+  new MutationObserver((_, obs) => {
+    const canvas = document.querySelector('#cube_model canvas');
+    const svg = document.querySelector('#cube_model svg.cube-svg');
+    const svgSceneDrawn = svg && svg.querySelector('path') && !svg.querySelector('style');
+    if ((canvas && canvas.width > 0) || svgSceneDrawn) {
+      window.__bench.cubeLiveAt = performance.now();
       obs.disconnect();
     }
   }).observe(document, { childList: true, subtree: true });
@@ -117,8 +131,18 @@ async function runOnce(profile) {
       fcp: window.__bench.fcp,
       lcp: window.__bench.lcp,
       cubeCanvas: window.__bench.cubeCanvasAt,
+      cubeLive: window.__bench.cubeLiveAt,
+      longTasks: window.__bench.longTasks,
     };
   });
+
+  const longTasks = [...timing.longTasks].sort((a, b) => a[0] - b[0]);
+  const tasksAfterCube = timing.cubeLive === null ? [] : longTasks.filter(([, end]) => end > timing.cubeLive);
+  let interactive = timing.cubeLive;
+  for (const [start, end] of tasksAfterCube) {
+    if (start - interactive >= INTERACTIVE_QUIET_MS) break;
+    interactive = Math.max(interactive, end);
+  }
 
   await cdp.send('HeapProfiler.enable');
   await cdp.send('HeapProfiler.collectGarbage');
@@ -146,10 +170,17 @@ async function runOnce(profile) {
     domContentLoaded: pageMsToFirst(timing.domContentLoaded),
     load: pageMsToFirst(timing.load),
     cubeCanvas: timing.cubeCanvas === null ? null : pageMsToFirst(timing.cubeCanvas),
+    cubeLive: timing.cubeLive === null ? null : pageMsToFirst(timing.cubeLive),
+    interactive: interactive === null ? null : pageMsToFirst(interactive),
   };
 
   return {
     timing: fromFirst,
+    blockingAfterCube: {
+      totalMs: tasksAfterCube.reduce((s, [start, end]) => s + Math.max(0, end - start - LONG_TASK_MS), 0),
+      longestMs: tasksAfterCube.reduce((m, [start, end]) => Math.max(m, end - start), 0),
+      tasks: tasksAfterCube.map(([start, end]) => ({ startMs: pageMsToFirst(start), durationMs: end - start })),
+    },
     rawPageTiming: timing,
     bytes: {
       total: sumBytes(() => true),
@@ -179,7 +210,9 @@ for (let i = 0; i < RUNS; i++) {
   const t = result.timing;
   console.log(
     `run ${i + 1}: redirects=${result.requests.filter(r => r.redirectedTo).length} ttfb=${fmt(t.ttfb)} fcp=${fmt(t.fcp)} lcp=${fmt(t.lcp)}`
-      + ` dcl=${fmt(t.domContentLoaded)} load=${fmt(t.load)} cube=${fmt(t.cubeCanvas)}`
+      + ` dcl=${fmt(t.domContentLoaded)} load=${fmt(t.load)} cube=${fmt(t.cubeCanvas)} live=${fmt(t.cubeLive)}`
+      + ` interactive=${fmt(t.interactive)} tbtAfterCube=${fmt(result.blockingAfterCube.totalMs)}`
+      + ` longestAfterCube=${fmt(result.blockingAfterCube.longestMs)}`
       + ` bytes=${result.bytes.total} reqs=${result.requestCount}`
       + ` heap=${(result.memory.jsHeapUsed / 1e6).toFixed(1)}MB pss=${(result.memory.totalPssKb / 1024).toFixed(0)}MB`,
   );

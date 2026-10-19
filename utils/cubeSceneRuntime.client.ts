@@ -1,16 +1,18 @@
 import {
+  cornerAt,
   cubeLooks,
   cubeRotation,
   cubiesFromState,
   cubiePlacement,
   DEFAULT_SCENE_VIEW,
+  drawablePaths,
   mul,
-  renderSceneMarkup,
   sceneDrawables,
   sceneGeometry,
   type Axis,
   type CubeLooks,
   type Mat,
+  type PathAttrs,
   type SceneDrawable,
   type SceneGeometry,
   type SceneRenderInput,
@@ -55,6 +57,7 @@ export type SceneLook = {
   dim: number
   hints: boolean
   labels: boolean
+  paints?: ReadonlyMap<number, string>
 }
 
 export type CubeSceneOptions = SceneLook & {
@@ -76,13 +79,30 @@ export type CubeScene = {
   setHighlight: (set: string[] | null, animate: boolean) => void
   setLook: (look: Partial<SceneLook>) => void
   setView: (view: SceneView) => void
+  setSpin: (yDeg: number) => void
+  pickSticker: (x: number, y: number) => number | null
   drawables: (overrides?: DrawOverrides) => SceneDrawable[]
   consumeDrag: () => boolean
   destroy: () => void
 }
 
-export function cubieWorld(geometry: SceneGeometry, cubie: { mat: Mat; live: Mat | null }): Mat {
-  return mul(geometry.placement, cubie.live ? mul(cubie.live, cubie.mat) : cubie.mat)
+export function cubieWorld(geometry: SceneGeometry, cubie: { mat: Mat; live: Mat | null }, spin: Mat | null = null): Mat {
+  const local = cubie.live ? mul(cubie.live, cubie.mat) : cubie.mat
+  return mul(geometry.placement, spin ? mul(spin, local) : local)
+}
+
+function quadContains(screen: Mat, size: number, x: number, y: number): boolean {
+  const corners = [cornerAt(screen, 0, 0), cornerAt(screen, size, 0), cornerAt(screen, size, size), cornerAt(screen, 0, size)]
+  let winding = 0
+  for (let i = 0; i < corners.length; i++) {
+    const [ax, ay] = corners[i]
+    const [bx, by] = corners[(i + 1) % corners.length]
+    const side = Math.sign((bx - ax) * (y - ay) - (by - ay) * (x - ax))
+    if (side === 0) continue
+    if (winding === 0) winding = side
+    else if (side !== winding) return false
+  }
+  return true
 }
 
 function bezierPoint(t: number, a: number, b: number): number {
@@ -183,6 +203,7 @@ export function cubiesAtTime(
 
 export type Orbit = {
   angles: () => Angles
+  setAngles: (angles: Angles) => void
   step: () => boolean
   consumeDrag: () => boolean
   destroy: () => void
@@ -225,6 +246,10 @@ export function createOrbit(target: HTMLElement, start: Angles, damping: number,
 
   return {
     angles: () => angles,
+    setAngles: next => {
+      angles = next
+      goal = null
+    },
     step: () => {
       if (!goal) return false
       const remaining = Math.max(Math.abs(goal.x - angles.x), Math.abs(goal.y - angles.y))
@@ -253,18 +278,70 @@ export function createOrbit(target: HTMLElement, start: Angles, damping: number,
   }
 }
 
-export function createCubeScene(svgEl: Element, options: CubeSceneOptions): CubeScene {
+const SVG_NS = 'http://www.w3.org/2000/svg'
+const HIDDEN_PATH: PathAttrs = { display: 'none' }
+
+type SyncedElement = { el: Element; values: Map<string, string | null> }
+type DrawableSlot = { group: SyncedElement; paths: SyncedElement[] }
+
+function syncAttribute(target: SyncedElement, name: string, value: string | null): void {
+  if (target.values.get(name) === value) return
+  target.values.set(name, value)
+  if (value === null) target.el.removeAttribute(name)
+  else target.el.setAttribute(name, value)
+}
+
+function syncAttributes(target: SyncedElement, attrs: PathAttrs): void {
+  for (const name of target.values.keys()) {
+    if (!(name in attrs)) syncAttribute(target, name, null)
+  }
+  for (const name in attrs) syncAttribute(target, name, attrs[name])
+}
+
+export type ScenePainter = (drawables: SceneDrawable[]) => void
+
+export function createSvgPainter(svgEl: Element): ScenePainter {
+  const slots: DrawableSlot[] = []
+
+  const createSlot = (): DrawableSlot => {
+    const group = document.createElementNS(SVG_NS, 'g')
+    const paths = [document.createElementNS(SVG_NS, 'path'), document.createElementNS(SVG_NS, 'path')]
+    group.append(...paths)
+    svgEl.append(group)
+    return {
+      group: { el: group, values: new Map() },
+      paths: paths.map(el => ({ el, values: new Map() })),
+    }
+  }
+
+  return drawables => {
+    if (!slots.length) svgEl.replaceChildren()
+    while (slots.length < drawables.length) slots.push(createSlot())
+    while (slots.length > drawables.length) slots.pop()!.group.el.remove()
+
+    drawables.forEach((drawable, i) => {
+      const slot = slots[i]
+      const { groupOpacity, paths } = drawablePaths(drawable)
+      syncAttribute(slot.group, 'opacity', groupOpacity)
+      slot.paths.forEach((path, p) => syncAttributes(path, paths[p] ?? HIDDEN_PATH))
+    })
+  }
+}
+
+export function createCubeScene(paint: ScenePainter, options: CubeSceneOptions): CubeScene {
   let look: SceneLook = {
     colors: options.colors,
     shade: options.shade,
     dim: options.dim,
     hints: options.hints,
     labels: options.labels,
+    paints: options.paints,
   }
-  let looks: CubeLooks = cubeLooks(look.colors, look.shade, look.dim)
+  let looks: CubeLooks = cubeLooks(look.colors, look.shade, look.dim, look.paints)
   let angles = options.angles
   let view = options.view ?? DEFAULT_SCENE_VIEW
   let geometry: SceneGeometry = sceneGeometry(angles, view)
+  let spin: Mat | null = null
   const ease = options.ease ?? easeMove
 
   let cubies = buildCubies(options.facelets)
@@ -280,14 +357,14 @@ export function createCubeScene(svgEl: Element, options: CubeSceneOptions): Cube
       showFaceLabels: labels,
       cubies: cubies.map(c => ({
         stickers: c.stickers,
-        world: cubieWorld(frameGeometry, c),
+        world: cubieWorld(frameGeometry, c, spin),
         dim: c.dim,
       })),
     }
   }
 
   function render(): void {
-    svgEl.innerHTML = renderSceneMarkup(renderInput(geometry, look.hints, look.labels))
+    paint(sceneDrawables(renderInput(geometry, look.hints, look.labels)))
   }
 
   function scheduleFrame(): void {
@@ -401,13 +478,26 @@ export function createCubeScene(svgEl: Element, options: CubeSceneOptions): Cube
     },
     setLook: next => {
       look = { ...look, ...next }
-      looks = cubeLooks(look.colors, look.shade, look.dim)
+      looks = cubeLooks(look.colors, look.shade, look.dim, look.paints)
       scheduleFrame()
     },
     setView: next => {
       view = next
       geometry = sceneGeometry(angles, view)
       scheduleFrame()
+    },
+    setSpin: yDeg => {
+      spin = yDeg === 0 ? null : cubeRotation('y', yDeg)
+      scheduleFrame()
+    },
+    pickSticker: (x, y) => {
+      const drawables = sceneDrawables(renderInput(geometry, look.hints, look.labels))
+      for (let i = drawables.length - 1; i >= 0; i--) {
+        const drawable = drawables[i]
+        if (drawable.kind !== 'quad' || drawable.facelet === null) continue
+        if (quadContains(drawable.screen, drawable.size, x, y)) return drawable.facelet
+      }
+      return null
     },
     drawables: (overrides = {}) => {
       const frameGeometry = overrides.view ? sceneGeometry(angles, overrides.view) : geometry
@@ -430,7 +520,7 @@ export function createScene(root: HTMLElement, island: SceneIsland): void {
   const iconPlay = overlayEl?.querySelector<HTMLElement>('.icon-play') ?? null
   const progressFill = island.progress ? root.querySelector<HTMLElement>('.progress-fill') : null
 
-  const scene = createCubeScene(svgEl, {
+  const scene = createCubeScene(createSvgPainter(svgEl), {
     facelets: island.facelets,
     angles: island.angles,
     colors: island.colors,

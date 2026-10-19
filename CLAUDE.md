@@ -51,12 +51,18 @@ If a function has multiple different return blocks, assign the return value to a
 
 ### Directory Structure
 
-- `/app` - Next.js App Router pages and API routes
-- `/components` - React components, organized by page (`/recon`, `/changeblog`, `/notimer`, `/algs`)
-- `/composables` - React hooks and business logic utilities
-- `/utils` - General utilities and data (algorithm database, constants). Use sharedConstants.tsx for constants that are used across the project.
-- `/scripts` - Development scripts (algorithm sorting, combo generation)
-- `/docs` - Project documentation markdown files.
+- `/app` Next.js App Router pages and API routes
+- `/components` React components, organized by page (`/recon`, `/changeblog`, `/notimer`, `/algs`)
+- `/composables` React hooks and business logic utilities
+- `/utils` General utilities and data (algorithm database, constants)
+- `/scripts` Development scripts (algorithm sorting, combo generation)
+- `/docs` Project documentation markdown files
+- `/amplify` Backend AWS Amplify Gen 2 infra-as-code files
+
+### Noteworthy files
+  - See /docs/package-scripts.md for a a description of each script in package.json.
+  - Use /docs/writing-spec-sheets.md for instructions on writing specifications.
+  - Use /utils/sharedConstants.tsx for constants that are used across the project.
 
 ### State Management
 

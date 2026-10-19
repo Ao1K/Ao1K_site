@@ -99,7 +99,6 @@ export function useSyncedSettings() {
     const syncFromCookie = () => {
       const newSettings = readSettingsFromCookie();
       setSettings(newSettings);
-      // Dispatch event for other components in this tab (like TwistyPlayer)
       window.dispatchEvent(new Event('ao1kSettingsChanged'));
     };
 

@@ -1,6 +1,6 @@
 import type { CubeScene } from '../../utils/cubeSceneRuntime.client';
-import { drawSceneToCanvas } from '../../utils/cubeCanvasRender';
-import { SCENE_PX, type SceneView } from '../../utils/cubeSvgRender';
+import { drawSceneFitted } from '../../utils/cubeCanvasRender';
+import type { SceneView } from '../../utils/cubeSvgRender';
 
 export interface CubeScreenshotOptions {
   backgroundColor: string;
@@ -329,15 +329,12 @@ export const createCubeImageCapture = (getContext: () => CubeImageContext) => {
     context.fillStyle = `rgba(${(colorValue >> 16) & 255},${(colorValue >> 8) & 255},${colorValue & 255},${alpha})`;
     context.fillRect(0, 0, screenshotWidth, screenshotHeight);
 
-    const pxPerSceneUnit = screenshotHeight / SCENE_PX;
-    const sceneLeft = (screenshotWidth - SCENE_PX * pxPerSceneUnit) / 2;
-    context.setTransform(pxPerSceneUnit, 0, 0, pxPerSceneUnit, sceneLeft, 0);
-    drawSceneToCanvas(context, scene.drawables({
+    const drawables = scene.drawables({
       hints: hintsVisible && options.hintFacelets !== false,
       labels: options.includeFaceLabels,
       view: sceneView(options.zoom ?? 1),
-    }));
-    context.setTransform(1, 0, 0, 1, 0, 0);
+    });
+    drawSceneFitted(context, drawables, screenshotWidth, screenshotHeight);
 
     if (!options.includeSetupMoves || !setupMoves || isSetupMovesUnavailable) {
       return canvas.toDataURL('image/png');

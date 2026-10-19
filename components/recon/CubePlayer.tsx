@@ -7,23 +7,14 @@ import { reverseMove } from '../../composables/recon/transformHTML';
 import type { ControllerRequestOptions } from './_PageContent';
 import type { PlayerParams as RenderRefProps } from './_PageContent';
 import { createCubeImageCapture, type ScreenshotSetupStatus } from '../../composables/recon/cubeImageCapture';
-import { readSettingsFromCookie, useSyncedSettings, useShowControls, useHintFaceletsElevation } from '../../composables/useSettings';
+import { useSyncedSettings, useShowControls, useHintFaceletsElevation } from '../../composables/useSettings';
 import { SimpleCube } from '../../composables/recon/SimpleCube';
-import {
-  cameraView,
-  CUBE_CONTAINER_NAME,
-  INITIAL_ANGLES,
-  smootherStep,
-  STICKER_ELEVATION,
-  timelineMoveMs,
-  turnRotation,
-} from '../../composables/recon/reconCube';
-import type { CubePrerender } from '../../composables/recon/prerenderCube';
+import { cameraView, INITIAL_ANGLES, smootherStep, timelineMoveMs, turnRotation } from '../../composables/recon/reconCube';
 import { createCubeScene, type CubeScene } from '../../utils/cubeSceneRuntime.client';
-import { CUBE_SVG_CLASS } from '../../utils/cubeSceneIsland';
+import { createCanvasPainter } from '../../utils/cubeCanvasRender';
+import type { SceneDrawable } from '../../utils/cubeSvgRender';
 import { faceletsFromState, type RotationInfo } from '../../utils/cubeMoves';
 import { buildColorHex, DEFAULT_SCENE_LOOK } from '../../utils/cubeSceneAuthoring';
-import { SCENE_PX } from '../../utils/cubeSvgRender';
 import CameraIcon from '../icons/camera';
 
 export interface CubePlayerImperativeRef {
@@ -37,6 +28,7 @@ export interface CubePlayerImperativeRef {
 const PREVIEW_TEMPO = 1;
 const CATCH_UP_MS = 500;
 const ORBIT_DAMPING = 0.15;
+const STICKER_ELEVATION = 0.503;
 const HINT_RISE_DELAY_MS = 500;
 const HINT_RISE_MS = 1000;
 
@@ -54,7 +46,6 @@ interface PlayerProps {
     fullRight: string;
   };
   isControllerHidden: boolean;
-  prerender: CubePrerender | null;
   ref?: React.Ref<CubePlayerImperativeRef>;
 }
 
@@ -100,7 +91,6 @@ const Player = React.memo(({
   handleControllerRequest,
   controllerButtonsStatus,
   isControllerHidden,
-  prerender,
   ref,
 }: PlayerProps) => {
   const { settings } = useSyncedSettings();
@@ -113,7 +103,8 @@ const Player = React.memo(({
   const sceneRef = useRef<CubeScene | null>(null);
   const divRef = useRef<HTMLDivElement>(null);
   const orbitRef = useRef<HTMLDivElement>(null);
-  const svgRef = useRef<SVGSVGElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isCubeReady, setIsCubeReady] = useState(false);
   const [simpleCube] = useState(() => new SimpleCube());
   const hintRiseRef = useRef<number | null>(null);
   const lastColorsRef = useRef(cubeColors);
@@ -163,14 +154,18 @@ const Player = React.memo(({
   const applyView = () => {
     const scene = sceneRef.current;
     const div = divRef.current;
-    const svg = svgRef.current;
-    if (!scene || !div || !svg || div.clientHeight === 0) return;
+    const canvas = canvasRef.current;
+    if (!scene || !div || !canvas || div.clientHeight === 0) return;
+
+    const pixelWidth = Math.round(div.clientWidth * devicePixelRatio);
+    const pixelHeight = Math.round(div.clientHeight * devicePixelRatio);
+    if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+      canvas.width = pixelWidth;
+      canvas.height = pixelHeight;
+    }
 
     const view = cameraView(div.clientHeight, elevationRef.current, 1);
     scene.setView(hintRiseRef.current === null ? view : { ...view, hintElevation: hintRiseRef.current });
-
-    const viewWidth = SCENE_PX * div.clientWidth / div.clientHeight;
-    svg.setAttribute('viewBox', `${(SCENE_PX - viewWidth) / 2} 0 ${viewWidth} ${SCENE_PX}`);
   };
 
   if (sceneRef.current && lastColorsRef.current !== cubeColors) {
@@ -749,18 +744,24 @@ const Player = React.memo(({
   }, []);
 
   useEffect(() => {
-    const svg = svgRef.current;
+    const canvas = canvasRef.current;
     const orbitArea = orbitRef.current;
     const div = divRef.current;
-    if (!svg || !orbitArea || !div) return;
+    if (!canvas || !orbitArea || !div) return;
 
-    const savedSettings = readSettingsFromCookie();
-    elevationRef.current = savedSettings.hintFaceletsElevation;
-    sceneRef.current = createCubeScene(svg, {
-      facelets: prerender?.facelets
-        ?? faceletsAfter(scrambleRequest, getDisplayedSolutionAlg(solutionRequest, animationTimesRequest)),
+    const paintCanvas = createCanvasPainter(canvas);
+    let hasPainted = false;
+    const paintAndMarkReady = (drawables: SceneDrawable[]) => {
+      paintCanvas(drawables);
+      if (hasPainted) return;
+      hasPainted = true;
+      setIsCubeReady(true);
+    };
+
+    sceneRef.current = createCubeScene(paintAndMarkReady, {
+      facelets: faceletsAfter(scrambleRequest, getDisplayedSolutionAlg(solutionRequest, animationTimesRequest)),
       angles: INITIAL_ANGLES,
-      colors: buildColorHex(savedSettings.cubeColors),
+      colors: buildColorHex(cubeColors),
       shade: DEFAULT_SCENE_LOOK.shade,
       dim: DEFAULT_SCENE_LOOK.dim,
       hints: elevationRef.current !== 0,
@@ -768,7 +769,7 @@ const Player = React.memo(({
       ease: smootherStep,
       orbit: { target: orbitArea, damping: ORBIT_DAMPING },
     });
-    lastColorsRef.current = savedSettings.cubeColors;
+    lastColorsRef.current = cubeColors;
     lastElevationRef.current = elevationRef.current;
 
     const stopHintRise = startHintRise();
@@ -828,19 +829,15 @@ const Player = React.memo(({
         onKeyDown={handleKeyDown}
         tabIndex={2}
       >
-        <div
-          ref={orbitRef}
-          className="absolute inset-0 touch-none"
-          style={{ containerType: 'size', containerName: CUBE_CONTAINER_NAME }}
-        >
-          <svg
-            ref={svgRef}
-            className={`${CUBE_SVG_CLASS} block w-full h-full`}
-            viewBox={`0 0 ${SCENE_PX} ${SCENE_PX}`}
-            dangerouslySetInnerHTML={prerender ? { __html: prerender.markup } : undefined}
-          />
+        <div ref={orbitRef} className="absolute inset-0 touch-none">
+          <canvas ref={canvasRef} className="block w-full h-full" />
         </div>
-        {showControls && (
+        {!isCubeReady && (
+          <div className="absolute inset-0 flex text-xl justify-center items-center text-primary-100">
+            Loading cube...
+          </div>
+        )}
+        {isCubeReady && showControls && (
           <>
           <button
             className="absolute bottom-2 right-2 origin-bottom-right p-1 w-8 h-8 border border-neutral-600 bg-dark text-dark_accent hover:text-primary-100 rounded"
