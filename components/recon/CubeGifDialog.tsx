@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { RemoveScroll } from 'react-remove-scroll';
-import { HexAlphaColorPicker } from 'react-colorful';
+import { HexColorPicker } from 'react-colorful';
 import { useCubeColors, useHintFaceletsElevation } from '../../composables/useSettings';
 import { ALL_PIECE_NAMES, allHighlightSet } from './UnfoldedCube';
 import LineConfigItem, { type LineEntry, MIN_LINE_PCT } from './LineConfigItem';
@@ -35,16 +35,16 @@ const CHECKERBOARD_STYLE = {
   backgroundSize: '16px 16px',
 } as const;
 
+const TRANSPARENT_BACKGROUND = 'transparent';
+
 const BACKGROUND_PRESETS = [
   { label: 'Purplish', value: '#433149' },
   { label: 'Black', value: '#000000' },
-  { label: 'Grey', value: '#73737380' },
-  { label: 'Transparent', value: '#00000000' },
+  { label: 'Grey', value: '#737373' },
+  { label: 'Transparent', value: TRANSPARENT_BACKGROUND },
 ];
 
 const DEFAULT_BACKGROUND = BACKGROUND_PRESETS.find((preset) => (preset.label === 'Purplish'))!.value
-
-const isFullyTransparent = (color: string) => color.toLowerCase().endsWith('00') && color.length === 9;
 
 const FRAME_DELAY_MS = 40; // must be multiple of 10
 const FPS = 1000 / FRAME_DELAY_MS; // 25 fps
@@ -111,21 +111,14 @@ function collectSceneColors(looks: CubeLooks, options: SceneColorOptions): Scene
 type CaptureFrame = (tSec: number) => Promise<Uint8ClampedArray>;
 type CubeCamera = { angles: Angles; view: SceneView };
 
-const HEX_COLOR_PATTERN = /^#([0-9a-fA-F]{6})([0-9a-fA-F]{2})?$/;
+const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
 const FALLBACK_CAPTURE_BACKGROUND: Rgb = [0x16, 0x10, 0x18];
 
 function captureBackground(backgroundColor: string, transparent: boolean): Rgb {
-  // the encoder makes the palette entry closest to black transparent, so a transparent background is drawn as black.
   if (transparent) return [0, 0, 0];
-  const match = backgroundColor.match(HEX_COLOR_PATTERN);
-  if (!match) return FALLBACK_CAPTURE_BACKGROUND;
-  const color = parseInt(match[1], 16);
-  const alpha = match[2] ? parseInt(match[2], 16) / 255 : 1;
-  return [
-    Math.round(((color >> 16) & 0xff) * alpha),
-    Math.round(((color >> 8) & 0xff) * alpha),
-    Math.round((color & 0xff) * alpha),
-  ];
+  if (!HEX_COLOR_PATTERN.test(backgroundColor)) return FALLBACK_CAPTURE_BACKGROUND;
+  const color = parseInt(backgroundColor.slice(1), 16);
+  return [(color >> 16) & 0xff, (color >> 8) & 0xff, color & 0xff];
 }
 
 const BROWSER_YIELD_INTERVAL_MS = 100;
@@ -260,7 +253,7 @@ export default function CubeGifDialog({
 
   const [backgroundColor, setBackgroundColor] = useState(DEFAULT_BACKGROUND);
   const [backgroundInput, setBackgroundInput] = useState(DEFAULT_BACKGROUND);
-  const transparentBackground = isFullyTransparent(backgroundColor);
+  const transparentBackground = backgroundColor === TRANSPARENT_BACKGROUND;
   const [includeFacelets, setIncludeFacelets] = useState(true);
   const [includeFaceLabels, setIncludeFaceLabels] = useState(true);
   const [resolution, setResolution] = useState(360);
@@ -309,8 +302,14 @@ export default function CubeGifDialog({
   }, [scramble, lineEntries]);
 
   const looks = useMemo(
-    () => cubeLooks(buildColorHex(cubeColors), DEFAULT_SCENE_LOOK.shade, DEFAULT_SCENE_LOOK.dim),
-    [cubeColors],
+    () => cubeLooks(
+      buildColorHex(cubeColors),
+      DEFAULT_SCENE_LOOK.shade,
+      DEFAULT_SCENE_LOOK.dim,
+      new Map(),
+      transparentBackground ? 1 : undefined,
+    ),
+    [cubeColors, transparentBackground],
   );
 
   // piece highlighting — each line carries the set of currently-selected pieces.
@@ -552,16 +551,16 @@ export default function CubeGifDialog({
   };
 
   const handleBackgroundInputChange = (value: string) => {
-    if (!/^#[0-9A-Fa-f]{0,8}$/.test(value)) return;
+    if (!/^#[0-9A-Fa-f]{0,6}$/.test(value)) return;
     setBackgroundInput(value);
-    if (/^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$/.test(value)) {
+    if (HEX_COLOR_PATTERN.test(value)) {
       setBackgroundColor(value);
     }
   };
 
   const handlePresetClick = (value: string) => {
     setBackgroundColor(value);
-    setBackgroundInput(value);
+    setBackgroundInput(value === TRANSPARENT_BACKGROUND ? '' : value);
   };
 
   // total cube duration (sum of move durations across all entries)
@@ -804,7 +803,7 @@ export default function CubeGifDialog({
       const yieldToBrowserPeriodically = createPeriodicBrowserYield();
       const captureFrame: CaptureFrame = async (tSec) => {
         await yieldToBrowserPeriodically();
-        drawFrame(captureContext, resolution, tSec, camera, background);
+        drawFrame(captureContext, resolution, tSec, camera, transparentBackground ? null : background);
         return captureContext.getImageData(0, 0, resolution, resolution).data;
       };
 
@@ -910,7 +909,7 @@ export default function CubeGifDialog({
                 >
                   <div
                     className="absolute inset-0"
-                    style={{ backgroundColor: transparentBackground ? 'transparent' : backgroundColor }}
+                    style={{ backgroundColor }}
                   />
                   <div
                     ref={previewDivRef}
@@ -971,8 +970,8 @@ export default function CubeGifDialog({
                     </button>
                   ))}
                 </div>
-                <HexAlphaColorPicker
-                  color={backgroundColor}
+                <HexColorPicker
+                  color={transparentBackground ? '#000000' : backgroundColor}
                   onChange={n => handlePresetClick(n)}
                   style={{ width: '100%', maxWidth: '300px', height: '140px' }}
                 />
@@ -983,7 +982,7 @@ export default function CubeGifDialog({
                     value={backgroundInput}
                     onChange={e => handleBackgroundInputChange(e.target.value)}
                     className="w-full rounded-sm border border-neutral-600 bg-dark/40 px-3 py-2 font-mono text-sm text-primary-100 outline-none focus:border-primary-100"
-                    placeholder="#161018ff"
+                    placeholder="#161018"
                   />
                 </div>
               </div>

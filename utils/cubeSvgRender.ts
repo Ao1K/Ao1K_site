@@ -10,7 +10,6 @@ const LABEL_FILL = '#ECE6EF'
 const LABEL_OUTLINE = '#161018'
 const LABEL_OUTLINE_GLYPH_UNITS = 32
 export const FACE_BORDER_PX = 3
-export const HINT_BORDER_PX = 2
 
 const HINT_INSET = 3
 export const HINT_PX = CUBIE_PX - HINT_INSET * 2
@@ -138,7 +137,6 @@ export function apply(m: Mat, x: number, y: number, z: number) {
 export type Rgba = { r: number; g: number; b: number; a: number }
 
 const OPAQUE_BLACK: Rgba = { r: 0, g: 0, b: 0, a: 1 }
-const HINT_BORDER: Rgba = { r: 0, g: 0, b: 0, a: 0.25 }
 
 function parseColor(value: string): Rgba {
   const hex = /^#([0-9a-f]{3,8})$/i.exec(value.trim())
@@ -323,16 +321,16 @@ type StickerLooks = { face: LookPair; hint: LookPair }
 
 export type CubeLooks = { face: LookPair[]; hint: LookPair[]; painted: Map<number, StickerLooks> }
 
-function stickerLooks(color: Rgba, shade: Rgba, dimOpacity: number): StickerLooks {
-  const band = over(HINT_BORDER, color)
+function stickerLooks(color: Rgba, shade: Rgba, dimOpacity: number, hintOpacity: number): StickerLooks {
+  const dimColor = over(shade, color)
   return {
     face: {
       bright: { frame: OPAQUE_BLACK, fill: color, opacity: 1 },
-      dim: { frame: OPAQUE_BLACK, fill: over(shade, color), opacity: dimOpacity },
+      dim: { frame: OPAQUE_BLACK, fill: dimColor, opacity: dimOpacity },
     },
     hint: {
-      bright: { frame: band, fill: color, opacity: HINT_OPACITY },
-      dim: { frame: band, fill: over(shade, color), opacity: HINT_OPACITY * dimOpacity },
+      bright: { frame: color, fill: color, opacity: hintOpacity },
+      dim: { frame: dimColor, fill: dimColor, opacity: hintOpacity * dimOpacity },
     },
   }
 }
@@ -342,17 +340,18 @@ export function cubeLooks(
   shadeColor: string,
   dimOpacity: number,
   paints: ReadonlyMap<number, string> = new Map(),
+  hintOpacity = HINT_OPACITY,
 ): CubeLooks {
   const shade = parseColor(shadeColor)
   const byColor = COLOR_ORDER.map(name =>
-    stickerLooks(parseColor(name === 'X' ? BLANK_STICKER_HEX : colorHex[name]), shade, dimOpacity))
+    stickerLooks(parseColor(name === 'X' ? BLANK_STICKER_HEX : colorHex[name]), shade, dimOpacity, hintOpacity))
 
   const looksByPaint = new Map<string, StickerLooks>()
   const painted = new Map<number, StickerLooks>()
   paints.forEach((paint, facelet) => {
     let looks = looksByPaint.get(paint)
     if (!looks) {
-      looks = stickerLooks(parseColor(paint), shade, dimOpacity)
+      looks = stickerLooks(parseColor(paint), shade, dimOpacity, hintOpacity)
       looksByPaint.set(paint, looks)
     }
     painted.set(facelet, looks)
@@ -453,18 +452,19 @@ export type PathAttrs = Record<string, string>
 
 export type DrawablePaths = { groupOpacity: string | null; paths: PathAttrs[] }
 
-function quadPaths(outerCorners: Point[], innerCorners: Point[], look: Look): DrawablePaths {
-  const inner = ringPath(innerCorners)
+function quadPaths(outerCorners: Point[], innerCorners: Point[] | null, look: Look): DrawablePaths {
+  const groupOpacity = look.opacity >= 1 ? null : ratio(look.opacity)
   const outer = ringPath(outerCorners)
+  if (!innerCorners) {
+    return { groupOpacity, paths: [{ d: outer, fill: rgbString(look.fill), ...opacityAttrs(look.fill.a) }] }
+  }
+  const inner = ringPath(innerCorners)
   const fillHidesFrameCenter = look.fill.a >= 1
   const framePath: PathAttrs = fillHidesFrameCenter
     ? { d: outer, fill: rgbString(look.frame), ...opacityAttrs(look.frame.a) }
     : { d: outer + inner, 'fill-rule': 'evenodd', fill: rgbString(look.frame), ...opacityAttrs(look.frame.a) }
   const fillPath: PathAttrs = { d: inner, fill: rgbString(look.fill), ...opacityAttrs(look.fill.a) }
-  return {
-    groupOpacity: look.opacity >= 1 ? null : ratio(look.opacity),
-    paths: [framePath, fillPath],
-  }
+  return { groupOpacity, paths: [framePath, fillPath] }
 }
 
 function labelGlyphSegments(screen: Mat, letter: string): GlyphSegment[] {
@@ -513,7 +513,7 @@ function svgDocument(body: string): string {
 }
 
 export type SceneDrawable =
-  | { kind: 'quad'; depth: number; outer: Point[]; inner: Point[]; look: Look; facelet: number | null }
+  | { kind: 'quad'; depth: number; outer: Point[]; inner: Point[] | null; look: Look; facelet: number | null }
   | { kind: 'label'; depth: number; segments: GlyphSegment[]; outlineWidth: number; fill: string; outline: string }
 
 export type CubeSvgOptions = {
@@ -573,12 +573,12 @@ export function sceneDrawables(input: SceneRenderInput): SceneDrawable[] {
   const { geometry, looks, showFacelets, showFaceLabels, cubies } = input
   const drawables: SceneDrawable[] = []
 
-  const addQuad = (world: Mat, size: number, look: Look, border: number, cull: boolean, facelet: number | null) => {
+  const addQuad = (world: Mat, size: number, look: Look, border: number | null, cull: boolean, facelet: number | null) => {
     const screen = mul(geometry.projection, world)
     const { corners: outer, nearestW } = projectRect(screen, 0, size, size)
     if (nearestW < NEAR_PLANE_W) return
     if (cull && !facesCamera(outer)) return
-    const inner = projectRect(screen, border, size - border, size - border).corners
+    const inner = border === null ? null : projectRect(screen, border, size - border, size - border).corners
     drawables.push({ kind: 'quad', depth: apply(world, size / 2, size / 2, 0).z, outer, inner, look, facelet })
   }
 
@@ -594,7 +594,7 @@ export function sceneDrawables(input: SceneRenderInput): SceneDrawable[] {
         lerpLook(painted?.face ?? looks.face[colorIndex], cubie.dim), FACE_BORDER_PX, false, sticker.facelet)
       if (!showFacelets) return
       addQuad(mul(cubie.world, geometry.hintLocal[sticker.faceIndex]), HINT_PX,
-        lerpLook(painted?.hint ?? looks.hint[colorIndex], cubie.dim), HINT_BORDER_PX, true, null)
+        lerpLook(painted?.hint ?? looks.hint[colorIndex], cubie.dim), null, true, null)
     })
   })
 

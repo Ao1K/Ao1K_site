@@ -13,6 +13,13 @@ function traceRing(ctx: CanvasRenderingContext2D, corners: Point[]): void {
 
 function drawQuad(ctx: CanvasRenderingContext2D, quad: Extract<SceneDrawable, { kind: 'quad' }>): void {
   const { outer, inner, look } = quad
+  if (!inner) {
+    ctx.beginPath()
+    traceRing(ctx, outer)
+    ctx.fillStyle = rgbaString(look.fill, look.fill.a * look.opacity)
+    ctx.fill()
+    return
+  }
   const frameHiddenUnderFill = look.fill.a >= 1 && look.opacity >= 1
 
   ctx.beginPath()
