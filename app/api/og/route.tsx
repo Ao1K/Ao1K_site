@@ -7,6 +7,7 @@ import { SimpleCube } from '../../../composables/recon/SimpleCube';
 import { SimpleCubeInterpreter, type StepInfo } from '../../../composables/recon/SimpleCubeInterpreter';
 import parseText from '../../../composables/recon/validateTextInput';
 import validationToArray from '../../../composables/recon/validationToMoves';
+import { cleanMovesText, movesFromText } from '../../../composables/recon/parseMovesText';
 import { getLineStepInfo, getNewSteps } from '../../../composables/recon/getLineStepInfo';
 import { fetchDailyScramble } from '../../../utils/fetchDailyScramble';
 import { editorAliases, OG_PREVIEW_SCALE, OG_PREVIEW_SIZE } from '../../../utils/sharedConstants';
@@ -96,7 +97,7 @@ function renderColoredText(text: string): React.ReactNode {
     // if type changes, push the accumulated string with the previous type's color
     if (type !== 'space' && type !== lastType) {
       elements.push(
-        <span key={elements.length} style={{ color: getColor(lastType) }}>{currentString}</span>
+        <span key={elements.length} style={{ color: getColor(lastType) }}>{currentString.replace(/\s+/g, "\u00a0")}</span>
       );
       currentString = '';
       lastType = type;
@@ -106,7 +107,7 @@ function renderColoredText(text: string): React.ReactNode {
   
   if (currentString.length > 0) {
     elements.push(
-      <span key={elements.length} style={{ color: getColor(lastType) }}>{currentString}</span>
+      <span key={elements.length} style={{ color: getColor(lastType) }}>{currentString.replace(/\s+/g, "\u00a0")}</span>
     );
   }
 
@@ -126,7 +127,7 @@ export async function GET(request: Request) {
       const aliases = editorAliases[name] ?? [];
       return searchParams.get(name) ?? aliases.reduce<string | null>((found, alias) => found ?? searchParams.get(alias), null) ?? '';
     };
-    console.log('Raw scramble param:', getRawParam('scramble'));
+    // console.log('Raw scramble param:', getRawParam('scramble'));
     const scramble = decodeURIComponent(customDecodeURL(getRawParam('scramble')));
     const solution = decodeURIComponent(customDecodeURL(getRawParam('solution')));
     const time = searchParams.get('time');
@@ -156,27 +157,8 @@ export async function GET(request: Request) {
 
     const imageOptions = OG_PREVIEW_SIZE;
 
-    // Scramble processing
-    // Parse lines separately to handle comments correctly, then merge valid parts
-    const scrambleLines = scramble.split('\n');
-    let cleanScramble = '';
-    
-    for (const line of scrambleLines) {
-      const parsedLine = parseText(line);
-      const validChars = parsedLine
-        .filter(([_, type]) => type !== 'comment' && type !== 'invalid')
-        .map(([char]) => char)
-        .join('')
-        .replace(/\s+/g, ' '); // normalize spaces
-      
-      if (validChars.trim()) {
-        cleanScramble += (cleanScramble ? ' ' : '') + validChars.trim();
-      }
-    }
-
-    const scrambleParsed = parseText(cleanScramble);
-    const scrambleTokens = validationToArray(scrambleParsed, 300);
-    const scrambleMoves = scrambleTokens.map(t => t.value);
+    const cleanScramble = cleanMovesText(scramble);
+    const scrambleMoves = movesFromText(scramble);
     const renderedScramble = renderColoredText(cleanScramble);
 
     // Solution processing

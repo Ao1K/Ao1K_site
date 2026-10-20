@@ -135,6 +135,7 @@ export function getPreviewStyles(scale = 1) {
       color: s.textColor,
       margin: p(s.padding),
       textAlign: 'right',
+      wordBreak: 'break-word'
     } as CSSProperties,
 
     statBreak: {
@@ -471,10 +472,16 @@ export class ScreenshotManager {
       const liveIconStack = richSolutionDiv?.querySelector('.icon-column-clip')?.firstElementChild?.firstElementChild as HTMLElement | null;
 
       // create wrapper with styles
-      const wrapper = document.createElement('div');
-      Object.assign(wrapper.style, {
+      const frame = document.createElement('div');
+      Object.assign(frame.style, {
         position: 'absolute',
         left: '-9999px',
+        width: 'fit-content',
+        padding: '4px',
+      });
+
+      const wrapper = document.createElement('div');
+      Object.assign(wrapper.style, {
         width: 'fit-content',
         backgroundColor: '#161018',
         padding: '1rem',
@@ -587,7 +594,8 @@ export class ScreenshotManager {
       wrapper.appendChild(solutionLabelElement);
       wrapper.appendChild(solutionClone);
       wrapper.appendChild(infoDiv);
-      document.body.appendChild(wrapper);
+      frame.appendChild(wrapper);
+      document.body.appendChild(frame);
 
       // calculate and apply unified width
       const iconColumnWidth = hasRenderedIcons ? iconColumn.offsetWidth : 0;
@@ -638,13 +646,13 @@ export class ScreenshotManager {
       fixModernColors(wrapper);
 
       // capture and cleanup
-      const canvas = await html2canvas(wrapper, {
-        backgroundColor: '#221825',
+      const canvas = await html2canvas(frame, {
+        backgroundColor: null,
         scale: 1,
         logging: false,
       });
 
-      document.body.removeChild(wrapper);
+      document.body.removeChild(frame);
 
       const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve));
       if (!blob) {

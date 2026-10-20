@@ -10,3 +10,7 @@
   sentence is only included because something used to be broken, cut it.
 - **Don't narrate corrections.** Skip "not X, but Y" sentence constructions and 
   references to how things were debugged.
+
+# Deleting Spec Sheets
+- **Delete when done** A spec sheet is typically deleted after the feature it describes is 
+  implemented. You may request to delete it when all work related to the spec is done.

@@ -1,69 +1,103 @@
 import type { Color } from '../composables/recon/SimpleCube'
+import { LABEL_GLYPH_BOX, LABEL_GLYPHS } from './cubeLabelGlyphs'
 
 export const CUBIE_PX = 100
 export const CUBE_PX = CUBIE_PX * 3
 export const SCENE_PX = 640
-export const LABEL_SIZE = Math.round(CUBIE_PX * 1.5) // face label container size (50% larger than a sticker)
+const LABEL_WIDTH = CUBIE_PX * 1.1
+const LABEL_HEIGHT = CUBIE_PX * 1.6
+const LABEL_FILL = '#ECE6EF'
+const LABEL_OUTLINE = '#161018'
+const LABEL_OUTLINE_GLYPH_UNITS = 32
 export const FACE_BORDER_PX = 3
-export const HINT_BORDER_PX = 2
 
 const HINT_INSET = 3
 export const HINT_PX = CUBIE_PX - HINT_INSET * 2
 
-const HINT_OFFSET = CUBIE_PX // distance (px) hint facelets float outside the regular sticker (~1 sticker)
 const LABEL_OFFSET = 50 // distance (px) face direction labels float outside the cube
 const HALF_CUBIE = CUBIE_PX / 2
 const CUBE_MID = CUBE_PX / 2
 const CUBE_LEFT = (SCENE_PX - CUBE_PX) / 2
-const CUBE_SCALE = 0.85
-const PERSPECTIVE_PX = 1000
-const HINT_FLOAT = HALF_CUBIE + HINT_OFFSET
 const LABEL_FLOAT = CUBE_MID + LABEL_OFFSET
 const HINT_OPACITY = 0.55
 
-export type Mat = number[][]
+export type SceneView = { hintElevation: number; cubeScale: number; perspective: number }
+
+export const DEFAULT_SCENE_VIEW: SceneView = { hintElevation: 1.5, cubeScale: 0.85, perspective: 1000 }
+
+export type Mat = number[]
 
 export function mul(a: Mat, b: Mat): Mat {
-  const out: Mat = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
-  for (let r = 0; r < 4; r++) {
+  const out: Mat = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  for (let row = 0; row < 16; row += 4) {
     for (let c = 0; c < 4; c++) {
-      out[r][c] = a[r][0] * b[0][c] + a[r][1] * b[1][c] + a[r][2] * b[2][c] + a[r][3] * b[3][c]
+      out[row + c] = a[row] * b[c] + a[row + 1] * b[4 + c] + a[row + 2] * b[8 + c] + a[row + 3] * b[12 + c]
     }
   }
   return out
 }
 
 function chain(...mats: Mat[]): Mat {
-  return mats.reduce(mul, [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
+  return mats.reduce(mul, [
+    1, 0, 0, 0,
+    0, 1, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, 1,
+  ])
 }
 
 export function translate(x: number, y: number, z: number): Mat {
-  return [[1, 0, 0, x], [0, 1, 0, y], [0, 0, 1, z], [0, 0, 0, 1]]
+  return [
+    1, 0, 0, x,
+    0, 1, 0, y,
+    0, 0, 1, z,
+    0, 0, 0, 1,
+  ]
 }
 
 function scaleXY(s: number): Mat {
-  return [[s, 0, 0, 0], [0, s, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
+  return [
+    s, 0, 0, 0,
+    0, s, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, 1,
+  ]
 }
 
 function rotateX(deg: number): Mat {
   const a = (deg * Math.PI) / 180
   const c = Math.cos(a)
   const s = Math.sin(a)
-  return [[1, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, 1]]
+  return [
+    1, 0, 0, 0,
+    0, c, -s, 0,
+    0, s, c, 0,
+    0, 0, 0, 1,
+  ]
 }
 
 function rotateY(deg: number): Mat {
   const a = (deg * Math.PI) / 180
   const c = Math.cos(a)
   const s = Math.sin(a)
-  return [[c, 0, s, 0], [0, 1, 0, 0], [-s, 0, c, 0], [0, 0, 0, 1]]
+  return [
+    c, 0, s, 0,
+    0, 1, 0, 0,
+    -s, 0, c, 0,
+    0, 0, 0, 1,
+  ]
 }
 
 function rotateZ(deg: number): Mat {
   const a = (deg * Math.PI) / 180
   const c = Math.cos(a)
   const s = Math.sin(a)
-  return [[c, -s, 0, 0], [s, c, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
+  return [
+    c, -s, 0, 0,
+    s, c, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, 1,
+  ]
 }
 
 export type Axis = 'x' | 'y' | 'z'
@@ -79,7 +113,12 @@ export function cubeRotation(axis: Axis, deg: number): Mat {
 }
 
 function perspective(d: number): Mat {
-  return [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, -1 / d, 1]]
+  return [
+    1, 0, 0, 0,
+    0, 1, 0, 0,
+    0, 0, 1, 0,
+    0, 0, -1 / d, 1,
+  ]
 }
 
 function aboutOrigin(ox: number, oy: number, m: Mat): Mat {
@@ -88,17 +127,16 @@ function aboutOrigin(ox: number, oy: number, m: Mat): Mat {
 
 export function apply(m: Mat, x: number, y: number, z: number) {
   return {
-    x: m[0][0] * x + m[0][1] * y + m[0][2] * z + m[0][3],
-    y: m[1][0] * x + m[1][1] * y + m[1][2] * z + m[1][3],
-    z: m[2][0] * x + m[2][1] * y + m[2][2] * z + m[2][3],
-    w: m[3][0] * x + m[3][1] * y + m[3][2] * z + m[3][3],
+    x: m[0] * x + m[1] * y + m[2] * z + m[3],
+    y: m[4] * x + m[5] * y + m[6] * z + m[7],
+    z: m[8] * x + m[9] * y + m[10] * z + m[11],
+    w: m[12] * x + m[13] * y + m[14] * z + m[15],
   }
 }
 
-type Rgba = { r: number; g: number; b: number; a: number }
+export type Rgba = { r: number; g: number; b: number; a: number }
 
 const OPAQUE_BLACK: Rgba = { r: 0, g: 0, b: 0, a: 1 }
-const HINT_BORDER: Rgba = { r: 0, g: 0, b: 0, a: 0.25 }
 
 function parseColor(value: string): Rgba {
   const hex = /^#([0-9a-f]{3,8})$/i.exec(value.trim())
@@ -173,13 +211,15 @@ const FACE_ORIENT: Record<FaceName, Mat> = {
   left: chain(rotateY(-90), translate(0, 0, HALF_CUBIE)),
 }
 
-const HINT_ORIENT: Record<FaceName, Mat> = {
-  up: chain(rotateX(-90), translate(0, 0, -HINT_FLOAT)),
-  down: chain(rotateX(90), translate(0, 0, -HINT_FLOAT)),
-  front: chain(rotateY(180), translate(0, 0, -HINT_FLOAT)),
-  back: translate(0, 0, -HINT_FLOAT),
-  right: chain(rotateY(-90), translate(0, 0, -HINT_FLOAT)),
-  left: chain(rotateY(90), translate(0, 0, -HINT_FLOAT)),
+function hintOrient(hintFloat: number): Record<FaceName, Mat> {
+  return {
+    up: chain(rotateX(-90), translate(0, 0, -hintFloat)),
+    down: chain(rotateX(90), translate(0, 0, -hintFloat)),
+    front: chain(rotateY(180), translate(0, 0, -hintFloat)),
+    back: translate(0, 0, -hintFloat),
+    right: chain(rotateY(-90), translate(0, 0, -hintFloat)),
+    left: chain(rotateY(90), translate(0, 0, -hintFloat)),
+  }
 }
 
 const LABEL_ORIENT: Record<string, Mat> = {
@@ -191,8 +231,53 @@ const LABEL_ORIENT: Record<string, Mat> = {
   B: chain(translate(0, 0, -LABEL_FLOAT), rotateY(180)),
 }
 
-export const LABEL_FONT_PX = Math.round(LABEL_SIZE * 0.64)
-export const LABEL_STROKE_PX = Math.round(LABEL_SIZE * 0.06)
+export type Point = [number, number]
+
+export type GlyphSegment = { command: 'M' | 'L' | 'C' | 'Z'; points: Point[] }
+
+function parseGlyph(d: string): GlyphSegment[] {
+  const tokens = d.match(/[A-Za-z]|-?(?:\d*\.\d+|\d+)(?:e[-+]?\d+)?/g) ?? []
+  const scaleX = LABEL_WIDTH / LABEL_GLYPH_BOX.width
+  const scaleY = LABEL_HEIGHT / LABEL_GLYPH_BOX.height
+  const segments: GlyphSegment[] = []
+  let index = 0
+  let command = ''
+  let x = 0
+  let y = 0
+  const read = () => Number(tokens[index++])
+  const point = (px: number, py: number): Point => [px * scaleX, py * scaleY]
+
+  while (index < tokens.length) {
+    if (/[A-Za-z]/.test(tokens[index])) command = tokens[index++]
+    if (command === 'Z') {
+      segments.push({ command: 'Z', points: [] })
+    } else if (command === 'M' || command === 'L') {
+      x = read()
+      y = read()
+      segments.push({ command, points: [point(x, y)] })
+      command = 'L'
+    } else if (command === 'H') {
+      x = read()
+      segments.push({ command: 'L', points: [point(x, y)] })
+    } else if (command === 'V') {
+      y = read()
+      segments.push({ command: 'L', points: [point(x, y)] })
+    } else if (command === 'C') {
+      const c1 = point(read(), read())
+      const c2 = point(read(), read())
+      x = read()
+      y = read()
+      segments.push({ command: 'C', points: [c1, c2, point(x, y)] })
+    } else {
+      throw new Error(`unsupported label glyph command "${command}"`)
+    }
+  }
+  return segments
+}
+
+const LABEL_GLYPH_SEGMENTS: Record<string, GlyphSegment[]> = Object.fromEntries(
+  Object.entries(LABEL_GLYPHS).map(([letter, d]) => [letter, parseGlyph(d)]),
+)
 
 function pieceNameOf(colors: StickerColor[]): string {
   const primary = colors.includes('W') ? 'W' : colors.includes('Y') ? 'Y' : ''
@@ -200,7 +285,7 @@ function pieceNameOf(colors: StickerColor[]): string {
   return primary + rest
 }
 
-export type Sticker = { faceIndex: number; color: StickerColor }
+export type Sticker = { faceIndex: number; facelet: number; color: StickerColor }
 export type Cubie = { x: number; y: number; z: number; piece: string; stickers: Sticker[] }
 
 export function cubiesFromState(state: StickerState): Cubie[] {
@@ -219,6 +304,7 @@ export function cubiesFromState(state: StickerState): Cubie[] {
 
         const stickers = slots.map(([faceIndex, stickerIdx]) => ({
           faceIndex,
+          facelet: faceIndex * 9 + stickerIdx,
           color: state[faceIndex][Math.floor(stickerIdx / 3)][stickerIdx % 3],
         }))
         cubies.push({ x, y, z, piece: pieceNameOf(stickers.map(s => s.color)), stickers })
@@ -231,25 +317,47 @@ export function cubiesFromState(state: StickerState): Cubie[] {
 export type Look = { frame: Rgba; fill: Rgba; opacity: number }
 export type LookPair = { bright: Look; dim: Look }
 
-export type CubeLooks = { face: LookPair[]; hint: LookPair[] }
+type StickerLooks = { face: LookPair; hint: LookPair }
 
-export function cubeLooks(colorHex: Record<Color, string>, shadeColor: string, dimOpacity: number): CubeLooks {
-  const shade = parseColor(shadeColor)
-  const face: LookPair[] = []
-  const hint: LookPair[] = []
-  COLOR_ORDER.forEach(name => {
-    const color = parseColor(name === 'X' ? BLANK_STICKER_HEX : colorHex[name])
-    const band = over(HINT_BORDER, color)
-    face.push({
+export type CubeLooks = { face: LookPair[]; hint: LookPair[]; painted: Map<number, StickerLooks> }
+
+function stickerLooks(color: Rgba, shade: Rgba, dimOpacity: number, hintOpacity: number): StickerLooks {
+  const dimColor = over(shade, color)
+  return {
+    face: {
       bright: { frame: OPAQUE_BLACK, fill: color, opacity: 1 },
-      dim: { frame: OPAQUE_BLACK, fill: over(shade, color), opacity: dimOpacity },
-    })
-    hint.push({
-      bright: { frame: band, fill: color, opacity: HINT_OPACITY },
-      dim: { frame: band, fill: over(shade, color), opacity: HINT_OPACITY * dimOpacity },
-    })
+      dim: { frame: OPAQUE_BLACK, fill: dimColor, opacity: dimOpacity },
+    },
+    hint: {
+      bright: { frame: color, fill: color, opacity: hintOpacity },
+      dim: { frame: dimColor, fill: dimColor, opacity: hintOpacity * dimOpacity },
+    },
+  }
+}
+
+export function cubeLooks(
+  colorHex: Record<Color, string>,
+  shadeColor: string,
+  dimOpacity: number,
+  paints: ReadonlyMap<number, string> = new Map(),
+  hintOpacity = HINT_OPACITY,
+): CubeLooks {
+  const shade = parseColor(shadeColor)
+  const byColor = COLOR_ORDER.map(name =>
+    stickerLooks(parseColor(name === 'X' ? BLANK_STICKER_HEX : colorHex[name]), shade, dimOpacity, hintOpacity))
+
+  const looksByPaint = new Map<string, StickerLooks>()
+  const painted = new Map<number, StickerLooks>()
+  paints.forEach((paint, facelet) => {
+    let looks = looksByPaint.get(paint)
+    if (!looks) {
+      looks = stickerLooks(parseColor(paint), shade, dimOpacity, hintOpacity)
+      looksByPaint.set(paint, looks)
+    }
+    painted.set(facelet, looks)
   })
-  return { face, hint }
+
+  return { face: byColor.map(l => l.face), hint: byColor.map(l => l.hint), painted }
 }
 
 function lerp(from: number, to: number, t: number): number {
@@ -280,34 +388,44 @@ export type SceneGeometry = {
   labels: Array<{ letter: string; matrix: Mat }>
 }
 
-export function sceneGeometry(angles: { x: number; y: number }): SceneGeometry {
-  const labelInset = (CUBE_PX - LABEL_SIZE) / 2
+export function sceneGeometry(angles: { x: number; y: number }, view: SceneView = DEFAULT_SCENE_VIEW): SceneGeometry {
+  const labelInsetX = (CUBE_PX - LABEL_WIDTH) / 2
+  const labelInsetY = (CUBE_PX - LABEL_HEIGHT) / 2
+  const hintOrientByFace = hintOrient(view.hintElevation * CUBIE_PX)
   return {
-    projection: aboutOrigin(SCENE_PX / 2, SCENE_PX / 2, perspective(PERSPECTIVE_PX)),
+    projection: aboutOrigin(SCENE_PX / 2, SCENE_PX / 2, perspective(view.perspective)),
     placement: chain(
       translate(CUBE_LEFT, CUBE_LEFT, 0),
-      aboutOrigin(CUBE_MID, CUBE_MID, chain(scaleXY(CUBE_SCALE), rotateX(-angles.x), rotateY(-angles.y))),
+      aboutOrigin(CUBE_MID, CUBE_MID, chain(scaleXY(view.cubeScale), rotateX(-angles.x), rotateY(-angles.y))),
     ),
     faceLocal: FACE_NAMES.map(name => aboutOrigin(HALF_CUBIE, HALF_CUBIE, FACE_ORIENT[name])),
     hintLocal: FACE_NAMES.map(name =>
-      chain(translate(HINT_INSET, HINT_INSET, 0), aboutOrigin(HINT_PX / 2, HINT_PX / 2, HINT_ORIENT[name]))),
+      chain(translate(HINT_INSET, HINT_INSET, 0), aboutOrigin(HINT_PX / 2, HINT_PX / 2, hintOrientByFace[name]))),
     labels: Object.entries(LABEL_ORIENT).map(([face, orient]) => ({
       letter: face,
-      matrix: chain(aboutOrigin(CUBE_MID, CUBE_MID, orient), translate(labelInset, labelInset, 0)),
+      matrix: chain(aboutOrigin(CUBE_MID, CUBE_MID, orient), translate(labelInsetX, labelInsetY, 0)),
     })),
   }
 }
 
-export function cornerAt(screen: Mat, x: number, y: number): [number, number] {
+export function cornerAt(screen: Mat, x: number, y: number): Point {
   const q = apply(screen, x, y, 0)
   return [q.x / q.w, q.y / q.w]
 }
 
-export function ringPath(screen: Mat, size: number, inset: number): string {
-  const lo = inset
-  const hi = size - inset
-  const corners: Array<[number, number]> = [[lo, lo], [hi, lo], [hi, hi], [lo, hi]]
-  const points = corners.map(([x, y]) => cornerAt(screen, x, y).map(snap))
+function projectRect(screen: Mat, lo: number, hiX: number, hiY: number): { corners: Point[]; nearestW: number } {
+  let nearestW = Infinity
+  const rect: Point[] = [[lo, lo], [hiX, lo], [hiX, hiY], [lo, hiY]]
+  const corners = rect.map(([x, y]): Point => {
+    const q = apply(screen, x, y, 0)
+    nearestW = Math.min(nearestW, q.w)
+    return [q.x / q.w, q.y / q.w]
+  })
+  return { corners, nearestW }
+}
+
+function ringPath(corners: Point[]): string {
+  const points = corners.map(corner => corner.map(snap))
   const steps: number[] = []
   for (let i = 1; i < points.length; i++) {
     steps.push(snap(points[i][0] - points[i - 1][0]), snap(points[i][1] - points[i - 1][1]))
@@ -315,47 +433,78 @@ export function ringPath(screen: Mat, size: number, inset: number): string {
   return `M${joinCoords(points[0])}l${joinCoords(steps)}Z`
 }
 
-export function facesCamera(screen: Mat, size: number): boolean {
-  const o = cornerAt(screen, 0, 0)
-  const px = cornerAt(screen, size, 0)
-  const py = cornerAt(screen, 0, size)
-  return (px[0] - o[0]) * (py[1] - o[1]) - (px[1] - o[1]) * (py[0] - o[0]) > 0
+// stands in for Three.js near-plane clipping. High hint elevation or screenshot zoom can put a quad behind the camera, where it would draw inverted.
+const NEAR_PLANE_W = 0.05
+
+function facesCamera([origin, alongX, , alongY]: Point[]): boolean {
+  return (alongX[0] - origin[0]) * (alongY[1] - origin[1]) - (alongX[1] - origin[1]) * (alongY[0] - origin[0]) > 0
 }
 
 function rgbString(c: Rgba): string {
   return `rgb(${Math.round(c.r)},${Math.round(c.g)},${Math.round(c.b)})`
 }
 
-function opacityAttr(value: number): string {
-  return value >= 1 ? '' : ` opacity="${ratio(value)}"`
+function opacityAttrs(value: number): PathAttrs {
+  return value >= 1 ? {} : { opacity: ratio(value) }
 }
 
-export function quadMarkup(screen: Mat, size: number, look: Look, border: number): string {
-  const inner = ringPath(screen, size, border)
-  const outer = ringPath(screen, size, 0)
+export type PathAttrs = Record<string, string>
+
+export type DrawablePaths = { groupOpacity: string | null; paths: PathAttrs[] }
+
+function quadPaths(outerCorners: Point[], innerCorners: Point[] | null, look: Look): DrawablePaths {
+  const groupOpacity = look.opacity >= 1 ? null : ratio(look.opacity)
+  const outer = ringPath(outerCorners)
+  if (!innerCorners) {
+    return { groupOpacity, paths: [{ d: outer, fill: rgbString(look.fill), ...opacityAttrs(look.fill.a) }] }
+  }
+  const inner = ringPath(innerCorners)
   const fillHidesFrameCenter = look.fill.a >= 1
-  const framePath = fillHidesFrameCenter
-    ? `<path d="${outer}" fill="${rgbString(look.frame)}"${opacityAttr(look.frame.a)}></path>`
-    : `<path d="${outer}${inner}" fill-rule="evenodd" fill="${rgbString(look.frame)}"${opacityAttr(look.frame.a)}></path>`
-  const fillPath = `<path d="${inner}" fill="${rgbString(look.fill)}"${opacityAttr(look.fill.a)}></path>`
-  return look.opacity >= 1
-    ? framePath + fillPath
-    : `<g opacity="${ratio(look.opacity)}">${framePath}${fillPath}</g>`
+  const framePath: PathAttrs = fillHidesFrameCenter
+    ? { d: outer, fill: rgbString(look.frame), ...opacityAttrs(look.frame.a) }
+    : { d: outer + inner, 'fill-rule': 'evenodd', fill: rgbString(look.frame), ...opacityAttrs(look.frame.a) }
+  const fillPath: PathAttrs = { d: inner, fill: rgbString(look.fill), ...opacityAttrs(look.fill.a) }
+  return { groupOpacity, paths: [framePath, fillPath] }
 }
 
-export function labelMarkup(screen: Mat, letter: string): string {
-  const o = cornerAt(screen, 0, 0)
-  const px = cornerAt(screen, LABEL_SIZE, 0)
-  const py = cornerAt(screen, 0, LABEL_SIZE)
-  const m = [
-    (px[0] - o[0]) / LABEL_SIZE, (px[1] - o[1]) / LABEL_SIZE,
-    (py[0] - o[0]) / LABEL_SIZE, (py[1] - o[1]) / LABEL_SIZE,
-    o[0], o[1],
-  ].map(ratio).join(',')
-  return `<text transform="matrix(${m})" x="${LABEL_SIZE / 2}" y="${LABEL_SIZE / 2}"`
-    + ` font-family="sans-serif" font-size="${LABEL_FONT_PX}" font-weight="bold" fill="#fff"`
-    + ` stroke="#000" stroke-width="${LABEL_STROKE_PX}" paint-order="stroke" stroke-linejoin="round"`
-    + ` text-anchor="middle" dominant-baseline="central">${letter}</text>`
+function labelGlyphSegments(screen: Mat, letter: string): GlyphSegment[] {
+  return LABEL_GLYPH_SEGMENTS[letter].map(segment => ({
+    command: segment.command,
+    points: segment.points.map(([x, y]) => cornerAt(screen, x, y)),
+  }))
+}
+
+function labelOutlineWidth(screen: Mat): number {
+  const left = cornerAt(screen, 0, LABEL_HEIGHT / 2)
+  const right = cornerAt(screen, LABEL_WIDTH, LABEL_HEIGHT / 2)
+  const top = cornerAt(screen, LABEL_WIDTH / 2, 0)
+  const bottom = cornerAt(screen, LABEL_WIDTH / 2, LABEL_HEIGHT)
+  const xAxis = [(right[0] - left[0]) / LABEL_WIDTH, (right[1] - left[1]) / LABEL_WIDTH]
+  const yAxis = [(bottom[0] - top[0]) / LABEL_HEIGHT, (bottom[1] - top[1]) / LABEL_HEIGHT]
+  const screenScale = Math.sqrt(Math.abs(xAxis[0] * yAxis[1] - xAxis[1] * yAxis[0]))
+  const glyphUnitPx = Math.sqrt((LABEL_WIDTH / LABEL_GLYPH_BOX.width) * (LABEL_HEIGHT / LABEL_GLYPH_BOX.height))
+  return LABEL_OUTLINE_GLYPH_UNITS * glyphUnitPx * screenScale
+}
+
+export function drawablePaths(drawable: SceneDrawable): DrawablePaths {
+  if (drawable.kind === 'quad') return quadPaths(drawable.outer, drawable.inner, drawable.look)
+  const labelPath: PathAttrs = {
+    d: drawable.segments.map(segment => segment.command + joinCoords(segment.points.flat())).join(''),
+    fill: drawable.fill,
+    stroke: drawable.outline,
+    'stroke-width': ratio(drawable.outlineWidth),
+    'paint-order': 'stroke',
+    'stroke-linejoin': 'round',
+  }
+  return { groupOpacity: null, paths: [labelPath] }
+}
+
+function drawableMarkup(drawable: SceneDrawable): string {
+  const { groupOpacity, paths } = drawablePaths(drawable)
+  const body = paths
+    .map(attrs => `<path${Object.entries(attrs).map(([name, value]) => ` ${name}="${value}"`).join('')}></path>`)
+    .join('')
+  return groupOpacity === null ? body : `<g opacity="${groupOpacity}">${body}</g>`
 }
 
 function svgDocument(body: string): string {
@@ -363,7 +512,9 @@ function svgDocument(body: string): string {
     + ` width="${SCENE_PX}" height="${SCENE_PX}" style="display:block">${body}</svg>`
 }
 
-type Drawable = { depth: number; markup: string }
+export type SceneDrawable =
+  | { kind: 'quad'; depth: number; outer: Point[]; inner: Point[] | null; look: Look; facelet: number | null }
+  | { kind: 'label'; depth: number; segments: GlyphSegment[]; outlineWidth: number; fill: string; outline: string }
 
 export type CubeSvgOptions = {
   state: StickerState
@@ -415,30 +566,35 @@ export type SceneRenderInput = {
 }
 
 export function renderSceneMarkup(input: SceneRenderInput): string {
-  const { geometry, looks, showFacelets, showFaceLabels, cubies } = input
-  const drawables: Drawable[] = []
+  return sceneDrawables(input).map(drawableMarkup).join('')
+}
 
-  const addQuad = (world: Mat, size: number, look: Look, border: number, cull: boolean) => {
+export function sceneDrawables(input: SceneRenderInput): SceneDrawable[] {
+  const { geometry, looks, showFacelets, showFaceLabels, cubies } = input
+  const drawables: SceneDrawable[] = []
+
+  const addQuad = (world: Mat, size: number, look: Look, border: number | null, cull: boolean, facelet: number | null) => {
     const screen = mul(geometry.projection, world)
-    if (cull && !facesCamera(screen, size)) return
-    drawables.push({
-      depth: apply(world, size / 2, size / 2, 0).z,
-      markup: quadMarkup(screen, size, look, border),
-    })
+    const { corners: outer, nearestW } = projectRect(screen, 0, size, size)
+    if (nearestW < NEAR_PLANE_W) return
+    if (cull && !facesCamera(outer)) return
+    const inner = border === null ? null : projectRect(screen, border, size - border, size - border).corners
+    drawables.push({ kind: 'quad', depth: apply(world, size / 2, size / 2, 0).z, outer, inner, look, facelet })
   }
 
   cubies.forEach(cubie => {
     cubie.stickers.forEach(sticker => {
       const colorIndex = COLOR_ORDER.indexOf(sticker.color)
+      const painted = looks.painted.get(sticker.facelet)
       // stickers skip backface culling so a highlighted piece on the far side is still drawn
       // and shows through the translucent dimmed pieces in front of it. Hints can't: they
       // float one sticker outside the cube, so an unculled near-side hint would sit between
       // the camera and the cube.
       addQuad(mul(cubie.world, geometry.faceLocal[sticker.faceIndex]), CUBIE_PX,
-        lerpLook(looks.face[colorIndex], cubie.dim), FACE_BORDER_PX, false)
+        lerpLook(painted?.face ?? looks.face[colorIndex], cubie.dim), FACE_BORDER_PX, false, sticker.facelet)
       if (!showFacelets) return
       addQuad(mul(cubie.world, geometry.hintLocal[sticker.faceIndex]), HINT_PX,
-        lerpLook(looks.hint[colorIndex], cubie.dim), HINT_BORDER_PX, true)
+        lerpLook(painted?.hint ?? looks.hint[colorIndex], cubie.dim), null, true, null)
     })
   })
 
@@ -446,14 +602,18 @@ export function renderSceneMarkup(input: SceneRenderInput): string {
     geometry.labels.forEach(label => {
       const world = mul(geometry.placement, label.matrix)
       const screen = mul(geometry.projection, world)
-      if (!facesCamera(screen, LABEL_SIZE)) return
+      const { corners, nearestW } = projectRect(screen, 0, LABEL_WIDTH, LABEL_HEIGHT)
+      if (nearestW < NEAR_PLANE_W || !facesCamera(corners)) return
       drawables.push({
-        depth: apply(world, LABEL_SIZE / 2, LABEL_SIZE / 2, 0).z,
-        markup: labelMarkup(screen, label.letter),
+        kind: 'label',
+        depth: apply(world, LABEL_WIDTH / 2, LABEL_HEIGHT / 2, 0).z,
+        segments: labelGlyphSegments(screen, label.letter),
+        outlineWidth: labelOutlineWidth(screen),
+        fill: LABEL_FILL,
+        outline: LABEL_OUTLINE,
       })
     })
   }
 
-  drawables.sort((a, b) => a.depth - b.depth)
-  return drawables.map(d => d.markup).join('')
+  return drawables.sort((a, b) => a.depth - b.depth)
 }

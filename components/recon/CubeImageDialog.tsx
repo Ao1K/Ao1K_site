@@ -3,7 +3,7 @@ import CropIcon from '../icons/crop';
 import { createPortal } from 'react-dom';
 import { HexAlphaColorPicker } from 'react-colorful';
 import { RemoveScroll } from 'react-remove-scroll';
-import type { CubeScreenshotOptions, ScreenshotSetupStatus } from '../../composables/recon/CubeScreenshotGenerator';
+import type { CubeScreenshotOptions, ScreenshotSetupStatus } from '../../composables/recon/cubeImageCapture';
 import { useHintFaceletsElevation } from '../../composables/useSettings';
 
 // note: this cube image dialog is separate from composables/recon/ScreenshotManager,

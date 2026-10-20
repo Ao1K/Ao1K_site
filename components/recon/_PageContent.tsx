@@ -25,7 +25,6 @@ import { TransformHTMLprops } from "../../composables/recon/transformHTML";
 import TitleWithPlaceholder from "../../components/recon/TitleInput";
 import TopButton from "../../components/recon/TopButton";
 import CopySolveDropdown from "../../components/recon/CopySolveDropdown";
-import CubeGifDialog from "../../components/recon/CubeGifDialog";
 import ScrambleDropdown from "../../components/recon/ScrambleDropdown";
 import { customDecodeURL } from '../../composables/recon/urlEncoding';
 import InfoPanel from '../../components/recon/InfoPanel';
@@ -45,7 +44,7 @@ import type { CubeStateReader } from '../../composables/recon/algReview';
 import { readFavorites } from '../../composables/algs/algFavorites';
 import { getNewSteps } from '../../composables/recon/getLineStepInfo';
 import { ScreenshotManager, isSolveComplete } from '../../composables/recon/ScreenshotManager';
-import type { TwistyPlayerImperativeRef } from '../../components/recon/TwistyPlayer';
+import type { CubePlayerImperativeRef } from '../../components/recon/CubePlayer';
 import SolveBreakdown, { type BreakdownPlayRequest } from './SolveBreakdown';
 import {
   startBreakdown,
@@ -101,7 +100,8 @@ export interface ControllerRequestOptions {
   type: 'fullLeft' | 'stepLeft' | 'pause' | 'play' | 'replay' | 'stepRight' | 'fullRight';
 }
 
-const TwistyPlayer = lazy(() => import("../../components/recon/TwistyPlayer"));
+const CubePlayer = lazy(() => import("../../components/recon/CubePlayer"));
+const CubeGifDialog = lazy(() => import("../../components/recon/CubeGifDialog"));
 
 type AlgsetModule = Promise<{ default: { algorithms: unknown[] } }>;
 
@@ -188,7 +188,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   const loopTimeoutRef = useRef<number | null>(null);
   const screenshotManagerRef = useRef<ScreenshotManager | null>(null);
   const isWhiteSpaceLineRef = useRef<boolean[]>([]);
-  const twistyPlayerRef = useRef<TwistyPlayerImperativeRef>(null);
+  const cubePlayerRef = useRef<CubePlayerImperativeRef>(null);
   const clearedPageRef = useRef<ClearedPageSnapshot | null>(null);
   const lastCopiedSolveRef = useRef<{ moves: string; solveTime: number | string } | null>(null);
   const clearedPageToastIdRef = useRef<number | null>(null);
@@ -580,16 +580,16 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     if (splitTiming) {
       // above 10 TPS, animations look instant anyway — use actual instant mode
       const useInstant = splitTiming.tempoScale > 10;
-      twistyPlayerRef.current?.setInstantOverride(useInstant);
+      cubePlayerRef.current?.setInstantOverride(useInstant);
       if (!useInstant && moveIndex !== 0) {
-        twistyPlayerRef.current?.setTempoScale(splitTiming.tempoScale);
+        cubePlayerRef.current?.setTempoScale(splitTiming.tempoScale);
       }
       timeoutMs = moveIndex === 0
         ? splitTiming.pause
         : (splitTiming.moveTimes[moveIndex - 1] ?? timeoutMs);
     } else {
-      twistyPlayerRef.current?.setInstantOverride(false);
-      twistyPlayerRef.current?.setTempoScale(calcCubeSpeedLocal(currentSpeed));
+      cubePlayerRef.current?.setInstantOverride(false);
+      cubePlayerRef.current?.setTempoScale(calcCubeSpeedLocal(currentSpeed));
     }
 
     loopTimeoutRef.current = window.setTimeout(() => {
@@ -846,6 +846,8 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
 
       if (moveControllerStatus !== 'play') {
         isLoopingRef.current = false; // break out of loopStepRight when status changes
+        cubePlayerRef.current?.setInstantOverride(false);
+        cubePlayerRef.current?.setTempoScale(calcCubeSpeedLocal(currentSpeed));
       }
 
       if (lineIndex === -1 || moveIndex === -1) {
@@ -1124,7 +1126,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     const snapshot = takePageSnapshot();
 
     setBreakdownSession(null);
-    twistyPlayerRef.current?.restoreSolveState();
+    cubePlayerRef.current?.restoreSolveState();
     setBreakdownPlayRequest(null);
     allMovesRef.current = [[[]], [[]]];
     moveLocation.current = [0, 0, 0];
@@ -1450,17 +1452,17 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     const setupAlg = [...allMovesRef.current[0].flat(), ...allMovesRef.current[1].slice(0, request.lineIndex).flat()].join(' ');
     setBreakdownPlayRequest(request);
     document.getElementById('player-box')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    twistyPlayerRef.current?.playPreview(setupAlg, request.alg, () => setBreakdownPlayRequest({ ...request, isFinished: true }));
+    cubePlayerRef.current?.playPreview(setupAlg, request.alg, () => setBreakdownPlayRequest({ ...request, isFinished: true }));
   }
 
   const handleBreakdownStop = () => {
-    twistyPlayerRef.current?.stopPreview();
+    cubePlayerRef.current?.stopPreview();
     setBreakdownPlayRequest(null);
   }
 
   const handleCloseBreakdown = () => {
     if (!breakdownSession) return;
-    twistyPlayerRef.current?.restoreSolveState();
+    cubePlayerRef.current?.restoreSolveState();
     setBreakdownPlayRequest(null);
     endBreakdown(breakdownSession.lines, getSolutionEditorView, () => setBreakdownSession(null));
   }
@@ -1874,19 +1876,21 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
 
       <InfoPanel initiallyDismissed={infoPanelSlot == null}>{infoPanelSlot}</InfoPanel>
       {isGifDialogOpen ? (
-        <CubeGifDialog
-          onClose={() => setIsGifDialogOpen(false)}
-          scramble={allMovesRef.current[0].flat().join(' ')}
-          solutionLines={allMovesRef.current[1].map((moves, i) => ({
-            moves,
-            isWhitespace: !!isWhitespaceLine[i],
-          }))}
-          lineIconData={lineIconData}
-          splits={splits}
-          committedSplits={committedSplits}
-          onSplitsChange={setSplits}
-          onSplitsCommit={handleSplitsCommit}
-        />
+        <Suspense fallback={null}>
+          <CubeGifDialog
+            onClose={() => setIsGifDialogOpen(false)}
+            scramble={allMovesRef.current[0].flat().join(' ')}
+            solutionLines={allMovesRef.current[1].map((moves, i) => ({
+              moves,
+              isWhitespace: !!isWhitespaceLine[i],
+            }))}
+            lineIconData={lineIconData}
+            splits={splits}
+            committedSplits={committedSplits}
+            onSplitsChange={setSplits}
+            onSplitsCommit={handleSplitsCommit}
+          />
+        </Suspense>
       ) : null}
       <div id="top-bar" className="px-3 flex flex-col w-full items-end gap-5 mb-2 -mt-11 pointer-events-none">
         <div className="flex-none flex flex-row space-x-1 text-dark_accent pointer-events-auto">
@@ -1948,8 +1952,8 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       >
         <div id="cube_model" className="flex h-full aspect-video max-h-96 min-h-50 bg-primary-900 select-none z-20 w-full">
           <Suspense fallback={<div className="flex text-xl w-full h-full justify-center items-center text-primary-100 border border-neutral-600 hover:border-primary-100 rounded-t-sm">Loading cube...</div>}>
-            <TwistyPlayer
-              ref={twistyPlayerRef}
+            <CubePlayer
+              ref={cubePlayerRef}
               speed={speed}
               scrambleRequest={playerParams.scramble}
               solutionRequest={playerParams.solution}

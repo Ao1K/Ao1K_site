@@ -100,7 +100,7 @@ function bodyStates(tokens: string[], start?: Facelets | null): (Facelets | null
   return states;
 }
 
-const plainLabel = (moves: string[]): string | undefined => {
+const UDLabel = (moves: string[]): string | undefined => {
   if (allU(moves)) return 'AUF';
   if (allD(moves)) return 'Move D layer';
   return undefined;
@@ -116,7 +116,7 @@ function labelSlice(
     const labeled = labelStandard(moves, state, pairColors);
     if (labeled) return labeled;
   }
-  return [{ label: plainLabel(moves), moves }];
+  return [{ label: UDLabel(moves), moves }];
 }
 
 // spans tile the run; the ones a detector left unlabeled are filled in here

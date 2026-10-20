@@ -24,6 +24,6 @@ self.onmessage = (event: MessageEvent<GifWorkerRequest>) => {
 
   if (!encodeBlock) throw new Error('GIF encoder worker received a block before its settings.');
   const block = encodeBlock(request.reference, request.frames);
-  const transfer = block.segments.flatMap(segment => [segment.imageBytes.buffer, segment.usedEntries.buffer]);
+  const transfer = block.segments.map(segment => segment.imageBytes.buffer);
   respond({ type: 'block', id: request.id, block }, transfer);
 };

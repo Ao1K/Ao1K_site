@@ -14,7 +14,7 @@ import { useAlgFavorites } from '../../composables/algs/algFavorites';
 import { classifyAlg } from '../../composables/algs/classifyAlg';
 import F2lAlgCard from './f2lAlgCard';
 import type { F2lCaseConfig } from './f2lSetup';
-import { isFullEOActive, isFullEOValid, isPairSolved } from '../../composables/algs/f2lCaseId';
+import { configToRaw, isFullEOActive, isFullEOValid, isPairSolved } from '../../composables/algs/f2lCaseId';
 
 interface F2lSuggestionsProps {
   config: F2lCaseConfig;
@@ -93,9 +93,11 @@ const F2lSuggestions = ({ config, cross, pair, suggestions, ready, playingAlg, h
     [suggestions, eoActive, eoValid],
   );
 
+  const caseId = configToRaw(config);
   const caseState = useMemo(
     () => (hasPair && eoValid ? buildF2lCubeState(config, cross, pair) : null),
-    [hasPair, eoValid, config, cross, pair],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [caseId, cross, pair],
   );
   const pairColors = useMemo<[Color, Color]>(() => [COLOR_OF[pair[0]], COLOR_OF[pair[1]]], [pair]);
 

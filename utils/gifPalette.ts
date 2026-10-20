@@ -6,10 +6,8 @@ export type TranslucentLayer = { color: Rgb; opacity: number };
 
 export type SceneColors = {
   background: Rgb;
-  opaqueStickers: Rgb[];
-  foundation: TranslucentLayer;
-  hints: TranslucentLayer[];
-  labels: Rgb[];
+  opaque: Rgb[];
+  translucent: TranslucentLayer[];
 };
 
 type Histogram = { colors: Rgb[]; counts: number[] };
@@ -59,14 +57,11 @@ function uniqueColors(colors: Rgb[]): Rgb[] {
 }
 
 export function listFlatSceneColors(scene: SceneColors): Rgb[] {
-  const { background, foundation } = scene;
-  const behindStickers = [background, ...scene.hints.map(hint => over(hint, background))];
+  const { background } = scene;
   return uniqueColors([
     background,
-    ...scene.opaqueStickers,
-    ...scene.labels,
-    ...behindStickers,
-    ...behindStickers.map(color => over(foundation, color)),
+    ...scene.opaque,
+    ...scene.translucent.map(layer => over(layer, background)),
   ].map(roundRgb));
 }
 

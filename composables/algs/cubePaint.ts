@@ -2,47 +2,53 @@
 //
 // A facelet has two colors that we deliberately keep separate:
 //
-//   - its TRUE color: what cubing.js actually renders. The true-yellow center is
-//     always physically on the bottom, true-white always up, etc. This never moves
-//     because we never turn the cube.
+//   - its TRUE color: the color of the solved cube the scene is built from. The
+//     true-yellow center is always physically on the bottom, true-white always up, etc.
+//     This never moves because we never turn the cube.
 //   - its SHOWN color, which we call its PAINT: what the viewer actually sees. The
 //     paint can differ from the true color — the bottom (true-yellow) center might be
 //     painted red, white, grey, anything.
 //
-// The gap between the two is the cube's "paint layer". True colors only matter once,
-// to translate cubing.js's facelets into our working space; after the PaintMap is
-// built we work entirely in paint/shown space and never read cubing.js colors again.
+// The gap between the two is the cube's "paint layer". After the PaintMap is built
+// we work entirely in paint/shown space.
 //
 // The model is keyed per facelet, so a single facelet (or, by setting all of a
 // piece's facelets, a single piece) can be repainted independently — see `overrides`
 // in computeShown.
 
+import type { Cubie } from '../../utils/cubeSvgRender';
+
 export type FaceKey = 'up' | 'down' | 'front' | 'back' | 'right' | 'left';
 
 export type PieceType = 'CORNERS' | 'EDGES' | 'CENTERS';
 
-// `${orbit}:${pieceIndex}:${faceletIndex}`
-export type FaceletId = string;
-
-export const faceletId = (pieceType: PieceType, pieceIndex: number, faceletIndex: number): FaceletId =>
-  `${pieceType}:${pieceIndex}:${faceletIndex}`;
+export type FaceletId = number;
 
 export const pieceKeyOf = (pieceType: PieceType, pieceIndex: number): string => `${pieceType}:${pieceIndex}`;
 
 export interface FaceletPaint {
+  facelet: FaceletId;
   pieceType: PieceType;
   pieceIndex: number;
-  faceletIndex: number;
-  // which face this facelet truly belongs to, derived once from its true color
   face: FaceKey;
-  // cubing.js native hex (e.g. '#ffffff') — only kept as the translation record
-  trueColor: string;
 }
 
 export type PaintMap = Map<FaceletId, FaceletPaint>;
 
-// cubing.js ordering
-export const CENTER_FACE_ORDER: FaceKey[] = ['up', 'left', 'front', 'right', 'back', 'down'];
+const FACE_BY_INDEX: FaceKey[] = ['up', 'down', 'front', 'right', 'back', 'left'];
+
+const PIECE_TYPE_BY_STICKER_COUNT: Record<number, PieceType> = { 1: 'CENTERS', 2: 'EDGES', 3: 'CORNERS' };
+
+export function buildPaintMap(solvedCubies: Cubie[]): PaintMap {
+  const model: PaintMap = new Map();
+  solvedCubies.forEach((cubie, pieceIndex) => {
+    const pieceType = PIECE_TYPE_BY_STICKER_COUNT[cubie.stickers.length];
+    for (const sticker of cubie.stickers) {
+      model.set(sticker.facelet, { facelet: sticker.facelet, pieceType, pieceIndex, face: FACE_BY_INDEX[sticker.faceIndex] });
+    }
+  });
+  return model;
+}
 
 // conventional color name per face (independent of the user's custom colors)
 export const FACE_COLOR_NAME: Record<FaceKey, string> = {
@@ -386,7 +392,7 @@ function applySolidPiece(
 ) {
   const facelets = index.get(faceSetKey(pieceFaces));
   if (!facelets) return;
-  for (const f of facelets) overrides.set(faceletId(f.pieceType, f.pieceIndex, f.faceletIndex), color);
+  for (const f of facelets) overrides.set(f.facelet, color);
 }
 
 // paints a physical-face→color map onto the piece's (fixed) physical facelets
@@ -401,7 +407,7 @@ function applyPiece(
   if (!facelets) return;
   for (const f of facelets) {
     const identity = faceColorMap.get(f.face);
-    if (identity) overrides.set(faceletId(f.pieceType, f.pieceIndex, f.faceletIndex), faceColor(identity));
+    if (identity) overrides.set(f.facelet, faceColor(identity));
   }
 }
 
