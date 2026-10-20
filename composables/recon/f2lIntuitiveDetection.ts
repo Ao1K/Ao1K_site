@@ -1,4 +1,5 @@
 import type { CubeState as SimpleCubeState, Color } from './SimpleCube';
+import { PAIR_DISTANCES, PAIR_SEARCH_DEPTH } from './f2lPairDistances';
 
 export type Facelets = Color[];
 
@@ -205,39 +206,41 @@ const pairHome = (state: Facelets, pairColors: [Color, Color]): { corner: string
   return SLOT_BY_SIDES[sides.join('')] ?? null;
 };
 
-const isPairSolved = (state: Facelets, home: { corner: string; edge: string }): boolean =>
-  isSlotSolved(state, home.corner, CORNER_SLOTS) && isSlotSolved(state, home.edge, EDGE_SLOTS);
-
-const SEARCH_TOKENS = ['U', 'R', 'L', 'F', 'B'].flatMap((base) => [base, `${base}2`, `${base}'`]);
-
-const searchDepth = (
-  state: Facelets,
-  home: { corner: string; edge: string },
-  depth: number,
-  lastBase: string,
-): boolean => {
-  for (const token of SEARCH_TOKENS) {
-    if (token[0] === lastBase) continue;
-    const next = applyMove(state, token);
-    if (depth === 1) {
-      if (crossSolved(next) && isPairSolved(next, home)) return true;
-    } else if (searchDepth(next, home, depth - 1, token[0])) {
-      return true;
-    }
-  }
-  return false;
+// each entry is one y turn from the last, in the same direction across all four lists, so one table works for every slot.
+const TOP_CORNER_CYCLE = ['UFR', 'UFL', 'UBL', 'UBR'];
+const TOP_EDGE_CYCLE = ['UF', 'UL', 'UB', 'UR'];
+const HOME_CYCLE = ['DFR', 'DFL', 'DBL', 'DBR'];
+const HOME_SIDES: Record<string, [string, string]> = {
+  DFR: ['F', 'R'],
+  DFL: ['L', 'F'],
+  DBL: ['B', 'L'],
+  DBR: ['R', 'B'],
 };
 
-const movesToSolvePair = (
-  state: Facelets,
-  home: { corner: string; edge: string },
-  maxDepth: number,
-): number => {
-  if (crossSolved(state) && isPairSolved(state, home)) return 0;
-  for (let depth = 1; depth <= maxDepth; depth++) {
-    if (searchDepth(state, home, depth, '')) return depth;
-  }
-  return maxDepth + 1;
+export function topLayerPlacementIndex(state: Facelets, pairColors: [Color, Color]): number | null {
+  const home = pairHome(state, pairColors);
+  const bottomColor = centerColor(state, 'D');
+  const cornerSlot = findSlot(state, CORNER_SLOTS, [pairColors[0], pairColors[1], bottomColor]);
+  const edgeSlot = findSlot(state, EDGE_SLOTS, [pairColors[0], pairColors[1]]);
+  if (!home || !cornerSlot || !edgeSlot) return null;
+
+  const cornerTurns = TOP_CORNER_CYCLE.indexOf(cornerSlot);
+  const edgeTurns = TOP_EDGE_CYCLE.indexOf(edgeSlot);
+  if (cornerTurns < 0 || edgeTurns < 0) return null;
+
+  const homeTurns = HOME_CYCLE.indexOf(home.corner);
+  const sideColors = HOME_SIDES[home.corner].map((letter) => centerColor(state, letter));
+  const cornerTwist = [bottomColor, ...sideColors].indexOf(state[CORNER_SLOTS[cornerSlot][0]]);
+  const edgeFlip = sideColors.indexOf(state[EDGE_SLOTS[edgeSlot][0]]);
+
+  const cornerPlacement = ((cornerTurns - homeTurns + 4) % 4) * 3 + cornerTwist;
+  const edgePlacement = ((edgeTurns - homeTurns + 4) % 4) * 2 + edgeFlip;
+  return cornerPlacement * 8 + edgePlacement;
+}
+
+const movesToSolvePair = (state: Facelets, pairColors: [Color, Color]): number => {
+  const index = crossSolved(state) ? topLayerPlacementIndex(state, pairColors) : null;
+  return index === null ? PAIR_SEARCH_DEPTH + 1 : PAIR_DISTANCES[index];
 };
 
 export interface F2lPairInfo {
@@ -289,6 +292,6 @@ export function analyzeF2lPair(state: Facelets, pairColors: [Color, Color]): F2l
     touching: inTopLayer && sharedLetters(cornerSlot, edgeSlot) === 2,
     pairSolved,
     pairsSolved,
-    minMoves: !pairSolved && inTopLayer ? movesToSolvePair(state, home, 4) : -1,
+    minMoves: !pairSolved && inTopLayer ? movesToSolvePair(state, pairColors) : -1,
   };
 }

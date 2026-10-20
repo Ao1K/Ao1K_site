@@ -4,7 +4,7 @@
 // learning status and can be deleted inline. The list can be filtered by status and sorted
 // by when it was added or by move count.
 
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { memo, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import Parrot from '../icons/parrot';
 import CaretIcon from '../icons/dropdown';
 import FunnelIcon from '../icons/funnel';
@@ -626,4 +626,4 @@ const YourAlgsList = ({ hasSolutions }: YourAlgsListProps) => {
   );
 };
 
-export default YourAlgsList;
+export default memo(YourAlgsList);

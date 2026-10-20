@@ -4,9 +4,9 @@ import Cookies from 'js-cookie';
 import { useState, useEffect, useCallback } from 'react';
 
 // Default cube colors matching the original CUBE_COLORS
-import { DEFAULT_CUBE_COLORS, type CubeColors } from '../utils/sharedConstants';
+import { DEFAULT_CUBE_COLORS, DEFAULT_HINT_FACELETS_ELEVATION, type CubeColors } from '../utils/sharedConstants';
 
-export { DEFAULT_CUBE_COLORS };
+export { DEFAULT_CUBE_COLORS, DEFAULT_HINT_FACELETS_ELEVATION };
 export type { CubeColors };
 
 export type IconSize = 'small' | 'medium';
@@ -33,8 +33,6 @@ export const ICON_SIZE_CONFIG = {
   small:  { lineHeight: 28, iconWidth: 28 },
   medium: { lineHeight: 36, iconWidth: 36 },
 } as const;
-
-export const DEFAULT_HINT_FACELETS_ELEVATION = 1.5;
 
 export interface AppSettings {
   cubeColors: CubeColors;
@@ -101,7 +99,6 @@ export function useSyncedSettings() {
     const syncFromCookie = () => {
       const newSettings = readSettingsFromCookie();
       setSettings(newSettings);
-      // Dispatch event for other components in this tab (like TwistyPlayer)
       window.dispatchEvent(new Event('ao1kSettingsChanged'));
     };
 

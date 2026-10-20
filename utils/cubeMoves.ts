@@ -32,9 +32,10 @@ export function parseMoveRotation(moveStr: string): RotationInfo | null {
   let multiplier: number
   if (mod === '' || mod === "3'") multiplier = 1
   else if (mod === "'" || mod === '3') multiplier = -1
-  else if (mod === '2' || mod === "2'") multiplier = 2
+  else if (mod === '2') multiplier = 2
+  else if (mod === "2'") multiplier = -2
   else return null
-  const angle = multiplier === 2 ? 180 : entry.baseSign * multiplier * 90
+  const angle = entry.baseSign * multiplier * 90
   return { axis: entry.axis, layers: entry.layers, angle }
 }
 

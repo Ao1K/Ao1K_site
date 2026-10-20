@@ -8,7 +8,7 @@ import { buildF2lCubeState } from '../../composables/algs/f2lCubeState';
 import { type FaceKey } from '../../composables/algs/cubePaint';
 import AlgsetSelector, { type AlgsetId } from './AlgsetSelector';
 import YourAlgsList from './YourAlgsList';
-import { isFullEOValid, isPairSolved, type F2lCaseConfig } from '../../composables/algs/f2lCaseId';
+import { configToRaw, isFullEOValid, isPairSolved, type F2lCaseConfig } from '../../composables/algs/f2lCaseId';
 import Footer from '../Footer';
 
 const faceColorInitials: Record<FaceKey, string> = {
@@ -51,6 +51,7 @@ const AlgsContent = ({ initialCross, initialPair, initialConfig, initialAlgset }
   }, []);
 
   const hasPair = config.corner != null && config.edge != null;
+  const caseId = configToRaw(config);
 
   const suggestions = useMemo<Suggestion[]>(() => {
     if (!ready || !interpreterRef.current || !hasPair) return [];
@@ -74,7 +75,8 @@ const AlgsContent = ({ initialCross, initialPair, initialConfig, initialAlgset }
       return m != null && wantColors.includes(m[1]) && wantColors.includes(m[2]);
     };
     return allSuggestions.filter((s) => s.steps.some(isTargetPair)).slice(0, MAX_SHOWN_SUGGESTIONS);
-  }, [ready, hasPair, config, cross, pair]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, caseId, cross, pair]);
 
   return (
     <>

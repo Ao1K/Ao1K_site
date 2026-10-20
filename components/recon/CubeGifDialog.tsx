@@ -1,38 +1,32 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { RemoveScroll } from 'react-remove-scroll';
-import { HexAlphaColorPicker } from 'react-colorful';
-import {
-  AmbientLight,
-  BackSide,
-  LinearFilter,
-  LinearMipmapLinearFilter,
-  Mesh,
-  MeshBasicMaterial,
-  PerspectiveCamera,
-  PlaneGeometry,
-  Scene,
-  TextureLoader,
-  WebGLRenderer,
-  type Material,
-  type Object3D,
-  type Vector3,
-} from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { TwistyPlayer } from 'cubing/twisty';
-import {
-  useCubeColors,
-  useHintFaceletsElevation,
-  type CubeColors,
-} from '../../composables/useSettings';
+import { HexColorPicker } from 'react-colorful';
+import { useCubeColors, useHintFaceletsElevation } from '../../composables/useSettings';
 import { ALL_PIECE_NAMES, allHighlightSet } from './UnfoldedCube';
 import LineConfigItem, { type LineEntry, MIN_LINE_PCT } from './LineConfigItem';
 import type { LineIconDatum } from './IconStack';
 import type { SvgShape } from '@/composables/recon/stepIconDescriptors';
 import { getAutoHighlight } from '@/composables/recon/autoHighlight';
 import { createGifEncoderPool, type GifEncoderPool } from '@/composables/recon/gifEncoderPool';
+import { cameraView, INITIAL_ANGLES, smootherStep, timelineMoveMs, turnRotation } from '@/composables/recon/reconCube';
+import { SimpleCube } from '@/composables/recon/SimpleCube';
 import type { GifSettings } from '@/utils/gifEncoding';
 import { listFlatSceneColors, type Rgb, type SceneColors, type TranslucentLayer } from '@/utils/gifPalette';
+import { cubiesAtTime, cubieWorld, createOrbit, type Angles, type Orbit } from '@/utils/cubeSceneRuntime.client';
+import {
+  COLOR_ORDER,
+  cubeLooks,
+  SCENE_PX,
+  sceneDrawables,
+  sceneGeometry,
+  type CubeLooks,
+  type Look,
+  type SceneView,
+} from '@/utils/cubeSvgRender';
+import { drawSceneToCanvas } from '@/utils/cubeCanvasRender';
+import { faceletsFromState, type RotationInfo } from '@/utils/cubeMoves';
+import { buildColorHex, DEFAULT_SCENE_LOOK } from '@/utils/cubeSceneAuthoring';
 
 const CHECKERBOARD_STYLE = {
   backgroundColor: '#d4d4d4',
@@ -41,16 +35,16 @@ const CHECKERBOARD_STYLE = {
   backgroundSize: '16px 16px',
 } as const;
 
+const TRANSPARENT_BACKGROUND = 'transparent';
+
 const BACKGROUND_PRESETS = [
   { label: 'Purplish', value: '#433149' },
   { label: 'Black', value: '#000000' },
-  { label: 'Grey', value: '#73737380' },
-  { label: 'Transparent', value: '#00000000' },
+  { label: 'Grey', value: '#737373' },
+  { label: 'Transparent', value: TRANSPARENT_BACKGROUND },
 ];
 
 const DEFAULT_BACKGROUND = BACKGROUND_PRESETS.find((preset) => (preset.label === 'Purplish'))!.value
-
-const isFullyTransparent = (color: string) => color.toLowerCase().endsWith('00') && color.length === 9;
 
 const FRAME_DELAY_MS = 40; // must be multiple of 10
 const FPS = 1000 / FRAME_DELAY_MS; // 25 fps
@@ -74,189 +68,57 @@ const STEP_TYPE_TPS: Record<string, number> = {
   'none': 4,
 };
 
-// piece name count per orbit (CORNERS=3 facelets, EDGES=2, CENTERS=1)
-const ORBIT_FACELET_COUNT: Record<string, number> = { CORNERS: 3, EDGES: 2, CENTERS: 1 };
-
-// build a cubing.js StickeringMask object:
-// highlighted pieces → 'regular', everything else → 'ignored' (overridden with translucent tint below).
-// pass null to clear (all regular).
-function buildStickeringMask(highlighted: Set<string> | null, orbitNames: Record<string, string[]>): object {
-  const orbits: Record<string, object> = {};
-  for (const [orbit, names] of Object.entries(orbitNames)) {
-    const faceletCount = ORBIT_FACELET_COUNT[orbit] ?? 1;
-    orbits[orbit] = {
-      pieces: names.map(name => ({
-        facelets: Array.from(
-          { length: faceletCount },
-          () => (highlighted === null || highlighted.has(name)) ? 'regular' : 'ignored',
-        ),
-      })),
-    };
-  }
-  return { orbits };
-}
-
-const FACE_COLOR_KEYS: (keyof CubeColors)[] = ['up', 'left', 'front', 'right', 'back', 'down'];
-
-type FaceMaterials = {
-  regular: MeshBasicMaterial;
-  regularHint: MeshBasicMaterial;
-  translucent: MeshBasicMaterial;
-  translucentHint: MeshBasicMaterial;
-};
-
-function createFaceMaterials(cube: any): FaceMaterials[] {
-  const faceMaterials: FaceMaterials[] = [];
-  for (const centerInfos of cube.kpuzzleFaceletInfo.CENTERS as any[][]) {
-    const center = centerInfos[0];
-    faceMaterials[center.faceIdx] = {
-      regular: center.facelet.material,
-      regularHint: center.hintFacelet.material,
-      translucent: new MeshBasicMaterial({ transparent: true, opacity: 0.3 }),
-      translucentHint: new MeshBasicMaterial({ transparent: true, opacity: 0.3, side: BackSide }),
-    };
-  }
-  return faceMaterials;
-}
-
-const HIDDEN_MATERIAL = new MeshBasicMaterial({ visible: false });
-
-function boxFaceIndexFacing(position: Vector3): number {
-  const components = position.toArray();
-  const axis = components.reduce(
-    (best, value, i) => (Math.abs(value) > Math.abs(components[best]) ? i : best),
-    0,
-  );
-  return axis * 2 + (components[axis] > 0 ? 0 : 1);
-}
-
-const readFoundationMaterial = (cube: any) => (cube.experimentalFoundationMeshes as Mesh[])[0].material as MeshBasicMaterial;
-
-function hideInnerFoundationFaces(cube: any) {
-  for (const foundation of cube.experimentalFoundationMeshes as Mesh[]) {
-    const shellMaterial = foundation.material as Material;
-    const stickers = foundation.parent!.children.filter(child => child !== foundation);
-    const outerFaces = new Set(stickers.map(sticker => boxFaceIndexFacing(sticker.position)));
-    foundation.material = Array.from({ length: 6 }, (_, faceIdx) =>
-      outerFaces.has(faceIdx) ? shellMaterial : HIDDEN_MATERIAL,
-    );
-  }
-}
-
-function applyCubeColors(faceMaterials: FaceMaterials[], colors: CubeColors) {
-  faceMaterials.forEach((materials, faceIdx) => {
-    const color = colors[FACE_COLOR_KEYS[faceIdx]];
-    materials.regular.color.set(color);
-    materials.translucent.color.set(color);
-    materials.translucentHint.color.set(color);
-  });
-}
+const ORBIT_DAMPING = 0.15;
+const DEFAULT_PREVIEW_PX = 360;
 
 const PALETTE_SAMPLE_FRAMES = 16;
 const PALETTE_PROGRESS_SHARE = 8;
 
 const FACE_LABEL_COLORS: Rgb[] = [[0xec, 0xe6, 0xef], [0x16, 0x10, 0x18]];
 
-function compositeOverBlack(color: number, alpha: number): Rgb {
-  return [
-    Math.round(((color >> 16) & 0xff) * alpha),
-    Math.round(((color >> 8) & 0xff) * alpha),
-    Math.round((color & 0xff) * alpha),
-  ];
-}
-
-function materialRgb(material: MeshBasicMaterial): Rgb {
-  const hex = material.color.getHex();
-  return [(hex >> 16) & 0xff, (hex >> 8) & 0xff, hex & 0xff];
-}
-
-function materialLayer(material: MeshBasicMaterial): TranslucentLayer {
-  return { color: materialRgb(material), opacity: material.transparent ? material.opacity : 1 };
+function lookLayers(look: Look): TranslucentLayer[] {
+  return [look.frame, look.fill].map(color => ({
+    color: [color.r, color.g, color.b],
+    opacity: color.a * look.opacity,
+  }));
 }
 
 type SceneColorOptions = {
   background: Rgb;
-  hasTranslucentPieces: boolean;
-  includeFacelets: boolean;
-  includeFaceLabels: boolean;
+  hasDimmedPieces: boolean;
+  showFacelets: boolean;
+  showFaceLabels: boolean;
 };
 
-function collectSceneColors(
-  faceMaterials: FaceMaterials[],
-  foundation: MeshBasicMaterial,
-  options: SceneColorOptions,
-): SceneColors {
-  const { hasTranslucentPieces } = options;
-  const regularHints = faceMaterials.map(materials => materialLayer(materials.regularHint));
-  const translucentHints = hasTranslucentPieces
-    ? faceMaterials.map(materials => materialLayer(materials.translucentHint))
-    : [];
+function collectSceneColors(looks: CubeLooks, options: SceneColorOptions): SceneColors {
+  const isCubeColor = (_: unknown, colorIdx: number) => COLOR_ORDER[colorIdx] !== 'X';
+  const shownPairs = options.showFacelets
+    ? [...looks.face.filter(isCubeColor), ...looks.hint.filter(isCubeColor)]
+    : looks.face.filter(isCubeColor);
+  const layers = shownPairs
+    .flatMap(pair => (options.hasDimmedPieces ? [pair.bright, pair.dim] : [pair.bright]))
+    .flatMap(lookLayers);
   return {
     background: options.background,
-    opaqueStickers: faceMaterials.map(materials => materialRgb(materials.regular)),
-    foundation: materialLayer(foundation),
-    hints: options.includeFacelets ? [...regularHints, ...translucentHints] : [],
-    labels: options.includeFaceLabels ? FACE_LABEL_COLORS : [],
+    opaque: [
+      ...layers.filter(layer => layer.opacity >= 1).map(layer => layer.color),
+      ...(options.showFaceLabels ? FACE_LABEL_COLORS : []),
+    ],
+    translucent: layers.filter(layer => layer.opacity < 1),
   };
 }
 
 type CaptureFrame = (tSec: number) => Promise<Uint8ClampedArray>;
-type CaptureBackground = { color: number; alpha: number };
+type CubeCamera = { angles: Angles; view: SceneView };
 
-const HEX_COLOR_PATTERN = /^#([0-9a-fA-F]{6})([0-9a-fA-F]{2})?$/;
-const FALLBACK_CAPTURE_COLOR = 0x161018;
+const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
+const FALLBACK_CAPTURE_BACKGROUND: Rgb = [0x16, 0x10, 0x18];
 
-function parseCaptureBackground(backgroundColor: string, transparent: boolean): CaptureBackground {
-  if (transparent) return { color: FALLBACK_CAPTURE_COLOR, alpha: 0 };
-  const match = backgroundColor.match(HEX_COLOR_PATTERN);
-  if (!match) return { color: FALLBACK_CAPTURE_COLOR, alpha: 1 };
-  return {
-    color: parseInt(match[1], 16),
-    alpha: match[2] ? parseInt(match[2], 16) / 255 : 1,
-  };
-}
-
-function createCaptureRenderer(resolution: number, background: CaptureBackground): WebGLRenderer {
-  const renderer = new WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
-  renderer.setPixelRatio(1);
-  renderer.setSize(resolution, resolution, false);
-  renderer.setClearColor(background.color, background.alpha);
-  return renderer;
-}
-
-function createSquareCamera(camera: PerspectiveCamera): PerspectiveCamera {
-  const square = camera.clone();
-  square.aspect = 1;
-  square.updateProjectionMatrix();
-  square.updateMatrixWorld(true);
-  return square;
-}
-
-function flipRowsAndMakeOpaque(bottomUpPixels: Uint8Array, resolution: number): Uint8ClampedArray {
-  const rowBytes = resolution * 4;
-  const frame = new Uint8ClampedArray(bottomUpPixels.length);
-  for (let row = 0; row < resolution; row++) {
-    const sourceStart = (resolution - 1 - row) * rowBytes;
-    frame.set(bottomUpPixels.subarray(sourceStart, sourceStart + rowBytes), row * rowBytes);
-  }
-  for (let alpha = 3; alpha < frame.length; alpha += 4) frame[alpha] = 255;
-  return frame;
-}
-
-function createFrameGrabber(
-  renderer: WebGLRenderer,
-  scene: Scene,
-  camera: PerspectiveCamera,
-  resolution: number,
-): () => Uint8ClampedArray {
-  const gl = renderer.getContext();
-  const bottomUpPixels = new Uint8Array(resolution * resolution * 4);
-
-  return () => {
-    renderer.render(scene, camera);
-    gl.readPixels(0, 0, resolution, resolution, gl.RGBA, gl.UNSIGNED_BYTE, bottomUpPixels);
-    return flipRowsAndMakeOpaque(bottomUpPixels, resolution);
-  };
+function captureBackground(backgroundColor: string, transparent: boolean): Rgb {
+  if (transparent) return [0, 0, 0];
+  if (!HEX_COLOR_PATTERN.test(backgroundColor)) return FALLBACK_CAPTURE_BACKGROUND;
+  const color = parseInt(backgroundColor.slice(1), 16);
+  return [(color >> 16) & 0xff, (color >> 8) & 0xff, color & 0xff];
 }
 
 const BROWSER_YIELD_INTERVAL_MS = 100;
@@ -279,11 +141,6 @@ function createPeriodicBrowserYield(): () => Promise<void> {
     await yieldToEventLoop();
     lastYield = performance.now();
   };
-}
-
-async function applyPlayerPositionToCube(player: TwistyPlayer, cube: Object3D) {
-  const position = await player.experimentalModel.legacyPosition.get();
-  (cube as any).onPositionChange(position);
 }
 
 async function captureSampleFrames(
@@ -369,13 +226,6 @@ interface CubeGifDialogProps {
   onSplitsCommit: (splits: string[]) => void;
 }
 
-// cube animation durations match _PageContent.findAnimationLengths
-const moveDurationMs = (move: string) => {
-  if (move.includes('3')) return 2000;
-  if (move.includes('2')) return 1500;
-  return 1000;
-};
-
 const renderShape = (shape: SvgShape, i: number) => {
   if (shape.type === 'rect') return <rect key={i} x={shape.x} y={shape.y} width={shape.width} height={shape.height} fill={shape.fill} />;
   if (shape.type === 'polygon') return <polygon key={i} points={shape.points} fill={shape.fill} />;
@@ -395,31 +245,21 @@ export default function CubeGifDialog({
   const [cubeColors] = useCubeColors();
   const [elevation] = useHintFaceletsElevation();
   const previewDivRef = useRef<HTMLDivElement | null>(null);
-  const playerElRef = useRef<TwistyPlayer | null>(null);
-  const cubeObjectRef = useRef<Object3D | null>(null);
-  const hintStickerMeshesRef = useRef<any[]>([]);
-  const faceLabelMeshesRef = useRef<Mesh[]>([]);
-  const faceMaterialsRef = useRef<FaceMaterials[]>([]);
-  const foundationMaterialRef = useRef<MeshBasicMaterial | null>(null);
-  const colorBasedOrbitNamesRef = useRef<Record<string, string[]>>({});
-  const sceneRef = useRef<Scene | null>(null);
-  const cameraRef = useRef<PerspectiveCamera | null>(null);
-  const rendererRef = useRef<WebGLRenderer | null>(null);
-  const controlsRef = useRef<OrbitControls | null>(null);
+  const previewCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const orbitRef = useRef<Orbit | null>(null);
   const previewStartRef = useRef<number>(0);
   const isCapturingRef = useRef(false);
   const zoomFactorRef = useRef(1);
 
   const [backgroundColor, setBackgroundColor] = useState(DEFAULT_BACKGROUND);
   const [backgroundInput, setBackgroundInput] = useState(DEFAULT_BACKGROUND);
-  const transparentBackground = isFullyTransparent(backgroundColor);
+  const transparentBackground = backgroundColor === TRANSPARENT_BACKGROUND;
   const [includeFacelets, setIncludeFacelets] = useState(true);
   const [includeFaceLabels, setIncludeFaceLabels] = useState(true);
   const [resolution, setResolution] = useState(360);
   const [isGenerating, setIsGenerating] = useState(false);
   const progressLabelRef = useRef<HTMLSpanElement | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [previewLoaded, setPreviewLoaded] = useState(false);
 
   const [lockedLines, setLockedLines] = useState<Record<number, boolean>>({});
 
@@ -435,7 +275,7 @@ export default function CubeGifDialog({
         splitCounter++;
         continue;
       }
-      const moveDurations = line.moves.map(moveDurationMs);
+      const moveDurations = line.moves.map(timelineMoveMs);
       entries.push({
         index: i,
         moves: line.moves,
@@ -447,6 +287,30 @@ export default function CubeGifDialog({
     }
     return entries;
   }, [solutionLines]);
+
+  const timeline = useMemo(() => {
+    const scrambleMoves = scramble.split(' ').filter(move => move !== '');
+    const groups: RotationInfo[][] = lineEntries.flatMap(entry => entry.moves.map(move => {
+      const turn = turnRotation(move);
+      return turn ? [turn] : [];
+    }));
+    return {
+      facelets: faceletsFromState(new SimpleCube().getCubeState(scrambleMoves)),
+      groups,
+      durations: lineEntries.flatMap(entry => entry.moveDurations),
+    };
+  }, [scramble, lineEntries]);
+
+  const looks = useMemo(
+    () => cubeLooks(
+      buildColorHex(cubeColors),
+      DEFAULT_SCENE_LOOK.shade,
+      DEFAULT_SCENE_LOOK.dim,
+      new Map(),
+      transparentBackground ? 1 : undefined,
+    ),
+    [cubeColors, transparentBackground],
+  );
 
   // piece highlighting — each line carries the set of currently-selected pieces.
   // "None" mode means every piece is selected (no filtering); "Auto" derives from solve steps.
@@ -687,16 +551,16 @@ export default function CubeGifDialog({
   };
 
   const handleBackgroundInputChange = (value: string) => {
-    if (!/^#[0-9A-Fa-f]{0,8}$/.test(value)) return;
+    if (!/^#[0-9A-Fa-f]{0,6}$/.test(value)) return;
     setBackgroundInput(value);
-    if (/^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$/.test(value)) {
+    if (HEX_COLOR_PATTERN.test(value)) {
       setBackgroundColor(value);
     }
   };
 
   const handlePresetClick = (value: string) => {
     setBackgroundColor(value);
-    setBackgroundInput(value);
+    setBackgroundInput(value === TRANSPARENT_BACKGROUND ? '' : value);
   };
 
   // total cube duration (sum of move durations across all entries)
@@ -733,11 +597,16 @@ export default function CubeGifDialog({
     effectiveDelays: number[];
     lineHighlights: Array<Set<string>>;
     lockedLines: Record<number, boolean>;
-    cubeColors: CubeColors;
+    timeline: typeof timeline;
+    looks: CubeLooks;
+    showFacelets: boolean;
+    includeFaceLabels: boolean;
+    elevation: number;
     splits: string[];
     onSplitsChange: (splits: string[]) => void;
     onSplitsCommit: (splits: string[]) => void;
   }
+  const showFacelets = includeFacelets && elevation !== 0;
   const latestStateRef = useRef<LatestRef>({
     lineEntries,
     percentages,
@@ -746,7 +615,11 @@ export default function CubeGifDialog({
     effectiveDelays,
     lineHighlights,
     lockedLines,
-    cubeColors,
+    timeline,
+    looks,
+    showFacelets,
+    includeFaceLabels,
+    elevation,
     splits,
     onSplitsChange,
     onSplitsCommit,
@@ -763,7 +636,11 @@ export default function CubeGifDialog({
       effectiveDelays,
       lineHighlights,
       lockedLines,
-      cubeColors,
+      timeline,
+      looks,
+      showFacelets,
+      includeFaceLabels,
+      elevation,
       splits,
       onSplitsChange,
       onSplitsCommit,
@@ -809,190 +686,49 @@ export default function CubeGifDialog({
     return entries.length - 1;
   };
 
-  // applies or clears the cubing.js stickering mask based on highlight config for a given line.
-  // lineIdx < 0 clears all highlighting (used after capture). a set that covers every piece is
-  // treated as "no mask" so the cube renders normally.
-  const applyHighlightForLine = (lineIdx: number) => {
-    const cube = cubeObjectRef.current as any;
-    if (!cube?.setStickeringMask) return;
+  const currentCamera = (): CubeCamera => ({
+    angles: orbitRef.current?.angles() ?? INITIAL_ANGLES,
+    view: cameraView(
+      previewDivRef.current?.clientHeight || DEFAULT_PREVIEW_PX,
+      latestStateRef.current.elevation,
+      1 / zoomFactorRef.current,
+    ),
+  });
 
-    let highlighted: Set<string> | null = null;
-    if (lineIdx >= 0) {
-      const set = latestStateRef.current.lineHighlights[lineIdx];
-      if (set && set.size < ALL_PIECE_NAMES.length) highlighted = set;
+  const drawFrame = (
+    ctx: CanvasRenderingContext2D,
+    sizePx: number,
+    tSec: number,
+    camera: CubeCamera,
+    background: Rgb | null,
+  ) => {
+    const state = latestStateRef.current;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    if (background) {
+      ctx.fillStyle = `rgb(${background.join(',')})`;
+      ctx.fillRect(0, 0, sizePx, sizePx);
+    } else {
+      ctx.clearRect(0, 0, sizePx, sizePx);
     }
+    const pxPerSceneUnit = sizePx / SCENE_PX;
+    ctx.setTransform(pxPerSceneUnit, 0, 0, pxPerSceneUnit, 0, 0);
 
-    cube.setStickeringMask(buildStickeringMask(highlighted, colorBasedOrbitNamesRef.current));
-
-    if (highlighted !== null) {
-      const info = cube.kpuzzleFaceletInfo;
-      if (info) {
-        for (const [orbit, names] of Object.entries(colorBasedOrbitNamesRef.current)) {
-          names.forEach((name, pieceIdx) => {
-            if (highlighted!.has(name)) return;
-            const pieceInfos: any[] = info[orbit]?.[pieceIdx];
-            if (!pieceInfos) return;
-            pieceInfos.forEach((fi: any) => {
-              const materials = faceMaterialsRef.current[fi.faceIdx];
-              if (!materials) return;
-              if (fi.facelet) fi.facelet.material = materials.translucent;
-              if (fi.hintFacelet) fi.hintFacelet.material = materials.translucentHint;
-            });
-          });
-        }
-      }
-    }
-  };
-
-  // place camera using current zoom factor
-  const updateCameraPosition = () => {
-    const cam = cameraRef.current;
-    const div = previewDivRef.current;
-    if (!cam || !div) return;
-    const containerHeight = div.clientHeight || 360;
-    const total = ((containerHeight * 0.0024) + 0.92) * zoomFactorRef.current;
-    cam.position.z = (Math.sqrt(3) / 2) * total;
-    cam.position.y = (1 / 2) * total;
-  };
-
-  // creates and mounts a TwistyPlayer in div, storing it in playerElRef
-  const createAndMountPlayer = (div: HTMLElement) => {
-    const fullAlg = lineEntries.map(e => e.moves.join(' ')).join(' ');
-    const player = new TwistyPlayer({
-      viewerLink: 'none',
-      puzzle: '3x3x3',
-      hintFacelets: 'floating',
-      experimentalInitialHintFaceletsAnimation: 'always',
-      experimentalHintFaceletsElevation: elevation,
-      backView: 'none',
-      background: 'none',
-      controlPanel: 'none',
-      experimentalSetupAlg: scramble,
-      alg: fullAlg,
-      tempoScale: 1,
-    });
-    // size the player to match the preview area so cubing's intersection observer
-    // sees it on-screen and initializes its 3D objects. we hide it after extracting the cube.
-    player.style.position = 'absolute';
-    player.style.inset = '0';
-    player.style.width = '100%';
-    player.style.height = '100%';
-    player.style.opacity = '0';
-    player.style.pointerEvents = 'none';
-    player.experimentalFaceletScale = 0.95;
-    div.appendChild(player);
-    playerElRef.current = player;
-    return player;
-  };
-
-  // waits up to 10s for the cube 3D object to become available
-  const waitForCube = async (player: TwistyPlayer): Promise<Object3D | null> => {
-    let cube: Object3D | null = null;
-    const start = Date.now();
-    while (!cube && Date.now() - start < 10000) {
-      try {
-        cube = (await player.experimentalCurrentThreeJSPuzzleObject()) as unknown as Object3D | null;
-      } catch {
-        // keep trying
-      }
-      if (!cube) await new Promise(r => setTimeout(r, 100));
-    }
-    return cube;
-  };
-
-  // adds URFDLB face direction label meshes to the cube
-  const addFaceLabels = (cube: Object3D) => {
-    const loader = new TextureLoader();
-    const faceConfigs = [
-      { file: '/U.svg', position: { x: 0, y: 2, z: 0 }, rotation: { x: -Math.PI / 2, y: 0, z: 0 } },
-      { file: '/D.svg', position: { x: 0, y: -2, z: 0 }, rotation: { x: Math.PI / 2, y: 0, z: 0 } },
-      { file: '/R.svg', position: { x: 2, y: 0, z: 0 }, rotation: { x: 0, y: Math.PI / 2, z: 0 } },
-      { file: '/L.svg', position: { x: -2, y: 0, z: 0 }, rotation: { x: 0, y: -Math.PI / 2, z: 0 } },
-      { file: '/B.svg', position: { x: 0, y: 0, z: -2 }, rotation: { x: 0, y: Math.PI, z: 0 } },
-      { file: '/F.svg', position: { x: 0, y: 0, z: 2 }, rotation: { x: 0, y: 0, z: 0 } },
-    ];
-    faceConfigs.forEach(cfg => {
-      const texture = loader.load(cfg.file, () => {
-        texture.generateMipmaps = true;
-        texture.minFilter = LinearMipmapLinearFilter;
-        texture.magFilter = LinearFilter;
-        texture.anisotropy = 32;
-        const material = new MeshBasicMaterial({ map: texture, transparent: true });
-        const mesh = new Mesh(new PlaneGeometry(1.1, 1.6), material);
-        mesh.position.set(cfg.position.x, cfg.position.y, cfg.position.z);
-        mesh.rotation.set(cfg.rotation.x, cfg.rotation.y, cfg.rotation.z);
-        cube.add(mesh);
-        faceLabelMeshesRef.current.push(mesh);
-      });
-    });
-  };
-
-  // derives color-based piece names (e.g. 'WGR') from actual facelet hex colors and stores in ref.
-  // must be called after applyCubeColors so center hex values reflect the user's color settings.
-  const buildColorPieceNames = (cube: any) => {
-    const faceletInfo = cube.kpuzzleFaceletInfo;
-    if (!faceletInfo) return;
-    // map hex → color letter from center facelets (cubing.js order: U=W, L=O, F=G, R=R, B=B, D=Y)
-    const hexToLetter = new Map<number, string>();
-    ['W', 'O', 'G', 'R', 'B', 'Y'].forEach((letter, i) => {
-      const hex = faceletInfo.CENTERS?.[i]?.[0]?.facelet?.material?.color?.getHex?.();
-      if (hex !== undefined) hexToLetter.set(hex, letter);
-    });
-    // canonical name: W/Y (U/D-face color) first, remaining letters sorted alphabetically
-    const orbitNames: Record<string, string[]> = {};
-    for (const orbit of ['CORNERS', 'EDGES', 'CENTERS']) {
-      orbitNames[orbit] = (faceletInfo[orbit] as any[][] ?? []).map((pieceInfos: any[]) => {
-        const letters = pieceInfos.map((fi: any) => {
-          const hex = fi?.facelet?.material?.color?.getHex?.();
-          return hex !== undefined ? (hexToLetter.get(hex) ?? '?') : '?';
-        });
-        const primary = letters.find(l => l === 'W' || l === 'Y') ?? '';
-        const rest = letters.filter(l => l !== 'W' && l !== 'Y').sort();
-        return primary + rest.join('');
-      });
-    }
-    colorBasedOrbitNamesRef.current = orbitNames;
-  };
-
-  // creates the Three.js scene, camera, and renderer; appends the canvas to div
-  const createSceneCameraRenderer = (cube: Object3D, div: HTMLElement) => {
-    const scene = new Scene();
-    scene.add(cube);
-    sceneRef.current = scene;
-
-    const aspect = (div.clientWidth || 360) / (div.clientHeight || 360);
-    const camera = new PerspectiveCamera(75, aspect, 0.1, 5);
-    cameraRef.current = camera;
-    // initial position; updated via updateCameraPosition below
-    camera.position.set(0, 0.5, 0.9);
-    camera.lookAt(0, 0, 0);
-
-    const renderer = new WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
-    renderer.setPixelRatio(window.devicePixelRatio || 1);
-    renderer.setSize(div.clientWidth || 360, div.clientHeight || 360, false);
-    renderer.setClearColor(0x000000, 0);
-    const canvas = renderer.domElement;
-    canvas.style.position = 'absolute';
-    canvas.style.inset = '0';
-    canvas.style.width = '100%';
-    canvas.style.height = '100%';
-    div.appendChild(canvas);
-    rendererRef.current = renderer;
-
-    return { scene, camera, renderer };
-  };
-
-  // adds ambient light and sets up OrbitControls for the scene
-  const setupLightsAndControls = (scene: Scene, camera: PerspectiveCamera, renderer: WebGLRenderer) => {
-    const light = new AmbientLight(0xffffff, 1);
-    scene.add(light);
-
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.15;
-    controls.enableZoom = false;
-    controls.enablePan = false;
-    controlsRef.current = controls;
+    const lineHighlight = state.lineHighlights[realTimeToLineIndex(tSec)];
+    const highlighted = lineHighlight && lineHighlight.size < ALL_PIECE_NAMES.length ? lineHighlight : null;
+    const geometry = sceneGeometry(camera.angles, camera.view);
+    const { facelets, groups, durations } = state.timeline;
+    const cubies = cubiesAtTime(facelets, groups, durations, realTimeToCubeTimestamp(tSec), smootherStep);
+    drawSceneToCanvas(ctx, sceneDrawables({
+      geometry,
+      looks: state.looks,
+      showFacelets: state.showFacelets,
+      showFaceLabels: state.includeFaceLabels,
+      cubies: cubies.map(cubie => ({
+        stickers: cubie.stickers,
+        world: cubieWorld(geometry, cubie),
+        dim: highlighted && !highlighted.has(cubie.piece) ? 1 : 0,
+      })),
+    }));
   };
 
   // Escape closes the dialog
@@ -1004,148 +740,40 @@ export default function CubeGifDialog({
     return () => window.removeEventListener('keydown', handleEscape);
   }, []);
 
-  // setup the preview Three.js scene (mount once; rAF lives in its own effect below)
   useEffect(() => {
-    let disposed = false;
+    const div = previewDivRef.current;
+    const canvas = previewCanvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!div || !canvas || !ctx) return;
 
-    const setup = async () => {
-      const div = previewDivRef.current;
-      if (!div) return;
-
-      const player = createAndMountPlayer(div);
-      const cube = await waitForCube(player);
-      if (!cube || disposed) return;
-      cubeObjectRef.current = cube;
-      hintStickerMeshesRef.current = (cube as any).experimentalHintStickerMeshes || [];
-
-      addFaceLabels(cube);
-
-      // detach the player's own canvas (we own the cube via our own scene now)
-      const twistyEl = player.querySelector('canvas');
-      if (twistyEl?.parentNode) twistyEl.parentNode.removeChild(twistyEl);
-
-      foundationMaterialRef.current = readFoundationMaterial(cube);
-      hideInnerFoundationFaces(cube);
-      faceMaterialsRef.current = createFaceMaterials(cube);
-      applyCubeColors(faceMaterialsRef.current, latestStateRef.current.cubeColors);
-      buildColorPieceNames(cube);
-
-      const { scene, camera, renderer } = createSceneCameraRenderer(cube, div);
-      setupLightsAndControls(scene, camera, renderer);
-
-      updateCameraPosition();
-      previewStartRef.current = performance.now();
-      setPreviewLoaded(true);
-    };
-
-    setup().catch(e => {
-      console.error('Failed to setup gif preview:', e);
-      setError(e instanceof Error ? e.message : 'Failed to load preview.');
-    });
-
-    return () => {
-      disposed = true;
-      controlsRef.current?.dispose();
-      controlsRef.current = null;
-      rendererRef.current?.dispose();
-      if (rendererRef.current?.domElement.parentNode) {
-        rendererRef.current.domElement.parentNode.removeChild(rendererRef.current.domElement);
-      }
-      rendererRef.current = null;
-      sceneRef.current = null;
-      cameraRef.current = null;
-      cubeObjectRef.current = null;
-      faceMaterialsRef.current.forEach(materials => {
-        materials.translucent.dispose();
-        materials.translucentHint.dispose();
-      });
-      faceMaterialsRef.current = [];
-      if (playerElRef.current?.parentNode) {
-        playerElRef.current.parentNode.removeChild(playerElRef.current);
-      }
-      playerElRef.current = null;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // dedicated rAF loop: kicks off once the scene is ready and tears down on unmount.
-  // reads latest state via latestStateRef so it never needs to restart on state changes.
-  useEffect(() => {
-    if (!previewLoaded) return;
-    const player = playerElRef.current;
-    const scene = sceneRef.current;
-    const camera = cameraRef.current;
-    const renderer = rendererRef.current;
-    const controls = controlsRef.current;
-    if (!player || !scene || !camera || !renderer || !controls) return;
-
+    const orbit = createOrbit(div, INITIAL_ANGLES, ORBIT_DAMPING);
+    orbitRef.current = orbit;
+    previewStartRef.current = performance.now();
     let rafId = 0;
-    let lastLineIdx = -2;
-    let lastSet: Set<string> | undefined;
 
     const animate = () => {
       rafId = requestAnimationFrame(animate);
-      if (isCapturingRef.current) {
-        // -2 matches no line index, and not -1 (no line) either, so the mask is re-applied after capture.
-        lastLineIdx = -2;
-        return;
-      }
+      if (isCapturingRef.current) return;
+      orbit.step();
 
-      const { totalDuration: tot, lineHighlights } = latestStateRef.current;
+      const sizePx = Math.round(div.clientWidth * (window.devicePixelRatio || 1)) || DEFAULT_PREVIEW_PX;
+      if (canvas.width !== sizePx) {
+        canvas.width = sizePx;
+        canvas.height = sizePx;
+      }
+      const { totalDuration: tot } = latestStateRef.current;
       const elapsedSec = ((performance.now() - previewStartRef.current) / 1000) % (tot + 0.5);
-      const tClamped = Math.min(elapsedSec, tot);
-      try {
-        // @ts-ignore - timestamp is a number-like setter
-        player.timestamp = realTimeToCubeTimestamp(tClamped);
-      } catch {
-        // ignore
-      }
-
-      // re-apply mask when the active line OR its highlight set identity changes
-      const lineIdx = realTimeToLineIndex(tClamped);
-      const currentSet = lineIdx >= 0 ? lineHighlights[lineIdx] : undefined;
-      if (lineIdx !== lastLineIdx || currentSet !== lastSet) {
-        applyHighlightForLine(lineIdx);
-        lastLineIdx = lineIdx;
-        lastSet = currentSet;
-      }
-
-      controls.update();
-      renderer.render(scene, camera);
+      drawFrame(ctx, sizePx, Math.min(elapsedSec, tot), currentCamera(), null);
     };
     animate();
 
-    return () => cancelAnimationFrame(rafId);
-  }, [previewLoaded]);
-
-  // update sticker colors live if the user changes them on another ao1k browser tab
-  useEffect(() => {
-    applyCubeColors(faceMaterialsRef.current, cubeColors);
-  }, [cubeColors]);
-
-  const handleIncludeFacelets = (include: boolean) => {
-    hintStickerMeshesRef.current.forEach((mesh: any) => {
-      mesh.visible = include;
-    });
-    setIncludeFacelets(include);
-  };
-
-  const handleIncludeFaceLabels = (include: boolean) => {
-    faceLabelMeshesRef.current.forEach(mesh => {
-      mesh.visible = include;
-    });
-    setIncludeFaceLabels(include);
-  };
-
-  const seekCaptureTo = (tSec: number) => {
-    try {
-      // @ts-ignore - timestamp setter exists on the TwistyPlayer element
-      playerElRef.current.timestamp = realTimeToCubeTimestamp(tSec);
-    } catch {
-      // ignore
-    }
-    applyHighlightForLine(realTimeToLineIndex(tSec));
-  };
+    return () => {
+      cancelAnimationFrame(rafId);
+      orbit.destroy();
+      orbitRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const showGenerationProgress = (percent: number) => {
     if (progressLabelRef.current) progressLabelRef.current.textContent = `Generating... ${percent}%`;
@@ -1153,13 +781,12 @@ export default function CubeGifDialog({
 
   const handleDownload = async () => {
     if (isGenerating) return;
-    const scene = sceneRef.current;
-    const camera = cameraRef.current;
-    const player = playerElRef.current;
-    const cube = cubeObjectRef.current;
-    const foundationMaterial = foundationMaterialRef.current;
-    if (!scene || !camera || !player || !cube || !foundationMaterial) {
-      setError('Preview is not ready yet.');
+    const captureCanvas = document.createElement('canvas');
+    captureCanvas.width = resolution;
+    captureCanvas.height = resolution;
+    const captureContext = captureCanvas.getContext('2d', { willReadFrequently: true });
+    if (!captureContext) {
+      setError('Failed to create GIF canvas.');
       return;
     }
 
@@ -1167,29 +794,26 @@ export default function CubeGifDialog({
     setIsGenerating(true);
     isCapturingRef.current = true;
 
-    let captureRenderer: WebGLRenderer | null = null;
     const pool = createGifEncoderPool();
 
     try {
-      const background = parseCaptureBackground(backgroundColor, transparentBackground);
-      captureRenderer = createCaptureRenderer(resolution, background);
-      const grabFrame = createFrameGrabber(captureRenderer, scene, createSquareCamera(camera), resolution);
+      const background = captureBackground(backgroundColor, transparentBackground);
+      const camera = currentCamera();
 
       const yieldToBrowserPeriodically = createPeriodicBrowserYield();
       const captureFrame: CaptureFrame = async (tSec) => {
         await yieldToBrowserPeriodically();
-        seekCaptureTo(tSec);
-        await applyPlayerPositionToCube(player, cube);
-        return grabFrame();
+        drawFrame(captureContext, resolution, tSec, camera, transparentBackground ? null : background);
+        return captureContext.getImageData(0, 0, resolution, resolution).data;
       };
 
       const totalFrames = Math.max(1, Math.round(totalDuration * FPS)) + 1;
 
-      const sceneColors = collectSceneColors(faceMaterialsRef.current, foundationMaterial, {
-        background: compositeOverBlack(background.color, background.alpha),
-        hasTranslucentPieces: lineHighlights.some(set => set.size < ALL_PIECE_NAMES.length),
-        includeFacelets,
-        includeFaceLabels,
+      const sceneColors = collectSceneColors(looks, {
+        background,
+        hasDimmedPieces: lineHighlights.some(set => set.size < ALL_PIECE_NAMES.length),
+        showFacelets,
+        showFaceLabels: includeFaceLabels,
       });
       const samplesByFrameIdx = await captureSampleFrames(captureFrame, totalFrames, showGenerationProgress);
       const sampleCopies = [...samplesByFrameIdx.values()].map(frame => frame.slice());
@@ -1219,9 +843,6 @@ export default function CubeGifDialog({
       setError(e instanceof Error ? e.message : 'Failed to generate GIF.');
     } finally {
       pool.dispose();
-      captureRenderer?.dispose();
-      // clear highlighting after capture so preview returns to normal
-      applyHighlightForLine(-1);
       isCapturingRef.current = false;
       previewStartRef.current = performance.now();
       setIsGenerating(false);
@@ -1288,25 +909,20 @@ export default function CubeGifDialog({
                 >
                   <div
                     className="absolute inset-0"
-                    style={{ backgroundColor: transparentBackground ? 'transparent' : backgroundColor }}
+                    style={{ backgroundColor }}
                   />
                   <div
                     ref={previewDivRef}
                     className="absolute inset-0"
                     style={{ touchAction: 'none' }}
-                  />
-                  {!previewLoaded ? (
-                    <div className="absolute inset-0 flex items-center justify-center text-sm text-neutral-300">
-                      Loading preview...
-                    </div>
-                  ) : null}
+                  >
+                    <canvas ref={previewCanvasRef} className="absolute inset-0 h-full w-full" />
+                  </div>
                   <div className="absolute right-2 top-2 flex flex-col gap-1">
                     <button
                       type="button"
                       onClick={() => {
-                        const next = Math.min(2.2, zoomFactorRef.current * 1.1);
-                        zoomFactorRef.current = next;
-                        updateCameraPosition();
+                        zoomFactorRef.current = Math.min(2.2, zoomFactorRef.current * 1.1);
                       }}
                       className="flex h-7 w-7 items-center justify-center rounded-sm border border-neutral-600 bg-dark/70 text-base font-bold text-primary-100 transition-colors hover:border-primary-100"
                       aria-label="Zoom out"
@@ -1317,9 +933,7 @@ export default function CubeGifDialog({
                     <button
                       type="button"
                       onClick={() => {
-                        const next = Math.max(0.65, zoomFactorRef.current * 0.9);
-                        zoomFactorRef.current = next;
-                        updateCameraPosition();
+                        zoomFactorRef.current = Math.max(0.65, zoomFactorRef.current * 0.9);
                       }}
                       className="flex h-7 w-7 items-center justify-center rounded-sm border border-neutral-600 bg-dark/70 text-base font-bold text-primary-100 transition-colors hover:border-primary-100"
                       aria-label="Zoom in"
@@ -1356,8 +970,8 @@ export default function CubeGifDialog({
                     </button>
                   ))}
                 </div>
-                <HexAlphaColorPicker
-                  color={backgroundColor}
+                <HexColorPicker
+                  color={transparentBackground ? '#000000' : backgroundColor}
                   onChange={n => handlePresetClick(n)}
                   style={{ width: '100%', maxWidth: '300px', height: '140px' }}
                 />
@@ -1368,7 +982,7 @@ export default function CubeGifDialog({
                     value={backgroundInput}
                     onChange={e => handleBackgroundInputChange(e.target.value)}
                     className="w-full rounded-sm border border-neutral-600 bg-dark/40 px-3 py-2 font-mono text-sm text-primary-100 outline-none focus:border-primary-100"
-                    placeholder="#161018ff"
+                    placeholder="#161018"
                   />
                 </div>
               </div>
@@ -1514,7 +1128,7 @@ export default function CubeGifDialog({
                   <input
                     type="checkbox"
                     checked={includeFaceLabels}
-                    onChange={e => handleIncludeFaceLabels(e.target.checked)}
+                    onChange={e => setIncludeFaceLabels(e.target.checked)}
                     className="h-4 w-4 cursor-pointer"
                   />
                 </label>
@@ -1523,7 +1137,7 @@ export default function CubeGifDialog({
                   <input
                     type="checkbox"
                     checked={includeFacelets}
-                    onChange={e => handleIncludeFacelets(e.target.checked)}
+                    onChange={e => setIncludeFacelets(e.target.checked)}
                     className="h-4 w-4 cursor-pointer"
                   />
                 </div>

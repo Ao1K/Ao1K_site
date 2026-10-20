@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import { useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import F2lDefaults from './f2lDefaults';
 import F2lSetup, {
   STEP,
@@ -16,7 +16,7 @@ import F2lSetup, {
   type F2lCaseConfig,
 } from './f2lSetup';
 // import F2lAdvancedInput from './f2lAdvancedInput';
-import TwistyClickable, { type LocationClick, type TwistyClickableHandle } from './TwistyClickable';
+import ClickableCube, { type LocationClick, type ClickableCubeHandle } from './ClickableCube';
 import ReplayIcon from '../icons/replay';
 import F2lSuggestions from './f2lSuggestions';
 import type { Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
@@ -70,7 +70,7 @@ interface F2lSearchProps {
 
 const F2lSearch = ({ cross, setCross, pair, setPair, config, setConfig, suggestions, ready }: F2lSearchProps) => {
   // playback runs on the shared cube; track which alg is animating to highlight its card
-  const twistyRef = useRef<TwistyClickableHandle>(null);
+  const cubeRef = useRef<ClickableCubeHandle>(null);
   const [playingAlg, setPlayingAlg] = useState<string | null>(null);
   const [highlightedMove, setHighlightedMove] = useState(-1);
   const [showEOStep] = useShowEOStep();
@@ -78,7 +78,7 @@ const F2lSearch = ({ cross, setCross, pair, setPair, config, setConfig, suggesti
 
   // drops any running alg and returns the cube to the case it was showing beforehand
   const stopPlayback = () => {
-    twistyRef.current?.reset();
+    cubeRef.current?.reset();
     setPlayingAlg(null);
     setHighlightedMove(-1);
   };
@@ -113,12 +113,10 @@ const F2lSearch = ({ cross, setCross, pair, setPair, config, setConfig, suggesti
     if (visualizer instanceof HTMLElement && !isInViewport(visualizer)) {
       visualizer.scrollIntoView({behavior: 'smooth'});
     }
-    twistyRef.current?.playAlg(playbackAlg);
+    cubeRef.current?.playAlg(playbackAlg);
   };
 
-  // stable so TwistyClickable's prop-sync effect doesn't re-run every render
-  const handlePlaybackEnd = useCallback(() => setPlayingAlg(null), []);
-  const handleHighlightMove = useCallback((moveIndex: number) => setHighlightedMove(moveIndex), []);
+  const handlePlaybackEnd = () => setPlayingAlg(null);
 
   // drop a filled slot that would now duplicate the selected pair's solved home
   const dropPairHome = (nextCross: FaceKey, nextPair: [FaceKey, FaceKey], c: F2lCaseConfig): F2lCaseConfig => {
@@ -212,8 +210,8 @@ const F2lSearch = ({ cross, setCross, pair, setPair, config, setConfig, suggesti
           </div>
 
           <div className="relative w-full aspect-square max-h-100">
-            <TwistyClickable
-              ref={twistyRef}
+            <ClickableCube
+              ref={cubeRef}
               cross={cross}
               pair={pair}
               corner={config.corner}
@@ -225,7 +223,7 @@ const F2lSearch = ({ cross, setCross, pair, setPair, config, setConfig, suggesti
               yTurns={config.yTurns}
               onLocationClick={handleCubeClick}
               onPlaybackEnd={handlePlaybackEnd}
-              onHighlightMove={handleHighlightMove}
+              onHighlightMove={setHighlightedMove}
             />
             <h2 className="pointer-events-none absolute inset-x-0 top-2 whitespace-pre-line text-center text-sm font-medium text-primary-100">
               {STEPS[config.step].label}

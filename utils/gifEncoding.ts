@@ -2,6 +2,7 @@ import LZWEncoder from 'gif.js/src/LZWEncoder.js';
 
 const PALETTE_ENTRY_COUNT = 256;
 const COLOR_DEPTH = 8;
+const MIN_OPAQUE_ALPHA = 128;
 
 const GIF_DISPOSE_LEAVE_IN_PLACE = 1;
 const GIF_DISPOSE_RESTORE_BACKGROUND = 2;
@@ -17,7 +18,6 @@ export type GifSettings = {
 export type EncodedSegment = {
   imageBytes: Uint8Array<ArrayBuffer>;
   frameCount: number;
-  usedEntries: Uint8Array<ArrayBuffer>;
 };
 
 export type EncodedBlock = {
@@ -85,35 +85,22 @@ function closestPaletteIndex(
   return best;
 }
 
-function closestUsedPaletteIndex(palette: number[], usedEntries: Uint8Array, r: number, g: number, b: number) {
-  let best = 0;
-  let bestDistance = 256 * 256 * 256;
-  for (let i = 0, index = 0; i < palette.length; index++) {
-    const dr = r - palette[i++];
-    const dg = g - palette[i++];
-    const db = b - palette[i++];
-    const distance = dr * dr + dg * dg + db * db;
-    if (usedEntries[index] && distance < bestDistance) {
-      bestDistance = distance;
-      best = index;
-    }
-  }
-  return best;
-}
-
-function createFrameIndexer(palette: number[], excludedIndex: number) {
+function createFrameIndexer(palette: number[], spareIndex: number, transparentBackground: boolean) {
   const indexByColor = new Map<number, number>();
 
-  return (frame: Uint8ClampedArray, usedEntries: Uint8Array): Uint8Array => {
+  return (frame: Uint8ClampedArray): Uint8Array => {
     const indexed = new Uint8Array(frame.length / 4);
     for (let pixel = 0, p = 0; pixel < indexed.length; pixel++, p += 4) {
+      if (transparentBackground && frame[p + 3] < MIN_OPAQUE_ALPHA) {
+        indexed[pixel] = spareIndex;
+        continue;
+      }
       const key = (frame[p] << 16) | (frame[p + 1] << 8) | frame[p + 2];
       let index = indexByColor.get(key);
       if (index === undefined) {
-        index = closestPaletteIndex(palette, frame[p], frame[p + 1], frame[p + 2], excludedIndex);
+        index = closestPaletteIndex(palette, frame[p], frame[p + 1], frame[p + 2], spareIndex);
         indexByColor.set(key, index);
       }
-      usedEntries[index] = 1;
       indexed[pixel] = index;
     }
     return indexed;
@@ -145,9 +132,9 @@ function encodeImage(width: number, height: number, indexedPixels: Uint8Array): 
 const usesFrameDifferencing = (settings: GifSettings) => !settings.transparentBackground;
 
 export function createBlockEncoder(settings: GifSettings) {
-  const { width, height, palette, spareIndex } = settings;
+  const { width, height, palette, spareIndex, transparentBackground } = settings;
   const differencing = usesFrameDifferencing(settings);
-  const indexFrame = createFrameIndexer(palette, differencing ? spareIndex : -1);
+  const indexFrame = createFrameIndexer(palette, spareIndex, transparentBackground);
 
   return (reference: Uint8ClampedArray | null, frames: Uint8ClampedArray[]): EncodedBlock => {
     const segments: EncodedSegment[] = [];
@@ -159,7 +146,7 @@ export function createBlockEncoder(settings: GifSettings) {
 
     const indexedPrevious = () => {
       if (!previousIndexed && previousFrame) {
-        previousIndexed = indexFrame(previousFrame, new Uint8Array(PALETTE_ENTRY_COUNT));
+        previousIndexed = indexFrame(previousFrame);
       }
       return previousIndexed;
     };
@@ -172,14 +159,13 @@ export function createBlockEncoder(settings: GifSettings) {
         continue;
       }
 
-      const usedEntries = new Uint8Array(PALETTE_ENTRY_COUNT);
-      const indexed = indexFrame(frame, usedEntries);
+      const indexed = indexFrame(frame);
       const previous = differencing ? indexedPrevious() : null;
       const written = previous
         ? indexed.map((index, pixel) => (index === previous[pixel] ? spareIndex : index))
         : indexed;
 
-      segments.push({ imageBytes: encodeImage(width, height, written), frameCount: 1, usedEntries });
+      segments.push({ imageBytes: encodeImage(width, height, written), frameCount: 1 });
       previousFrame = frame;
       previousIndexed = indexed;
     }
@@ -235,23 +221,14 @@ export function assembleGif(
 
   const differencing = usesFrameDifferencing(settings);
   const disposal = differencing ? GIF_DISPOSE_LEAVE_IN_PLACE : GIF_DISPOSE_RESTORE_BACKGROUND;
-  const usedSoFar = new Uint8Array(PALETTE_ENTRY_COUNT);
 
   const writer = new ByteWriter();
   writeHeader(writer, settings);
   segments.forEach((segment, i) => {
-    segment.usedEntries.forEach((used, index) => {
-      if (used) usedSoFar[index] = 1;
-    });
-    // the transparent preset picks its transparent entry from palette entries used so far,
-    // matching what gif.js wrote.
-    const transparentIndex = differencing
-      ? settings.spareIndex
-      : closestUsedPaletteIndex(settings.palette, usedSoFar, 0, 0, 0);
     const isLastSegment = i === segments.length - 1;
     const delayMs = segment.frameCount * frameDelayMs + (isLastSegment ? endHoldMs : 0);
 
-    writeGraphicControl(writer, disposal, delayMs, transparentIndex);
+    writeGraphicControl(writer, disposal, delayMs, settings.spareIndex);
     writer.writeBytes(segment.imageBytes);
   });
   writer.writeByte(0x3b);
