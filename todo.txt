@@ -42,3 +42,5 @@ Switch local algs saving disclaimer to login prompt once we have profiles
 
 Untimer -> Correlator? Semitimer? PseudoTimer? Detime?
  - Space to activate checklist. c to check, space to continue
+
+Consider moving Awkward case #3 to its own section. It doesn't fit cleanly when "Use one piece to solve an awkward" doesn't cover it. Stuck pieces are kind of their own thing.

@@ -62,7 +62,7 @@ export default function Keyhole() {
       <p>{`Often, it can be hard to know when you're solving an F2L pair perfectly. When you get to use keyhole, you'll pretty much know you're making progress. Any other way you could solve it will almost always be worse.`}</p>
       <H1>When to use keyhole</H1>
       <p>{`You can use keyhole whenever these things are true:`}</p>
-      <LessonList items={["There is an F2L pair where one piece is solved and the other piece is in the top layer, and", "There is another slot that isn't solved"]}/>
+      <LessonList>{["There is an F2L pair where one piece is solved and the other piece is in the top layer, and", "There is another slot that isn't solved"]}</LessonList>
       <p>{`A "slot" is the location where a corner and edge piece need to get solved in the first and second layer. There's usually four unsolved slots after you solve cross.`}</p>
       <p>{`Let's look at those keyhole examples again.`}</p>
       <div className="flex flex-row flex-wrap gap-8 pb-6 mb-6 pt-2 border border-neutral-400 rounded-sm p-4">
@@ -71,7 +71,7 @@ export default function Keyhole() {
         </div>
         <div className="flex flex-col py-4 min-w-50 w-[45%]">
           <p>This is a keyhole case because:</p>
-            <LessonList items={["The green-orange-white corner is solved and the green-orange edge is in the top layer, and", "The front right slot is unsolved" ]}/>
+            <LessonList>{["The green-orange-white corner is solved and the green-orange edge is in the top layer, and", "The front right slot is unsolved"]}</LessonList>
         </div>
       </div>
       <div className="flex flex-row flex-wrap gap-8 pb-6 mb-6 pt-2 border border-neutral-400 rounded-sm p-4">
@@ -80,7 +80,7 @@ export default function Keyhole() {
         </div>
         <div className="flex flex-col py-4 min-w-50 w-[45%]">
           <p>This is a keyhole case because:</p>
-            <LessonList items={["The green-red edge is solved and the red-green-white corner is in the top layer, and", "The front right slot is unsolved" ]}/>
+            <LessonList>{["The green-red edge is solved and the red-green-white corner is in the top layer, and", "The front right slot is unsolved"]}</LessonList>
         </div>
       </div>
       <H1>How to use keyhole</H1>
