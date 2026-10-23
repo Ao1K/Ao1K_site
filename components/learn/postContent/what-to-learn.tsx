@@ -205,7 +205,7 @@ export default function WhatToLearn() {
         <p>{`There are some ways in which order matters.`}</p>
         <p>{`You should learn the two-look version of OLL and PLL before you learn the full versions of both. There's no cost to doing it this way, and you benefit by starting to do CFOP solves sooner.`}</p>
         <p>{`You should learn full PLL before you learn full OLL. There are fewer PLL algs, and learning full PLL helps your times more than full OLL. People usually learn full OLL when they solve the cube on average somewhere between 15 to 20 seconds.`}</p>
-        <p>{`Beyond that, it doesn't matter. The time people learn full PLL differs a lot more than full OLL, but you can generally learn it as early as you want. You can learn two-look algorithms before you learn a basic version of F2L, or the other way around. You can improve at cross at any point. There will be enough time for all of it.`}</p>
+        <p>{`Beyond that, it doesn't matter. The time people learn full PLL differs a lot more than full OLL, but you can generally learn it as early as you want. You can learn two-look algorithms before you some F2L, or the other way around. You can improve at cross at any point. There will be enough time for all of it.`}</p>
         <H1>More than a name</H1>
         <p>{`It would be easy to assume that once you've learned cross, F2L, full OLL, and full PLL, that you've learned CFOP. In reality, CFOP is more than the steps that make it up. `}</p>
         <H2>Learn fingertricks</H2>

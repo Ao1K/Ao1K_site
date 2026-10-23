@@ -205,12 +205,10 @@ export default function EO() {
 
         <H2>F2L and EO recognition</H2>
         <p>{`Using this new orbit knowledge, we can make some statements about F2L edges and recognizing EO:`}</p>
-        <LessonList
-          items={[
-            "If a sticker in the **white** orbit matches the **L or R** center color, it's a good F2L edge.",
-            "If a sticker in the **magenta** orbit matches the **F or B** center color, it's a good F2L edge."
-          ]}
-        />
+        <LessonList>
+          {"If a sticker in the **white** orbit matches the **L or R** center color, it's a good F2L edge."}
+          {"If a sticker in the **magenta** orbit matches the **F or B** center color, it's a good F2L edge."}
+        </LessonList>
         <p>{`With the magenta orbit, we're basically making the opposite statement compared to the white orbit. This makes sense, since if one sticker connects to the left or right center, the other must not.`}</p>
         <p>{"So which orbit do you use to recognize orientation? It's up to you. From the image above, you can see that the magenta orbit is more visible for top edges. For edges on the left or right sides, the white orbit is more visible."}</p>
         <p>{`If this is a bit confusing, don't worry. We'll go through some examples next. By the end of the lesson, you'll see several ways your new EO knowledge can help speed up your solves.`}</p>
@@ -358,7 +356,7 @@ export default function EO() {
 
         <p>{`Using sledgehammer flips the orientation of the front and right edges. If those edges weren't oriented to start, they would be after doing sledge.`}</p>
         <p>{`OLLs with more edges oriented tend to be slightly better. There are a couple other inserts worth considering for this reason:`}</p>
-        <LessonList items={["F R' F' R", "R f' U' f", "R B U' B' R'"]} style={"decimal"}/>
+        <LessonList style="decimal">{["F R' F' R", "R f' U' f", "R B U' B' R'"]}</LessonList>
         {/* TODO: describe these inserts in more detail in terms of fingertricks */}
         <p>{`You can also mirror these inserts to use lefty moves. You should start all of them with your thumbs on the front face of the cube, and do all of them without regripping. However, you don't have to use these.`}</p>
         <p>{`The main downside of partial edge control is that it can add a pause. You can't always use these inserts because you won't always get a connected pair with certain edges not oriented. And then you might need to pause and determine what insert to use.`}</p>
@@ -384,16 +382,16 @@ export default function EO() {
           <strong>never</strong>
           {" require you to:"}
         </p>
-        <LessonList style='alpha' items={[
-          "Rotate the entire cube",
-        ]} />
+        <LessonList style='alpha'>
+          {"Rotate the entire cube"}
+        </LessonList>
         <div className="-mt-4 pl-5.5">
           <span>{"OR"}</span>
         </div>
         <div>
-          <LessonList style='alpha' items={[
-            "Use slower F or B moves",
-          ]} />
+          <LessonList style='alpha'>
+            {"Use slower F or B moves"}
+          </LessonList>
         </div>
         <p>{"Once you've identified a bad solution, you can experiment to try to find a better one, or look up an alg or tutorial."}</p>
         <p>{"On rare occasions, you might rotate or use "}<code>F</code>{" moves anyway. For example, with "}<LessonLink text="this case" href="/algs/?a=f2l&c=y332700000" />{", you should rotate to avoid a longer, clunkier "}<code>RUL</code>{" solution."}</p>

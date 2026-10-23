@@ -4,6 +4,7 @@ import Story from "../LessonStory";
 import LessonList from "../LessonList";
 import ExternalLink from "../../ExternalLink";
 import { H1, H2 } from "../LessonHeading";
+import FlowDiagram from "../FlowDiagram";
 
 export default function HowToLearn() {
   return (
@@ -46,20 +47,20 @@ export default function HowToLearn() {
         <p>{`It is not enough to merely practice. A common trap cubers will fall into is practicing but not improving. Sometimes this is because they do not practice enough. But other times, it is because they practice the wrong things. Practice doesn't make perfect. It makes your habits more engrained, good or bad.`}</p>
         <p>{`But you also can't practice everything correctly right away. There would be too much to focus on. So instead you find something to learn, learn it, and then practice it in various ways. Then you repeat the cycle.`}</p>
         <LearningCycleDiagram />
-
+        <p>{`Learn something when you feel comfortable with all you know. Practice when you do not. Feel free to work on a few things at once.`}</p>
         <H2>Finding things to learn</H2>
         <p>{`Never fall into the assumption that you have "mastered" a topic. There is always something you can improve at. The lessons on this website are here to give you an idea about what some of those things might be.`}</p>
         <p>{`In many of these lessons, you will see links to other tutorials on the internet. You should also explore on your own. YouTube in particular is a great place to find tutorials and walkthroughs of solves. Good ideas can come from anywhere, but also try to take advice from people you trust.`}</p>
         <p>{`Here are some specific people worth checking out. Not a complete list!`}</p>
         <ol className="list-inside list-decimal text-base text-neutral-400 leading-relaxed sm:text-md space-y-2 mb-4 pb-4">
           <li>
-            <ExternalLink href="https://www.youtube.com/@CubeHead" text="Cubehead" />
+            <ExternalLink href="https://www.youtube.com/@CubeHead" text="CubeHead" />
           </li>
           <li>
-            <ExternalLink href="https://www.youtube.com/@JPerm" text="Jperm" />
+            <ExternalLink href="https://www.youtube.com/@JPerm" text="J Perm" />
           </li>
           <li>
-            <ExternalLink href="https://www.youtube.com/@cubeskills" text="Cubeskills" />
+            <ExternalLink href="https://www.youtube.com/@cubeskills" text="CubeSkills" />
             {` (Feliks Zemdegs)`}
           </li>
         </ol>
@@ -80,14 +81,13 @@ export default function HowToLearn() {
             <ExternalLink href="https://discord.gg/cubers" text="Cubers discord server" />
           </li>
           <li>
-            <ExternalLink href="https://discord.gg/cubehead" text="Cubehead discord server" />
+            <ExternalLink href="https://discord.gg/cubehead" text="CubeHead discord server" />
           </li>
         </ol>
         <H2>Learning things</H2>
         <p>{`After you've immersed yourself in all this content, the next step is to actually learn something. Try not to get too caught up on this step. You won't be wasting much time if you learn things a bit out of order.`}</p>
-        <p>{`Be sure to go through a tutorial all the way so you don't miss anything. Stay persistent, but when you get stuck, you may want to ask the community for help. Don't say:`}</p>
-        <p>{`"I'm stuck."`}</p>
-        <p>{`Say:`}</p>
+        <p>{`Be sure to go through a tutorial all the way so you don't miss anything. Stay persistent. If it were easy, it wouldn't be nearly as cool.`}</p> 
+        <p>{`When you do get stuck, you may want to ask the community for help. The more specific you can be, the better. Don't say "I'm stuck." Say:`}</p>
         <p>{`"I was following `}<b>[tutorial]</b>{` and can't figure out how to do `}<b>[thing]</b>{`. Help?"`}</p>
         {/* TODO: link to first alg tutorial */}
         <p>{`The best way to learn something changes depending on who you are and what you're learning. If you're learning algorithms (algs), there's all sorts of techniques you can use to make it go smoother. We'll talk more about these and other techniques when they become relevant.`}</p>
@@ -97,7 +97,7 @@ export default function HowToLearn() {
         <LearningJumpsGraph />
         <p>{`This illustration is still oversimplified. There's a lot of randomness, and you might be working on several things at once. It can be hard to tell what's really going on. The good news is that practice can be a lot of fun.`}</p>
         <p>{`There's a few main ways to practice:`}</p>
-        <LessonList items={['Doing algorithms repeatedly (also called drilling)', 'Partial solves', 'Untimed solves','Timed solves']} />
+        <LessonList>{['Doing algorithms repeatedly (also called drilling)', 'Partial solves', 'Untimed solves', 'Timed solves']}</LessonList>
         {/* TODO: link to speed training tutorial, if we make one */}
         <p>{`Among other ways.`}</p>
         <p>{`The newer something is, the more it can be good to practice more slowly. Try to practice at the edge of your abilities. Not so fast you make mistakes constantly, but not so slow you make no mistakes.`}</p>
@@ -486,112 +486,27 @@ function LearningLegend() {
   );
 }
 
-type CycleNode = {
-  label: string;
-  x: number;
-  y: number;
+const CYCLE_NODES = {
+  find: { label: "Find things to learn", x: 100, y: 42 },
+  learn: { label: "Learn something", x: 340, y: 42 },
+  practice: { label: "Practice that thing", x: 220, y: 160 },
 };
 
-const CYCLE_VIEW_WIDTH = 440;
-const CYCLE_VIEW_HEIGHT = 200;
-
-const CYCLE_NODES: CycleNode[] = [
-  { label: "Find things to learn", x: 100, y: 42 },
-  { label: "Learn something", x: 340, y: 42 },
-  { label: "Practice that thing", x: 220, y: 160 },
-];
-
-const LABEL_CHAR_WIDTH = 7.2;
-const LABEL_PADDING_X = 14;
-const BOX_HALF_HEIGHT = 17;
-const BOX_CORNER_RADIUS = 9;
-const ARROW_HEAD_GAP = 9;
-
-function boxHalfWidth(label: string) {
-  return (label.length * LABEL_CHAR_WIDTH) / 2 + LABEL_PADDING_X;
-}
-
-function distanceToBoxEdge(node: CycleNode, unitX: number, unitY: number) {
-  const horizontal = unitX === 0 ? Infinity : boxHalfWidth(node.label) / Math.abs(unitX);
-  const vertical = unitY === 0 ? Infinity : BOX_HALF_HEIGHT / Math.abs(unitY);
-  return Math.min(horizontal, vertical);
-}
-
-function cycleArrows() {
-  return CYCLE_NODES.map((from, index) => {
-    const to = CYCLE_NODES[(index + 1) % CYCLE_NODES.length];
-    const length = Math.hypot(to.x - from.x, to.y - from.y);
-    const unitX = (to.x - from.x) / length;
-    const unitY = (to.y - from.y) / length;
-    const startOffset = distanceToBoxEdge(from, unitX, unitY) + ARROW_HEAD_GAP;
-    const endOffset = distanceToBoxEdge(to, unitX, unitY) + ARROW_HEAD_GAP;
-    return {
-      key: from.label,
-      x1: from.x + unitX * startOffset,
-      y1: from.y + unitY * startOffset,
-      x2: to.x - unitX * endOffset,
-      y2: to.y - unitY * endOffset,
-    };
-  });
-}
+const CYCLE_ARROWS = [
+  ["find", "learn"],
+  ["learn", "practice"],
+  ["practice", "find"],
+] as const;
 
 function LearningCycleDiagram() {
   return (
-    <figure className="mb-4 flex justify-center">
-      <svg
-        viewBox={`0 0 ${CYCLE_VIEW_WIDTH} ${CYCLE_VIEW_HEIGHT}`}
-        className="w-full max-w-sm"
-        role="img"
-        aria-label={CYCLE_NODES.map((node) => node.label).join(", then ") + ", then back to the start."}
-      >
-        <defs>
-          <marker
-            id="learning-cycle-arrow"
-            viewBox="0 0 6 6"
-            refX={5}
-            refY={3}
-            markerWidth={5}
-            markerHeight={5}
-            orient="auto"
-          >
-            <path d="M0,0 L6,3 L0,6 z" className="fill-dark_accent" />
-          </marker>
-        </defs>
-        {cycleArrows().map((arrow) => (
-          <line
-            key={arrow.key}
-            x1={arrow.x1}
-            y1={arrow.y1}
-            x2={arrow.x2}
-            y2={arrow.y2}
-            className="stroke-dark_accent"
-            strokeWidth={2}
-            strokeLinecap="round"
-            markerEnd="url(#learning-cycle-arrow)"
-          />
-        ))}
-        {CYCLE_NODES.map((node) => (
-          <g key={node.label}>
-            <rect
-              x={node.x - boxHalfWidth(node.label)}
-              y={node.y - BOX_HALF_HEIGHT}
-              width={boxHalfWidth(node.label) * 2}
-              height={BOX_HALF_HEIGHT * 2}
-              rx={BOX_CORNER_RADIUS}
-              className="fill-primary-700 stroke-primary-500"
-              strokeWidth={1.5}
-            />
-            <text
-              x={node.x}
-              y={node.y + 5}
-              textAnchor="middle"
-              className="fill-primary-100 text-md"
-            >
-              {node.label}
-            </text>
-          </g>
-        ))}
-      </svg>
-    </figure>
+    <FlowDiagram
+      id="learning-cycle"
+      width={440}
+      height={200}
+      nodes={CYCLE_NODES}
+      arrows={CYCLE_ARROWS}
+      ariaLabel={Object.values(CYCLE_NODES).map((node) => node.label).join(", then ") + ", then back to the start."}
+    />
   );
 }
