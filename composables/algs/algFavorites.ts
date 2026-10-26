@@ -11,6 +11,7 @@
 import { useCallback, useSyncExternalStore } from 'react';
 import type { Algset } from '../recon/SimpleCubeInterpreter';
 import { splitLeadingAuf } from '../../utils/collapseAufVariants';
+import { stripTrailingAuf } from './algMoves';
 
 export type AlgStatus = 'learning' | 'learned' | 'none';
 
@@ -19,7 +20,10 @@ export interface FavoriteAlg {
   status: AlgStatus;
   // manual algset description override (max 6 chars). Absent = use the detected algset.
   algset?: string;
+
   // the algset the alg was suggested from; the case name is derived from it, never stored
+  // TODO: Remove? Editing a faved alg in place can make it a member of a totally different algset, which makes sourceAlgset pretty useless
+  // sourceAlgset is and could continue to be used as a hint
   sourceAlgset?: Algset;
 }
 
@@ -125,7 +129,7 @@ const write = (favorites: FavoriteAlg[]) => {
   listeners.forEach((l) => l());
 };
 
-const aufFreeAlg = (alg: string): string => splitLeadingAuf(alg).coreKey || alg.trim();
+export const aufFreeAlg = (alg: string): string => stripTrailingAuf(splitLeadingAuf(alg).coreKey || alg);
 
 const toggle = (favorites: FavoriteAlg[], alg: string, sourceAlgset?: Algset): FavoriteAlg[] => {
   const core = aufFreeAlg(alg);

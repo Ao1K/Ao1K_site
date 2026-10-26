@@ -1,8 +1,7 @@
 import { useSyncedSettings } from '../../composables/useSettings';
-import { useAlgFavorites } from '../../composables/algs/algFavorites';
+import { aufFreeAlg, useAlgFavorites } from '../../composables/algs/algFavorites';
 import type { Algset } from '../../composables/recon/SimpleCubeInterpreter';
 import { showToast } from '../../composables/toast';
-import { splitLeadingAuf } from '../../utils/collapseAufVariants';
 import Parrot from '../icons/parrot';
 import KeyboardKeeper from './KeyboardKeeper';
 import Link from 'next/link';
@@ -108,7 +107,7 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
 
   // WARNING: This could cause problems if we ever have a step type where AUFs have significant meaning
   // Would also need to change algFavorites.ts, since AUF is stripped out there as well
-  const favoriteAlg = splitLeadingAuf(alg).coreKey || alg;
+  const favoriteAlg = aufFreeAlg(alg);
 
   const favorited = isFavorite(favoriteAlg);
 

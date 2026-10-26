@@ -18,7 +18,7 @@ import {
 } from '../../utils/canonicalizeAuf';
 import type { EOAngle } from '../../utils/canonicalizeAuf';
 import { combineMoves } from '../../utils/moveUtils';
-import { algsetPriority, dedupeByAlgsetPriority, rankSuggestions, suggestionRank } from './suggestionRanking';
+import { algsetPriority, dedupeByAlgsetPriority, rankSuggestions, savedAlgKey, suggestionRank } from './suggestionRanking';
 import type { SavedAlgKeys } from './suggestionRanking';
 
 export type HashAlgset = 'f2l' | 'zbls';
@@ -128,6 +128,48 @@ export interface StepInfo {
   f2lSlotList?: Partial<Record<F2LDirection, string>>[];
 }
 
+// maps U center color + F center color to rotation name
+const CUBE_ROTATION_MAP = new Map<string, string>([
+  ["W,G", "no_rotation"],
+  ["W,R", "y"],
+  ["W,B", "y2"],
+  ["W,O", "y'"],
+  ["G,Y", "x"],
+  ["G,R", "x y"],
+  ["G,W", "x y2"],
+  ["G,O", "x y'"],
+  ["Y,B", "x2"],
+  ["Y,R", "x2 y"],
+  ["Y,G", "z2"],
+  ["Y,O", "x2 y'"],
+  ["B,W", "x'"],
+  ["B,R", "x' y"],
+  ["B,Y", "x' y2"],
+  ["B,O", "x' y'"],
+  ["O,G", "z"],
+  ["O,W", "z y"],
+  ["O,B", "z y2"],
+  ["O,Y", "z y'"],
+  ["R,G", "z'"],
+  ["R,Y", "z' y"],
+  ["R,B", "z' y2"],
+  ["R,W", "z' y'"],
+]);
+
+/**
+ * Determines the cube rotation by reading U and F center colors.
+ */
+export function readCubeRotation(cubeState: SimpleCubeState): string | null {
+  const uCenter = cubeState[0][1][1];
+  const fCenter = cubeState[2][1][1];
+  const rotation = CUBE_ROTATION_MAP.get(`${uCenter},${fCenter}`);
+  if (!rotation) {
+    console.warn(`Unknown rotation for U=${uCenter}, F=${fCenter}`);
+    return null;
+  }
+  return rotation;
+}
+
 /**
  * Interprets SimpleCube state to determine solve progress and suggest algorithms.
  */
@@ -156,6 +198,7 @@ export class SimpleCubeInterpreter {
   private handedness: Handedness = 'right';
   private savedAlgs: SavedAlgKeys | undefined = undefined;
   private loadedAlgsets: Map<string, string | undefined> = new Map();
+  private offHandAlgsets: Map<CompilableLLStep, string> = new Map();
 
   // algsets whose compiled algs are hash-searched via the position suggester
   private static readonly hashAlgsets: ReadonlySet<HashAlgset> = new Set<HashAlgset>(['f2l', 'zbls']);
@@ -257,33 +300,6 @@ export class SimpleCubeInterpreter {
     ["z' y'", [3, 5, 0, 2, 1, 4]],
   ]);
 
-  // maps U center color + F center color to rotation name
-  private readonly cubeRotationMap = new Map<string, string>([
-    ["W,G", "no_rotation"],
-    ["W,R", "y"],
-    ["W,B", "y2"],
-    ["W,O", "y'"],
-    ["G,Y", "x"],
-    ["G,R", "x y"],
-    ["G,W", "x y2"],
-    ["G,O", "x y'"],
-    ["Y,B", "x2"],
-    ["Y,R", "x2 y"],
-    ["Y,G", "z2"],
-    ["Y,O", "x2 y'"],
-    ["B,W", "x'"],
-    ["B,R", "x' y"],
-    ["B,Y", "x' y2"],
-    ["B,O", "x' y'"],
-    ["O,G", "z"],
-    ["O,W", "z y"],
-    ["O,B", "z y2"],
-    ["O,Y", "z y'"],
-    ["R,G", "z'"],
-    ["R,Y", "z' y"],
-    ["R,B", "z' y2"],
-    ["R,W", "z' y'"],
-  ]);
 
   private crossColorsSolved: string[] = [];
   private blocksSolved: Block[] = [];
@@ -492,6 +508,22 @@ export class SimpleCubeInterpreter {
 
   public isAlgsetLoaded(name: string, variant?: string): boolean {
     return this.loadedAlgsets.has(name) && this.loadedAlgsets.get(name) === variant;
+  }
+
+  public addOffHandAlgset(name: CompilableLLStep, algs: CompiledLLAlg[], variant: string): void {
+    if (this.isOffHandAlgsetLoaded(name, variant)) {
+      return;
+    }
+
+    if (!this.LLsuggester) {
+      this.LLsuggester = new LLsuggester();
+    }
+    this.LLsuggester.addOffHandAlgs(name, algs);
+    this.offHandAlgsets.set(name, variant);
+  }
+
+  public isOffHandAlgsetLoaded(name: CompilableLLStep, variant: string): boolean {
+    return this.offHandAlgsets.get(name) === variant;
   }
 
   /**
@@ -1717,17 +1749,7 @@ export class SimpleCubeInterpreter {
       return -1;
     }
 
-    const uCenter = this.cubeState[0][1][1]; // U center
-    const fCenter = this.cubeState[2][1][1]; // F center
-    const key = `${uCenter},${fCenter}`;
-
-    const rotation = this.cubeRotationMap.get(key);
-    if (!rotation) {
-      console.warn(`Unknown rotation for U=${uCenter}, F=${fCenter}`);
-      return -1;
-    }
-
-    return rotation;
+    return readCubeRotation(this.cubeState) ?? -1;
   }
 
   /**
@@ -3333,6 +3355,20 @@ export class SimpleCubeInterpreter {
     return indices;
   }
 
+  public getSuggestableLLSteps(steps: StepInfo[]): CompilableLLStep[] {
+    if (steps.filter(s => s.type === 'f2l').length !== 4) {
+      return [];
+    }
+
+    try {
+      return this.getLLindices(steps, new Set(steps.map(s => s.type)))
+        .map(index => index.step)
+        .filter((step): step is CompilableLLStep => step !== 'auf');
+    } catch {
+      return [];
+    }
+  }
+
   /**
    * Get current location of an edge piece with specified effective colors.
    * Useful for generating AUF information.
@@ -3734,7 +3770,10 @@ export class SimpleCubeInterpreter {
 
     llIndices.forEach(index => {
       const stepAlgs = this.LLsuggester!.getAlgsForStep(index.step, index.index, index.minMovements, refPieceOrigins);
-      stepAlgs.forEach(({ alg, frequency }) => {
+      stepAlgs.forEach(({ alg, frequency, offHand }) => {
+        if (offHand && !this.savedAlgs?.has(savedAlgKey(alg))) {
+          return;
+        }
         algs.push({ alg, name: index.name, steps: [index.step], frequency, algset: index.step });
       });
     });
