@@ -6,6 +6,8 @@
 // We treat a token as (letter, amount) where amount is signed quarter-turns: positive is
 // clockwise, negative counterclockwise. ±2 are both half turns but spin opposite directions.
 
+import { SimpleCube, type Color } from '../recon/SimpleCube';
+
 export const tokenize = (alg: string): string[] => alg.split(/\s+/).filter(Boolean);
 
 const MOVE_RE = /^[UDFBLRudfblrMESxyz][23]?'?$/;
@@ -58,6 +60,59 @@ const rotateTokenByYQuarter = (token: string): string => {
   // y · (base^a) · y' = (y · base · y')^a = (letter^addedAmount)^a
   const amount = amountOf(token.slice(1)) * addedAmount;
   return letter + suffixOf(amount);
+};
+
+type Face = 'U' | 'D' | 'F' | 'R' | 'B' | 'L';
+
+const FACE_AT_STATE_INDEX: Face[] = ['U', 'D', 'F', 'R', 'B', 'L'];
+
+const OPPOSITE_FACE: Record<Face, Face> = { U: 'D', D: 'U', F: 'B', B: 'F', L: 'R', R: 'L' };
+
+const STARTING_TOP_CENTER: Color = 'W';
+
+const centerTracker = new SimpleCube();
+
+const movesCenters = (token: string): boolean => /^[xyzudfblrMES]|w/.test(token);
+
+const startingTopFaceAfter = (tokens: string[]): Face => {
+  if (!tokens.some(movesCenters)) return 'U';
+  return FACE_AT_STATE_INDEX[centerTracker.getCubeState(tokens).findIndex((face) => face[1][1] === STARTING_TOP_CENTER)];
+};
+
+const isRotation = (token: string): boolean => /^[xyz]/.test(token);
+
+const isFace = (letter: string): letter is Face => letter in OPPOSITE_FACE;
+
+const isStartingTopAuf = (token: string, startingTopFace: Face): boolean => {
+  const base = token[0];
+  if (isFace(base)) return base === startingTopFace;
+  const wideFace = base.toUpperCase();
+  if (!isFace(wideFace)) return false;
+  const stillLayer = OPPOSITE_FACE[wideFace];
+  return stillLayer === startingTopFace;
+};
+
+export const stripTrailingAuf = (alg: string): string => {
+  const tokens = tokenize(alg);
+  const kept = [...tokens];
+
+  // the first move is always kept so AUF-only algs like U2 keep distinct keys
+  while (kept.length > 1) {
+    const lastMove = kept.pop()!;
+    const startingTopFace = startingTopFaceAfter(kept);
+    if (!isRotation(lastMove) && !isStartingTopAuf(lastMove, startingTopFace)) {
+      kept.push(lastMove);
+      break;
+    }
+  }
+  return kept.join(' ');
+};
+
+export const addPostAuf = (alg: string, auf: '' | 'U' | 'U2' | "U'"): string => {
+  const tokens = tokenize(alg);
+  while (tokens.length > 0 && isRotation(tokens[tokens.length - 1])) tokens.pop();
+  if (!auf) return tokens.join(' ');
+  return [...tokens, startingTopFaceAfter(tokens) + auf.slice(1)].join(' ');
 };
 
 // rotates an alg by `quarterTurns` `y` turns. used to convert a suggestion alg from the

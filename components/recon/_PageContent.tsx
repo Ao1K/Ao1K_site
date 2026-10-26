@@ -38,8 +38,10 @@ import { SimpleCubeInterpreter } from '../../composables/recon/SimpleCubeInterpr
 import type { StepInfo, Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
 import type { Doc } from '../../composables/recon/ExactAlgSuggester';
 import type { CompiledLLAlg } from '../../composables/recon/LLsuggester';
-import { savedAlgKeys } from '../../composables/recon/suggestionRanking';
+import type { CompilableLLStep } from '../../composables/recon/LLinterpreter';
+import { savedAlgKey, savedAlgKeys } from '../../composables/recon/suggestionRanking';
 import { readFavorites } from '../../composables/algs/algFavorites';
+import { llStepsForAlg } from '../../composables/algs/classifyAlg';
 import { getNewSteps } from '../../composables/recon/getLineStepInfo';
 import { ScreenshotManager, isSolveComplete } from '../../composables/recon/ScreenshotManager';
 import type { TwistyPlayerImperativeRef } from '../../components/recon/TwistyPlayer';
@@ -106,10 +108,44 @@ const ALGSET_LOADERS: Record<string, (handedness: Handedness) => AlgsetModule> =
     : import('../../public/recon/compiled-zbll-righty-algs.json'),
 };
 
-const HANDED_ALGSETS = new Set(['oll', 'pll', 'zbll']);
+const HANDED_ALGSETS: readonly CompilableLLStep[] = ['oll', 'pll', 'zbll'];
 
-const algsetVariant = (name: string, handedness: Handedness): string | undefined =>
-  HANDED_ALGSETS.has(name) ? handedness : undefined;
+const algsetVariant = (name: string, handedness: Handedness): Handedness | undefined =>
+  HANDED_ALGSETS.some(handed => handed === name) ? handedness : undefined;
+
+const algKeysByList = new WeakMap<unknown[], ReadonlySet<string>>();
+
+const getAlgKeys = (algorithms: unknown[]): ReadonlySet<string> => {
+  let keys = algKeysByList.get(algorithms);
+  if (!keys) {
+    keys = new Set((algorithms as CompiledLLAlg[]).map(entry => savedAlgKey(entry.alg)));
+    algKeysByList.set(algorithms, keys);
+  }
+  return keys;
+};
+
+const pickOffHandAlgsets = async (
+  enabledHanded: CompilableLLStep[],
+  unloaded: CompilableLLStep[],
+  handedness: Handedness,
+): Promise<Set<CompilableLLStep>> => {
+  const picked = new Set<CompilableLLStep>();
+  if (unloaded.length === 0) return picked;
+
+  const inHandLists = await Promise.all(enabledHanded.map(name => ALGSET_LOADERS[name](handedness)));
+  const inHandKeys = inHandLists.map(mod => getAlgKeys(mod.default.algorithms));
+
+  const wanted = new Set(unloaded);
+  for (const favorite of readFavorites()) {
+    if (picked.size === wanted.size) break;
+    const key = savedAlgKey(favorite.alg);
+    if (inHandKeys.some(keys => keys.has(key))) continue;
+    llStepsForAlg(favorite.alg)
+      .filter(step => wanted.has(step))
+      .forEach(step => picked.add(step));
+  }
+  return picked;
+};
 
 let currentSpeed = 30;
 const calcCubeSpeedLocal = (speed: number) =>
@@ -758,6 +794,15 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
         interpreter.addAlgset(name, mod.default.algorithms as Doc[] | CompiledLLAlg[], algsetVariant(name, forHandedness));
       }));
     }
+
+    const offHand: Handedness = forHandedness === 'left' ? 'right' : 'left';
+    const enabledHanded = HANDED_ALGSETS.filter(name => enabledAlgsets.has(name));
+    const unloadedOffHand = enabledHanded.filter(name => !interpreter.isOffHandAlgsetLoaded(name, offHand));
+    const offHandAlgsets = await pickOffHandAlgsets(enabledHanded, unloadedOffHand, forHandedness);
+    await Promise.all([...offHandAlgsets].map(async name => {
+      const mod = await ALGSET_LOADERS[name](offHand);
+      interpreter.addOffHandAlgset(name, mod.default.algorithms as CompiledLLAlg[], offHand);
+    }));
 
     const [idIndex, lineIndex] = trueCaretRef.current;
     if (idIndex === 1) refreshLineSuggestions(lineIndex, enabledAlgsets, forHandedness);

@@ -1,4 +1,5 @@
 import type { Algset, Suggestion } from './SimpleCubeInterpreter';
+import { stripTrailingAuf } from '../algs/algMoves';
 
 export type SavedAlgKeys = ReadonlySet<string>;
 
@@ -20,15 +21,14 @@ export const algsetPriority = (algset?: Algset): number =>
   (algset && ALGSET_PRIORITY[algset]) ?? 0;
 
 const LEADING_SETUP = /^(?:[Uy][2']?\s+)+/;
-const TRAILING_AUF = /(?:\s+U[2']?)+$/;
 
 export const savedAlgKey = (alg: string): string =>
-  alg
-    .trim()
-    .replace(/2'/g, '2')
-    .replace(/\s+/g, ' ')
-    .replace(LEADING_SETUP, '')
-    .replace(TRAILING_AUF, '');
+  stripTrailingAuf(
+    alg
+      .trim()
+      .replace(/2'/g, '2')
+      .replace(LEADING_SETUP, ''),
+  );
 
 let keyedFavorites: readonly { alg: string }[] | null = null;
 let keyedResult: SavedAlgKeys = new Set<string>();

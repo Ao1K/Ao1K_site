@@ -4,7 +4,7 @@
 // This reuses the same pipeline the recon page uses to label each solution line.
 
 import { SimpleCube } from '../recon/SimpleCube';
-import { SimpleCubeInterpreter, type Algset, type StepInfo } from '../recon/SimpleCubeInterpreter';
+import { SimpleCubeInterpreter, readCubeRotation, type Algset, type StepInfo } from '../recon/SimpleCubeInterpreter';
 import { getNewSteps, getLineStepInfo } from '../recon/getLineStepInfo';
 import { invertTokens, tokenize } from './algMoves';
 import type { CompilableLLStep } from '../recon/LLinterpreter';
@@ -85,12 +85,19 @@ const getSolvedSteps = (interp: SimpleCubeInterpreter): StepInfo[] => {
   return solvedSteps;
 };
 
+// restore the intial orientation of the cube
+const appendFinalRotation = (tokens: string[]): string[] => {
+  const rotation = readCubeRotation(new SimpleCube().getCubeState(tokens));
+  if (!rotation || rotation === 'no_rotation') return tokens;
+  return [...tokens, ...invertTokens(tokenize(rotation))];
+};
+
 export function classifyAlg(alg: string, sourceAlgset?: Algset): AlgClassification {
   const llSource = sourceAlgset ? LL_STEPS[sourceAlgset] : undefined;
   const tokens = tokenize(alg);
   if (tokens.length === 0 || !tokens.every((t) => MOVE_RE.test(t))) return UNKNOWN;
 
-  const beforeState = new SimpleCube().getCubeState(['z2', ...invertTokens(tokens)]);
+  const beforeState = new SimpleCube().getCubeState(['z2', ...invertTokens(appendFinalRotation(tokens))]);
 
   interpreter ??= new SimpleCubeInterpreter();
   // solved steps first so its internal state doesn't clobber the before-state read below
@@ -130,4 +137,13 @@ export function classifyAlg(alg: string, sourceAlgset?: Algset): AlgClassificati
   }
 
   return UNKNOWN;
+}
+
+export function llStepsForAlg(alg: string): CompilableLLStep[] {
+  const tokens = tokenize(alg);
+  if (tokens.length === 0 || !tokens.every((t) => MOVE_RE.test(t))) return [];
+
+  interpreter ??= new SimpleCubeInterpreter();
+  const beforeState = new SimpleCube().getCubeState(['z2', ...invertTokens(appendFinalRotation(tokens))]);
+  return interpreter.getSuggestableLLSteps(interpreter.getStepsCompleted(beforeState, 'CFOP'));
 }

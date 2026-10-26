@@ -1,4 +1,5 @@
 import type { CompilableLLStep, SuggestableLLStep } from './LLinterpreter';
+import { addPostAuf } from '../algs/algMoves';
 
 export interface CompiledLLAlg {
   caseIndex: number;
@@ -9,23 +10,21 @@ export interface CompiledLLAlg {
 }
 
 const AUF_PREFIX = ['', 'U ', 'U2 ', "U' "];
-const AUF_SUFFIX = ['', ' U', ' U2', " U'"];
+const POST_AUF = ['', 'U', 'U2', "U'"] as const;
 const AUF_COST = [0, 1, 2, 1]; // none, U, U2, U'
 const AUF_PREFERENCE = [0, 1, 3, 2]; // tiebreaker: prefer no AUF, then U, U', U2
 
-const ROTATION_AUF_FACE: Record<string, string> = {
-  x: 'F',
-  "x'": 'B',
-  x2: 'D',
-  z: 'L',
-  "z'": 'R',
-  z2: 'D',
-};
+type ValidAlg = { alg: string, frequency: number };
+
+export type LLAlgMatch = ValidAlg & { offHand: boolean };
 
 export default class LLsuggester {
   private ollAlgs: CompiledLLAlg[] = [];
   private pllAlgs: CompiledLLAlg[] = [];
   private zbllAlgs: CompiledLLAlg[] = [];
+  private ollOffHandAlgs: CompiledLLAlg[] = [];
+  private pllOffHandAlgs: CompiledLLAlg[] = [];
+  private zbllOffHandAlgs: CompiledLLAlg[] = [];
 
   public addAlgs(step: CompilableLLStep, algs: CompiledLLAlg[]): void {
     if (step === 'oll') {
@@ -34,6 +33,16 @@ export default class LLsuggester {
       this.pllAlgs = algs;
     } else if (step === 'zbll') {
       this.zbllAlgs = algs;
+    }
+  }
+
+  public addOffHandAlgs(step: CompilableLLStep, algs: CompiledLLAlg[]): void {
+    if (step === 'oll') {
+      this.ollOffHandAlgs = algs;
+    } else if (step === 'pll') {
+      this.pllOffHandAlgs = algs;
+    } else if (step === 'zbll') {
+      this.zbllOffHandAlgs = algs;
     }
   }
 
@@ -63,9 +72,9 @@ export default class LLsuggester {
     return (4 - refPieceOrigin) % 4;
   }
 
-  private getValidOllAlgs(caseIndex: number, minMovements: number[]): { alg: string, frequency: number }[] {
-    const validAlgs: { alg: string, frequency: number }[] = [];
-    this.ollAlgs.forEach(alg => {
+  private getValidOllAlgs(algs: CompiledLLAlg[], caseIndex: number, minMovements: number[]): ValidAlg[] {
+    const validAlgs: ValidAlg[] = [];
+    algs.forEach(alg => {
       if (alg.caseIndex !== caseIndex) {
         return;
       }
@@ -77,28 +86,8 @@ export default class LLsuggester {
     return validAlgs;
   }
 
-  private fixPostAUFrotation(alg: string): string {
-    const trailingRotationsRegex = /( [xyz](?:'|2|2')?)+$/;
-    if (trailingRotationsRegex.test(alg)) {
-      return alg.replace(trailingRotationsRegex, '');
-    }
-
-    const rotationAUFregex = / ([xyz](?:'|2|2')?) (U2|U'|U)$/;
-    let fixed = alg;
-    let match = fixed.match(rotationAUFregex);
-    while (match) {
-      const rotation = match[1].replace("2'", '2');
-      const auf = match[2];
-      fixed = fixed.replace(rotationAUFregex, ' ' + auf.replace('U', ROTATION_AUF_FACE[rotation] ?? 'U'));
-      match = fixed.match(rotationAUFregex);
-    }
-
-    return fixed;
-  }
-
-  private getValidPrePostAufAlgs(caseIndex: number, minMovements: number[], refPieceOrigins: number[], algset: 'pll' | 'zbll'): { alg: string, frequency: number }[] {
-    const validAlgs: { alg: string, frequency: number }[] = [];
-    const algs = algset === 'pll' ? this.pllAlgs : this.zbllAlgs;
+  private getValidPrePostAufAlgs(algs: CompiledLLAlg[], caseIndex: number, minMovements: number[], refPieceOrigins: number[]): ValidAlg[] {
+    const validAlgs: ValidAlg[] = [];
 
     algs.forEach(alg => {
       if (alg.caseIndex !== caseIndex) {
@@ -128,23 +117,30 @@ export default class LLsuggester {
         });
       });
 
-      const fullAlg = AUF_PREFIX[bestPreAUF] + alg.alg + AUF_SUFFIX[bestPostAUF];
-      validAlgs.push({ alg: this.fixPostAUFrotation(fullAlg), frequency: alg.frequency ?? 0 });
+      const fullAlg = addPostAuf(AUF_PREFIX[bestPreAUF] + alg.alg, POST_AUF[bestPostAUF]);
+      validAlgs.push({ alg: fullAlg, frequency: alg.frequency ?? 0 });
     });
     return validAlgs;
   }
 
-  public getAlgsForStep(step: SuggestableLLStep, caseIndex: number, minMovements: number[], refPieceOrigins: number[] ): { alg: string, frequency: number }[] {
+  private matchBothHands(inHand: CompiledLLAlg[], offHand: CompiledLLAlg[], getValidAlgs: (algs: CompiledLLAlg[]) => ValidAlg[]): LLAlgMatch[] {
+    return [
+      ...getValidAlgs(inHand).map(valid => ({ ...valid, offHand: false })),
+      ...getValidAlgs(offHand).map(valid => ({ ...valid, offHand: true })),
+    ];
+  }
+
+  public getAlgsForStep(step: SuggestableLLStep, caseIndex: number, minMovements: number[], refPieceOrigins: number[] ): LLAlgMatch[] {
     switch (step) {
       case 'oll':
-        return this.getValidOllAlgs(caseIndex, minMovements);
+        return this.matchBothHands(this.ollAlgs, this.ollOffHandAlgs, algs => this.getValidOllAlgs(algs, caseIndex, minMovements));
       case 'pll':
-        return this.getValidPrePostAufAlgs(caseIndex, minMovements, refPieceOrigins, 'pll');
+        return this.matchBothHands(this.pllAlgs, this.pllOffHandAlgs, algs => this.getValidPrePostAufAlgs(algs, caseIndex, minMovements, refPieceOrigins));
       case 'zbll':
-        return this.getValidPrePostAufAlgs(caseIndex, minMovements, refPieceOrigins, 'zbll');
+        return this.matchBothHands(this.zbllAlgs, this.zbllOffHandAlgs, algs => this.getValidPrePostAufAlgs(algs, caseIndex, minMovements, refPieceOrigins));
       case 'auf':
         const aufAlgs = ["", "U'", "U2", "U"];
-        return [{ alg: aufAlgs[caseIndex], frequency: 0 }];
+        return [{ alg: aufAlgs[caseIndex], frequency: 0, offHand: false }];
       default:
         throw new Error(`Unsupported step type: ${step}`);
     }
