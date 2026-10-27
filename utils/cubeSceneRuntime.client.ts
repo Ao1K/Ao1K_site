@@ -211,31 +211,45 @@ export type Orbit = {
 export function createOrbit(target: HTMLElement, start: Angles, damping: number, onDrag?: () => void): Orbit {
   const stepFraction = damping > 0 ? damping : 1
   let angles = start
-  let goal: Angles | null = null
-  let dragStart: { x: number; y: number; angles: Angles } | null = null
+  let pending: Angles | null = null
+  let pointer: { x: number; y: number; pressX: number; pressY: number } | null = null
   let dragged = false
+
+  const step = (): boolean => {
+    if (!pending) return false
+    const remaining = Math.max(Math.abs(pending.x), Math.abs(pending.y))
+    const fraction = remaining < ORBIT_SETTLED_DEG ? 1 : stepFraction
+    angles = {
+      x: Math.max(-90, Math.min(90, angles.x + pending.x * fraction)),
+      y: angles.y + pending.y * fraction,
+    }
+    pending = fraction >= 1 ? null : { x: pending.x * (1 - fraction), y: pending.y * (1 - fraction) }
+    return pending !== null
+  }
 
   const onPointerDown = (e: PointerEvent) => {
     if (e.button !== 0) return
-    dragStart = { x: e.clientX, y: e.clientY, angles: goal ?? angles }
+    pointer = { x: e.clientX, y: e.clientY, pressX: e.clientX, pressY: e.clientY }
     dragged = false
     target.setPointerCapture(e.pointerId)
   }
   const onPointerMove = (e: PointerEvent) => {
-    if (!dragStart) return
-    const dx = e.clientX - dragStart.x
-    const dy = e.clientY - dragStart.y
-    if (!dragged && Math.hypot(dx, dy) < ORBIT_DRAG_THRESHOLD_PX) return
-    dragged = true
+    if (!pointer) return
+    if (Math.hypot(e.clientX - pointer.pressX, e.clientY - pointer.pressY) >= ORBIT_DRAG_THRESHOLD_PX) dragged = true
     const degPerPx = 360 / target.clientHeight
-    goal = {
-      x: Math.max(-90, Math.min(90, dragStart.angles.x + dy * degPerPx)),
-      y: dragStart.angles.y - dx * degPerPx,
+    const dx = e.clientX - pointer.x
+    const dy = e.clientY - pointer.y
+    pointer = { ...pointer, x: e.clientX, y: e.clientY }
+    pending = {
+      x: (pending?.x ?? 0) + dy * degPerPx,
+      y: (pending?.y ?? 0) - dx * degPerPx,
     }
+    // three's OrbitControls also takes a damping step on each pointer move. Stepping here and once per frame matches its feel.
+    step()
     onDrag?.()
   }
   const endDrag = () => {
-    dragStart = null
+    pointer = null
   }
 
   target.addEventListener('pointerdown', onPointerDown)
@@ -247,22 +261,9 @@ export function createOrbit(target: HTMLElement, start: Angles, damping: number,
     angles: () => angles,
     setAngles: next => {
       angles = next
-      goal = null
+      pending = null
     },
-    step: () => {
-      if (!goal) return false
-      const remaining = Math.max(Math.abs(goal.x - angles.x), Math.abs(goal.y - angles.y))
-      if (stepFraction >= 1 || remaining < ORBIT_SETTLED_DEG) {
-        angles = goal
-        goal = null
-      } else {
-        angles = {
-          x: angles.x + (goal.x - angles.x) * stepFraction,
-          y: angles.y + (goal.y - angles.y) * stepFraction,
-        }
-      }
-      return goal !== null
-    },
+    step,
     consumeDrag: () => {
       const wasDragged = dragged
       dragged = false

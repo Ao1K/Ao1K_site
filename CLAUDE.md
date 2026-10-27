@@ -47,9 +47,9 @@ Avoid functions that needlessly abstract a simple concept. One-line functions sh
 
 If a function has multiple different return blocks, assign the return value to a constant before returning it. The name shows the reader what the function is returning without needing a comment. If it is obvious what a return is doing, this isn't needed.
 
-## Architecture
+# Architecture
 
-### Directory Structure
+## Directory Structure
 
 - `/app` Next.js App Router pages and API routes
 - `/components` React components, organized by page (`/recon`, `/changeblog`, `/notimer`, `/algs`)
@@ -59,12 +59,12 @@ If a function has multiple different return blocks, assign the return value to a
 - `/docs` Project documentation markdown files
 - `/amplify` Backend AWS Amplify Gen 2 infra-as-code files
 
-### Noteworthy files
+## Noteworthy files
   - See /docs/package-scripts.md for a a description of each script in package.json.
   - Use /docs/writing-spec-sheets.md for instructions on writing specifications.
   - Use /utils/sharedConstants.tsx for constants that are used across the project.
 
-### State Management
+## State Management
 
 - **Cookie settings**: Cube colors and preferences with cross-tab sync via BroadcastChannel
 - **Settings hooks**: `useSyncedSettings()`, `useCubeColors()`, `useShowControls()`, etc.
@@ -76,6 +76,10 @@ There's a small local bundle used for rendering server-side svg cube images and 
 If you modify any of that pipeline, such as:
 `cubeSceneEntry.client.ts`, `cubeSceneRuntime.client.ts`, `cubeSvgRender.ts`, `cubeSceneIsland.ts`, or `cubeMoves.ts`,
 then be sure to run `build-cube-runtime` and `verify-cube-parity` from the package.json.
+
+# Testing
+
+When driving a browser and testing the Recon page, you may need to set a cookie for infoPanelDismissed_v1 so that the info panel does not interfere with the test. The info panel takes up a lot of the screen. 
 
 <!-- BEGIN:nextjs-agent-rules -->
 

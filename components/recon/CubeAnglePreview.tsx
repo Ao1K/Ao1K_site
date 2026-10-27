@@ -40,7 +40,6 @@ export default function CubeAnglePreview({
     if (!orbitArea) return;
 
     const orbit = createOrbit(orbitArea, { x: 0, y: 0 }, 0, () => {
-      orbit.step();
       const dragged = orbit.angles();
       onAnglesChange({ x: roundAngle(dragged.x), y: roundAngle(dragged.y) });
     });

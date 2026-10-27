@@ -71,6 +71,7 @@ F2L Feedback:
    - Should we just try to tune an algorithm based on the available data?
  - Bad: Didn't use keyhole and should have: "Missed __keyhole__"
  - Bad: "Missed a __five mover__", "Missed a free pair".
+ - Bad: inefficient pairing. Could do xyz to pair
 
 Minimize feedback if it's all good? Really you just need to see negative stuff. Kinda.
 
@@ -91,8 +92,9 @@ Should be good cross not great:
 
 v0.10 completed feature list:
 - Cross autocomplete
-- "Time Outdated?" warning when you click to copy or share a solve
+- "Time Outdated?" warning when you click to copy or share a solve after editing the solve and not editing the time.
 - Cross, alg, auf... review
+- New lighter-weight 3D cube rendering system
 
 
 Best f2l:
