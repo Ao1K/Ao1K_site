@@ -875,6 +875,7 @@ function MovesTextEditor({
 
     // don't allow dummy text editors to update the URL
     if (name !== 'scramble' && name !== 'solution') return;
+    if (isReadOnly) return;
 
     const root = contentEditableRef.current;
     if (!root) {

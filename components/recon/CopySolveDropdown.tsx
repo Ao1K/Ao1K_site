@@ -4,7 +4,7 @@ import DropdownIcon from '../icons/dropdown';
 import TextTIcon from "../icons/text-T";
 import PlayIcon from '../icons/play';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 
 interface CopySolveDropdownProps {
@@ -18,6 +18,10 @@ interface CopySolveDropdownProps {
 export default function CopySolveDropdown({ onCopyText, onScreenshot, onOpenGif, alert, setAlert }: CopySolveDropdownProps) {
   const [isRotated, setIsRotated] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  const scrollIntoViewOnMount = useCallback((element: HTMLDivElement | null) => {
+    element?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, []);
 
   const handleClick = () => {
     setIsRotated(!isRotated);
@@ -74,12 +78,12 @@ export default function CopySolveDropdown({ onCopyText, onScreenshot, onOpenGif,
   return (
     <div id="copy-solve-dropdown" className="relative inline-block group z-20">
       {isLoading &&
-        <div className="py-1 px-2 translate-y-[-120%] absolute left-1/2 -translate-x-1/2 rounded-sm pointer-events-none select-none z-50 mb-2 whitespace-nowrap">
+        <div ref={scrollIntoViewOnMount} className="py-1 px-2 translate-y-[-120%] scroll-mt-2 absolute left-1/2 -translate-x-1/2 rounded-sm pointer-events-none select-none z-50 mb-2 whitespace-nowrap">
           <Image src="/LoadingSpinner.webp" alt="Loading..." width={32} height={32} className="" />
         </div>
       }
       {alert.id === 'copy-solve' && !isLoading &&
-        <div className={`py-1 px-2 font-semibold translate-y-[-120%] absolute left-1/2 -translate-x-1/2 text-dark rounded-sm text-sm pointer-events-none select-none z-50 mb-2 whitespace-nowrap ${
+        <div ref={scrollIntoViewOnMount} className={`py-1 px-2 font-semibold translate-y-[-120%] scroll-mt-2 absolute left-1/2 -translate-x-1/2 text-dark rounded-sm text-sm pointer-events-none select-none z-50 mb-2 whitespace-nowrap ${
           alert.messageType === 'warn' ? 'bg-cube-orange' : 'bg-primary-100'
         }`}>
           {alert.message}

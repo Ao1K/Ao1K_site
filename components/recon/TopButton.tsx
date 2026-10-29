@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 
 export interface ButtonProps {
   id: string;
@@ -26,10 +26,14 @@ export default function TopButton({ id, text, onClick, buttonRef, shortcutHint, 
     }
   },[alert])
 
+  const scrollIntoViewOnMount = useCallback((alertElement: HTMLDivElement | null) => {
+    alertElement?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, []);
+
   return (
     <div id={id} className="flex flex-col items-center group relative">
-      {alert.id === id && 
-        <div className={`py-1 px-2 font-semibold translate-y-[-120%] absolute text-dark rounded-sm text-sm pointer-events-none select-none z-50 mb-2 whitespace-nowrap 
+      {alert.id === id &&
+        <div ref={scrollIntoViewOnMount} className={`py-1 px-2 font-semibold translate-y-[-120%] scroll-mt-2 absolute text-dark rounded-sm text-sm pointer-events-none select-none z-50 mb-2 whitespace-nowrap 
           ${alertAlign === 'right' ? 'right-0' : 'left-1/2 -translate-x-1/2'} ${
           alert.messageType === 'warn' ? 'bg-cube-orange' : 'bg-primary-100'
         }`}>

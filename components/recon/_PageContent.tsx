@@ -1490,6 +1490,8 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     clearLoopTimeout();
     isLoopingRef.current = false;
     setControllerButtonsStatus(status => status.playPause === 'play' ? { ...status, playPause: 'pause' } : status);
+    scrambleMethodsRef.current?.flushURLUpdate();
+    solutionMethodsRef.current?.flushURLUpdate();
     startBreakdown(editorView, lineIconData, solveReview, setBreakdownSession);
   }
 
