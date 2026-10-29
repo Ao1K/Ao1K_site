@@ -95,6 +95,8 @@ v0.10 completed feature list:
 - "Time Outdated?" warning when you click to copy or share a solve after editing the solve and not editing the time.
 - Cross, alg, auf... review
 - New lighter-weight 3D cube rendering system
+- FOV and Sticker size settings for cube appearance
+- 50 fps option for cube gif downloads. 25 fps is still the default.
 
 
 Best f2l:
