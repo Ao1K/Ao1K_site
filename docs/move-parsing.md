@@ -2,6 +2,8 @@
 
 Notes on how move tokens are parsed across the codebase, and where that parsing is duplicated. Written as a reference while a proper unification is still pending.
 
+This file is out of date. We will need to check again where parsing occurs.
+
 ## Token shape
 
 A move token is a base letter plus an optional suffix.
