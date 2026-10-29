@@ -215,7 +215,7 @@ export default function BetterCross() {
         </div>
         <p>{`With this second bad case, we're just turning the green face to set up into a case we've already seen. We turn green, then move the bottom layer and insert the white-green piece into the cross in the correct relative location. Lastly, we solve cross.`}</p>
         <div className="flex flex-col items-center gap-x-8 sm:flex-row sm:items-start">
-          <p className="flex-1">{`There's one more bad case. Sometimes we'll get a piece stuck in between the top and bottom layers, and cross pieces near it are already solved. In this example, the white-green piece is stuck. Technically, we can solve it in one move, but then we would un-solve the white-blue piece.`}</p>
+          <p className="flex-1">{`There's one more bad case. Sometimes we'll get a piece stuck in between the top and bottom layers, and cross pieces near it are already solved. In this example, the white-green piece is stuck. Technically, we can add it to the cross in one move, but then we would un-solve the white-blue piece.`}</p>
           <div className="flex flex-col gap-1 pb-8">
             <span className="text-sm font-bold">{`Bad case #3 — Stuck piece`}</span>
             <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
