@@ -46,8 +46,10 @@ const BACKGROUND_PRESETS = [
 
 const DEFAULT_BACKGROUND = BACKGROUND_PRESETS.find((preset) => (preset.label === 'Purplish'))!.value
 
-const FRAME_DELAY_MS = 40; // must be multiple of 10
-const FPS = 1000 / FRAME_DELAY_MS; // 25 fps
+const FRAME_RATE_OPTIONS = [
+  { fps: 25, delayMs: 40 },
+  { fps: 50, delayMs: 20 },
+]; // delays must be multiples of 10
 const END_HOLD_MS = 500;
 const MIN_TOTAL_DURATION = 0.5;
 const MAX_TOTAL_DURATION = 60;
@@ -146,13 +148,14 @@ function createPeriodicBrowserYield(): () => Promise<void> {
 async function captureSampleFrames(
   captureFrame: CaptureFrame,
   totalFrames: number,
+  frameDelayMs: number,
   onProgress: (percent: number) => void,
 ): Promise<Map<number, Uint8ClampedArray>> {
   const sampleCount = Math.min(PALETTE_SAMPLE_FRAMES, totalFrames);
   const samplesByFrameIdx = new Map<number, Uint8ClampedArray>();
   for (let i = 0; i < sampleCount; i++) {
     const frameIdx = sampleCount === 1 ? 0 : Math.round((i / (sampleCount - 1)) * (totalFrames - 1));
-    samplesByFrameIdx.set(frameIdx, await captureFrame(frameIdx / FPS));
+    samplesByFrameIdx.set(frameIdx, await captureFrame(frameIdx * frameDelayMs / 1000));
     onProgress(Math.round(((i + 1) / sampleCount) * PALETTE_PROGRESS_SHARE));
   }
   return samplesByFrameIdx;
@@ -163,6 +166,7 @@ async function encodeFrames(
   pendingSettings: Promise<GifSettings>,
   captureFrame: CaptureFrame,
   totalFrames: number,
+  frameDelayMs: number,
   totalDuration: number,
   samplesByFrameIdx: Map<number, Uint8ClampedArray>,
   onProgress: (percent: number) => void,
@@ -174,7 +178,7 @@ async function encodeFrames(
   ));
 
   for (let i = 0; i < totalFrames; i++) {
-    await encoder.addFrame(samplesByFrameIdx.get(i) ?? await captureFrame(i / FPS));
+    await encoder.addFrame(samplesByFrameIdx.get(i) ?? await captureFrame(i * frameDelayMs / 1000));
   }
 
   // the loop's last time step can fall just before the end. Capturing the exact end makes
@@ -182,7 +186,7 @@ async function encodeFrames(
   await encoder.addFrame(await captureFrame(totalDuration));
 
   // END_HOLD_MS holds the final frame; outside of duration/UI calculations
-  return encoder.finish(FRAME_DELAY_MS, END_HOLD_MS);
+  return encoder.finish(frameDelayMs, END_HOLD_MS);
 }
 
 function buildGifFilename(scramble: string, now: Date): string {
@@ -259,6 +263,7 @@ export default function CubeGifDialog({
   const [includeFacelets, setIncludeFacelets] = useState(true);
   const [includeFaceLabels, setIncludeFaceLabels] = useState(true);
   const [resolution, setResolution] = useState(360);
+  const [frameDelayMs, setFrameDelayMs] = useState(FRAME_RATE_OPTIONS[0].delayMs);
   const [isGenerating, setIsGenerating] = useState(false);
   const progressLabelRef = useRef<HTMLSpanElement | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -817,7 +822,7 @@ export default function CubeGifDialog({
         return captureContext.getImageData(0, 0, resolution, resolution).data;
       };
 
-      const totalFrames = Math.max(1, Math.round(totalDuration * FPS)) + 1;
+      const totalFrames = Math.max(1, Math.round(totalDuration * 1000 / frameDelayMs)) + 1;
 
       const sceneColors = collectSceneColors(looks, {
         background,
@@ -825,7 +830,7 @@ export default function CubeGifDialog({
         showFacelets,
         showFaceLabels: includeFaceLabels,
       });
-      const samplesByFrameIdx = await captureSampleFrames(captureFrame, totalFrames, showGenerationProgress);
+      const samplesByFrameIdx = await captureSampleFrames(captureFrame, totalFrames, frameDelayMs, showGenerationProgress);
       const sampleCopies = [...samplesByFrameIdx.values()].map(frame => frame.slice());
       const pendingSettings = pool.buildPalette(sampleCopies, listFlatSceneColors(sceneColors)).then(
         ({ palette, spareIndex }): GifSettings => ({
@@ -841,6 +846,7 @@ export default function CubeGifDialog({
         pendingSettings,
         captureFrame,
         totalFrames,
+        frameDelayMs,
         totalDuration,
         samplesByFrameIdx,
         showGenerationProgress,
@@ -1165,6 +1171,26 @@ export default function CubeGifDialog({
                     onChange={e => setResolution(parseInt(e.target.value, 10))}
                     className="w-full cursor-pointer accent-primary-100"
                   />
+                </div>
+                <div className="mt-4 flex items-center justify-between text-sm">
+                  <span className="text-neutral-100">Frame rate</span>
+                  <div className="flex gap-0.5 rounded-sm border border-neutral-600 bg-dark/40 p-0.5">
+                    {FRAME_RATE_OPTIONS.map(({ fps, delayMs }) => (
+                      <button
+                        key={delayMs}
+                        type="button"
+                        onClick={() => setFrameDelayMs(delayMs)}
+                        aria-pressed={frameDelayMs === delayMs}
+                        className={`rounded-xs px-3 py-1 font-mono text-xs transition-colors ${
+                          frameDelayMs === delayMs
+                            ? 'bg-primary-100 text-dark'
+                            : 'text-neutral-400 hover:text-primary-100'
+                        }`}
+                      >
+                        {fps} fps
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
