@@ -57,10 +57,14 @@ export async function generateMetadata(
       canonical: canonicalUrl,
     },
     openGraph: {
+      title: 'Ao1K',
+      description: pageTitle,
       images: [ogImage],
     },
     twitter: {
       card: 'summary_large_image',
+      title: 'Ao1K',
+      description: pageTitle,
       images: [ogImage],
     },
   }
