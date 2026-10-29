@@ -27,7 +27,13 @@ export const lessons: Lesson[] = [
   {
     slug: "better-cross",
     title: "Better Cross",
-    description: "There is no clear path. Let's find one. Learn how to find ways to improve at cross.",
+    description: "There is no clear path. Let's find one. Learn how to improve at cross.",
+    category: "CFOP",
+  },
+  {
+    slug: "intuitive-f2l",
+    title: "Intuitive F2L",
+    description: "There is a great tree. Learn how to start solving F2L with this unique lesson.",
     category: "CFOP",
   },
   {
