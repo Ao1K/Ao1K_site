@@ -58,6 +58,13 @@ export function getPreviewStyles(scale = 1) {
   const p = (n: number) => Math.round(n * scale);
 
   return {
+    frame: {
+      height: '100%',
+      width: '100%',
+      display: 'flex',
+      padding: 2,
+    } as CSSProperties,
+
     wrapper: {
       height: '100%',
       width: '100%',
@@ -278,7 +285,7 @@ export function createPreviewContent({ data, createElement, scale = 1 }: Screens
 
   const isSolved = isSolveComplete(solutionLines.map((line) => (line.icon ? [line.icon] : [])));
 
-  return h('div', { style: styles.wrapper },
+  return h('div', { style: styles.frame }, h('div', { style: styles.wrapper },
     // Left Column: All Moves
     h('div', { style: { ...styles.allMoves, position: 'relative', overflow: 'hidden' } },
       // title && h('div', { style: styles.title }, title),
@@ -311,7 +318,7 @@ export function createPreviewContent({ data, createElement, scale = 1 }: Screens
       ),
       h('div', { style: styles.watermark }, 'Ao1K.com')
     )
-  );
+  ));
 }
 
 // html2canvas can't parse modern CSS color functions (lab, oklch, lch, oklab, color()).
