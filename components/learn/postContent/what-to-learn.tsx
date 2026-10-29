@@ -15,7 +15,7 @@ const OLL_GOAL_FACELETS = "YYYYYYYYYWWWWWWWWWXXXGGGGGGXXXOOOOOOXXXBBBBBBXXXRRRRR
 export default function WhatToLearn() {
   return (
     <>
-      <TitleBar title="What to Learn" subtitle="Getting started with CFOP" audience="all" />
+      <TitleBar title="What to Learn" subtitle="Introduction to CFOP" audience="all" />
       <LessonBody>
         <Story storyParagraphs={[
           `It is difficult to tell his father. His father blames him for the loss of his sister, says he should have been protecting her, throws things at the wall.`,
