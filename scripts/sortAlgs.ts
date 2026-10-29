@@ -1,23 +1,38 @@
-
-import { rawGeneric, rawOLLalgs, rawPLLalgs, rawZBLLalgs } from '../utils/rawAlgs';
 import type { ExactAlg } from '../utils/rawAlgs';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const sortExact = (algs: ExactAlg[]): ExactAlg[] => [...algs].sort((a, b) => a.value.localeCompare(b.value));
-const sortValues = (algs: string[]): string[] => [...algs].sort((a, b) => a.localeCompare(b));
+type RawAlgEntry = string | ExactAlg;
 
-async function main() {
-  try {
-    const utilsPath = path.join(process.cwd(), 'utils');
-    fs.writeFileSync(path.join(utilsPath, 'rawGenericData.json'), JSON.stringify(sortExact(rawGeneric), null, 2));
-    fs.writeFileSync(path.join(utilsPath, 'rawOLLdata.json'), JSON.stringify(sortValues(rawOLLalgs), null, 2));
-    fs.writeFileSync(path.join(utilsPath, 'rawPLLdata.json'), JSON.stringify(sortValues(rawPLLalgs), null, 2));
-    fs.writeFileSync(path.join(utilsPath, 'rawZBLLdata.json'), JSON.stringify(sortValues(rawZBLLalgs), null, 2));
-    console.log('Sorted algs written to utils/rawGenericData.json, rawOLLdata.json, rawPLLdata.json, rawZBLLdata.json');
-  } catch (error) {
-    console.error('Error sorting algs:', error);
+const algValue = (entry: RawAlgEntry): string => (typeof entry === 'string' ? entry : entry.value);
+
+const formatAlgs = (algs: RawAlgEntry[]): string => {
+  const holdsExactAlgs = algs.some((entry) => typeof entry !== 'string');
+  if (!holdsExactAlgs) return JSON.stringify(algs, null, 2);
+
+  const lines = algs.map((entry) => `  ${JSON.stringify(entry)}`);
+  return `[\n${lines.join(',\n')}\n]\n`;
+};
+
+function main() {
+  const inputArgs = process.argv.slice(2);
+  if (inputArgs.length === 0) {
+    console.error('Usage: npx tsx scripts/sortAlgs.ts <path/to/rawOLLdata.json> [more raw files...]');
     process.exit(1);
+  }
+
+  for (const inputArg of inputArgs) {
+    const inputPath = path.resolve(process.cwd(), inputArg);
+    const algs = JSON.parse(fs.readFileSync(inputPath, 'utf8')) as RawAlgEntry[];
+
+    if (!Array.isArray(algs)) {
+      console.error(`${inputArg} must contain an array of algs`);
+      process.exit(1);
+    }
+
+    const sorted = [...algs].sort((a, b) => algValue(a).localeCompare(algValue(b)));
+    fs.writeFileSync(inputPath, formatAlgs(sorted));
+    console.log(`Sorted ${sorted.length} algs in ${inputArg}`);
   }
 }
 

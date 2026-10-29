@@ -10,17 +10,8 @@ OLL/PLL algsets in Algs page. Needs fingertricks to be done well.
 A tab for your recons (click an icon and expand into a whole new page). A profile system. Oofda.
   - Sharing YourAlgsList via url, once profiles working
 
-A completely intuitive f2l guide
-
 Add roux algs
  - Roux icons in YourAlgsList
-
-Add cross solutions
- - Show for current angle
- - Off in settings by default
-
-Think about function of solve review carefully. Form will follow.
-- Add breakdown into MovesTextEditor? Explore adding divs.
 
 Wack suggestion
 http://localhost:3000/algs/?a=f2l&c=y3022000000000000

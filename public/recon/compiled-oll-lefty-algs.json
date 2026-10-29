@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-09-04T17:51:50.529Z",
+  "timestamp": "2026-10-29T00:57:54.162Z",
   "step": "oll-lefty",
-  "totalAlgorithms": 291,
+  "totalAlgorithms": 296,
   "algorithms": [
     {
       "alg": "R U R' U R U2' R'",
@@ -382,6 +382,44 @@
       "refPieceMovement": 0,
       "minMovements": [
         3
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "L' U L S L' U' L S'",
+      "caseIndex": 57,
+      "refPieceMovement": 0,
+      "minMovements": [
+        0,
+        2
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "L' U' L S L' U L S'",
+      "caseIndex": 57,
+      "refPieceMovement": 1,
+      "minMovements": [
+        0,
+        2
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "S L' U L S' L' U' L",
+      "caseIndex": 28,
+      "refPieceMovement": 0,
+      "minMovements": [
+        2
+      ],
+      "frequency": 0
+    },
+    {
+      "alg": "S L' U' L S' L' U L",
+      "caseIndex": 28,
+      "refPieceMovement": 3,
+      "minMovements": [
+        1
       ],
       "frequency": 0
     },
@@ -2186,6 +2224,18 @@
         3
       ],
       "frequency": 8
+    },
+    {
+      "alg": "S L' U' L S' U M' U' L' U l",
+      "caseIndex": 20,
+      "refPieceMovement": 2,
+      "minMovements": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "frequency": 0
     },
     {
       "alg": "l L' U' L' U' L U l' M' L U' L' U l",
