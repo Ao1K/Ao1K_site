@@ -52,3 +52,9 @@ export const DEFAULT_HINT_FACELETS_ELEVATION = 1.5;
 export const DEFAULT_STICKER_SCALE = 0.995;
 
 export const MIN_STICKER_SCALE = 0.5;
+
+export const DEFAULT_CAMERA_FOV = 60;
+
+export const MIN_CAMERA_FOV = 10;
+
+export const MAX_CAMERA_FOV = 100;

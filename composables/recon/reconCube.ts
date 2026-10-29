@@ -2,9 +2,11 @@ import { DEFAULT_HINT_FACELETS_ELEVATION } from '../../utils/sharedConstants';
 import { parseMoveRotation, type RotationInfo } from '../../utils/cubeMoves';
 import { CUBE_PX, SCENE_PX, type SceneView } from '../../utils/cubeSvgRender';
 
-const CAMERA_FOV_DEG = 75;
+const REFERENCE_CAMERA_FOV = 75;
 
 export const INITIAL_ANGLES = { x: 30, y: 0 };
+
+export const ORBIT_DAMPING = 0.15;
 
 export const smootherStep = (x: number) => x * x * x * (10 - x * (15 - 6 * x));
 
@@ -20,21 +22,23 @@ export const timelineMoveMs = (move: string) => {
   return 1000;
 };
 
-// models a camera with a 75° field of view at the given distance. The SVG renderer has no camera, so the distance becomes a cube scale and a perspective depth.
-export const distanceView = (baseDistance: number, elevation: number, zoom: number, stickerScale: number): SceneView => {
+// models a camera with a 75° field of view at the given distance. The camera then moves so the cube keeps the same size at the chosen field of view. The SVG renderer has no camera, so the distance becomes a cube scale and a perspective depth.
+export const distanceView = (baseDistance: number, elevation: number, zoom: number, stickerScale: number, fov: number): SceneView => {
   const elevationZoom = 1 + (elevation - DEFAULT_HINT_FACELETS_ELEVATION) * 0.1;
   const cameraDistance = baseDistance * elevationZoom / zoom;
-  const visibleHeight = 2 * cameraDistance * Math.tan((CAMERA_FOV_DEG / 2) * Math.PI / 180);
+  const referenceHalfFovTan = Math.tan((REFERENCE_CAMERA_FOV / 2) * Math.PI / 180);
+  const visibleHeight = 2 * cameraDistance * referenceHalfFovTan;
+  const sameSizeDistanceScale = referenceHalfFovTan / Math.tan((fov / 2) * Math.PI / 180);
   return {
     hintElevation: elevation,
     cubeScale: SCENE_PX / (CUBE_PX * visibleHeight),
-    perspective: cameraDistance * CUBE_PX,
+    perspective: cameraDistance * sameSizeDistanceScale * CUBE_PX,
     stickerScale,
   };
 };
 
-export const cameraView = (containerHeight: number, elevation: number, zoom: number, stickerScale: number): SceneView =>
-  distanceView((containerHeight * 0.0024) + 0.92, elevation, zoom, stickerScale);
+export const cameraView = (containerHeight: number, elevation: number, zoom: number, stickerScale: number, fov: number): SceneView =>
+  distanceView((containerHeight * 0.0024) + 0.92, elevation, zoom, stickerScale, fov);
 
 export const sceneViewBox = (width: number, height: number): string => {
   const viewWidth = SCENE_PX * width / height;

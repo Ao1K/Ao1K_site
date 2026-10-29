@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { HexColorPicker } from 'react-colorful';
 import PhGear, { PhGearFill } from './icons/settings';
-import { useCubeColors, useShowControls, useShowSplits, useHintFaceletsElevation, useStickerScale, useAlgsets, useHandedness, useShowEOStep, ALGSET_OPTIONS, DEFAULT_HINT_FACELETS_ELEVATION, DEFAULT_STICKER_SCALE, MIN_STICKER_SCALE, DEFAULT_CUBE_COLORS, type CubeColors, type AlgsetDict, type Handedness } from '../composables/useSettings';
+import CubeAppearanceDialog from './CubeAppearanceDialog';
+import { useCubeColors, useShowControls, useShowSplits, useHintFaceletsElevation, useStickerScale, useCameraFov, useAlgsets, useHandedness, useShowEOStep, ALGSET_OPTIONS, DEFAULT_HINT_FACELETS_ELEVATION, DEFAULT_STICKER_SCALE, MIN_STICKER_SCALE, DEFAULT_CAMERA_FOV, MIN_CAMERA_FOV, MAX_CAMERA_FOV, DEFAULT_CUBE_COLORS, type CubeColors, type AlgsetDict, type Handedness } from '../composables/useSettings';
 
 const STICKER_SLIDER_CURVE_BASE = 115;
 const MAX_STICKER_GAP = 1 - MIN_STICKER_SCALE;
@@ -34,18 +35,23 @@ const HANDEDNESS_OPTIONS: { value: Handedness; label: string }[] = [
   { value: 'right', label: 'Righty' },
 ];
 
+const ACCENT_FACES: (keyof CubeColors)[] = ['up', 'front', 'right', 'down', 'back', 'left'];
+
 interface SettingsMenuProps {
   page?: string; // Page identifier for namespacing settings (e.g., 'recon')
 }
 
 export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isAppearanceOpen, setIsAppearanceOpen] = useState(false);
   const [activePicker, setActivePicker] = useState<keyof CubeColors | null>(null);
   const [cubeColors, setCubeColors, resetColors] = useCubeColors();
   const [showControls, setShowControls] = useShowControls();
   const [showSplits, setShowSplits] = useShowSplits();
   const [elevation, setElevation] = useHintFaceletsElevation();
   const [stickerScale, setStickerScale] = useStickerScale();
+  const [cameraFov, setCameraFov] = useCameraFov();
+  const showStickerScaleAndFov = page === 'recon';
   const [algsets, setAlgsets] = useAlgsets();
   const [handedness, setHandedness] = useHandedness();
   const [showEOStep, setShowEOStep] = useShowEOStep();
@@ -99,6 +105,11 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
     const options = ALGSET_OPTIONS[category];
     const allSelected = options.every((o) => (algsets[category] as readonly string[]).includes(o));
     setAlgsets({ ...algsets, [category]: allSelected ? [] : [...options] });
+  };
+
+  const handleOpenAppearance = () => {
+    setIsOpen(false);
+    setIsAppearanceOpen(true);
   };
 
   const capitalizeOption = (option: string): string => {
@@ -227,6 +238,7 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
             </div>
           )}
 
+          <div className="hidden sm:block">
           {/* Hint Facelets Elevation Slider — shown on both the recon and algs cubes */}
           <div className="px-3 pt-3 pb-2 border-b border-primary-200">
             <div className="flex items-center justify-between">
@@ -254,31 +266,61 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
             />
           </div>
 
-          <div className="px-3 pt-3 pb-2 border-b border-primary-200">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold text-light_accent">Sticker Scale</span>
-              <button
-                onClick={() => setStickerScale(DEFAULT_STICKER_SCALE)}
-                disabled={stickerScale === DEFAULT_STICKER_SCALE}
-                className={`text-sm px-2 py-1 rounded-sm w-auto transition-colors ${
-                  stickerScale === DEFAULT_STICKER_SCALE
-                    ? 'bg-primary-100 text-neutral-400'
-                    : 'bg-primary-200 text-neutral-700 hover:bg-primary-300'
-                }`}
-              >
-                Reset
-              </button>
-            </div>
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.001}
-              value={sliderFromStickerScale(stickerScale)}
-              onChange={(e) => setStickerScale(stickerScaleFromSlider(parseFloat(e.target.value)))}
-              className="w-full h-10 mt-1 accent-primary-500 cursor-pointer"
-            />
-          </div>
+          {showStickerScaleAndFov && (
+            <>
+              <div className="px-3 pt-3 pb-2 border-b border-primary-200">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-light_accent">Sticker Scale</span>
+                  <button
+                    onClick={() => setStickerScale(DEFAULT_STICKER_SCALE)}
+                    disabled={stickerScale === DEFAULT_STICKER_SCALE}
+                    className={`text-sm px-2 py-1 rounded-sm w-auto transition-colors ${
+                      stickerScale === DEFAULT_STICKER_SCALE
+                        ? 'bg-primary-100 text-neutral-400'
+                        : 'bg-primary-200 text-neutral-700 hover:bg-primary-300'
+                    }`}
+                  >
+                    Reset
+                  </button>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.001}
+                  value={sliderFromStickerScale(stickerScale)}
+                  onChange={(e) => setStickerScale(stickerScaleFromSlider(parseFloat(e.target.value)))}
+                  className="w-full h-10 mt-1 accent-primary-500 cursor-pointer"
+                />
+              </div>
+
+              <div className="px-3 pt-3 pb-2 border-b border-primary-200">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-light_accent">Field of View</span>
+                  <button
+                    onClick={() => setCameraFov(DEFAULT_CAMERA_FOV)}
+                    disabled={cameraFov === DEFAULT_CAMERA_FOV}
+                    className={`text-sm px-2 py-1 rounded-sm w-auto transition-colors ${
+                      cameraFov === DEFAULT_CAMERA_FOV
+                        ? 'bg-primary-100 text-neutral-400'
+                        : 'bg-primary-200 text-neutral-700 hover:bg-primary-300'
+                    }`}
+                  >
+                    Reset
+                  </button>
+                </div>
+                <input
+                  type="range"
+                  min={MIN_CAMERA_FOV}
+                  max={MAX_CAMERA_FOV}
+                  step={1}
+                  value={cameraFov}
+                  onChange={(e) => setCameraFov(parseFloat(e.target.value))}
+                  className="w-full h-10 mt-1 accent-primary-500 cursor-pointer"
+                />
+              </div>
+            </>
+          )}
 
           <div className="flex flex-row items-center justify-between mb-2">
             <div className="text-sm font-semibold text-light_accent p-3 w-auto">Cube Colors</div>
@@ -302,8 +344,8 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
                 <button
                   onClick={() => handleSwatchClick(key)}
                   className={`w-10 h-10 rounded-sm border-2 transition-all ${
-                    activePicker === key 
-                      ? 'border-primary-500 ring-2 ring-primary-200' 
+                    activePicker === key
+                      ? 'border-primary-500 ring-2 ring-primary-200'
                       : 'border-primary-300 hover:border-primary-400'
                   }`}
                   style={{ backgroundColor: cubeColors[key] }}
@@ -341,7 +383,30 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
               </div>
             </div>
           )}
+          </div>
+
+          <div className="p-3 sm:hidden">
+            <button
+              type="button"
+              onClick={handleOpenAppearance}
+              className="flex w-full items-center gap-3 rounded-sm border border-primary-300 bg-primary-200/40 px-3 py-2 text-left hover:bg-primary-200"
+            >
+              <span className="text-5xl leading-none text-light_accent">‹</span>
+              <span className="flex flex-1 flex-col gap-1.5">
+                <span className="text-sm font-semibold text-light_accent">Edit cube appearance</span>
+                <span className="flex h-2 w-full overflow-hidden rounded-full">
+                  {ACCENT_FACES.map((face) => (
+                    <span key={face} className="flex-1" style={{ backgroundColor: cubeColors[face] }} />
+                  ))}
+                </span>
+              </span>
+            </button>
+          </div>
         </div>
+      )}
+
+      {isAppearanceOpen && (
+        <CubeAppearanceDialog showStickerScaleAndFov={showStickerScaleAndFov} onClose={() => setIsAppearanceOpen(false)} />
       )}
     </div>
   );

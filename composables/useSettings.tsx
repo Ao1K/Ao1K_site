@@ -4,9 +4,26 @@ import Cookies from 'js-cookie';
 import { useCallback, useSyncExternalStore } from 'react';
 
 // Default cube colors matching the original CUBE_COLORS
-import { DEFAULT_CUBE_COLORS, DEFAULT_HINT_FACELETS_ELEVATION, DEFAULT_STICKER_SCALE, MIN_STICKER_SCALE, type CubeColors } from '../utils/sharedConstants';
+import {
+  DEFAULT_CUBE_COLORS,
+  DEFAULT_HINT_FACELETS_ELEVATION,
+  DEFAULT_STICKER_SCALE,
+  MIN_STICKER_SCALE,
+  DEFAULT_CAMERA_FOV,
+  MIN_CAMERA_FOV,
+  MAX_CAMERA_FOV,
+  type CubeColors,
+} from '../utils/sharedConstants';
 
-export { DEFAULT_CUBE_COLORS, DEFAULT_HINT_FACELETS_ELEVATION, DEFAULT_STICKER_SCALE, MIN_STICKER_SCALE };
+export {
+  DEFAULT_CUBE_COLORS,
+  DEFAULT_HINT_FACELETS_ELEVATION,
+  DEFAULT_STICKER_SCALE,
+  MIN_STICKER_SCALE,
+  DEFAULT_CAMERA_FOV,
+  MIN_CAMERA_FOV,
+  MAX_CAMERA_FOV,
+};
 export type { CubeColors };
 
 export type IconSize = 'small' | 'medium';
@@ -39,6 +56,7 @@ export interface AppSettings {
   showPlayerControls: boolean;
   hintFaceletsElevation: number;
   stickerScale: number;
+  cameraFov: number;
   showSplits: boolean;
   algsets: AlgsetDict;
   handedness: Handedness;
@@ -53,6 +71,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   showPlayerControls: true,
   hintFaceletsElevation: DEFAULT_HINT_FACELETS_ELEVATION,
   stickerScale: DEFAULT_STICKER_SCALE,
+  cameraFov: DEFAULT_CAMERA_FOV,
   showSplits: false,
   algsets: DEFAULT_ALGSETS,
   handedness: DEFAULT_HANDEDNESS,
@@ -75,6 +94,9 @@ function parseSettings(cookieValue: string | undefined): AppSettings {
         stickerScale: typeof parsed.stickerScale === 'number'
           ? Math.min(1, Math.max(MIN_STICKER_SCALE, parsed.stickerScale))
           : DEFAULT_STICKER_SCALE,
+        cameraFov: typeof parsed.cameraFov === 'number'
+          ? Math.min(MAX_CAMERA_FOV, Math.max(MIN_CAMERA_FOV, parsed.cameraFov))
+          : DEFAULT_CAMERA_FOV,
         showSplits: parsed.showSplits ?? false,
         algsets: { ...DEFAULT_ALGSETS, ...parsed.algsets },
         handedness: parsed.handedness === 'left' ? 'left' : DEFAULT_HANDEDNESS,
@@ -230,6 +252,19 @@ export function useStickerScale(): [number, (value: number) => void] {
   }, [settings, updateSettings]);
 
   return [settings.stickerScale, setStickerScale] as const;
+}
+
+export function useCameraFov(): [number, (value: number) => void] {
+  const { settings, updateSettings } = useSyncedSettings();
+
+  const setCameraFov = useCallback((value: number) => {
+    updateSettings({
+      ...settings,
+      cameraFov: value,
+    });
+  }, [settings, updateSettings]);
+
+  return [settings.cameraFov, setCameraFov] as const;
 }
 
 export function useHandedness(): [Handedness, (value: Handedness) => void] {

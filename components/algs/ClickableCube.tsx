@@ -2,7 +2,7 @@
 
 import React, { useEffect, useImperativeHandle, useRef } from 'react';
 import { rotateAlgByY, tokenize } from '../../composables/algs/algMoves';
-import { useCubeColors, useHintFaceletsElevation } from '../../composables/useSettings';
+import { useCubeColors, useHintFaceletsElevation, DEFAULT_CAMERA_FOV } from '../../composables/useSettings';
 import { SimpleCube } from '../../composables/recon/SimpleCube';
 import { distanceView, INITIAL_ANGLES, sceneViewBox, smootherStep, timelineMoveMs, turnRotation } from '../../composables/recon/reconCube';
 import { createCubeScene, createSvgPainter, type CubeScene } from '../../utils/cubeSceneRuntime.client';
@@ -100,7 +100,7 @@ const ClickableCube = ({ cross = 'up', pair, corner, edge, filledSlots, highligh
 
   useEffect(() => {
     sceneRef.current?.setLook({ hints: elevation !== 0 });
-    sceneRef.current?.setView(distanceView(CAMERA_DISTANCE, elevation, 1, 1));
+    sceneRef.current?.setView(distanceView(CAMERA_DISTANCE, elevation, 1, 1, DEFAULT_CAMERA_FOV));
   }, [elevation]);
 
   useEffect(() => {
@@ -202,7 +202,7 @@ const ClickableCube = ({ cross = 'up', pair, corner, edge, filledSlots, highligh
     const scene = createCubeScene(createSvgPainter(svg), {
       facelets: SOLVED_FACELETS,
       angles: INITIAL_ANGLES,
-      view: distanceView(CAMERA_DISTANCE, elevation, 1, 1),
+      view: distanceView(CAMERA_DISTANCE, elevation, 1, 1, DEFAULT_CAMERA_FOV),
       colors: buildColorHex(cubeColors),
       shade: DEFAULT_SCENE_LOOK.shade,
       dim: DEFAULT_SCENE_LOOK.dim,

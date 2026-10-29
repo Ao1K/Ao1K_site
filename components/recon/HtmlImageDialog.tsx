@@ -196,7 +196,7 @@ export default function HtmlImageDialog({
             <button
               type="button"
               onClick={onClose}
-              className="rounded border border-neutral-600 px-3 py-2 text-sm text-neutral-300 bg-primary-900 hover:bg-primary-800 transition-colors hover:text-primary-100"
+              className="rounded border border-neutral-600 px-3 py-2 text-sm text-primary-100 bg-primary-800 hover:bg-primary-700 transition-colors"
             >
               Close
             </button>

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { RemoveScroll } from 'react-remove-scroll';
 import { HexColorPicker } from 'react-colorful';
-import { useCubeColors, useHintFaceletsElevation, useStickerScale } from '../../composables/useSettings';
+import { useCubeColors, useHintFaceletsElevation, useStickerScale, useCameraFov } from '../../composables/useSettings';
 import { ALL_PIECE_NAMES, allHighlightSet } from './UnfoldedCube';
 import LineConfigItem, { type LineEntry, MIN_LINE_PCT } from './LineConfigItem';
 import type { LineIconDatum } from './IconStack';
@@ -245,6 +245,7 @@ export default function CubeGifDialog({
   const [cubeColors] = useCubeColors();
   const [elevation] = useHintFaceletsElevation();
   const [stickerScale] = useStickerScale();
+  const [cameraFov] = useCameraFov();
   const previewDivRef = useRef<HTMLDivElement | null>(null);
   const previewCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const orbitRef = useRef<Orbit | null>(null);
@@ -604,6 +605,7 @@ export default function CubeGifDialog({
     includeFaceLabels: boolean;
     elevation: number;
     stickerScale: number;
+    cameraFov: number;
     splits: string[];
     onSplitsChange: (splits: string[]) => void;
     onSplitsCommit: (splits: string[]) => void;
@@ -623,6 +625,7 @@ export default function CubeGifDialog({
     includeFaceLabels,
     elevation,
     stickerScale,
+    cameraFov,
     splits,
     onSplitsChange,
     onSplitsCommit,
@@ -645,6 +648,7 @@ export default function CubeGifDialog({
       includeFaceLabels,
       elevation,
       stickerScale,
+      cameraFov,
       splits,
       onSplitsChange,
       onSplitsCommit,
@@ -697,6 +701,7 @@ export default function CubeGifDialog({
       latestStateRef.current.elevation,
       1 / zoomFactorRef.current,
       latestStateRef.current.stickerScale,
+      latestStateRef.current.cameraFov,
     ),
   });
 
@@ -898,7 +903,7 @@ export default function CubeGifDialog({
             <button
               type="button"
               onClick={onClose}
-              className="rounded border border-neutral-600 px-3 py-2 text-sm text-neutral-300 bg-primary-900 hover:bg-primary-800 transition-colors hover:text-primary-100"
+              className="rounded border border-neutral-600 px-3 py-2 text-sm text-primary-100 bg-primary-800 hover:bg-primary-700 transition-colors"
             >
               Close
             </button>
