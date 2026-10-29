@@ -42,7 +42,6 @@ export const SCREENSHOT_STYLES = {
   wrapperBg: '#221825',
   borderColor: '#525252',
   textColor: '#ECE6EF',
-  primaryColor: '#ECE6EF',
   fontSize: {
     base: 18,
     large: 24,
@@ -94,7 +93,6 @@ export function getPreviewStyles(scale = 1) {
       justifyContent: 'space-between',
       alignItems: 'stretch',
       flexShrink: 0,
-      height: `110%`,
       marginRight: p(-s.padding),
       marginTop: p(-s.padding),
       marginBottom: p(-s.padding),
@@ -158,9 +156,8 @@ export function getPreviewStyles(scale = 1) {
     watermark: {
       fontSize: p(36),
       width: '100%',
-      color: s.backgroundColor,
-      backgroundColor: s.primaryColor,
-      padding: `${p(4)}px ${p(8)}px`,
+      color: '#e5e5e5',
+      padding: `0 ${p(s.padding)}px`,
       marginBottom: p(s.padding),
       textAlign: 'right',
     } as CSSProperties,
