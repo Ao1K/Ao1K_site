@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { RemoveScroll } from 'react-remove-scroll';
 import { HexColorPicker } from 'react-colorful';
-import { useCubeColors, useHintFaceletsElevation } from '../../composables/useSettings';
+import { useCubeColors, useHintFaceletsElevation, useStickerScale } from '../../composables/useSettings';
 import { ALL_PIECE_NAMES, allHighlightSet } from './UnfoldedCube';
 import LineConfigItem, { type LineEntry, MIN_LINE_PCT } from './LineConfigItem';
 import type { LineIconDatum } from './IconStack';
@@ -244,6 +244,7 @@ export default function CubeGifDialog({
 }: CubeGifDialogProps) {
   const [cubeColors] = useCubeColors();
   const [elevation] = useHintFaceletsElevation();
+  const [stickerScale] = useStickerScale();
   const previewDivRef = useRef<HTMLDivElement | null>(null);
   const previewCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const orbitRef = useRef<Orbit | null>(null);
@@ -602,6 +603,7 @@ export default function CubeGifDialog({
     showFacelets: boolean;
     includeFaceLabels: boolean;
     elevation: number;
+    stickerScale: number;
     splits: string[];
     onSplitsChange: (splits: string[]) => void;
     onSplitsCommit: (splits: string[]) => void;
@@ -620,6 +622,7 @@ export default function CubeGifDialog({
     showFacelets,
     includeFaceLabels,
     elevation,
+    stickerScale,
     splits,
     onSplitsChange,
     onSplitsCommit,
@@ -641,6 +644,7 @@ export default function CubeGifDialog({
       showFacelets,
       includeFaceLabels,
       elevation,
+      stickerScale,
       splits,
       onSplitsChange,
       onSplitsCommit,
@@ -692,6 +696,7 @@ export default function CubeGifDialog({
       previewDivRef.current?.clientHeight || DEFAULT_PREVIEW_PX,
       latestStateRef.current.elevation,
       1 / zoomFactorRef.current,
+      latestStateRef.current.stickerScale,
     ),
   });
 

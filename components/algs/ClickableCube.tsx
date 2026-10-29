@@ -100,7 +100,7 @@ const ClickableCube = ({ cross = 'up', pair, corner, edge, filledSlots, highligh
 
   useEffect(() => {
     sceneRef.current?.setLook({ hints: elevation !== 0 });
-    sceneRef.current?.setView(distanceView(CAMERA_DISTANCE, elevation, 1));
+    sceneRef.current?.setView(distanceView(CAMERA_DISTANCE, elevation, 1, 1));
   }, [elevation]);
 
   useEffect(() => {
@@ -202,7 +202,7 @@ const ClickableCube = ({ cross = 'up', pair, corner, edge, filledSlots, highligh
     const scene = createCubeScene(createSvgPainter(svg), {
       facelets: SOLVED_FACELETS,
       angles: INITIAL_ANGLES,
-      view: distanceView(CAMERA_DISTANCE, elevation, 1),
+      view: distanceView(CAMERA_DISTANCE, elevation, 1, 1),
       colors: buildColorHex(cubeColors),
       shade: DEFAULT_SCENE_LOOK.shade,
       dim: DEFAULT_SCENE_LOOK.dim,

@@ -48,3 +48,7 @@ export const DEFAULT_CUBE_COLORS = {
 export type CubeColors = typeof DEFAULT_CUBE_COLORS;
 
 export const DEFAULT_HINT_FACELETS_ELEVATION = 1.5;
+
+export const DEFAULT_STICKER_SCALE = 0.995;
+
+export const MIN_STICKER_SCALE = 0.5;

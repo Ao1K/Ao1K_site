@@ -7,7 +7,7 @@ import { reverseMove } from '../../composables/recon/transformHTML';
 import type { ControllerRequestOptions } from './_PageContent';
 import type { PlayerParams as RenderRefProps } from './_PageContent';
 import { createCubeImageCapture, type ScreenshotSetupStatus } from '../../composables/recon/cubeImageCapture';
-import { useSyncedSettings, useShowControls, useHintFaceletsElevation } from '../../composables/useSettings';
+import { useSyncedSettings, useShowControls, useHintFaceletsElevation, useStickerScale } from '../../composables/useSettings';
 import { SimpleCube } from '../../composables/recon/SimpleCube';
 import { cameraView, INITIAL_ANGLES, smootherStep, timelineMoveMs, turnRotation } from '../../composables/recon/reconCube';
 import { createCubeScene, type CubeScene } from '../../utils/cubeSceneRuntime.client';
@@ -99,6 +99,9 @@ const Player = React.memo(({
   const [elevation] = useHintFaceletsElevation();
   const elevationRef = useRef(elevation);
   elevationRef.current = elevation;
+  const [stickerScale] = useStickerScale();
+  const stickerScaleRef = useRef(stickerScale);
+  stickerScaleRef.current = stickerScale;
 
   const sceneRef = useRef<CubeScene | null>(null);
   const divRef = useRef<HTMLDivElement>(null);
@@ -109,6 +112,7 @@ const Player = React.memo(({
   const hintRiseRef = useRef<number | null>(null);
   const lastColorsRef = useRef(cubeColors);
   const lastElevationRef = useRef(elevation);
+  const lastStickerScaleRef = useRef(stickerScale);
 
   const lastSolution = useRef<string>('');
   const lastScramble = useRef<string>('');
@@ -139,7 +143,7 @@ const Player = React.memo(({
     return createCubeImageCapture(() => ({
       scene: sceneRef.current,
       viewerElement: divRef.current,
-      sceneView: (zoom: number) => cameraView(divRef.current?.clientHeight ?? 0, elevationRef.current, zoom),
+      sceneView: (zoom: number) => cameraView(divRef.current?.clientHeight ?? 0, elevationRef.current, zoom, stickerScaleRef.current),
       hintsVisible: elevationRef.current !== 0,
       setupMoves: displayedSetupMovesRef.current,
       setupStatus: screenshotSetupStatus,
@@ -164,7 +168,7 @@ const Player = React.memo(({
       canvas.height = pixelHeight;
     }
 
-    const view = cameraView(div.clientHeight, elevationRef.current, 1);
+    const view = cameraView(div.clientHeight, elevationRef.current, 1, stickerScaleRef.current);
     scene.setView(hintRiseRef.current === null ? view : { ...view, hintElevation: hintRiseRef.current });
   };
 
@@ -176,6 +180,11 @@ const Player = React.memo(({
   if (sceneRef.current && lastElevationRef.current !== elevation) {
     lastElevationRef.current = elevation;
     sceneRef.current.setLook({ hints: elevation !== 0 });
+    applyView();
+  }
+
+  if (sceneRef.current && lastStickerScaleRef.current !== stickerScale) {
+    lastStickerScaleRef.current = stickerScale;
     applyView();
   }
 

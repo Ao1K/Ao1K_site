@@ -1,12 +1,12 @@
 'use client';
 
 import Cookies from 'js-cookie';
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useSyncExternalStore } from 'react';
 
 // Default cube colors matching the original CUBE_COLORS
-import { DEFAULT_CUBE_COLORS, DEFAULT_HINT_FACELETS_ELEVATION, type CubeColors } from '../utils/sharedConstants';
+import { DEFAULT_CUBE_COLORS, DEFAULT_HINT_FACELETS_ELEVATION, DEFAULT_STICKER_SCALE, MIN_STICKER_SCALE, type CubeColors } from '../utils/sharedConstants';
 
-export { DEFAULT_CUBE_COLORS, DEFAULT_HINT_FACELETS_ELEVATION };
+export { DEFAULT_CUBE_COLORS, DEFAULT_HINT_FACELETS_ELEVATION, DEFAULT_STICKER_SCALE, MIN_STICKER_SCALE };
 export type { CubeColors };
 
 export type IconSize = 'small' | 'medium';
@@ -38,6 +38,7 @@ export interface AppSettings {
   cubeColors: CubeColors;
   showPlayerControls: boolean;
   hintFaceletsElevation: number;
+  stickerScale: number;
   showSplits: boolean;
   algsets: AlgsetDict;
   handedness: Handedness;
@@ -47,9 +48,23 @@ export interface AppSettings {
 const SETTINGS_COOKIE_KEY = 'ao1kSettings';
 const BROADCAST_CHANNEL_NAME = 'ao1k-settings-sync';
 
+const DEFAULT_SETTINGS: AppSettings = {
+  cubeColors: { ...DEFAULT_CUBE_COLORS },
+  showPlayerControls: true,
+  hintFaceletsElevation: DEFAULT_HINT_FACELETS_ELEVATION,
+  stickerScale: DEFAULT_STICKER_SCALE,
+  showSplits: false,
+  algsets: DEFAULT_ALGSETS,
+  handedness: DEFAULT_HANDEDNESS,
+  showEOStep: false,
+};
+
 // Read settings from cookie (non-reactive)
 export function readSettingsFromCookie(): AppSettings {
-  const cookieValue = Cookies.get(SETTINGS_COOKIE_KEY);
+  return parseSettings(Cookies.get(SETTINGS_COOKIE_KEY));
+}
+
+function parseSettings(cookieValue: string | undefined): AppSettings {
   if (cookieValue) {
     try {
       const parsed = JSON.parse(cookieValue);
@@ -57,6 +72,9 @@ export function readSettingsFromCookie(): AppSettings {
         cubeColors: { ...DEFAULT_CUBE_COLORS, ...parsed.cubeColors },
         showPlayerControls: parsed.showPlayerControls ?? true,
         hintFaceletsElevation: typeof parsed.hintFaceletsElevation === 'number' ? parsed.hintFaceletsElevation : DEFAULT_HINT_FACELETS_ELEVATION,
+        stickerScale: typeof parsed.stickerScale === 'number'
+          ? Math.min(1, Math.max(MIN_STICKER_SCALE, parsed.stickerScale))
+          : DEFAULT_STICKER_SCALE,
         showSplits: parsed.showSplits ?? false,
         algsets: { ...DEFAULT_ALGSETS, ...parsed.algsets },
         handedness: parsed.handedness === 'left' ? 'left' : DEFAULT_HANDEDNESS,
@@ -67,71 +85,78 @@ export function readSettingsFromCookie(): AppSettings {
       // Invalid JSON, return defaults
     }
   }
-  return {
-    cubeColors: { ...DEFAULT_CUBE_COLORS },
-    showPlayerControls: true,
-    hintFaceletsElevation: DEFAULT_HINT_FACELETS_ELEVATION,
-    showSplits: false,
-    algsets: DEFAULT_ALGSETS,
-    handedness: DEFAULT_HANDEDNESS,
-    showEOStep: false,
+  return DEFAULT_SETTINGS;
+}
+
+const settingsListeners = new Set<() => void>();
+let cachedCookieValue: string | undefined;
+let cachedSettings: AppSettings | null = null;
+let stopWatchingOtherTabs: (() => void) | null = null;
+
+function getSettingsSnapshot(): AppSettings {
+  const cookieValue = Cookies.get(SETTINGS_COOKIE_KEY);
+  if (cachedSettings === null || cookieValue !== cachedCookieValue) {
+    cachedCookieValue = cookieValue;
+    cachedSettings = parseSettings(cookieValue);
+  }
+  return cachedSettings;
+}
+
+function getServerSettingsSnapshot(): AppSettings {
+  return DEFAULT_SETTINGS;
+}
+
+function notifySettingsChanged() {
+  settingsListeners.forEach(listener => listener());
+  window.dispatchEvent(new Event('ao1kSettingsChanged'));
+}
+
+function watchOtherTabs(): () => void {
+  const channel = new BroadcastChannel(BROADCAST_CHANNEL_NAME);
+
+  const syncFromCookie = () => {
+    const previous = cachedSettings;
+    if (getSettingsSnapshot() !== previous) notifySettingsChanged();
   };
+
+  const onVisibilityChange = () => {
+    if (document.visibilityState === 'visible') syncFromCookie();
+  };
+
+  channel.onmessage = syncFromCookie;
+  document.addEventListener('visibilitychange', onVisibilityChange);
+
+  return () => {
+    channel.close();
+    document.removeEventListener('visibilitychange', onVisibilityChange);
+  };
+}
+
+function subscribeToSettings(listener: () => void): () => void {
+  settingsListeners.add(listener);
+  stopWatchingOtherTabs ??= watchOtherTabs();
+
+  return () => {
+    settingsListeners.delete(listener);
+    if (settingsListeners.size === 0 && stopWatchingOtherTabs) {
+      stopWatchingOtherTabs();
+      stopWatchingOtherTabs = null;
+    }
+  };
+}
+
+function updateSettings(next: AppSettings) {
+  Cookies.set(SETTINGS_COOKIE_KEY, JSON.stringify(next), { expires: 365 });
+  notifySettingsChanged();
+
+  const channel = new BroadcastChannel(BROADCAST_CHANNEL_NAME);
+  channel.postMessage('updated');
+  channel.close();
 }
 
 // Synced settings hook - manages cube colors with cross-tab synchronization
 export function useSyncedSettings() {
-  const [settings, setSettings] = useState<AppSettings>({
-    cubeColors: { ...DEFAULT_CUBE_COLORS },
-    showPlayerControls: true,
-    hintFaceletsElevation: DEFAULT_HINT_FACELETS_ELEVATION,
-    showSplits: false,
-    algsets: DEFAULT_ALGSETS,
-    handedness: DEFAULT_HANDEDNESS,
-    showEOStep: false,
-  });
-
-  useEffect(() => {
-    // hydrate from cookie on mount
-    setSettings(readSettingsFromCookie());
-
-    const channel = new BroadcastChannel(BROADCAST_CHANNEL_NAME);
-
-    const syncFromCookie = () => {
-      const newSettings = readSettingsFromCookie();
-      setSettings(newSettings);
-      window.dispatchEvent(new Event('ao1kSettingsChanged'));
-    };
-
-    channel.onmessage = (e) => {
-      syncFromCookie();
-    };
-
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        syncFromCookie();
-      }
-    };
-
-    document.addEventListener('visibilitychange', onVisibilityChange);
-
-    return () => {
-      channel.close();
-      document.removeEventListener('visibilitychange', onVisibilityChange);
-    };
-  }, []);
-
-  const updateSettings = useCallback((next: AppSettings) => {
-    Cookies.set(SETTINGS_COOKIE_KEY, JSON.stringify(next), { expires: 365 });
-    setSettings(next);
-
-    // Dispatch event for other components in this tab
-    window.dispatchEvent(new Event('ao1kSettingsChanged'));
-
-    const channel = new BroadcastChannel(BROADCAST_CHANNEL_NAME);
-    channel.postMessage('updated');
-    channel.close();
-  }, []);
-
+  const settings = useSyncExternalStore(subscribeToSettings, getSettingsSnapshot, getServerSettingsSnapshot);
   return { settings, updateSettings };
 }
 
@@ -192,6 +217,19 @@ export function useHintFaceletsElevation(): [number, (value: number) => void] {
   }, [settings, updateSettings]);
 
   return [settings.hintFaceletsElevation, setElevation] as const;
+}
+
+export function useStickerScale(): [number, (value: number) => void] {
+  const { settings, updateSettings } = useSyncedSettings();
+
+  const setStickerScale = useCallback((value: number) => {
+    updateSettings({
+      ...settings,
+      stickerScale: value,
+    });
+  }, [settings, updateSettings]);
+
+  return [settings.stickerScale, setStickerScale] as const;
 }
 
 export function useHandedness(): [Handedness, (value: Handedness) => void] {

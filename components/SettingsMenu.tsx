@@ -3,7 +3,21 @@
 import { useState, useEffect, useRef } from 'react';
 import { HexColorPicker } from 'react-colorful';
 import PhGear, { PhGearFill } from './icons/settings';
-import { useCubeColors, useShowControls, useShowSplits, useHintFaceletsElevation, useAlgsets, useHandedness, useShowEOStep, ALGSET_OPTIONS, DEFAULT_HINT_FACELETS_ELEVATION, DEFAULT_CUBE_COLORS, type CubeColors, type AlgsetDict, type Handedness } from '../composables/useSettings';
+import { useCubeColors, useShowControls, useShowSplits, useHintFaceletsElevation, useStickerScale, useAlgsets, useHandedness, useShowEOStep, ALGSET_OPTIONS, DEFAULT_HINT_FACELETS_ELEVATION, DEFAULT_STICKER_SCALE, MIN_STICKER_SCALE, DEFAULT_CUBE_COLORS, type CubeColors, type AlgsetDict, type Handedness } from '../composables/useSettings';
+
+const STICKER_SLIDER_CURVE_BASE = 115;
+const MAX_STICKER_GAP = 1 - MIN_STICKER_SCALE;
+
+function stickerScaleFromSlider(position: number): number {
+  const gap = MAX_STICKER_GAP * (STICKER_SLIDER_CURVE_BASE ** (1 - position) - 1) / (STICKER_SLIDER_CURVE_BASE - 1);
+  return 1 - gap;
+}
+
+function sliderFromStickerScale(scale: number): number {
+  const gap = 1 - scale;
+  const curvedGap = 1 + gap * (STICKER_SLIDER_CURVE_BASE - 1) / MAX_STICKER_GAP;
+  return 1 - Math.log(curvedGap) / Math.log(STICKER_SLIDER_CURVE_BASE);
+}
 
 const FACE_LABELS: { key: keyof CubeColors; label: string }[] = [
   { key: 'up', label: 'Up' },
@@ -31,6 +45,7 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
   const [showControls, setShowControls] = useShowControls();
   const [showSplits, setShowSplits] = useShowSplits();
   const [elevation, setElevation] = useHintFaceletsElevation();
+  const [stickerScale, setStickerScale] = useStickerScale();
   const [algsets, setAlgsets] = useAlgsets();
   const [handedness, setHandedness] = useHandedness();
   const [showEOStep, setShowEOStep] = useShowEOStep();
@@ -235,6 +250,32 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
               step={0.1}
               value={elevation}
               onChange={(e) => setElevation(parseFloat(e.target.value))}
+              className="w-full h-10 mt-1 accent-primary-500 cursor-pointer"
+            />
+          </div>
+
+          <div className="px-3 pt-3 pb-2 border-b border-primary-200">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-light_accent">Sticker Scale</span>
+              <button
+                onClick={() => setStickerScale(DEFAULT_STICKER_SCALE)}
+                disabled={stickerScale === DEFAULT_STICKER_SCALE}
+                className={`text-sm px-2 py-1 rounded-sm w-auto transition-colors ${
+                  stickerScale === DEFAULT_STICKER_SCALE
+                    ? 'bg-primary-100 text-neutral-400'
+                    : 'bg-primary-200 text-neutral-700 hover:bg-primary-300'
+                }`}
+              >
+                Reset
+              </button>
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.001}
+              value={sliderFromStickerScale(stickerScale)}
+              onChange={(e) => setStickerScale(stickerScaleFromSlider(parseFloat(e.target.value)))}
               className="w-full h-10 mt-1 accent-primary-500 cursor-pointer"
             />
           </div>

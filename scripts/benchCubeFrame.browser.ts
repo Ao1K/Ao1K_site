@@ -3,7 +3,7 @@ import { createSvgPainter, cubiesAtTime, cubieWorld, type RuntimeCubie } from '.
 import { createCanvasPainter } from '../utils/cubeCanvasRender'
 import { cameraView, smootherStep, timelineMoveMs, turnRotation } from '../composables/recon/reconCube'
 import { DEFAULT_SCENE_LOOK } from '../utils/cubeSceneAuthoring'
-import { DEFAULT_HINT_FACELETS_ELEVATION } from '../utils/sharedConstants'
+import { DEFAULT_HINT_FACELETS_ELEVATION, DEFAULT_STICKER_SCALE } from '../utils/sharedConstants'
 import { SimpleCube } from '../composables/recon/SimpleCube'
 import { faceletsFromState, type RotationInfo } from '../utils/cubeMoves'
 
@@ -49,7 +49,7 @@ function median(values: number[]): number {
 
 window.benchCubeFrame = (frames, rounds) => {
   const poses = buildFramePoses(frames)
-  const view = cameraView(VIEWPORT.height, DEFAULT_HINT_FACELETS_ELEVATION, 1)
+  const view = cameraView(VIEWPORT.height, DEFAULT_HINT_FACELETS_ELEVATION, 1, DEFAULT_STICKER_SCALE)
   const looks = cubeLooks(DEFAULT_SCENE_LOOK.colors, DEFAULT_SCENE_LOOK.shade, DEFAULT_SCENE_LOOK.dim)
   const canvas = document.createElement('canvas')
   canvas.width = VIEWPORT.width

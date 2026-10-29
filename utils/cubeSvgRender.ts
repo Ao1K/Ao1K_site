@@ -1,5 +1,6 @@
 import type { Color } from '../composables/recon/SimpleCube'
 import { LABEL_GLYPH_BOX, LABEL_GLYPHS } from './cubeLabelGlyphs'
+import { DEFAULT_STICKER_SCALE } from './sharedConstants'
 
 export const CUBIE_PX = 100
 export const CUBE_PX = CUBIE_PX * 3
@@ -14,6 +15,7 @@ export const FACE_BORDER_PX = 3
 const HINT_INSET = 3
 export const HINT_PX = CUBIE_PX - HINT_INSET * 2
 
+
 const LABEL_OFFSET = 50 // distance (px) face direction labels float outside the cube
 const HALF_CUBIE = CUBIE_PX / 2
 const CUBE_MID = CUBE_PX / 2
@@ -21,9 +23,14 @@ const CUBE_LEFT = (SCENE_PX - CUBE_PX) / 2
 const LABEL_FLOAT = CUBE_MID + LABEL_OFFSET
 const HINT_OPACITY = 0.55
 
-export type SceneView = { hintElevation: number; cubeScale: number; perspective: number }
+export type SceneView = { hintElevation: number; cubeScale: number; perspective: number; stickerScale: number }
 
-export const DEFAULT_SCENE_VIEW: SceneView = { hintElevation: 1.5, cubeScale: 0.85, perspective: 1000 }
+export const DEFAULT_SCENE_VIEW: SceneView = {
+  hintElevation: 1.5,
+  cubeScale: 0.85,
+  perspective: 1000,
+  stickerScale: DEFAULT_STICKER_SCALE,
+}
 
 export type Mat = number[]
 
@@ -383,6 +390,7 @@ export function cubiePlacement(x: number, y: number, z: number): Mat {
 export type SceneGeometry = {
   projection: Mat
   placement: Mat
+  stickerPx: number
   faceLocal: Mat[]
   hintLocal: Mat[]
   labels: Array<{ letter: string; matrix: Mat }>
@@ -392,13 +400,17 @@ export function sceneGeometry(angles: { x: number; y: number }, view: SceneView 
   const labelInsetX = (CUBE_PX - LABEL_WIDTH) / 2
   const labelInsetY = (CUBE_PX - LABEL_HEIGHT) / 2
   const hintOrientByFace = hintOrient(view.hintElevation * CUBIE_PX)
+  const stickerPx = CUBIE_PX * view.stickerScale
+  const stickerInset = (CUBIE_PX - stickerPx) / 2
   return {
+    stickerPx,
     projection: aboutOrigin(SCENE_PX / 2, SCENE_PX / 2, perspective(view.perspective)),
     placement: chain(
       translate(CUBE_LEFT, CUBE_LEFT, 0),
       aboutOrigin(CUBE_MID, CUBE_MID, chain(scaleXY(view.cubeScale), rotateX(-angles.x), rotateY(-angles.y))),
     ),
-    faceLocal: FACE_NAMES.map(name => aboutOrigin(HALF_CUBIE, HALF_CUBIE, FACE_ORIENT[name])),
+    faceLocal: FACE_NAMES.map(name =>
+      chain(translate(stickerInset, stickerInset, 0), aboutOrigin(stickerPx / 2, stickerPx / 2, FACE_ORIENT[name]))),
     hintLocal: FACE_NAMES.map(name =>
       chain(translate(HINT_INSET, HINT_INSET, 0), aboutOrigin(HINT_PX / 2, HINT_PX / 2, hintOrientByFace[name]))),
     labels: Object.entries(LABEL_ORIENT).map(([face, orient]) => ({
@@ -590,7 +602,7 @@ export function sceneDrawables(input: SceneRenderInput): SceneDrawable[] {
       // and shows through the translucent dimmed pieces in front of it. Hints can't: they
       // float one sticker outside the cube, so an unculled near-side hint would sit between
       // the camera and the cube.
-      addQuad(mul(cubie.world, geometry.faceLocal[sticker.faceIndex]), CUBIE_PX,
+      addQuad(mul(cubie.world, geometry.faceLocal[sticker.faceIndex]), geometry.stickerPx,
         lerpLook(painted?.face ?? looks.face[colorIndex], cubie.dim), FACE_BORDER_PX, false, sticker.facelet)
       if (!showFacelets) return
       addQuad(mul(cubie.world, geometry.hintLocal[sticker.faceIndex]), HINT_PX,
