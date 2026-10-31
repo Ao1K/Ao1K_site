@@ -164,7 +164,7 @@ export default function IntuitiveF2L() {
         <div className="w-80 h-80 mb-2  border border-neutral-400 rounded-sm overflow-hidden">
           <CubeImage
             facelets="ORYGYRGYRGWRWWWRWORGYOGBWGGBYGYOOWOBOBBBBGWBWYOYRRYBRO"
-            angles={{ x: 30, y: -45 }}
+            angles={{ x: 30, y: -30 }}
             hints
             labels
             highlight={["WGR", "WBR", "WBO", "WGO", "YGR", "YGO", "YBO", "YBR", "WG", "WR", "WB", "WO", "YG", "YR", "YB", "YO", "GR", "GO", "BR", "BO", "W", "O", "G", "R", "B", "Y"]}
@@ -239,7 +239,7 @@ export default function IntuitiveF2L() {
         </div>
         <p>{`Split pairs can be difficult to recognize. Notice these properties:`}</p>
         <LessonList>
-          {"On the corner, cross color is never on top."}
+          {"On the corner, the cross color is never on top."}
           {"The top colors on the corner and the edge are different"}
           {`The edge is "behind" the corner. See explanation below.`}
         </LessonList>
@@ -1377,12 +1377,20 @@ function Level2CasesDiagram({ withInstructions = false }: { withInstructions?: b
 const TREE_EXAMPLE_SCRAMBLE ="U L' F2 R2 D' R B' U' F D2 R' F2 U2 B2 R' F2 U2 R' B2 R2 D2 x2 F' R B U L2 y2";
 const TREE_EXAMPLE_STEPS = ["R U' R' y2", "y'", "R' U R", "U' R' U2 R", "U R' U2 R"];
 const TREE_EXAMPLE_HIGHLIGHT: PieceName[] = [...CROSS_PIECES, "BR", "WBR"];
+const TREE_LINK_CLASS = "text-primary-400 underline underline-offset-4 hover:text-primary-300 transition-colors";
 const LEVEL_DESCRIPTIONS = [
   "Pieces solved",
-  "Pieces paired in the top layer",
+  <span>
+    {"Pieces "}
+    <a href="#level-1-are-the-pieces-paired" className={TREE_LINK_CLASS}>paired</a>
+    {" in the top layer"}
+  </span>,
   "Pieces separated in the top layer",
   "Pieces adjacent in the top layer",
-  "Edge does NOT connect to the left or right center",
+  <span>
+    {`Edge is `}
+    <a href="#level-4-is-the-edge-bad" className={TREE_LINK_CLASS}>bad</a>
+  </span>,
   "F2L piece(s) stuck in the bottom or middle layer",
 ];
 
