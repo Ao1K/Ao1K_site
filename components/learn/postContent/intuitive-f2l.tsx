@@ -5,31 +5,21 @@ import LessonLink from "../LessonLink";
 import LessonList from "../LessonList";
 import CubeScene from "../CubeScene";
 import CubeImage from "../CubeImage";
+import ExternalLink from "../../ExternalLink"
 import { SCENE_PX, apply, mul, sceneGeometry } from "../../../utils/cubeSvgRender";
 import { H1, H2, H3 } from "../LessonHeading";
 import type { PieceName } from "../cubeProps";
 import FurtherLearning, { Citation, type Source } from "../FurtherLearning";
 
-// Additional inspiration came from Frosty, where we discussed including EO as a core part of the lesson.
+// Lesson inspiration came from Frosty, where we discussed including EO as a core part of the lesson.
+
 const LINKS = [ 
   {
     id: "cubehead-f2l-cases",
     title: "All Standard F2L Cases",
     attribution: "by CubeHead",
     href: "https://youtu.be/3tYj-9f4dA0",
-  },
-  {
-    id: "jperm-f2l",
-    title: "Short F2L tutorial",
-    attribution: "by J Perm",
-    href: "https://youtu.be/Ar_Zit1VLG0",
-  },
-  {
-    id: "rishi-f2l-hunting",
-    title: "Hunting Story for F2L",
-    attribution: "by RiDo",
-    href: "https://youtu.be/WB5apB2i_Do", // a source of inspiration for Ao1K's entire story concept
-  },
+  }
 ] as const satisfies readonly Source[];
 
 export default function IntuitiveF2L() {
@@ -57,6 +47,22 @@ export default function IntuitiveF2L() {
           {`To start F2L, `}<LessonLink text="cross" href="/learn/better-cross/" />
           {` should already be solved on the bottom of your cube. Except for brief moments, cross should stay solved during F2L.`}
         </p>
+        <H1>{`Other tutorials`}</H1>
+        <p>{`This lesson isn't the simplest possible way to learn F2L. This lesson adds some complexity so that you don't have as many bad habits later.`}</p>
+        <p>{`If you'd like something simpler, you could try one of these:`}</p>
+        <ol className="list-inside list-decimal text-base text-neutral-400 leading-relaxed sm:text-md space-y-2 pb-6">
+          <li>
+            <ExternalLink href="https://youtu.be/Ar_Zit1VLG0" text="Tutorial by J Perm" />
+          </li>
+          <li>
+            <ExternalLink href="https://youtu.be/ReOZZHscIGk" text="Tutorial by CubeHead" />
+          </li>
+          <li>
+            <ExternalLink href="https://youtu.be/WB5apB2i_Do" text="Tutorial by RiDo" />
+            {` (Diamond in the rough)`}
+          </li>
+        </ol>
+        <p>{`F2L is complex. Any tutorial you follow will take real effort and a good amount of time.`}</p>
         <H1>Finding F2L pieces</H1>
         <p>{`The first step is always to find an F2L pair to solve. We need to find one corner piece and one edge piece.`}</p>
         <H2>Find a corner</H2>
@@ -85,23 +91,22 @@ export default function IntuitiveF2L() {
             />
           </div>
         </div>
-        <p>{`F2L edges will never have the cross color on them, or the color that is opposite cross on them.`}</p>
+        <p>{`F2L edges will never have the cross color on them, or the opposite color as cross on them.`}</p>
         <H2>Finding pieces example</H2>
         <p>{`White cross was solved, so we need to find a corner piece with white on it. The first place to look for corner pieces is the top layer, but they may be in the bottom layer next to cross.`}</p>
         <p>{`Here we find the red-blue-white corner piece in the top layer. That means we need to find the red-blue edge. Edges could be in the top or middle layer, and here we found it in the middle layer.`}</p>
         <div className="flex flex-col gap-1 pb-6">
-          <span className="text-sm font-bold">One corner and one edge</span>
+          <span className="text-sm font-bold">Finding one corner and one edge</span>
           <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
             <CubeImage
               facelets="ROOOYOWYWYWOWWWOWBRRBGBYRBYOYYGRBBRYGGBYGRRGWWBGBORGOG"
               hints
               angles={{ x: 30, y: 210 }}
-              highlight={["BR", "WBR", "WB", "WG", "WO", "WR", "W"]}
             />
           </div>
         </div>
         <H1>Tree overview</H1>
-        <p>{`Once we two F2L pieces to solve, we need to figure out what kind of case we have. In our tree analogy, it's like we're figuring out how high up in the tree we are. Then we take branches down towards the bottom.`}</p>
+        <p>{`Once we get two F2L pieces to solve, we need to figure out what kind of case we have. In our tree analogy, it's like we're figuring out how high up in the tree we are. We take branches down towards the bottom as we solve it.`}</p>
 
         {/* TODO: draw a scampering squirrel (real artist) */}
         {/* TODO: draw a sword in the ground */}
