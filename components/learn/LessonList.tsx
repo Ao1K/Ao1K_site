@@ -13,7 +13,7 @@ interface LessonListProps {
 
 export default function LessonList({ children, style = 'decimal' }: LessonListProps) {
   return (
-    <ol className={`list-inside font-bold text-base text-neutral-400 leading-relaxed sm:text-md space-y-2 mb-4 pb-4
+    <ol className={`list-inside font-bold text-base text-neutral-400 leading-relaxed sm:text-md space-y-2 pb-6
       ${style === 'alpha' ? 'list-[upper-alpha]' : 'list-decimal'}`}
     >
       {Children.toArray(children).map((item, index) => (

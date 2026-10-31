@@ -101,52 +101,36 @@ export default function IntuitiveF2L() {
           </div>
         </div>
         <H1>Tree overview</H1>
-        <p>{`Now that we have two F2L pieces to solve, the next step is to figure out how close they are to being solved. In our tree analogy, it's like we're figuring out how high up in the tree we are. Then we take branches down towards the bottom.`}</p>
-        <p>{`After this overview, we'll talk about how to actually descend the tree, step-by-step.`}</p>
+        <p>{`Once we two F2L pieces to solve, we need to figure out what kind of case we have. In our tree analogy, it's like we're figuring out how high up in the tree we are. Then we take branches down towards the bottom.`}</p>
 
         {/* TODO: draw a scampering squirrel (real artist) */}
         {/* TODO: draw a sword in the ground */}
         <F2LTreeDiagram />
 
-        <p>{`The fastest way down the tree is skipping as many of these levels as possible. But the fastest way is hard to find, and you wouldn't see familiar branches very often. So to begin, you stop at several levels.`}</p>
-        <p>{`Our next goal is to figure out what level you're on at any given time. Think of this like identifying the problem that we need to answer. We need to know what level we're on so that we can continue solving the pair.`}</p>
+        <p>{`The fastest way down the tree is skipping as many of these levels as possible. But the fastest way is hard to find, and you wouldn't see familiar branches very often. So to begin, you often stop at several levels.`}</p>
 
-        <H1>Finding your place in the tree</H1>
-        <p>{`We can figure out which level you're at by asking some basic questions. We ask in order from Level 5 to Level 0. `}<b>{`If the answer is yes, that is the level you are on.`}</b></p>
-        
-        <H2>Level 5 — Are pieces in the bottom or middle layer?</H2>
-        <div className="flex flex-col items-center gap-x-8 sm:flex-row sm:items-start pb-6">
-          <div className="flex-1">
-            <p>{`If there are pieces in the F2L pair that are not both in the top layer, you're at this level.`}</p>
-            <p>{`Even if a piece is in the right spot and solved correctly, you're at this level unless both pieces are solved. Naturally, if both pieces are solved, you're done here!`}</p>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">F2L pieces in bottom and middle</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeImage
-                facelets="YGROYRROOYWBWWWGWRBYGBBBGBWWYBORYORGWYOBGRWGRBGYGORYOO"
-                angles={{ x: -30, y: 30 }}
-                labels
-                highlight={["W", "O", "G", "R", "B", "Y", "WG", "WO", "WB", "WR", "WBO", "BO"]}
-                />
-            </div>
-          </div>
-        </div>
-        <p>{`In the example above, both F2L pieces are in the bottom or middle layer. The edge is solved, but the corner isn't, so this is a Level 5 case.`}</p>
-        <p>{`If the pieces are both in the top layer, we continue to the Level 4 question.`}</p>
+        <H2>Finding your place in the tree</H2>
+        <p>{`We need to be able to tell what level we're on at any given time. Think of this like identifying the problem. Once we know the problem, we can descend the tree further.`}</p>
+
+        <p>{`We can figure out which level you're at by asking some basic questions.`}</p>
+
+        <LevelQuestionsDiagram />
+
+        <p>{`It's mostly straightforward to answer these questions. Telling if an edge is bad and telling if pieces are paired can be more tricky. Let's talk about those questions.`}</p>
+
 
         <H2>Level 4 — Is the edge bad?</H2>
-        <p>{`Once we have both pieces into the top layer, we need to determine if the F2L edge is "good" or "bad". Basically, edges are good when they can be solved with `}<code>R</code>{', '}<code>L</code>{', '}<code>U</code>{', and '}<code>D</code> moves.</p>
+        <p>{`Basically, edges are good when they can be solved with `}<code>R</code>{', '}<code>L</code>{', '}<code>U</code>{', and '}<code>D</code> moves.</p>
         <div className="flex flex-row flex-wrap gap-8 pb-6 pt-2">
           <div className="flex flex-col gap-1">
             <span className="text-sm font-bold">Good edge</span>
             <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
               <CubeScene
-                scramble="R U"
+                scramble="x2 R U"
                 hints
                 labels
                 lines={[
-                  { moves: ["U'", "R'"], durations: [1500, 1500], delay: 500, highlight: [...CENTERS, "GR"] }
+                  { moves: ["U'", "R'"], durations: [1500, 1500], delay: 500, highlight: [...CENTERS, "BR"] }
                 ]}
                 progress
               />
@@ -156,18 +140,19 @@ export default function IntuitiveF2L() {
             <span className="text-sm font-bold">Bad edge</span>
             <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
               <CubeScene
-                scramble="R' F R F'"
+                scramble="x2 R' F R F'"
                 hints
                 labels
                 lines={[
-                  { moves: ["U'", "R'"], durations: [1500, 1500], delay: 500, highlight: [...CENTERS, "GR"] }
+                  { moves: ["U'", "R'"], durations: [1500, 1500], delay: 500, highlight: [...CENTERS, "BR"] }
                 ]}
                 progress
               />
             </div>
           </div>
         </div>
-        <p>{`Let's learn a basic way to tell if an edge is good or bad.`}</p>
+        <p>{`The bad edge ended up flipped in place when we tried to solve it with `}<code>RULD</code>{` moves.`}</p>
+        <p>{`It'd be slow and annoying to have to do moves to figure out if an edge is good or not. So let's learn a basic way to tell what kind of F2L edge we have.`}</p>
         <p>{`An F2L edge in the top layer will have one color on top and one color on the side. The edge is good if the side color is the same as the left or right center color. If the side color is the same as the front or back center, it's bad.`}</p>
         <p>{`In the "Good edge" example above, the side color is red. That matches the right center color. Good edge. We don't need to do any moves to check if the edge is good or not.`}</p>
         <p>{`What about this orange-green edge? Good or bad?`}</p>
@@ -188,45 +173,16 @@ export default function IntuitiveF2L() {
           Click to hide the answer
         </label>
         <div className="opacity-0 peer-checked/good1:opacity-100 transition-opacity duration-500 text-neutral-400 mb-4">
-          {`It's a good edge. The side color on the edge is orange which is the same as the right center color.`}
+          {`It's a good edge. The left center is red, so the right center is orange. The side color on the edge matches the right center.`}
         </div>
         <p>{`If we're on Level 4, our goal is just to turn the bad edge into a good one. We'll learn how to do this by rotating the cube with a `}<code>y</code>{` move. `}
           <LessonLink text="Click here" href="/learn/notation/#rule-4-rotations-get-xyz" />
           {` to review what a `}<code>y</code>{` move is.`}
         </p>
-        <p>{`If the edge is good, we go to Level 3.`}</p>
-        <H2>Level 3 — Are the pieces adjacent?</H2>
-        <p>{`At this level, both pieces are in the top layer, but they're touching in a way that makes it clear that they're not connected properly.`}</p>
-        <div className="flex flex-col gap-1 mb-6">
-          <span className="text-sm font-bold">Adjacent pieces, not paired</span>
-          <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-            <CubeImage
-              facelets="YRRRYBYGWGWRWWWRWGBYBOGBWGGOOYYOGWORBBGOBGYBWOYORRYBRO"
-              hints
-              labels
-              highlight={["W", "O", "G", "R", "B", "Y", "WG", "WO", "WB", "WR", "WBO", "BO"]}
-            />
-          </div>
-        </div>
-        <p>{`In this example, the edge is good, so we're not on Level 4. The blue stickers don't line up like the orange ones do, so the pieces aren't connected properly. We must be on Level 3.`}</p>
-        <p>{`Our goal will be to separate them, unless they are already connected, or "paired" together. We'll explore what it means for pieces to be paired in just a second.`}</p>
-        <H2>Level 2 — Are the pieces separated?</H2>
-        <p>{`This level is mostly self-explanatory. If the pieces are in the top layer and separated, but not paired, we're on this level.`}</p>
-        <div className="flex flex-col gap-1 mb-6">
-          <span className="text-sm font-bold">Separated pieces</span>
-          <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-            <CubeImage
-              facelets="WOOGYRWBGYWOWWWOWRBYROORBOGWBBYBGYBYYGBYROGRWORRYGBGGR"
-              hints
-              labels
-              highlight={["WBR", "WG", "WR", "WB", "WO", "BR", "W", "O", "G", "R", "B", "Y"]}
-            />
-          </div>
-        </div>
-        <p>{`The side sticker is blue, which matches the right center, so it's a good edge. We can rule out the other levels as well. The pieces aren't in the middle or bottom, aren't touching, and we'll learn next that they aren't paired. So this is a Level 2 case. Our goal will be to pair the pieces.`}</p>
         <H2>Level 1 — Are the pieces paired?</H2>
         <p>{`"Paired" means the F2L pieces can be solved in 3 or 4 moves. There's only two types of pairs.`}</p>
-        <p>{`A "connected" pair is when the pieces are adjacent and the colors line up correctly. As far as this lesson is concerned, the edge must be good as well.`}</p>
+        <H3>Recognizing a connected pair</H3>
+        <p>{`A "connected" pair is when the pieces are adjacent and the colors line up correctly. As far as this lesson is concerned, the edge must be good too. If the edge is bad, we're still on Level 4.`}</p>
         <div className="flex flex-col gap-1 mb-6">
           <span className="text-sm font-bold">Connected pair on left</span>
           <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
@@ -239,22 +195,12 @@ export default function IntuitiveF2L() {
             />
           </div>
         </div>
-        <p>{`A "split" pair is when you can do an `}<code>R</code>{` or `}<code>L</code>{` move and make what looks like a connected pair.`}</p>
+        <p>{`On the F2L pieces above, blue lines up with blue and red lines up with red.`}</p>
+        <H3>Recognizing a split pair</H3>
+        <p>{`A "split" pair is when you can do a single move and make what looks like a connected pair.`}</p>
         <div className="flex flex-row flex-wrap gap-8 pb-6 pt-2">
           <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Split pair</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeImage
-                facelets="GYOGYRYBRGWGWWWWWWBOYGGYOGRBYWOOYYORBGWBBBGBBOOORRRRRY"
-                angles={{ x: 30, y: 45 }}
-                hints
-                labels
-                highlight={["W", "O", "G", "R", "B", "Y", "WG", "WO", "WB", "WR", "WBO", "BO"]}
-              />
-            </div>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">{`Confirming it is a split pair with an R' move`}</span>
+            <span className="text-sm font-bold">Confirming split pair — Example 1</span>
             <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
               <CubeScene
                 scramble="y R B U' F2' D' F2' U L2' U R2' F2' L2' F2' U' R F' D2' L U2' B' F2' x2 F R2' D' R' D2' F2' L U L' R' U' R y' R U' R' U2' U R U' R' U R U2' R'"
@@ -262,7 +208,23 @@ export default function IntuitiveF2L() {
                 hints
                 labels
                 lines={[
-                  { moves: ["R'"], durations: [1500], delay: 300, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WO", "WB", "WR", "BO", "WBO"] },
+                  { moves: ["R'"], durations: [1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WO", "WB", "WR", "BO", "WBO"] },
+                ]}
+                progress
+                startHighlighted
+              />
+            </div>
+          </div>
+          <div className="flex flex-col gap-1">
+            <span className="text-sm font-bold">{`Confirming split pair — Example 2`}</span>
+            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
+              <CubeScene
+                scramble="B R F2 U2 F2 D2 L U2 L2 B2 U2 L2 F2 U F' L' F2 R F L U' x2 F L2 F D L' D L' R' U2 R y2 U"
+                angles={{ x: 30, y: -30 }}
+                hints
+                labels
+                lines={[
+                  { moves: ["L'"], durations: [1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WO", "WB", "WR", "WGR", "GR"] }
                 ]}
                 progress
                 startHighlighted
@@ -270,14 +232,14 @@ export default function IntuitiveF2L() {
             </div>
           </div>
         </div>
-        <p>{`Split pairs can be difficult to recognize. A good way to tell if you have a split pair and not just a Level 2 case is to look at the cross color sticker on the corner, and then look to the left. That's where the edge needs to be. The colors on top can't be the same or they won't connect. In other words, a split pair has:`}</p>
+        <p>{`Split pairs can be difficult to recognize. Notice these properties:`}</p>
         <LessonList>
-          {"Cross color on side (not on top)"}
-          {"Different colors on top"}
-          {"Edge to the left of corner (relative to cross sticker)"}
+          {"On the corner, cross color is never on top."}
+          {"The top colors on the corner and the edge are different"}
+          {`The edge is "behind" the corner. See explanation below.`}
         </LessonList>
-        <H2>Level 0 — Is the pair solved?</H2>
-        <p>{`The F2L pair is solved, so there's nothing left to do but move on to the next pair. If all four pairs are solved, we move on to solve OLL.`}</p>
+        <p>{`When you can connect the corner to the edge, you can imagine it like you're moving the corner back towards the edge. So the edge is always behind the corner.`}</p>
+        <p>{`If you don't have a connected or split pair, and the edge is good, you probably have a Level 2 or Level 3 case.`}</p>
         <H2>Review</H2>
         <p>{`What level are each of these cases? Remember to check the highest level first, then work your way down.`}</p>
         <div className="flex flex-row flex-wrap gap-8 pt-2">
@@ -319,11 +281,10 @@ export default function IntuitiveF2L() {
               Click to hide the answer
             </label>
             <div className="w-80 opacity-0 peer-checked/review2:opacity-100 transition-opacity duration-500 text-neutral-400 mb-4">
-              {`Level 5. One piece is in the bottom layer, and both aren't solved.`}
+              {`Level 5. One piece is in the bottom layer.`}
             </div>
           </div>
         </div>
-        <p>{`Now that we can tell what level of the tree we are in, our only remaining objective is to learn how to descend the tree.`}</p>
 
         <H1>Descending the tree</H1>
         <p>{`We're going to descend the tree by combining "triggers". Triggers are short, fast sequences of moves. You might already know one, called "sexy move", which is `}<code>{`R U R' U'`}</code>.</p>
@@ -334,7 +295,7 @@ export default function IntuitiveF2L() {
         <p>{`When we're on Level 5, our goal is to get both pieces into the top layer. Let's jump right into an example.`}</p>
         <div className="flex flex-row flex-wrap gap-6 mb-6">
           <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Level 5 —  Example 1</span>
+            <span className="text-sm font-bold">Level 5 — Example 1</span>
             <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
               <CubeImage
                 facelets="GOYGYBBBOYWWWWWGWWYRWOBBGBGBYOORYORBBGRRGRRGRWYRGOYYOO"
@@ -1064,9 +1025,9 @@ const SLOT_LABELS = [
 ];
 const SLOT_LABEL_VIEW = `0 0 ${SCENE_PX} ${SCENE_PX}`;
 
-type SlotLabel = (typeof SLOT_LABELS)[number];
+type ScreenPoint = { x: number; y: number };
 
-function SlotLeader({ anchor, pill }: SlotLabel) {
+function SlotLeader({ anchor, pill }: { anchor: ScreenPoint; pill: ScreenPoint }) {
   return (
     <>
       <line x1={anchor.x} y1={anchor.y} x2={pill.x} y2={pill.y} strokeWidth={8} strokeLinecap="round" className="stroke-primary-900" />
@@ -1130,6 +1091,10 @@ function F2LSlotsDiagram() {
 }
 const ARROW_DIAGRAM_HIGHLIGHT: PieceName[] = [...CROSS_PIECES, "XX", "XXX"];
 const ARROWHEAD_PULLBACK = 16;
+const SIDE_LINE_ANGLE = (30 * Math.PI) / 180;
+const SIDE_LINE_DIRECTION = { x: -Math.sin(SIDE_LINE_ANGLE), y: Math.cos(SIDE_LINE_ANGLE) };
+const SIDE_LINE_LENGTH = 56;
+const SIDE_TEXT_DISTANCE = 88;
 
 type ScenePoint = { x: number; y: number; z: number };
 type ArrowDiagramProps = {
@@ -1139,6 +1104,7 @@ type ArrowDiagramProps = {
   from: ScenePoint;
   to: ScenePoint;
   textLabels: { text: string; x: number; y: number }[];
+  sideLabels?: { text: string; anchor: ScenePoint }[];
   ariaLabel: string;
 };
 
@@ -1177,12 +1143,35 @@ function EdgeOppositeDiagram() {
         { text: "Corner here", x: 550, y: 160 },
         { text: "Edge opposite side", x: 150, y: 130 },
       ]}
-      ariaLabel="Grey corner in the top back-right. Grey edge in the top left. Arrow across the top face from the back-right corner to the back-left corner."
+      sideLabels={[
+        { text: "Opposite side", anchor: { x: 0, y: 300, z: 150 } },
+        { text: "Target side", anchor: { x: 300, y: 300, z: 150 } },
+      ]}
+      ariaLabel="Grey corner in the top back-right. Grey edge in the top left. Arrow across the top face from the back-right corner to the back-left corner. A line off the bottom-right corner of the cube labels the target side, and a line off the bottom-left corner labels the opposite side."
     />
   );
 }
 
-function ArrowDiagram({ id, facelets, angles, from, to, textLabels, ariaLabel }: ArrowDiagramProps) {
+function ArrowDiagram({ id, facelets, angles, from, to, textLabels, sideLabels = [], ariaLabel }: ArrowDiagramProps) {
+  const sideLeaders = sideLabels.map((label) => {
+    const anchor = projectToScene(angles, label.anchor);
+    return {
+      text: label.text,
+      anchor,
+      end: {
+        x: anchor.x + SIDE_LINE_DIRECTION.x * SIDE_LINE_LENGTH,
+        y: anchor.y + SIDE_LINE_DIRECTION.y * SIDE_LINE_LENGTH,
+      },
+      textCenter: {
+        x: anchor.x + SIDE_LINE_DIRECTION.x * SIDE_TEXT_DISTANCE,
+        y: anchor.y + SIDE_LINE_DIRECTION.y * SIDE_TEXT_DISTANCE,
+      },
+    };
+  });
+  const allTextLabels = [
+    ...textLabels,
+    ...sideLeaders.map((leader) => ({ text: leader.text, ...leader.textCenter })),
+  ];
   const start = projectToScene(angles, from);
   const tip = projectToScene(angles, to);
   const arrowLength = Math.hypot(tip.x - start.x, tip.y - start.y);
@@ -1232,7 +1221,10 @@ function ArrowDiagram({ id, facelets, angles, from, to, textLabels, ariaLabel }:
         className="absolute inset-0 size-full"
       />
       <svg viewBox={SLOT_LABEL_VIEW} className="absolute inset-0 size-full">
-        {textLabels.map((label) => (
+        {sideLeaders.map((leader) => (
+          <SlotLeader key={leader.text} anchor={leader.anchor} pill={leader.end} />
+        ))}
+        {allTextLabels.map((label) => (
           <text
             key={label.text}
             x={label.x}
@@ -1384,7 +1376,7 @@ const LEVEL_DESCRIPTIONS = [
   "Pieces solved",
   "Pieces paired in the top layer",
   "Pieces separated in the top layer",
-  "Pieces connected in the top layer",
+  "Pieces adjacent in the top layer",
   "Edge does NOT connect to the left or right center",
   "F2L piece(s) stuck in the bottom or middle layer",
 ];
@@ -1635,6 +1627,50 @@ function F2LTreeDiagram() {
               <span className="flex flex-1 items-center justify-center px-1.5 pb-1 text-center text-sm leading-tight text-primary-200">
                 {LEVEL_DESCRIPTIONS[level]}
               </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </figure>
+  );
+}
+
+const LEVEL_QUESTIONS = [
+  { level: 5, question: "Are pieces in the bottom or middle layer?" },
+  { level: 4, question: "Is the edge bad?" },
+  { level: 3, question: "Are the pieces adjacent?" },
+  { level: 2, question: "Are the pieces separated?" },
+  { level: 1, question: "Are the pieces paired?" },
+  { level: 0, question: "Is the pair solved?" },
+];
+
+function LevelQuestionsDiagram() {
+  return (
+    <figure
+      className="mb-6"
+      role="img"
+      aria-label={LEVEL_QUESTIONS.map(({ level, question }) => `${question} If yes, Level ${level}.`).join(" If no: ")}
+    >
+      <div className="flex max-w-md flex-col gap-7">
+        {LEVEL_QUESTIONS.map(({ level, question }, index) => (
+          <div key={level} className="flex">
+            <div className="relative flex flex-1 items-center rounded-[9px] border-[1.5px] border-primary-500 bg-primary-700 px-2 py-1 text-sm text-primary-200">
+              {question}
+              {index < LEVEL_QUESTIONS.length - 1 && (
+                <div className="absolute top-full left-1/2 flex h-7 -translate-x-1/2 flex-col items-center py-1">
+                  <div className="w-0.5 flex-1 bg-dark_accent" />
+                  <div className="size-0 border-x-[5px] border-t-[7px] border-x-transparent border-t-dark_accent" />
+                  <span className="absolute top-1/2 left-full ml-2 -translate-y-1/2 text-xs font-bold text-primary-100">No</span>
+                </div>
+              )}
+            </div>
+            <div className="relative flex w-12 items-center px-1">
+              <span className="absolute inset-x-0 bottom-1/2 text-center text-xs font-bold text-primary-100">Yes</span>
+              <div className="h-0.5 flex-1 bg-dark_accent" />
+              <div className="size-0 border-y-[5px] border-l-[7px] border-y-transparent border-l-dark_accent" />
+            </div>
+            <div className="flex items-center rounded-[9px] border-[1.5px] border-primary-500 bg-primary-700 px-2 py-1 text-sm font-bold whitespace-nowrap text-primary-100">
+              {`Level ${level}`}
             </div>
           </div>
         ))}
