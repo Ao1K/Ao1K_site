@@ -1,5 +1,4 @@
 import LearnSidebar from "../../components/learn/LessonSidebar";
-import Footer from "../../components/Footer";
 
 export default function LearnLayout({
   children,
@@ -10,10 +9,7 @@ export default function LearnLayout({
     <div className="flex justify-center w-full min-h-[calc(100vh-4rem)]">
       <div className="flex flex-row w-full max-w-7xl">
         <LearnSidebar />
-        <div className="flex-1 min-w-0 flex flex-col">
-          <div className="flex-1">{children}</div>
-          <Footer />
-        </div>
+        <div className="flex-1 min-w-0 flex flex-col">{children}</div>
       </div>
     </div>
   );
