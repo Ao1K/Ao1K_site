@@ -117,7 +117,7 @@ export default function IntuitiveF2L() {
         <H2>Finding your place in the tree</H2>
         <p>{`We need to be able to tell what level we're on at any given time. Think of this like identifying the problem. Once we know the problem, we can descend the tree further.`}</p>
 
-        <p>{`We can figure out which level you're at by asking some basic questions.`}</p>
+        <p>{`We can figure out which level we're on by asking some questions:`}</p>
 
         <LevelQuestionsDiagram />
 
