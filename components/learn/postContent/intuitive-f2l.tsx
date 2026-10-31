@@ -10,7 +10,8 @@ import { H1, H2, H3 } from "../LessonHeading";
 import type { PieceName } from "../cubeProps";
 import FurtherLearning, { Citation, type Source } from "../FurtherLearning";
 
-const SOURCES = [
+// Additional inspiration came from Frosty, where we discussed including EO as a core part of the lesson.
+const LINKS = [ 
   {
     id: "cubehead-f2l-cases",
     title: "All Standard F2L Cases",
@@ -27,7 +28,7 @@ const SOURCES = [
     id: "rishi-f2l-hunting",
     title: "Hunting Story for F2L",
     attribution: "by RiDo",
-    href: "https://youtu.be/WB5apB2i_Do",
+    href: "https://youtu.be/WB5apB2i_Do", // a source of inspiration for Ao1K's entire story concept
   },
 ] as const satisfies readonly Source[];
 
@@ -45,9 +46,8 @@ export default function IntuitiveF2L() {
           `So many branches in its world, and yet it persists.`,
           `Peaku struggles to his feet.`
         ]} />
-        <p>{`First Two Layers (F2L) is like a tree with many branches.`}</p>
-        <p>{`Some beginner tutorials simplify F2L to having only three basic cases that you need to be able to solve. You may sometimes hear there are 41 cases. The truth is that the full tree has hundreds of cases.`}</p>
-        <p>{`It is not possible to memorize all these cases at once. We simplify at first so that you can at least solve F2L. You can learn more details over time, which makes you faster and more efficient. If F2L is like an enormous tree, then over weeks and months, you learn to descend the branches on the fastest path.`}</p>
+        <p>{`First Two Layers (F2L) is like a tree with many branches. Each branch is like an F2L case that you need to be able to solve. Your goal is to get to the bottom of the tree.`}</p>
+        <p>{`It is not possible to memorize all these branches. Not right way. Instead, we figure out our way down the tree, step by step. Each intuitive step will get you closer to the bottom. You can learn more details of the tree over time, which makes you faster and more efficient.`}</p>
         <p>
           <LessonLink text="As we've learned" href="/learn/what-to-learn/#f2l" />
           {`, you solve four corner-and-edge pairs. So it is like we descend the tree four times.`}
@@ -85,7 +85,7 @@ export default function IntuitiveF2L() {
             />
           </div>
         </div>
-        <p>{`None of these pieces have white or yellow on them. F2L edges will never have the cross color on them, or the color that is opposite cross on them.`}</p>
+        <p>{`F2L edges will never have the cross color on them, or the color that is opposite cross on them.`}</p>
         <H2>Finding pieces example</H2>
         <p>{`White cross was solved, so we need to find a corner piece with white on it. The first place to look for corner pieces is the top layer, but they may be in the bottom layer next to cross.`}</p>
         <p>{`Here we find the red-blue-white corner piece in the top layer. That means we need to find the red-blue edge. Edges could be in the top or middle layer, and here we found it in the middle layer.`}</p>
@@ -1045,7 +1045,7 @@ export default function IntuitiveF2L() {
         </p>
         <p>{`If you don't yet know OLL or PLL, it may be worth learning the two-look versions of both relatively soon, or whenever you get tired of practicing F2L.`}</p>
 
-        <FurtherLearning sources={SOURCES} />
+        <FurtherLearning sources={LINKS} />
       </LessonBody>
     </>
   );

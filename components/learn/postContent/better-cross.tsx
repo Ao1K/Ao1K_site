@@ -112,7 +112,7 @@ export default function BetterCross() {
           </div>
         </div>
         <p>{`This demonstrates a really important idea. We can move the bottom layer around when we need to, if it helps us add pieces to the cross.`}</p>
-        <p>{`We just have to be sure we put the pieces in the right order. If we're solving white cross, a green piece can't go to the right of an orange piece. Refer to your center colors when you don't remember the order.`}</p>
+        <p>{`We just have to be sure we put the pieces in the right order. If we're solving white cross, a green piece can't go to the right of an orange piece. It needs to go to the left. Refer to your center colors when you don't remember the order.`}</p>
         <p>{`Here's one more example. We have a cube with just one red-white cross piece left to solve. We could first attach the piece to red, then insert it into the cross. Or we could move the bottom layer instead.`}</p>
         <div className="flex flex-row flex-wrap gap-8 pb-6 pt-2">
           <div className="flex flex-col gap-1">
