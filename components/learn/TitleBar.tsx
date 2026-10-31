@@ -1,5 +1,6 @@
 import LessonTitle from "./LessonTitle";
 import LessonAudience, { type Audience } from "./LessonAudience";
+import LessonTopicsBox from "./LessonTopicsBox";
 
 export default function TitleBar({
   title,
@@ -11,15 +12,18 @@ export default function TitleBar({
   audience?: Audience;
 }) {
   return (
-    <div className="flex flex-col md:flex-row md:justify-between mb-8 gap-2">
-      <div className="place-items-start shrink-0">
-        <LessonTitle title={title} subtitle={subtitle} />
+    <div className="mb-8">
+      <div className="flex flex-col md:flex-row md:justify-between gap-2">
+        <div className="place-items-start shrink-0">
+          <LessonTitle title={title} subtitle={subtitle} />
+        </div>
+        {audience !== undefined && (
+        <div className="text-left md:text-right">
+          <LessonAudience audience={audience} />
+        </div>
+        )}
       </div>
-      {audience !== undefined && (
-      <div className="text-left md:text-right">
-        <LessonAudience audience={audience} />
-      </div>
-      )}
+      <LessonTopicsBox />
     </div>
   );
 }

@@ -110,11 +110,22 @@ export default function LessonSidebar() {
 
       {/* mobile drawer */}
       <aside
-        className={`md:hidden fixed top-0 left-0 z-40 h-screen w-64 bg-primary-900 border-r border-neutral-700 overflow-y-auto pt-16 transition-transform duration-200 ${
+        className={`md:hidden fixed top-0 left-0 z-40 flex flex-col h-screen w-64 bg-primary-900 border-r border-neutral-700 overflow-y-auto pt-16 transition-transform duration-200 ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         {sidebar}
+        <div className="sticky bottom-0 mt-auto flex h-19 shrink-0 items-start pt-4 pl-18 bg-primary-900">
+          <button
+            onClick={() => {
+              window.scrollTo({ top: 0, behavior: "smooth" });
+              setOpen(false);
+            }}
+            className="h-11 text-xs text-dark_accent underline underline-offset-2"
+          >
+            Scroll to top
+          </button>
+        </div>
       </aside>
 
       {/* desktop sidebar */}

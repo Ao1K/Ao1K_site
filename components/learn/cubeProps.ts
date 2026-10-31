@@ -21,7 +21,9 @@ export type PieceName =
   | Color
   | `${"W" | "Y"}${"B" | "G" | "O" | "R"}`
   | SideEdgePair
-  | `${"W" | "Y"}${SideEdgePair}`;
+  | `${"W" | "Y"}${SideEdgePair}`
+  | "XX"
+  | "XXX";
 
 /** Hex (`#rgb`, `#rgba`, `#rrggbb`, `#rrggbbaa`) or `rgb()` / `rgba()`. Named colors are not supported. */
 export type CubeColorValue = `#${string}` | `rgb(${string})` | `rgba(${string})`;
