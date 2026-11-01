@@ -13,6 +13,15 @@ A tab for your recons (click an icon and expand into a whole new page). A profil
 Add roux algs
  - Roux icons in YourAlgsList
 
+Add algs? maybe outdated
+R' F R F' U2 L' U' L
+L F' L' F U2' R U R'
+U R U R' U R U' l U' R' U R' x
+
+Add algs:
+R' U R D' R U' R' D
+R U R' y U' R' U' R'
+
 Wack suggestion
 http://localhost:3000/algs/?a=f2l&c=y3022000000000000
 
