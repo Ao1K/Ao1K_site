@@ -12,11 +12,6 @@ A tab for your recons (click an icon and expand into a whole new page). A profil
 
 A completely intuitive f2l guide
 
-Add algs:
-R' F R F' U2 L' U' L
-L F' L' F U2' R U R'
-U R U R' U R U' l U' R' U R' x
-
 Add roux algs
  - Roux icons in YourAlgsList
 
@@ -104,3 +99,5 @@ Best f2l:
 2. Assume that their pair choice was optimal. Or manually filter weird solves.
 3. Tune an algorithm's weights so you get the max number of matches between top solves pair choice and the algorithm's pair choice
 4. ship that
+
+Ctrl+K to search for algs... somewhere.

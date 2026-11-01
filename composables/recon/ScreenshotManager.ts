@@ -2,6 +2,7 @@ import { highlightClass } from '../../utils/sharedConstants';
 import type { CSSProperties, ReactNode } from 'react';
 import { createStepIcon } from './StepIconRenderer';
 import { type StepInfo } from './SimpleCubeInterpreter';
+import { formatTimeStat, type PenaltyStatus } from './penaltyStatus';
 
 // line of solution with optional step icon data
 export interface SolutionLine {
@@ -17,6 +18,7 @@ export interface ScreenshotData {
   renderedScramble?: ReactNode;
   solutionLines: SolutionLine[];
   solveTime: number | string;
+  penaltyStatus: PenaltyStatus;
   totalMoves: number;
   tpsString: string;
   title?: string;
@@ -28,6 +30,7 @@ interface ScreenshotState {
   scrambleHTML: string;
   solutionHTML: string;
   solveTime: number | string;
+  penaltyStatus: PenaltyStatus;
   solutionLabel?: string;
 }
 
@@ -216,7 +219,7 @@ const calcMoveTextSize = (lines: SolutionLine[], scramble: string, scale = 1): n
   return Math.min(maxFromLineCount, maxFromLineWidth) * scale;
 };
 
-type CreateElement = (type: string, props: Record<string, unknown> | null, ...children: ReactNode[]) => ReactNode;
+type CreateElement =(type: string, props: Record<string, unknown> | null, ...children: ReactNode[]) => ReactNode;
 
 // props for the screenshot JSX content, to be used with ImageResponse
 export interface ScreenshotContentProps {
@@ -241,8 +244,13 @@ export function isSolveComplete(stepInfoLines: Array<StepInfo[] | null | undefin
 // generates JSX-compatible content for use with Next.js ImageResponse/Satori.
 // returns a tree of elements created via the passed createElement function.
 export function createPreviewContent({ data, createElement, scale = 1 }: ScreenshotContentProps): ReactNode {
-  const { scramble, renderedScramble, solutionLines, solveTime, totalMoves, tpsString, title, isScrambleOfTheDay } = data;
+  const { scramble, renderedScramble, solutionLines, solveTime, penaltyStatus, totalMoves, tpsString, title, isScrambleOfTheDay } = data;
   const styles = getPreviewStyles(scale);
+  const timeStat = formatTimeStat(solveTime, penaltyStatus, ' ');
+  const visibleTps = typeof penaltyStatus === 'number' ? tpsString : '';
+  const timeStatStyle = typeof penaltyStatus === 'number'
+    ? styles.stats
+    : { ...styles.stats, maxWidth: 'none', whiteSpace: 'nowrap' };
 
   const h = createElement;
 
@@ -306,12 +314,12 @@ export function createPreviewContent({ data, createElement, scale = 1 }: Screens
     // Right Column: Stats
     h('div', { style: styles.statsBox },
       h('div', { style: { display: 'flex', flexDirection: 'column', alignItems: 'flex-end' } },
-        solveTime ? h('div', { style: styles.stats }, `${solveTime} sec`) : null,
-        solveTime ? h('div', { style: styles.statBreak }) : null,
+        timeStat ? h('div', { style: timeStatStyle }, timeStat) : null,
+        timeStat ? h('div', { style: styles.statBreak }) : null,
         totalMoves ? h('div', { style: styles.stats }, `${totalMoves} stm`) : null,
         totalMoves ? h('div', { style: styles.statBreak }) : null,
-        tpsString ? h('div', { style: styles.stats }, tpsString) : null,
-        tpsString ? h('div', { style: styles.statBreak }) : null,
+        visibleTps ? h('div', { style: styles.stats }, visibleTps) : null,
+        visibleTps ? h('div', { style: styles.statBreak }) : null,
       ),
       h('div', { style: styles.watermark }, 'Ao1K.com')
     )
@@ -435,11 +443,12 @@ export class ScreenshotManager {
 
   private matchesCache(state: ScreenshotState): boolean {
     if (!this.cache) return false;
-    const { scrambleHTML, solutionHTML, solveTime } = this.cache.state;
+    const { scrambleHTML, solutionHTML, solveTime, penaltyStatus } = this.cache.state;
     return (
       scrambleHTML === state.scrambleHTML &&
       solutionHTML === state.solutionHTML &&
-      solveTime === state.solveTime
+      solveTime === state.solveTime &&
+      penaltyStatus === state.penaltyStatus
     );
   }
 
@@ -471,7 +480,7 @@ export class ScreenshotManager {
   }
 
   private async generateBlob(state: ScreenshotState, extraData: ScreenshotExtraData, html2canvas: any): Promise<Blob | null> {
-    const { scrambleHTML, solutionHTML, solveTime, solutionLabel = 'Solution' } = state;
+    const { scrambleHTML, solutionHTML, solveTime, penaltyStatus, solutionLabel = 'Solution' } = state;
     const { totalMoves, tpsString } = extraData;
 
     try {
@@ -616,11 +625,12 @@ export class ScreenshotManager {
       solutionEditable.style.width = `${minWidth - iconColumnWidth}px`;
 
       // build and set stats text
-      const statsText = [
-        solveTime ? `${solveTime}\u00A0sec` : '',
+      const visibleTps = typeof penaltyStatus === 'number' ? tpsString : '';
+      const timeAndMovesText = [
+        formatTimeStat(solveTime, penaltyStatus, '\u00A0'),
         totalMoves ? `${totalMoves}\u00A0stm` : '',
-        tpsString ? tpsString.replace(' ', '\u00A0') : '',
       ].filter(Boolean).join(', ');
+      const statsText = [timeAndMovesText, visibleTps.replace(' ', '\u00A0')].filter(Boolean).join(' ');
       statsSpan.textContent = statsText;
 
       // sync icon heights with text line heights after reflow

@@ -10,6 +10,7 @@ import validationToArray from '../../../composables/recon/validationToMoves';
 import { cleanMovesText, movesFromText } from '../../../composables/recon/parseMovesText';
 import { getLineStepInfo, getNewSteps } from '../../../composables/recon/getLineStepInfo';
 import { fetchDailyScramble } from '../../../utils/fetchDailyScramble';
+import { parsePenaltyParam } from '../../../composables/recon/penaltyStatus';
 import { editorAliases, OG_PREVIEW_SCALE, OG_PREVIEW_SIZE } from '../../../utils/sharedConstants';
 import React from 'react';
 import fs from 'fs';
@@ -228,6 +229,7 @@ export async function GET(request: Request) {
       renderedScramble: renderedScramble,
       solutionLines,
       solveTime: isValidTime ? time! : '',
+      penaltyStatus: parsePenaltyParam(searchParams.get('penalty')),
       totalMoves: calculatedStm,
       tpsString: calculatedTps ? `${calculatedTps} tps` : '',
       title: title || undefined,

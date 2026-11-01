@@ -4,7 +4,8 @@ import MovesTextEditor from "../../components/recon/MovesTextEditor";
 import SpeedDropdown from "../../components/recon/SpeedDropdown";
 
 import Toolbar from "../../components/Toolbar";
-import TPSInfo from "../../components/recon/TPSInfo";
+import TimeArea from "../../components/recon/TimeArea";
+import { formatTimeStat, parsePenaltyParam, type PenaltyStatus } from "../../composables/recon/penaltyStatus";
 import updateURL from "../../composables/recon/updateURL";
 
 import type { ImperativeRef } from "../../components/recon/MovesTextEditor";
@@ -89,6 +90,7 @@ interface ClearedPageSnapshot {
   moveLocation: [number, number, number];
   playerParams: PlayerParams;
   solveTime: number | string;
+  penaltyStatus: PenaltyStatus;
   solveTitle: string;
   splits: string[];
   committedSplits: string[];
@@ -192,6 +194,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   currentSpeed = speed;
 
   const [solveTime, setSolveTime] = useState<number | string>('');
+  const [penaltyStatus, setPenaltyStatus] = useState<PenaltyStatus>(0);
   const [solveTitle, setSolveTitle] = useState<string>('');
   const [topButtonAlert, setTopButtonAlert] = useState<{ id: string; message: string; messageType: 'info' | 'warn' }>({ id: "", message: "", messageType: 'info' });
   const [isShowingToolbar, setIsShowingToolbar] = useState<boolean>(true);
@@ -213,7 +216,6 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   const [committedSplits, setCommittedSplits] = useState<string[]>([]);
   const committedSplitsRef = useRef<string[]>([]);
 
-  const tpsRef = useRef<HTMLDivElement>(null!);
   const scrambleMethodsRef = useRef<ImperativeRef>(null);
   const solutionMethodsRef = useRef<ImperativeRef>(null);
   const iconScrollRef = useRef<HTMLDivElement>(null);
@@ -239,6 +241,9 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   committedSplitsRef.current = committedSplits;
 
   const totalMoves = allMovesRef.current[1].flat(2).filter(move => move.match(/[^xyz2']/g)).length
+  const tpsString = typeof solveTime === 'number' && solveTime > 0
+    ? `(${Math.round((totalMoves / solveTime) * 100) / 100} tps)`
+    : '';
 
   const solutionLines = allMovesRef.current[1]?.map((move: string[]) => move.join(' ')) || [''];
   const lineIconData = computeLineIconData(solutionLines, lineSteps.map(item => item.stepInfo), cubeColors);
@@ -254,9 +259,6 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
 
   const isWhitespaceLine = lineIconData.map(d => d.isWhitespace);
   isWhiteSpaceLineRef.current = isWhitespaceLine;
-  const splitsSum = committedSplits
-    .filter(s => s !== '')
-    .reduce((acc, s) => acc + parseFloat(s), 0);
 
   let splitIdxCounter = 0;
   const requiredSplitIndices: number[] = [];
@@ -266,14 +268,6 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     if (line.length > 0 && !isRotationOnlyLine(line)) requiredSplitIndices.push(splitIdxCounter);
     splitIdxCounter++;
   }
-
-  const allRequiredSplitsFilled = requiredSplitIndices.length > 0 &&
-    requiredSplitIndices.every(i => committedSplits[i] != null && committedSplits[i] !== '');
-
-  const showSplitsWarning = showSplitsColumn
-    && typeof solveTime === 'number'
-    && allRequiredSplitsFilled
-    && Math.abs(splitsSum - solveTime) > 0.1;
 
   const isCompletedSolve = isSolveComplete(lineSteps.map((line) => line.stepInfo));
   const solutionSectionLabel = isCompletedSolve ? 'Solution' : 'Partial Solution';
@@ -1006,24 +1000,6 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     updateURL('time', newSum.toFixed(3));
   };
 
-  const handleSolveTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    const regex = /^\d{0,5}(\.\d{1,3})?$/;
-
-    if (!regex.test(value)) {
-      return;
-    }
-
-    if (value === '') {
-      setSolveTime('');
-      updateURL('time', '');
-      return;
-    }
-
-    setSolveTime(parseFloat(value));
-    updateURL('time', value);
-  }
-
   const canUndo = historyPosition.index > 0;
   const canRedo = historyPosition.index < historyPosition.length - 1;
 
@@ -1114,6 +1090,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     moveLocation: [...moveLocation.current] as [number, number, number],
     playerParams: { ...playerParams, animationTimes: [...playerParams.animationTimes] },
     solveTime,
+    penaltyStatus,
     solveTitle,
     splits: [...splits],
     committedSplits: [...committedSplits],
@@ -1157,6 +1134,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
 
     setPlayerParams(snapshot.playerParams);
     setSolveTime(snapshot.solveTime);
+    setPenaltyStatus(snapshot.penaltyStatus);
     setSolveTitle(snapshot.solveTitle);
     setSplits(snapshot.splits);
     setCommittedSplits(snapshot.committedSplits);
@@ -1179,6 +1157,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     scrambleMethodsRef.current?.setContent('');
     solutionMethodsRef.current?.setContent('');
     setSolveTime('');
+    setPenaltyStatus(0);
     setSolveTitle('');
     setSplits([]);
     setCommittedSplits([]);
@@ -1192,6 +1171,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
 
     updateURL('title', null);
     updateURL('time', null);
+    updateURL('penalty', null);
     updateURL('splits', null);
     updateURL('preview', null);
 
@@ -1294,12 +1274,9 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     const scramble = getTextboxInnerText('scramble').trim();
     const solution = getTextboxInnerText('solution').trim();
 
-    const time = solveTime ? `${solveTime}` : '';
+    const time = formatTimeStat(solveTime, penaltyStatus, ' ').replaceAll(' ', ' ');
     const stm = totalMoves ? `${totalMoves} stm` : '';
-    let tpsString = '';
-    if (tpsRef.current && tpsRef.current.innerHTML !== '(-- tps)') {
-      tpsString = tpsRef.current.innerHTML;
-    }
+    const visibleTps = typeof penaltyStatus === 'number' ? tpsString : '';
     const url = window.location.href + '&preview=0';
     let printout = "";
 
@@ -1307,10 +1284,10 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     scramble ? printout += `${scramble}\n\n` : '';
     solution ? printout += `${solutionSectionLabel}:\n${solution}\n\n` : '';
 
-    time ? printout += `${time} sec` : '';
+    time ? printout += time : '';
     time && stm ? printout += `, ` : ' ';
     stm ? printout += `${stm} ` : '';
-    tpsString ? printout += `${tpsString}` : '';
+    visibleTps ? printout += visibleTps : '';
     printout += '\n';
 
     url ? printout += `\n[View solve on Ao1K](${url})` : '';
@@ -1324,9 +1301,8 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   const handleScreenshot = async () => {
     if (!screenshotManagerRef.current) return;
 
-    const tpsString = (tpsRef.current && tpsRef.current.innerHTML !== '(-- tps)') ? tpsRef.current.innerHTML : '';
     const blob = await screenshotManagerRef.current.getBlob(
-      { scrambleHTML, solutionHTML, solveTime, solutionLabel: solutionSectionLabel },
+      { scrambleHTML, solutionHTML, solveTime, penaltyStatus, solutionLabel: solutionSectionLabel },
       { totalMoves, tpsString }
     );
 
@@ -1437,9 +1413,8 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
 
     if (lastSelection === 'solution' && oldSelectionRef.current.textbox !== 'solution') {
       if (isCompletedSolve) {
-        const tpsString = (tpsRef.current && tpsRef.current.innerHTML !== '(-- tps)') ? tpsRef.current.innerHTML : '';
         void screenshotManagerRef.current?.getBlob(
-          { scrambleHTML, solutionHTML, solveTime, solutionLabel: solutionSectionLabel },
+          { scrambleHTML, solutionHTML, solveTime, penaltyStatus, solutionLabel: solutionSectionLabel },
           { totalMoves, tpsString }
         );
       }
@@ -1757,7 +1732,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       screenshotManagerRef.current = new ScreenshotManager();
     }
     void screenshotManagerRef.current.getBlob(
-      { scrambleHTML: '', solutionHTML: '', solveTime: '', solutionLabel: 'Solution' },
+      { scrambleHTML: '', solutionHTML: '', solveTime: '', penaltyStatus: 0, solutionLabel: 'Solution' },
       { totalMoves: 0, tpsString: '' }
     );
   };
@@ -1783,6 +1758,8 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
         setSolveTime(parsedTime);
       }
     }
+
+    setPenaltyStatus(parsePenaltyParam(urlParams.get('penalty')));
 
     const title = urlParams.get('title');
     if (title) {
@@ -2131,36 +2108,17 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
             )}
           </div>
         </div>
-        <div
-          id="time-area"
-          className="px-3 pt-12 flex flex-col w-full pb-16"
-          style={{ viewTransitionName: PAGE_TRANSITION_NAMES.stats }}
-        >
-          <div className="text-xl text-dark_accent font-medium w-full">Time</div>
-          <div id="time-stats" className="flex flex-row flex-wrap text-nowrap items-center w-full gap-y-2 pb-2">
-            <div id="time-field" className="border border-neutral-600 group flex flex-row items-center justify-start">
-              <input
-                id="time-input"
-                type="number"
-                placeholder="00.000"
-                className="pt-2 pb-2 px-2 text-xl text-primary-100 bg-primary-900 group-focus:border-primary-100 hover:bg-primary-800 rounded-sm box-content no-spinner w-17"
-                value={solveTime}
-                onChange={handleSolveTimeChange}
-                onWheel={(e) => e.currentTarget.blur()}
-                autoComplete="off"
-                tabIndex={4}
-              />
-              <div className="text-primary-100 pr-2 text-xl">sec</div>
-            </div>
-            <div className="text-primary-100 ml-2 text-xl">{totalMoves} stm </div>
-            <div className="flex-nowrap text-nowrap items-center flex flex-row">
-              <TPSInfo moveCount={totalMoves} solveTime={solveTime} tpsRef={tpsRef} />
-            </div>
-          </div>
-          {showSplitsWarning && (
-            <div className="text-cube-orange text-sm">Time doesn&apos;t match sum of splits ({splitsSum.toFixed(3)} sec)</div>
-          )}
-        </div>
+        <TimeArea
+          solveTime={solveTime}
+          onSolveTimeChange={setSolveTime}
+          penaltyStatus={penaltyStatus}
+          onPenaltyStatusChange={setPenaltyStatus}
+          totalMoves={totalMoves}
+          tpsString={tpsString}
+          committedSplits={committedSplits}
+          requiredSplitIndices={requiredSplitIndices}
+          showSplitsColumn={showSplitsColumn}
+        />
       </div>
     </main>
   );
