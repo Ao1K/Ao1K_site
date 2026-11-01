@@ -97,3 +97,5 @@ Best f2l:
 4. ship that
 
 Ctrl+K to search for algs... somewhere.
+
+CubeGraphic.tsx passes an alg string to the external sr-puzzlegen library. Remove sr-puzzlegen and use new CubeImage

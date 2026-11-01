@@ -15,23 +15,31 @@ When this is done, `docs/move-parsing.md` is obsolete and gets deleted.
 ## Decision 1: a move is a typed string
 
 ```ts
-type Layer3x3 =
+type TurnLayer3x3 =
   | 'U' | 'D' | 'R' | 'L' | 'F' | 'B'
   | 'u' | 'd' | 'r' | 'l' | 'f' | 'b'
-  | 'M' | 'E' | 'S'
-  | 'x' | 'y' | 'z'
 
-type Suffix3x3 = '' | "'" | '2' | "2'" | '3' | "3'"
+type SliceOrRotation3x3 = 'M' | 'E' | 'S' | 'x' | 'y' | 'z'
 
-export type Move3x3 = `${Layer3x3}${Suffix3x3}`
+type Layer3x3 = TurnLayer3x3 | SliceOrRotation3x3
+
+export type Move3x3 =
+  | `${TurnLayer3x3}${'' | "'" | '2' | "2'" | '3' | "3'"}`
+  | `${SliceOrRotation3x3}${'' | "'" | '2' | "2'"}`
 ```
 
-This is the existing `CubeMove` from `components/learn/cubeProps.ts`, moved into the Parser.
-`CubeSceneLine.moves` keeps its shape: `(Move3x3 | Move3x3[])[]`.
+This replaces `CubeMove` from `components/learn/cubeProps.ts`. `CubeSceneLine.moves` keeps
+its shape: `(Move3x3 | Move3x3[])[]`.
+
+`3` suffixes are valid only on face and wide moves. This matches the editor's current
+`validMoves` list and `docs/cubing-term-definitions.md` (`x3` is not a valid rotation).
+`CubeMove` allowed `x3` and `M3`; `Move3x3` does not. Each class (face, wide, slice,
+rotation) maps to itself under invert, mirror, and rotate, so no transform can produce an
+invalid move.
 
 Why a template-literal string instead of an object like `{ layer, amount }`:
 
-- The 3x3 move set is finite (18 layers × 6 suffixes = 108 values). Every transform (invert,
+- The 3x3 move set is finite (12 layers × 6 suffixes + 6 layers × 4 suffixes = 96 values). Every transform (invert,
   mirror, rotate) becomes one table lookup, with tables generated once at module load.
 - `===` equality, `Set`/`Map` keys, React deps, and JSON all work with no helpers.
   `SimpleCube.calcStrategy`, the alg compiler's dedupe sets, and the scene data island all
@@ -155,14 +163,14 @@ and a base sign. Move it into `cube3x3.ts` as the geometry table. Generate from 
 - rotation group (24 orientations) for `simplifyRotations`, replacing the matrix search in
   `simplifyRotations.tsx`
 
-This deletes the six hand-written 108-entry tables in `transformHTML.tsx`, `Y_QUARTER` in
+This deletes the six hand-written move tables in `transformHTML.tsx`, `Y_QUARTER` in
 `algMoves.ts`, the enumerated `validMoves` list, and every `MOVE_RE`.
 
 ### Parity check before deleting old code
 
 Add `scripts/verifyParser.ts` (and a `verify-parser` package script). It compares the
 generated tables against the current hand tables (`replacementTable_M/S/X/Y/Z`, `Y_QUARTER`,
-`reverseMove`, `invertToken`, `moveUtils.parseMove`) for all 108 moves, then the old code
+`reverseMove`, `invertToken`, `moveUtils.parseMove`) for all 96 moves, then the old code
 is removed. Known differences the script must allow:
 
 - `replacementTable_X/Y/Z` drop the `'` from `2'` when the letter changes (`U2'` → `B2`).
@@ -234,17 +242,62 @@ once:
   cookies. These use `parse`.
 - Compiled alg JSON in `public/recon`. This uses `parseTrusted`.
 - Editor text (via the editor document).
-- External tools: the Kociemba solver in `setupMoves.ts`, `cubing/scramble` output.
-- Lesson authoring needs no conversion: the literals are already `Move3x3`.
+- External tools: the Kociemba solver in `setupMoves.ts` and `cubeSolver.worker.ts`,
+  `cubing/scramble` output.
+- Lesson `lines` need no conversion: the literals are already `Move3x3`. Lesson `scramble`
+  props (in `notation.tsx`, `eo.tsx`, `what-to-learn.tsx`, and `CubeImage`) stay
+  space-separated strings and go through `parse` like every other user input. An invalid
+  move throws instead of being skipped. Lessons render on the server, so a typo fails the
+  dev page and the build. Update the `scramble` doc comment in `cubeProps.ts` to match.
+- Alg case data in `utils/llCases.tsx`, parsed where `LLpatternBuilder.tsx` reads it.
+
+These stay strings and need no Parser change, because they handle whole editor text or
+display text rather than moves:
+
+- `composables/recon/urlEncoding.tsx` encodes the full editor text, comments included
+  (`'` → `-`, space → `_`).
+- `composables/recon/cubeImageCapture.ts` `wrapSetupMoves` word-wraps already formatted
+  text for a canvas.
+- `app/notimer/page.tsx` and `components/notimer/NoTimeSolveBox.tsx` show `cubing/scramble`
+  strings without parsing them.
+- `composables/recon/ScreenshotManager.ts` lays out scramble and solution text for an image.
+- `components/changeblog/CubeGraphic.tsx` passes an alg string to the external
+  `sr-puzzlegen` library, used only by the old `ReconstructV04.tsx` changeblog post.
 
 Internal state switches from `string` / `string[]` to `Move3x3[]`. The main one is
 `allMovesRef: string[][][]` in `_PageContent.tsx`, which becomes `Move3x3[][][]`.
 
+### Alg records
+
+Many records carry an alg as `alg: string` and use it both as moves and as a key:
+`Doc.alg` (`ExactAlgSuggester.tsx`), `Suggestion.alg` (`SimpleCubeInterpreter.tsx`),
+`KnownLLAlg.alg` (`algReview.ts`, `LLsuggester.tsx`), `FavoriteAlg.alg` (`algFavorites.ts`),
+and `savedAlgKey` (`suggestionRanking.ts`). Readers include `SuggestionManager.tsx`,
+`SuggestionBox.tsx`, `SuggestionCard.tsx`, `f2lSuggestions.tsx`, `AlgReviewFeedback.tsx`,
+`ReviewAlgButtons.tsx`, `YourAlgsList.tsx`, `YourAlgCard.tsx`, `f2lSearch.tsx`,
+`algIcon.ts`, and `algKeywords.ts`.
+
+Rule: records hold `moves: Move3x3[]`. Map and set keys stay strings and are built from the
+moves with Parser operations plus `format`, never by editing an alg string.
+
+- Compiled docs get `moves` from `parseTrusted` at load. Favorites stay strings in storage
+  and get `parse` on load and `format` on save.
+- `parseTrusted` maps each token through the 96-entry move table, so every array shares
+  the same 96 string instances instead of holding its own copies.
+- Build a record's key once and reuse it. `savedAlgKey` is currently recomputed on every
+  call, twice per suggestion in `dedupeByAlgsetPriority`. Cache it in a `WeakMap` keyed by
+  the moves array, or store it on the record when the record is created.
+- `savedAlgKey` itself becomes: drop leading `U`/`y` moves (`layer`), compare half turns
+  by `turns` instead of stripping `2'` with a regex, strip the trailing AUF, then `format`.
+
 ## Cube runtime constraint
 
 `utils/cubeSceneRuntime.client.ts` imports `utils/cubeMoves.ts` for `stateFromFacelets`.
-When `parseMoveRotation` and `MOVE_TABLE` move into the Parser, keep `stateFromFacelets` in
-a file that does not import the Parser, so the runtime bundle does not grow. Moves reach the
+Move `MOVE_TABLE` into the Parser and `parseMoveRotation` out of `cubeMoves.ts` (its only
+callers are `cubeSceneAuthoring.ts` and `reconCube.ts`). The facelet helpers stay in
+`cubeMoves.ts`, so it never imports the Parser, the runtime bundle does not grow, and the
+facelet importers (`cubeSceneIsland.ts`, `HtmlImageDialog.tsx`, `CubeAnglePreview.tsx`,
+`SettingsCubePreview.tsx`, `devActions.ts`, `CubeImage.tsx`) need no import changes. Moves reach the
 runtime as `RotationInfo` built server-side in `cubeSceneAuthoring.ts`, so the runtime does
 not need the Parser. Run `pnpm build-cube-runtime` and `pnpm verify-cube-parity` after this
 phase.
@@ -253,6 +306,13 @@ phase.
 
 Each phase leaves the app working. Within a phase, change a function's signature to take
 `Move3x3[]` and let type errors list the callers.
+
+A signature change in one phase breaks callers that belong to a later phase (for example,
+`SimpleCube.getCubeState` changes in Phase 1, but `_PageContent.tsx` moves in Phase 2a).
+Bridge those callers at the call site: wrap the old string or `string[]` in `parse` (user
+text) or `parseTrusted` (compiled data), and use `format` where a migrated function returns
+moves to an unmigrated caller. Each bridge is removed when its file's own phase lands. The
+work is done when no bridge is left.
 
 ### Phase 0: Parser
 
@@ -276,6 +336,17 @@ Each phase leaves the app working. Within a phase, change a function's signature
 | `composables/recon/redundantMoves.ts`, `faceletCube.ts` | Use Parser instead of `moveUtils`. |
 | `composables/recon/crossAutocomplete.ts`, `crossReview.ts`, `crossContinuations.ts`, `f2lPairLookup.ts` | Replace `move[0]`, `slice(1)`, `/^[xyz]/` with `layer`, `amount`, `isRotation`, `geometry().axis`. |
 | `utils/canonicalizeAuf.ts`, `utils/collapseAufVariants.ts` | Same. |
+| `composables/recon/f2lIntuitiveDetection.ts` | Delete `quarterCountOf` and the `token[0]` lookup in `permOf`. Key permutations by `layer` and `turns`. `applyMove` takes `Move3x3`. |
+| `composables/recon/crossSolver.ts` | `moves: string[]` and `SEARCH_FACES` become `Move3x3`. |
+| `composables/recon/SimpleCubeInterpreter.tsx` | `filterOverlongAlgorithms`: `countMoves` uses `count`, `toMoves` (strips `2'` with a regex) uses `turns` for comparison, `isHalfOfDouble` uses `layer` / `turns`. `applyHandednessModifier` (`/[Rr]/`, `/[Ll]/` on the alg string) uses `layer`. |
+| `composables/recon/AlgSpeedEstimator.tsx` | `calcScore` and `eoRegex` use `layer` and `amount`. The suffix-keyed `moveTypeWeights` keys off `amount`. |
+| `composables/recon/LLsuggester.tsx` | `TRAILING_ROTATIONS` regex, `AUF_PREFIX`, `POST_AUF` become `Move3x3` arrays and `isRotation`. |
+| `composables/recon/suggestionRanking.ts` | `LEADING_SETUP` regex becomes a leading run check with `layer` / `isRotation`. |
+| `composables/recon/aufReview.ts`, `algReview.ts` | `AUF_MOVES` and `moves: readonly string[]` become `Move3x3`. |
+| `composables/recon/redundantMoves.ts` consumers: `components/recon/AlgReviewFeedback.tsx`, `FeedbackNotes.tsx` | `MoveGroup.moves` becomes `Move3x3[]`. |
+| `composables/algs/algFavorites.ts` | `aufFreeAlg` and the favorite helpers follow the rule in Alg records. |
+| `components/learn/CubeImage.tsx` | Same scramble handling as `cubeSceneAuthoring.ts`. |
+| `utils/cubeSceneJsx.ts`, `app/devActions.ts` | Follow the `SceneMove` / `AuthoredLine` type change. |
 
 ### Phase 2a: recon editor and player on the Parser
 
@@ -289,7 +360,9 @@ Keeps the `MovesParsing` char array and the HTML input path.
 | `components/recon/MovesTextEditor.tsx` | Auto-substitutions read `inputRules` from the parser. Drop the `Nw → n` rule (the parser alias covers it). Emit `Move3x3[][]`. |
 | `components/recon/_PageContent.tsx` | `allMovesRef` typed `Move3x3[][][]`. Replace `.join(' ')` keys with `format`. Use `count`. |
 | `components/recon/CubePlayer.tsx` | Moves held as `Move3x3[]`, not split strings. The single-move-change `switch` on suffix pairs becomes `make(layer, amount(after) - amount(before))`. |
-| `components/recon/ScrambleDropdown.tsx`, `ManualAlgVerifier.tsx`, `HtmlSceneDialog.tsx`, `CubeGifDialog.tsx`, `CrossReviewFeedback.tsx`, `SolveBreakdown.tsx`, suggestion components | Take `Move3x3[]` props. |
+| `components/recon/ScrambleDropdown.tsx`, `ManualAlgVerifier.tsx`, `HtmlSceneDialog.tsx`, `CubeGifDialog.tsx`, `CrossReviewFeedback.tsx`, `SolveBreakdown.tsx`, `IconStack.tsx`, suggestion components | Take `Move3x3[]` props. |
+| `components/recon/LineConfigItem.tsx` | `moves: Move3x3[]`. The preview uses `format`. |
+| `components/algs/AlgTextEditor.tsx`, `composables/algs/useAlgDraft.ts` | The algs page alg input is a `MovesTextEditor`, so it moves with the editor. `useAlgDraft` takes the editor's `Move3x3[][]` instead of joining and re-tokenizing strings. |
 
 ### Phase 2b: editor document
 
@@ -298,21 +371,26 @@ Replaces the char array with `Segment[]` and the HTML input path with plain text
 | File | Change |
 |---|---|
 | `composables/recon/editorDocument.ts` | New. |
+| `composables/recon/parseMovesText.ts`, `app/api/og/route.tsx` | Both read editor text with `validateTextInput` and `validationToMoves`. Move them to `parseLine` / `expandLine` before those files are deleted. The OG route's `/[^xyz2']/` STM count uses `count`. |
 | `composables/recon/validateTextInput.tsx`, `validationToMoves.tsx` | Delete. |
 | `composables/recon/transformHTML.tsx` | Delete the span regex. Transforms follow the flow in Transforms. |
 | `components/recon/MovesTextEditor.tsx` | Use `parseLine` / `expandLine` / `paintLine`. |
 
 ### Phase 3: algs page
 
-`composables/algs/useAlgDraft.ts`, `importFavorites.ts`, `exportFavorites.ts`,
-`components/algs/f2lAlgCard.tsx`, `ClickableCube.tsx`, `YourAlgsList.tsx`, `AddAlgRow.tsx`,
-`AlgIcon.tsx`. Favorites stay strings in storage; parse on load, format on save.
+`composables/algs/importFavorites.ts` (CSV import is user input: `parse`, and report
+invalid rows), `exportFavorites.ts`, `components/algs/f2lAlgCard.tsx`, `ClickableCube.tsx`,
+`YourAlgsList.tsx`, `YourAlgCard.tsx`, `AddAlgRow.tsx`, `AlgIcon.tsx`, `f2lSearch.tsx`
+(`handlePlay`), `components/recon/ReviewAlgButtons.tsx` (copy uses `format`). Favorites
+stay strings in storage; parse on load, format on save.
 
 ### Phase 4: compiler and scripts
 
 `utils/algCompilerCore.ts` (42 string-handling sites), `utils/LLpatternBuilder.tsx`,
 `scripts/mirrorAlgs.ts`, `scripts/generateYMoveAlgs.ts`, `scripts/verifyAufReconstruction.ts`,
-`scripts/ingestZBLL.ts`, `tests/autocompleteSolve.ts`.
+`scripts/ingestZBLL.ts`, `scripts/generateF2lPairDistances.ts` (`SEARCH_TOKENS` template
+strings), `scripts/benchCubeFrame.browser.ts`, `scripts/verifyCubeFrameParity.ts`,
+`tests/autocompleteSolve.ts`, `tests/f2lLabelSnapshot.ts`.
 
 The compiler reads raw alg JSON with `parse` and throws if `invalid` is non-empty, naming
 the alg and the bad token. It never skips or filters a bad token. This is what makes
@@ -321,6 +399,19 @@ the alg and the bad token. It never skips or filters a bad token. This is what m
 Diff `public/recon` after
 `pnpm compile-algs all`. The only allowed differences are `2'` moves that keep their prime
 where the old `replacementTable_Y` dropped it (the compiler's y2 relabel of yRU/yLU algs).
+
+### Checking and verification
+
+Add a lint rule to check for parsing done outside of this new architecture. 
+For example, it should check for using .split(' ') or grabbing move[0] without the Parser.
+Keep this lint rule around after all work is done.
+
+### Docs to update
+
+- `docs/package-scripts.md`: add `verify-parser`.
+- `docs/auf-canonical-search.md`: it describes prepending through `combineMoves`; point it
+  at `combine`.
+- `docs/move-parsing.md`: delete.
 
 ### Regression checks per phase
 
