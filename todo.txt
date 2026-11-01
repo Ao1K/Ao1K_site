@@ -23,7 +23,6 @@ Can we explain F<R,U>F, better? Like F, pair, F'?
 On page load, process Your Algs and add identified ones to known algsets
 - Also need to expose a module that adds one/several when the user adds them. Remember we have an import feature.
 - Add an add button to the Recon page? Direct people to the Algs page?
-- Faved lefty algs should show even when righty is selected. 
 
 Idea: Alg packs, karma system. Algs can have fingertricks attached.
 
@@ -33,7 +32,7 @@ Unique parsing algorithm, Parser, for each puzzle/input abstraction. In this way
 
 Switch local algs saving disclaimer to login prompt once we have profiles
 
-Untimer -> Correlator? Semitimer? PseudoTimer? Detime?
+Untimer -> Correlator? Semitimer? PseudoTimer? Detime? Warmup?
  - Space to activate checklist. c to check, space to continue
 
 Using move transform tools (Ex: ctrl+shift+y) should keep text selected, and of course work on a selection basis rather than per line
@@ -75,11 +74,8 @@ We can hide review load time if we make some assumptions about the area needed f
  - We could preload the review when solve is done
  - We could preload the review on hover of the review btn
 
-
 Create new cross speed estimator. Current generic one penalizes new movetypes a lot.
   Test case: http://localhost:3000/recon/?scramble=R-_D2_F-_U2_L-_B2_L-_F2_B2_L2_U_L2_D-_B2_U_R2_U_R2_B-_R_D2&solution=x_z2_B_U-_R2_F_R-_B%0AR_U_R-%0AU-_L_U-_L2_U_L%0AU-_D_L_U_L-_D-%0AR-_S-_R_U-_R-_S_R%0AR-_U-_F_U_R_U-_R-_F-_R%0AM2-_U_M2-_U2_M2-_U_M2-_U
-
-Cycling through suggestions with arrow keys doesn't scroll page, meaning you can select suggestion that's off the page.
 
 Should be good cross not great:
   http://localhost:3000/recon/?scramble=R-_D2_F-_U2_L-_B2_L-_F2_B2_L2_U_L2_D-_B2_U_R2_U_R2_B-_R_D2&solution=x-_R_D-_R2_F_D-_F_R
