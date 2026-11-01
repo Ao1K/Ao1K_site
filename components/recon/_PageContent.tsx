@@ -1971,7 +1971,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       </div>
       <div
         id="player-box"
-        className="px-3 relative flex flex-col mt-6 w-full justify-center items-center"
+        className="px-3 relative flex flex-col mt-5 w-full justify-center items-center"
         style={{ viewTransitionName: PAGE_TRANSITION_NAMES.player }}
       >
         <div id="cube_model" className="flex h-full aspect-video max-h-96 min-h-50 bg-primary-900 select-none z-20 w-full">

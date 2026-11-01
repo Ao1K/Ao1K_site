@@ -22,17 +22,17 @@ export default function ReconSkeleton() {
       {/* title input */}
       <div className="px-3 flex grow flex-nowrap items-center min-w-50 mb-2">
         <div className="text-dark_accent text-xl font-medium select-none">Title</div>
-        <div className="p-2 ml-4 w-full h-11.5 bg-primary-800 border border-neutral-600 rounded-sm animate-pulse" />
+        <div className="p-2 ml-4 w-full h-11.25 bg-primary-800 border border-neutral-600 rounded-sm animate-pulse" />
       </div>
 
       {/* scramble area */}
       <div className="px-3 mt-3 flex flex-col">
         <div className="text-xl text-dark_accent font-medium">Scramble</div>
-        <div className="lg:max-h-[15.1rem] max-h-40 min-h-[4.7rem] bg-primary-800 border border-neutral-600 rounded animate-pulse" />
+        <div className="lg:max-h-[15.1rem] max-h-40 min-h-[4.7rem] bg-primary-800 mt-1 border border-neutral-600 rounded animate-pulse" />
       </div>
 
       {/* player box / cube area */}
-      <div className="px-3 relative flex flex-col mt-6 w-full justify-center items-center">
+      <div className="px-3 relative flex flex-col mt-5 w-full justify-center items-center">
         <div className="flex h-full aspect-video max-h-96 min-h-50 bg-black border border-neutral-600 rounded-t-sm w-full justify-center items-center">
         </div>
       </div>
@@ -47,25 +47,36 @@ export default function ReconSkeleton() {
             ))}
           </div>
         </div>
-        <div className="border border-neutral-600 h-1.5 rounded-b-sm w-full bg-primary-700 mb-2" />
+        <div className="border border-neutral-600 h-1.75 rounded-b-sm w-full bg-primary-700 mb-2" />
       </div>
 
       {/* solution area */}
-      <div className="px-3 mt-1 flex flex-col w-full">
+      <div className="px-3 mt-1.25 flex flex-col w-full">
         <div className="text-xl text-dark_accent font-medium">Solution</div>
-        <div className="lg:max-h-80 max-h-40 min-h-[4.7rem] ml-7 mb-6 bg-primary-800 border border-neutral-600 rounded animate-pulse" />
+        <div className="lg:max-h-80 max-h-40 min-h-[4.7rem] ml-7 mb-5 mt-1 bg-primary-800 border border-neutral-600 rounded animate-pulse" />
       </div>
 
       {/* time area */}
-      <div className="px-3 flex flex-col w-full">
+      <div className="px-3 flex flex-col w-full pb-16">
         <div className="text-xl text-dark_accent font-medium">Time</div>
-        <div className="flex flex-row flex-wrap items-center gap-2 pb-16">
+        <div className="flex flex-row flex-wrap items-center gap-2 pb-5">
           <div className="border border-neutral-600 flex flex-row items-center">
             <div className="pt-2 pb-2 px-2 w-21 h-11 bg-primary-900 animate-pulse" />
             <div className="text-primary-100 pr-2 text-xl">sec</div>
           </div>
           <div className="text-primary-100 text-xl">0 stm</div>
           <div className="text-primary-100 text-xl">(-- tps)</div>
+        </div>
+        <div className="text-xl text-dark_accent font-medium">Tags</div>
+        <div className="flex flex-row items-center gap-1 pb-2 text-sm text-primary-100 select-none">
+          <div className="flex flex-row items-center h-8 border border-neutral-600 rounded-sm">
+            <span className="px-2 py-1">+</span>
+            <span>/</span>
+            <span className="px-2 py-1">-</span>
+            <span className="pr-2">2</span>
+          </div>
+          <div className="flex items-center h-8 px-2 py-1 border border-neutral-600 rounded-sm">DNF</div>
+          <div className="flex items-center h-8 px-2 py-1 border border-neutral-600 rounded-sm">Untimed</div>
         </div>
       </div>
     </main>

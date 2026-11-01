@@ -102,11 +102,11 @@ export default function TimeArea({
   return (
     <div
       id="time-area"
-      className="px-3 pt-12 flex flex-col w-full pb-16"
+      className="px-3 pt-11 flex flex-col w-full pb-16"
       style={{ viewTransitionName: PAGE_TRANSITION_NAMES.stats }}
     >
       <div className="text-xl text-dark_accent font-medium w-full">Time</div>
-      <div id="time-stats" className="flex flex-row flex-wrap text-nowrap items-center w-full gap-y-2 pb-4">
+      <div id="time-stats" className="flex flex-row flex-wrap text-nowrap items-center w-full gap-y-2 pb-5">
         <div
           id="time-field"
           className={`border border-neutral-600 group flex flex-row items-center justify-start ${isTimeHidden ? 'opacity-50' : ''}`}
