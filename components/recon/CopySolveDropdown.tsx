@@ -64,13 +64,14 @@ export default function CopySolveDropdown({ onCopyText, onScreenshot, onOpenGif,
   }, [alert, setAlert]);
 
   useEffect(() => {
-    document.addEventListener('scroll', () => {
+    const closeOnScroll = () => {
       setIsRotated(false);
-    });
+    };
+    document.addEventListener('scroll', closeOnScroll);
     document.addEventListener('mousedown', handleClickOutside);
 
     return () => {
-      document.removeEventListener('scroll', () => {});
+      document.removeEventListener('scroll', closeOnScroll);
       document.removeEventListener('mousedown', handleClickOutside);
     }
   }, []);

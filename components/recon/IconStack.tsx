@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import debounce from 'lodash.debounce';
 import type { StepInfo } from '../../composables/recon/SimpleCubeInterpreter';
 import { useSyncedSettings, ICON_SIZE_CONFIG, type CubeColors } from '../../composables/useSettings';
@@ -105,13 +106,15 @@ interface IconStackProps {
   moves: string[][][] | null;
   lineIconData: LineIconDatum[];
   editableElement?: HTMLElement | null;
+  zoomLayerHost?: HTMLElement | null;
 }
 
-const IconStack = ({position, moves, lineIconData, editableElement}: IconStackProps) => {
+const IconStack = ({position, moves, lineIconData, editableElement, zoomLayerHost}: IconStackProps) => {
   const { settings } = useSyncedSettings();
   const { lineHeight: iconLineHeight, iconWidth } = ICON_SIZE_CONFIG['medium'];
-  
+
   const [, forceRender] = useState({});
+  const [zoomedIndex, setZoomedIndex] = useState<number | null>(null);
   const observerRef = useRef<ResizeObserver | null>(null);
   const prevHeightsRef = useRef<string>('');
 
@@ -179,81 +182,108 @@ const IconStack = ({position, moves, lineIconData, editableElement}: IconStackPr
 
   const divHeights = editableElement ? getCurrentDivHeights(editableElement) : [];
 
-  const StepIcon = ({ id, stepInfo, descriptor, height }: { id: string, stepInfo: StepInfo | null; descriptor: IconDescriptor | null; height: number }) => {
-    if (!descriptor) {
-      return (
-        <div
-          className="w-full flex items-center justify-center"
-          style={{
-            height: `${height}px`,
-            backgroundColor: 'transparent'
-          }}
-        />
-      );
-    }
-
-    return (
-      <div className="relative group w-full h-full overflow-visible">
-        <div
-          id={id}
-          className="step-icon-inner w-full flex items-center justify-center overflow-visible transform transition-transform duration-300 ease-out origin-top-right"
-          style={{
-            height: `${height}px`
-          }}
-        >
-          <StepIconSvg descriptor={descriptor} nameType={stepInfo?.nameType} />
-        </div>
-      </div>
-    );
-  };
-
   const lineData = lineIconData.map((iconDatum, index) => {
     const rawDivHeight = divHeights[index]?.height || iconLineHeight;
     const lineWraps = Math.round((rawDivHeight + 5) / iconLineHeight);
     const calculatedHeight = lineWraps * iconLineHeight;
-    const hoverHeight = Math.max(iconLineHeight * 2, calculatedHeight);
-    return { ...iconDatum, calculatedHeight, hoverHeight };
+    const hasIcon = !iconDatum.isWhitespace && !iconDatum.isEmptyIcon;
+    return { ...iconDatum, calculatedHeight, hasIcon };
   });
 
+  const hasIconBelowZoomed = zoomedIndex !== null && !!lineData[zoomedIndex + 1]?.hasIcon;
+  const zoomGrowth = hasIconBelowZoomed ? iconLineHeight : 0;
+  const shrinkingRowIndex = hasIconBelowZoomed
+    ? lineData.findIndex((row, index) => index > zoomedIndex && !row.hasIcon)
+    : -1;
 
+  const renderRows = (isZoomLayer: boolean) => lineData.map(({ isWhitespace, calculatedHeight, hasIcon, compiledStepInfo, descriptor, isEmptyIcon }, index) => {
+    const isZoomed = hasIcon && zoomedIndex === index;
+    const isPointerTarget = hasIcon && !isZoomLayer;
+    const heightChange = isZoomed ? zoomGrowth : index === shrinkingRowIndex ? -zoomGrowth : 0;
+
+    return (
+      <div
+        key={index}
+        className={`
+          ${isZoomed ? 'step-icon-zoomed' : ''} ${heightChange !== 0 ? 'step-icon-resized' : ''}
+          transition-[height] duration-300 ease-in-out border-none
+          ${index > 0 ? '' : 'mt-1'}
+        `}
+        style={{
+          width: `${iconWidth}px`,
+          height: `${calculatedHeight}px`,
+          '--zoom-height': `${calculatedHeight + heightChange}px`,
+        } as React.CSSProperties}
+        onPointerEnter={isPointerTarget ? () => setZoomedIndex(index) : undefined}
+        onPointerLeave={isPointerTarget ? () => setZoomedIndex(current => current === index ? null : current) : undefined}
+      >
+        {!isWhitespace ? (
+          <StepIcon
+            id={isZoomLayer ? undefined : `step-icon-${index}-${compiledStepInfo?.step || 'empty'}`}
+            stepInfo={compiledStepInfo}
+            descriptor={isEmptyIcon ? null : descriptor}
+            height={calculatedHeight}
+          />
+        ) : (
+          <div
+            className="w-full"
+            style={{
+              height: `${calculatedHeight}px`,
+              backgroundColor: 'transparent'
+            }}
+          />
+        )}
+      </div>
+    );
+  });
+
+  const stackClassName = 'flex flex-col items-center justify-start pt-1 border-none';
 
   return (
-    <div className="flex flex-col items-center justify-start pt-1 border-none" style={{ width: `${iconWidth}px` }}>
-      {lineData.map(({ line, isWhitespace, calculatedHeight, hoverHeight, compiledStepInfo, descriptor, isEmptyIcon }, index) => {
-        const enableHover = !isWhitespace && !isEmptyIcon;
-
-        return (
+    <>
+      <div className={stackClassName} style={{ width: `${iconWidth}px` }}>
+        {renderRows(false)}
+      </div>
+      {/* drawn outside the scroll box so the zoom isn't clipped. It follows the scroll through --solution-scroll-top. */}
+      {zoomLayerHost && createPortal(
+        <div className="icon-zoom-layer absolute left-0 top-0 h-full z-10 pointer-events-none" style={{ width: `${iconWidth}px` }}>
           <div
-            key={index}
-            className={`
-              ${enableHover ? 'step-icon-hover' : ''} transition-[height] duration-300 ease-in-out border-none
-              ${index > 0 ? '' : 'mt-1'}
-            `}
-            style={{
-              width: `${iconWidth}px`,
-              height: `${calculatedHeight}px`,
-              '--hover-height': `${hoverHeight}px`,
-            } as React.CSSProperties}
+            className={stackClassName}
+            style={{ width: `${iconWidth}px`, transform: 'translateY(calc(-1 * var(--solution-scroll-top, 0px)))' }}
           >
-            {!isWhitespace ? (
-              <StepIcon
-                id={`step-icon-${index}-${compiledStepInfo?.step || 'empty'}`}
-                stepInfo={compiledStepInfo}
-                descriptor={isEmptyIcon ? null : descriptor}
-                height={calculatedHeight}
-              />
-            ) : (
-              <div
-                className="w-full"
-                style={{
-                  height: `${calculatedHeight}px`,
-                  backgroundColor: 'transparent'
-                }}
-              />
-            )}
+            {renderRows(true)}
           </div>
-        );
-      })}
+        </div>,
+        zoomLayerHost
+      )}
+    </>
+  );
+}
+
+function StepIcon({ id, stepInfo, descriptor, height }: { id?: string, stepInfo: StepInfo | null; descriptor: IconDescriptor | null; height: number }) {
+  if (!descriptor) {
+    return (
+      <div
+        className="w-full flex items-center justify-center"
+        style={{
+          height: `${height}px`,
+          backgroundColor: 'transparent'
+        }}
+      />
+    );
+  }
+
+  return (
+    <div className="relative group w-full h-full overflow-visible">
+      <div
+        id={id}
+        className="step-icon-inner w-full flex items-center justify-center overflow-visible"
+        style={{
+          height: `${height}px`
+        }}
+      >
+        <StepIconSvg descriptor={descriptor} nameType={stepInfo?.nameType} />
+      </div>
     </div>
   );
 }

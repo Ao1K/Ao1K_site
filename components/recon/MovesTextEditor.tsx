@@ -54,6 +54,7 @@ interface EditorProps {
   simpleInput?: boolean;
   iconColumnWidth?: number;
   isReadOnly?: boolean;
+  isTopRightCornerSquare?: boolean;
 }
 
 export interface ImperativeRef {
@@ -82,6 +83,7 @@ function MovesTextEditor({
   simpleInput = false,
   iconColumnWidth = 0,
   isReadOnly = false,
+  isTopRightCornerSquare = false,
 }: EditorProps) {
 
   const contentEditableRef = useRef<HTMLDivElement>(null);
@@ -1830,7 +1832,7 @@ function MovesTextEditor({
         ref={contentEditableRef}
         className={`
           text-[1.125rem] text-left ff-space-adjust wrap-break-word p-2
-          rounded-sm whitespace-pre-wrap border
+          rounded-sm ${isTopRightCornerSquare ? 'rounded-tr-none' : ''} whitespace-pre-wrap border
           outline-none resize-none caret-primary-200
           ${isReadOnly
             ? 'border-transparent'

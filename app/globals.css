@@ -282,10 +282,6 @@ input[type='range']::-moz-range-track {
   display: inline !important;
 }
 
-.icon-column-clip {
-  clip-path: inset(0 0 0 -100%);
-}
-
 @media (pointer: coarse) {
   .main-content {
     /* main is a flex item; min-width:auto would let wide content (no-wrap rows, the player)
@@ -300,22 +296,43 @@ input[type='range']::-moz-range-track {
 
 /* hover effects gated behind @media (hover: hover) and min-width
 to prevent sticky hover on touch devices and enlargement on small screens */
+.icon-zoom-layer {
+  clip-path: inset(0 0 -4rem -100%);
+}
+
+.icon-zoom-layer .step-icon-inner {
+  visibility: hidden;
+  transform-origin: top right;
+  transition: transform 300ms ease-out, visibility 0s 300ms;
+}
+
 @media (hover: hover) and (min-width: 768px) {
-  .step-icon-hover:hover {
-    height: var(--hover-height) !important;
+  .step-icon-resized {
+    height: var(--zoom-height) !important;
+  }
+
+  /* the delayed opacity and visibility switches keep the real icon hidden until the zoomed copy finishes shrinking. */
+  #icon-column .step-icon-inner {
+    transition: opacity 0s 300ms;
+  }
+
+  #icon-column .step-icon-zoomed .step-icon-inner {
+    opacity: 0;
+    transition-delay: 0s;
+  }
+
+  .icon-zoom-layer .step-icon-zoomed {
     z-index: 20;
   }
 
-  .step-icon-hover:hover .step-icon-inner {
+  .icon-zoom-layer .step-icon-zoomed .step-icon-inner {
+    visibility: visible;
     transform: scale(200%);
+    transition-delay: 0s;
   }
 
-  .step-icon-hover:hover .step-icon-svg {
+  .icon-zoom-layer .step-icon-zoomed .step-icon-svg {
     border-color: var(--color-primary-100);
-  }
-
-  .icon-column-clip:has(.step-icon-hover:hover) {
-    clip-path: inset(0 0 -4rem -100%);
   }
 }
 .cube-scene {

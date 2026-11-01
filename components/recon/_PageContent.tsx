@@ -32,7 +32,9 @@ import InfoPanel from '../../components/recon/InfoPanel';
 import IconStack, { computeLineIconData } from './IconStack';
 import { showToast, dismissToast } from '../../composables/toast';
 import SplitsStack, { SPLITS_WIDTH, splitsToURLParam } from './SplitsStack';
-import { ICON_SIZE_CONFIG, useCubeColors, useShowSplits, useAlgsets, useHandedness, readSettingsFromCookie, type Handedness } from '../../composables/useSettings';
+import ColumnSelector from './ColumnSelector';
+import { useEnabledColumns } from '../../composables/recon/useEnabledColumns';
+import { ICON_SIZE_CONFIG, useCubeColors, useAlgsets, useHandedness, readSettingsFromCookie, type Handedness } from '../../composables/useSettings';
 import { SimpleCube, type CubeState } from '../../composables/recon/SimpleCube';
 import { SimpleCubeInterpreter } from '../../composables/recon/SimpleCubeInterpreter';
 import type { StepInfo, Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
@@ -179,11 +181,14 @@ const getCtrlKeySnapshot = () => (/Mac|iPod|iPhone|iPad/.test(navigator.userAgen
 const getCtrlKeyServerSnapshot = () => 'Ctrl';
 
 export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScramble?: string, infoPanelSlot?: React.ReactNode }) {
-  const solutionLineHeight = ICON_SIZE_CONFIG['medium'].lineHeight;
   const [cubeColors] = useCubeColors();
-  const [showSplitsSetting] = useShowSplits();
   const [algsets] = useAlgsets();
   const [handedness] = useHandedness();
+  const [enabledColumns, updateEnabledColumns] = useEnabledColumns();
+  
+  const [hasSplitsFromURL, setHasSplitsFromURL] = useState<boolean>(false);
+  const isIconsColumnEnabled = enabledColumns.icons;
+  const showSplitsColumn = enabledColumns.splits || hasSplitsFromURL;
   const enabledAlgsets = useMemo(() => new Set(Object.values(algsets).flat()), [algsets]);
 
   const allMovesRef = useRef<string[][][]>([[[]], [[]]]);
@@ -218,8 +223,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
 
   const scrambleMethodsRef = useRef<ImperativeRef>(null);
   const solutionMethodsRef = useRef<ImperativeRef>(null);
-  const iconScrollRef = useRef<HTMLDivElement>(null);
-  const splitsScrollRef = useRef<HTMLDivElement>(null);
+  const [solutionDisplayElement, setSolutionDisplayElement] = useState<HTMLDivElement | null>(null);
   const oldSelectionRef = useRef<OldSelectionRef>({ range: null, textbox: null, status: "init" });
   const bottomBarRef = useRef<HTMLDivElement>(null!);
   const isLoopingRef = useRef<boolean>(false);
@@ -246,16 +250,16 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     : '';
 
   const solutionLines = allMovesRef.current[1]?.map((move: string[]) => move.join(' ')) || [''];
+  const solutionLineHeight = ICON_SIZE_CONFIG['medium'].lineHeight;
+
   const lineIconData = computeLineIconData(solutionLines, lineSteps.map(item => item.stepInfo), cubeColors);
-  const hasIcons = lineIconData.some(d => !d.isEmptyIcon);
+  const showIconsColumn = isIconsColumnEnabled && lineIconData.some(d => !d.isEmptyIcon);
   const hasReviewFeedback = hasReviewContent(allMovesRef.current[0].flat(), allMovesRef.current[1], lineIconData);
   const reviewButtonClass = !hasReviewFeedback
     ? 'text-neutral-500 border-neutral-700'
     : isSolveComplete(lineSteps.map(line => line.stepInfo))
       ? 'text-primary-900 border-primary-100 animate-review-highlight'
       : 'text-primary-100 border-neutral-600 hover:border-primary-100';
-
-  const showSplitsColumn = showSplitsSetting;
 
   const isWhitespaceLine = lineIconData.map(d => d.isWhitespace);
   isWhiteSpaceLineRef.current = isWhitespaceLine;
@@ -444,7 +448,6 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   const removeHighlight = useCallback(() => {
     solutionMethodsRef.current?.removeHighlight();
   }, []);
-
   const getMoveToLeft = (): [number, number] => {
     const [idIndex, lineIndex, moveIndex] = moveLocation.current;
     const moves = allMovesRef.current[idIndex];
@@ -829,7 +832,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   };
 
   const isCaretInSolution = () =>
-    document.getElementById('solution')?.contains(window.getSelection()?.anchorNode ?? null) ?? false;
+    solutionMethodsRef.current?.getElement()?.contains(window.getSelection()?.anchorNode ?? null) ?? false;
 
   const refreshLineSuggestions = (lineIndex: number, enabledAlgsets: Set<string>, handedness: Handedness) => {
     updateLineSuggestions(allMovesRef.current[1], lineIndex, enabledAlgsets, handedness);
@@ -1771,6 +1774,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       const parsed = splitsParam === '' ? [''] : splitsParam.split(',');
       setSplits(parsed);
       setCommittedSplits(parsed);
+      setHasSplitsFromURL(true);
     }
 
     const solution = allMovesRef.current[1].flat().join(' ');
@@ -1994,7 +1998,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
         <div
           id="bottom-bar"
           ref={bottomBarRef}
-          className={`w-full px-3 space-x-1 static flex flex-row items-center place-content-end justify-start transform z-20
+          className={`w-full px-3 space-x-1 static flex flex-row items-center place-content-end justify-start transform z-30
               ${isShowingToolbar ? 'translate-y-0 opacity-100 h-14' : '-translate-y-full opacity-0 pointer-events-none h-0'}`}
           style={{
             visibility: isShowingToolbar ? 'visible' : 'hidden',
@@ -2008,27 +2012,53 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
         <div className="border border-neutral-600 hover:border-primary-100 h-1.75 rounded-b-sm w-full z-0 bg-primary-700" onClick={() => toggleShowBottomBar()}></div>
       </div>
       <div id="datafields" className="w-full items-start transition-width duration-500 ease-linear">
-        <div id="solution-area" className={`px-3 mt-1 flex flex-col w-full ${isBreakdownOpen ? '' : 'mb-14'}`}>
+        <div id="solution-area" className={`relative px-3 mt-2.5 flex flex-col w-full ${isBreakdownOpen ? '' : 'mb-14'}`}>
           <div
-            className="flex flex-row items-end mb-2 gap-3 w-full z-10"
+            className="flex flex-row items-end w-full z-20"
             style={{ viewTransitionName: PAGE_TRANSITION_NAMES.heading }}
           >
-            <div className="text-xl text-dark_accent leading-none font-medium">{isBreakdownOpen ? 'Review' : 'Solution'}</div>
-            <button
-              type="button"
-              autoComplete="off"
-              disabled={!isBreakdownOpen && !hasReviewFeedback}
-              onClick={isBreakdownOpen ? handleCloseBreakdown : handleOpenBreakdown}
-              className={`mr-2 px-2 py-1 mt-1 text-sm border rounded-sm transition-colors duration-150 disabled:cursor-not-allowed ${reviewButtonClass}`}
-              style={{ viewTransitionName: PAGE_TRANSITION_NAMES.reviewButton }}
+            <div className="mb-2 text-xl text-dark_accent leading-none font-medium">{isBreakdownOpen ? 'Review' : 'Solution'}</div>
+            <div
+              className={`flex flex-row items-end ${isBreakdownOpen ? 'ml-auto mb-2' : 'absolute'}`}
+              style={isBreakdownOpen ? undefined : {
+                right: 'anchor(--solution-content right)',
+                bottom: 'anchor(--solution-box top)',
+              }}
             >
-              <span className="inline-block whitespace-nowrap" style={flightStyle(PAGE_TRANSITION_NAMES.reviewLabel)}>
-                {isBreakdownOpen ? 'Go back to editor' : 'Review'}
-              </span>
-            </button>
-            {showSplitsColumn && !isBreakdownOpen && (
-              <div className="text-xl text-dark_accent font-medium" style={{ width: SPLITS_WIDTH, textAlign: 'center' }}>Splits</div>
-            )}
+              <div className="flex flex-row items-stretch">
+                <button
+                  type="button"
+                  autoComplete="off"
+                  disabled={!isBreakdownOpen && !hasReviewFeedback}
+                  onClick={isBreakdownOpen ? handleCloseBreakdown : handleOpenBreakdown}
+                  className={`px-2 py-1 text-sm border transition-colors duration-150 disabled:cursor-not-allowed ${isBreakdownOpen ? 'rounded-sm' : 'border-b-0 rounded-tl-sm'} ${reviewButtonClass}`}
+                  style={{ viewTransitionName: PAGE_TRANSITION_NAMES.reviewButton }}
+                >
+                  <span className="inline-block whitespace-nowrap" style={flightStyle(PAGE_TRANSITION_NAMES.reviewLabel)}>
+                    {isBreakdownOpen ? 'Go back to editor' : 'Review'}
+                  </span>
+                </button>
+                {!isBreakdownOpen && (
+                  <ColumnSelector
+                    showIcons={isIconsColumnEnabled}
+                    onShowIconsChange={(icons) => updateEnabledColumns({ icons })}
+                    showSplits={showSplitsColumn}
+                    onShowSplitsChange={(splits) => {
+                      setHasSplitsFromURL(false);
+                      updateEnabledColumns({ splits });
+                    }}
+                  />
+                )}
+              </div>
+              {!isBreakdownOpen && (
+                <div
+                  className="mb-2 overflow-hidden whitespace-nowrap text-center text-xl text-dark_accent leading-none font-medium"
+                  style={{ width: showSplitsColumn ? SPLITS_WIDTH : 0, transition: 'width 200ms linear' }}
+                >
+                  Splits
+                </div>
+              )}
+            </div>
           </div>
           {breakdownSession && (
             <SolveBreakdown
@@ -2040,72 +2070,69 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
           )}
           <div
             id="rich-solution-display"
-            className={`relative border-none ${FLIGHT_BOX_CLASS} ${isBreakdownOpen ? 'invisible h-0 overflow-hidden' : 'max-h-[35vh] -mb-20 overflow-visible z-10'}`}
+            ref={setSolutionDisplayElement}
+            className={`relative border-none [anchor-name:--solution-box] ${FLIGHT_BOX_CLASS} ${isBreakdownOpen ? 'invisible h-0 overflow-hidden' : 'max-h-[35vh] -mb-20 overflow-visible z-10'}`}
             style={isBreakdownOpen ? undefined : flightStyle(PAGE_TRANSITION_NAMES.solutionBox)}
           >
             <div
-              className="icon-column-clip max-h-[35vh] absolute left-0 top-0"
-              style={{ width: ICON_SIZE_CONFIG['medium'].iconWidth }}
-            >
-              <div ref={iconScrollRef}>
-                <IconStack
-                  moves={allMovesRef.current}
-                  position={moveLocation.current}
-                  editableElement={solutionMethodsRef.current?.getElement() || null}
-                  lineIconData={lineIconData}
-                />
-                <div className="h-6 z-10" /> {/* buffer at bottom so last line of icons doesn't get cut off */}
-              </div>
-            </div>
-            <div
               className="min-w-0 overflow-y-auto max-h-[35vh] relative z-10"
               id="solution"
-              style={{
-                marginLeft: hasIcons ? ICON_SIZE_CONFIG['medium'].iconWidth : 0,
-                marginRight: showSplitsColumn ? SPLITS_WIDTH : 0,
-                transition: 'margin-left 200ms linear, margin-right 200ms linear',
-              }}
               onScroll={(e) => {
                 e.currentTarget.parentElement?.style.setProperty('--solution-scroll-top', `${e.currentTarget.scrollTop}px`);
-                if (iconScrollRef.current) {
-                  iconScrollRef.current.style.transform = `translateY(-${e.currentTarget.scrollTop}px)`;
-                }
-                if (splitsScrollRef.current) {
-                  splitsScrollRef.current.style.transform = `translateY(-${e.currentTarget.scrollTop}px)`;
-                }
               }}
             >
-              <MovesTextEditor
-                name={`solution`}
-                ref={solutionMethodsRef}
-                trackMoves={trackMoves}
-                autofocus={infoPanelSlot == null}
-                moveHistory={moveHistory}
-                onHistoryChange={publishHistoryPosition}
-                html={solutionHTML}
-                setHTML={setSolutionHTML}
-                lineHeight={solutionLineHeight}
-                iconColumnWidth={hasIcons ? ICON_SIZE_CONFIG['medium'].iconWidth : 0}
-                isReadOnly={isBreakdownOpen}
-              />
-            </div>
-            {showSplitsColumn && (
               <div
-                className="max-h-[35vh] absolute right-0 top-0 overflow-hidden"
-                style={{ width: SPLITS_WIDTH }}
+                className="relative [anchor-name:--solution-content]"
+                style={{
+                  paddingLeft: showIconsColumn ? ICON_SIZE_CONFIG['medium'].iconWidth : 0,
+                  paddingRight: showSplitsColumn ? SPLITS_WIDTH : 0,
+                  transition: 'padding-left 200ms linear, padding-right 200ms linear',
+                }}
               >
-                <div ref={splitsScrollRef}>
-                  <SplitsStack
-                    editableElement={solutionMethodsRef.current?.getElement() || null}
-                    splits={splits}
-                    onSplitsChange={setSplits}
-                    onSplitsCommit={handleSplitsCommit}
-                    isWhitespaceLine={isWhitespaceLine}
+                {isIconsColumnEnabled && (
+                  <div
+                    id="icon-column"
+                    className="absolute left-0 inset-y-0 overflow-clip"
+                    style={{ width: ICON_SIZE_CONFIG['medium'].iconWidth }}
+                  >
+                    <IconStack
+                      moves={allMovesRef.current}
+                      position={moveLocation.current}
+                      editableElement={solutionMethodsRef.current?.getElement() || null}
+                      lineIconData={lineIconData}
+                      zoomLayerHost={isBreakdownOpen ? null : solutionDisplayElement}
+                    />
+                  </div>
+                )}
+                <div className="relative z-10">
+                  <MovesTextEditor
+                    name={`solution`}
+                    ref={solutionMethodsRef}
+                    trackMoves={trackMoves}
+                    autofocus={infoPanelSlot == null}
+                    moveHistory={moveHistory}
+                    onHistoryChange={publishHistoryPosition}
+                    html={solutionHTML}
+                    setHTML={setSolutionHTML}
+                    lineHeight={solutionLineHeight}
+                    iconColumnWidth={showIconsColumn ? ICON_SIZE_CONFIG['medium'].iconWidth : 0}
+                    isTopRightCornerSquare
+                    isReadOnly={isBreakdownOpen}
                   />
-                  <div className="h-6" />
                 </div>
+                {showSplitsColumn && (
+                  <div className="absolute right-0 inset-y-0 overflow-clip" style={{ width: SPLITS_WIDTH }}>
+                    <SplitsStack
+                      editableElement={solutionMethodsRef.current?.getElement() || null}
+                      splits={splits}
+                      onSplitsChange={setSplits}
+                      onSplitsCommit={handleSplitsCommit}
+                      isWhitespaceLine={isWhitespaceLine}
+                    />
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
         </div>
         <TimeArea

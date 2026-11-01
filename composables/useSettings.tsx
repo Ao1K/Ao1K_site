@@ -57,7 +57,6 @@ export interface AppSettings {
   hintFaceletsElevation: number;
   stickerScale: number;
   cameraFov: number;
-  showSplits: boolean;
   algsets: AlgsetDict;
   handedness: Handedness;
   showEOStep: boolean;
@@ -72,7 +71,6 @@ const DEFAULT_SETTINGS: AppSettings = {
   hintFaceletsElevation: DEFAULT_HINT_FACELETS_ELEVATION,
   stickerScale: DEFAULT_STICKER_SCALE,
   cameraFov: DEFAULT_CAMERA_FOV,
-  showSplits: false,
   algsets: DEFAULT_ALGSETS,
   handedness: DEFAULT_HANDEDNESS,
   showEOStep: false,
@@ -97,7 +95,6 @@ function parseSettings(cookieValue: string | undefined): AppSettings {
         cameraFov: typeof parsed.cameraFov === 'number'
           ? Math.min(MAX_CAMERA_FOV, Math.max(MIN_CAMERA_FOV, parsed.cameraFov))
           : DEFAULT_CAMERA_FOV,
-        showSplits: parsed.showSplits ?? false,
         algsets: { ...DEFAULT_ALGSETS, ...parsed.algsets },
         handedness: parsed.handedness === 'left' ? 'left' : DEFAULT_HANDEDNESS,
         showEOStep: parsed.showEOStep ?? false,
@@ -213,19 +210,6 @@ export function useShowControls(): [boolean, (value: boolean) => void] {
   }, [settings, updateSettings]);
   
   return [settings.showPlayerControls, setShowControls] as const;
-}
-
-export function useShowSplits(): [boolean, (value: boolean) => void] {
-  const { settings, updateSettings } = useSyncedSettings();
-
-  const setShowSplits = useCallback((value: boolean) => {
-    updateSettings({
-      ...settings,
-      showSplits: value,
-    });
-  }, [settings, updateSettings]);
-
-  return [settings.showSplits, setShowSplits] as const;
 }
 
 export function useHintFaceletsElevation(): [number, (value: number) => void] {

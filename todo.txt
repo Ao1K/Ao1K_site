@@ -92,7 +92,7 @@ v0.10 completed feature list:
 - New lighter-weight 3D cube rendering system
 - FOV and Sticker size settings for cube appearance
 - 50 fps option for cube gif downloads. 25 fps is still the default.
-
+- Tagging system (+2, DNF, Untimed...)
 
 Best f2l:
 1. Take top solves

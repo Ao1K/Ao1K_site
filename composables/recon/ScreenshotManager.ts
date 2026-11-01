@@ -484,8 +484,7 @@ export class ScreenshotManager {
     const { totalMoves, tpsString } = extraData;
 
     try {
-      const richSolutionDiv = document.getElementById('rich-solution-display');
-      const liveIconStack = richSolutionDiv?.querySelector('.icon-column-clip')?.firstElementChild?.firstElementChild as HTMLElement | null;
+      const liveIconStack = document.getElementById('icon-column')?.firstElementChild as HTMLElement | null;
 
       // create wrapper with styles
       const frame = document.createElement('div');

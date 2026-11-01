@@ -81,6 +81,16 @@ then be sure to run `build-cube-runtime` and `verify-cube-parity` from the packa
 
 When driving a browser and testing the Recon page, you may need to set a cookie for infoPanelDismissed_v1 so that the info panel does not interfere with the test. The info panel takes up a lot of the screen. 
 
+# UI Design
+
+## Dropdowns
+
+Dropdown menu items should hug the button they originate from. No space between.
+
+## Never use UPPERCASE
+
+Never use UPPERCASE in UI elements unless specified. Acronymns are exempt from this.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { HexColorPicker } from 'react-colorful';
 import PhGear, { PhGearFill } from './icons/settings';
 import CubeAppearanceDialog from './CubeAppearanceDialog';
-import { useCubeColors, useShowControls, useShowSplits, useHintFaceletsElevation, useStickerScale, useCameraFov, useAlgsets, useHandedness, useShowEOStep, ALGSET_OPTIONS, DEFAULT_HINT_FACELETS_ELEVATION, DEFAULT_STICKER_SCALE, MIN_STICKER_SCALE, DEFAULT_CAMERA_FOV, MIN_CAMERA_FOV, MAX_CAMERA_FOV, DEFAULT_CUBE_COLORS, type CubeColors, type AlgsetDict, type Handedness } from '../composables/useSettings';
+import { useCubeColors, useShowControls,useHintFaceletsElevation, useStickerScale, useCameraFov, useAlgsets, useHandedness, useShowEOStep, ALGSET_OPTIONS, DEFAULT_HINT_FACELETS_ELEVATION, DEFAULT_STICKER_SCALE, MIN_STICKER_SCALE, DEFAULT_CAMERA_FOV, MIN_CAMERA_FOV, MAX_CAMERA_FOV, DEFAULT_CUBE_COLORS, type CubeColors, type AlgsetDict, type Handedness } from '../composables/useSettings';
 
 const STICKER_SLIDER_CURVE_BASE = 115;
 const MAX_STICKER_GAP = 1 - MIN_STICKER_SCALE;
@@ -47,7 +47,6 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
   const [activePicker, setActivePicker] = useState<keyof CubeColors | null>(null);
   const [cubeColors, setCubeColors, resetColors] = useCubeColors();
   const [showControls, setShowControls] = useShowControls();
-  const [showSplits, setShowSplits] = useShowSplits();
   const [elevation, setElevation] = useHintFaceletsElevation();
   const [stickerScale, setStickerScale] = useStickerScale();
   const [cameraFov, setCameraFov] = useCameraFov();
@@ -130,7 +129,7 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
 
       {isOpen && (
         <div className="absolute right-0 top-14 bg-primary-100 border border-primary-300 rounded-sm shadow-lg z-50 min-w-62.5">
-          {/* recon-only settings; the algs page omits player controls and splits */}
+          {/* recon-only settings; the algs page omits player controls */}
           {page === 'recon' && (
           <>
           {/* Show Controls Toggle */}
@@ -141,19 +140,6 @@ export default function SettingsMenu({ page = 'global' }: SettingsMenuProps) {
                 type="checkbox"
                 checked={showControls}
                 onChange={handleToggleControls}
-                className="ml-2 w-4 h-4 cursor-pointer"
-              />
-            </label>
-          </div>
-
-          {/* Show Splits Toggle */}
-          <div className="px-3 py-2 border-b border-primary-200">
-            <label className="flex items-center justify-between cursor-pointer">
-              <span className="text-sm font-semibold text-light_accent">Show Splits</span>
-              <input
-                type="checkbox"
-                checked={showSplits}
-                onChange={() => setShowSplits(!showSplits)}
                 className="ml-2 w-4 h-4 cursor-pointer"
               />
             </label>
