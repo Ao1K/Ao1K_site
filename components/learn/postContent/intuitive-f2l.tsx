@@ -1,15 +1,18 @@
+import type { ReactNode } from "react";
 import LessonBody from "../LessonBody";
 import TitleBar from "../TitleBar";
 import Story from "../LessonStory";
 import LessonLink from "../LessonLink";
 import LessonList from "../LessonList";
 import CubeScene from "../CubeScene";
-import CubeImage from "../CubeImage";
+import CubeImage, { type CubeImageProps } from "../CubeImage";
 import ExternalLink from "../../ExternalLink"
 import { SCENE_PX, apply, mul, sceneGeometry } from "../../../utils/cubeSvgRender";
 import { H1, H2, H3 } from "../LessonHeading";
 import type { PieceName } from "../cubeProps";
 import FurtherLearning, { Citation, type Source } from "../FurtherLearning";
+import { crossIcon } from "../../../composables/recon/stepIconDescriptors";
+import { DEFAULT_SCENE_LOOK } from "../../../utils/cubeSceneAuthoring";
 
 // Lesson inspiration came from Frosty, where we discussed including EO as a core part of the lesson.
 
@@ -64,37 +67,10 @@ export default function IntuitiveF2L() {
         </ol>
         <p>{`F2L is complex. Any tutorial you follow will take real effort and a good amount of time.`}</p>
         <H1>Finding F2L pieces</H1>
-        <p>{`The first step is always to find an F2L pair to solve. We need to find one corner piece and one edge piece.`}</p>
-        <H2>Find a corner</H2>
-        <p>{`You can tell which corners get solved during F2L by looking for a corner that has your cross color. If you solved white cross, then you should look for a corner piece with white on it.`}</p>
-        <div className="flex flex-col gap-1">
-          <span className="text-sm font-bold">The four corner pieces of F2L (white cross)</span>
-          <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-            <CubeImage
-              facelets="ROOOYOWYWYWOWWWOWBRRBGBYRBYOYYGRBBRYGGBYGRRGWWBGBORGOG"
-              hints
-              angles={{ x: 30, y: 210 }}
-              highlight={["WGR", "WGO", "WBO", "WBR"]}
-            />
-          </div>
-        </div>
-        <H2>Find the corresponding edge</H2>
-        <p>{`Corner pieces have three colors on them. Each F2L corner has one color which is the cross color, but then there's the other two. Those two other colors are the colors of the edge that we need.`}</p>
-        <div className="flex flex-col gap-1 pb-6">
-          <span className="text-sm font-bold">The four edge pieces of F2L (white cross)</span>
-          <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-            <CubeImage
-              facelets="ROOOYOWYWYWOWWWOWBRRBGBYRBYOYYGRBBRYGGBYGRRGWWBGBORGOG"
-              hints
-              angles={{ x: 30, y: 210 }}
-              highlight={["BR", "BO", "GO", "GR"]}
-            />
-          </div>
-        </div>
-        <p>{`F2L edges will never have the cross color on them, or the opposite color as cross on them.`}</p>
+        <p>{`When we solve an F2L pair, we need to find a corner and an edge. The corner piece will always have the cross color on them, and then two other colors. The edge piece will have those two other colors.`}</p>
+        <PairColorsDiagram />
         <H2>Finding pieces example</H2>
-        <p>{`White cross was solved, so we need to find a corner piece with white on it. The first place to look for corner pieces is the top layer, but they may be in the bottom layer next to cross.`}</p>
-        <p>{`Here we find the red-blue-white corner piece in the top layer. That means we need to find the red-blue edge. Edges could be in the top or middle layer, and here we found it in the middle layer.`}</p>
+        <p>{`Cross was solved on white. We can solve any corner piece with white on it. We see the red-blue-white corner piece first. That means we need to find the red-blue edge. This time, it's in the middle layer.`}</p>
         <div className="flex flex-col gap-1 pb-6">
           <span className="text-sm font-bold">Finding one corner and one edge</span>
           <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
@@ -121,11 +97,11 @@ export default function IntuitiveF2L() {
 
         <LevelQuestionsDiagram />
 
-        <p>{`It's mostly straightforward to answer these questions. Telling if an edge is bad and telling if pieces are paired can be more tricky. Let's talk about those questions.`}</p>
+        <p>{`It's mostly straightforward to answer these questions, except with Level 4 and Level 1. Let's talk about those questions.`}</p>
 
 
         <H2>Level 4 — Is the edge bad?</H2>
-        <p>{`Basically, edges are good when they can be solved with `}<code>R</code>{', '}<code>L</code>{', '}<code>U</code>{', and '}<code>D</code> moves.</p>
+        <p>{`Basically, edges are good when they can be solved with `}<code>R</code>{', '}<code>L</code>{', '}<code>U</code>{', and '}<code>D</code>{` moves. These moves are fast to perform, which is why we call them good edges.`}</p>
         <div className="flex flex-row flex-wrap gap-8 pb-6 pt-2">
           <div className="flex flex-col gap-1">
             <span className="text-sm font-bold">Good edge</span>
@@ -156,11 +132,12 @@ export default function IntuitiveF2L() {
             </div>
           </div>
         </div>
-        <p>{`The bad edge ended up flipped in place when we tried to solve it with `}<code>RULD</code>{` moves.`}</p>
-        <p>{`It'd be slow and annoying to have to do moves to figure out if an edge is good or not. So let's learn a basic way to tell what kind of F2L edge we have.`}</p>
-        <p>{`An F2L edge in the top layer will have one color on top and one color on the side. The edge is good if the side color is the same as the left or right center color. If the side color is the same as the front or back center, it's bad.`}</p>
-        <p>{`In the "Good edge" example above, the side color is red. That matches the right center color. Good edge. We don't need to do any moves to check if the edge is good or not.`}</p>
-        <p>{`What about this orange-green edge? Good or bad?`}</p>
+        <p>{`A bad edge ends up flipped in place when we try to solve it with `}<code>RULD</code>{` moves.`}</p>
+        <H3>Recognizing a good or bad edge</H3>
+        <p>{`We want to be able to tell if an edge is good quickly, without turning the cube.`}</p>
+        <p>{`We'll only be talking about F2L edges in the top layer. That edge will have one sticker on top and one sticker on the side. If the side color matches the left or right center color, it's a good edge.`}</p>
+        <GoodEdgeDiagram />
+        <p>{`What about this orange-green edge? Good or bad? Hint: the labels show that the green center is in the front.`}</p>
         <div className="w-80 h-80 mb-2  border border-neutral-400 rounded-sm overflow-hidden">
           <CubeImage
             facelets="ORYGYRGYRGWRWWWRWORGYOGBWGGBYGYOOWOBOBBBBGWBWYOYRRYBRO"
@@ -180,10 +157,6 @@ export default function IntuitiveF2L() {
         <div className="opacity-0 peer-checked/good1:opacity-100 transition-opacity duration-500 text-neutral-400 mb-4">
           {`It's a good edge. The left center is red, so the right center is orange. The side color on the edge matches the right center.`}
         </div>
-        <p>{`If we're on Level 4, our goal is just to turn the bad edge into a good one. We'll learn how to do this by rotating the cube with a `}<code>y</code>{` move. `}
-          <LessonLink text="Click here" href="/learn/notation/#rule-4-rotations-get-xyz" />
-          {` to review what a `}<code>y</code>{` move is.`}
-        </p>
         <H2>Level 1 — Are the pieces paired?</H2>
         <p>{`"Paired" means the F2L pieces can be solved in 3 or 4 moves. There's only two types of pairs.`}</p>
         <H3>Recognizing a connected pair</H3>
@@ -435,11 +408,14 @@ export default function IntuitiveF2L() {
         </div>
 
         <H2>On Level 4? Make edge good</H2>
-        <p>{`After Level 5, descending from Level 4 should feel like a breath of fresh air. All we have to do is a `}<code>y</code>{` or `}<code>{`y'`}</code>{` when there's a bad edge.`}</p>
+        <p>{`After Level 5, descending from Level 4 should feel like a breath of fresh air. All we have to do is a `}<code>y</code>{` or `}<code>{`y'`}</code>{` when there's a bad edge. `}
+        <LessonLink text="Click here" href="/learn/notation/#rule-4-rotations-get-xyz" />
+          {` to review what a `}<code>y</code>{` move is.`}
+        </p>
         <p>{`Here's a Level 4 case, meaning the edge is bad and both pieces are in the top layer. We can rotate either direction and that'll make the edge good.`}</p>
-        <div className="flex flex-row flex-wrap gap-6 mb-6">
+        <div className="flex flex-row flex-wrap gap-8 pb-6 pt-2">
           <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Level 4 example</span>
+            <span className="text-sm font-bold">{`Level 4 example`}</span>
             <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
               <CubeImage
                 facelets="RBGRYORBGYWYWWWOWOYRRYRYBRBWYWBGOOGBOOBGOGWOGWYGRBGYBR"
@@ -450,11 +426,8 @@ export default function IntuitiveF2L() {
               />
             </div>
           </div>
-        </div>
-        <p>{`We'll choose to do `}<code>{`y'`}</code>{` and not `}<code>y</code>{` because that will mean the slot we are trying to solve, the one between the red and blue centers, is still in the front. It's easier to see front slots.`}</p>
-        <div className="flex flex-row flex-wrap gap-6 mb-6">
           <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Level 4 solution</span>
+            <span className="text-sm font-bold">{`Level 4 solution`}</span>
             <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
               <CubeScene
                 scramble="R2 F2 L2 D B2 D F2 D2 F2 R2 D2 F L F U B' L D2 B2 D R x2 D B2 D R' y U'"
@@ -470,7 +443,8 @@ export default function IntuitiveF2L() {
             </div>
           </div>
         </div>
-        <p>{`Choosing which way to rotate is actually a complex subject. It can be better to solve back slots since pieces can no longer be hiding in the back as much. We'll discuss this more in future lessons.`}</p>
+        <p>{`In the example, we chose to rotate so that the slot we're solving is in the front. That'll make it easier to see what we're doing.`}</p>
+        <p>{`Choosing which way to rotate is actually a complex subject. It can be better to solve back slots since pieces won't be hiding in the back as much. We'll discuss this more in future lessons.`}</p>
 
         <H2>On Level 3? Separate pieces</H2>
         <p>{`If the pieces are adjacent, we need to separate them.`}</p>
@@ -1288,6 +1262,308 @@ function CrossToF2LDiagram() {
             dim={1}
           />
         </div>
+      </div>
+    </figure>
+  );
+}
+
+const FINDING_PIECES_FACELETS = "OGYRYRWOBGWWWWWWWOBBOYBYYBRWGBOROGRGRYBGGBYGGYBRYOROOR";
+const FINDING_PIECES_HIGHLIGHT: PieceName[] = [...CROSS_PIECES, "BO", "WBO"];
+const PAIR_PANEL_WIDTH = 600;
+const PAIR_PANEL_HEIGHT = 440;
+const CUBE_PLACEMENT: ScenePlacement = { x: -28, y: -40, scale: 0.385 };
+const PAIR_PLACEMENT: ScenePlacement = { x: -1, y: -44, scale: 1 };
+const PAIR_SCENE_CENTER: SceneSpot = [301, 294];
+const PAIR_CIRCLE_SCENE_RADII = { x: 150, y: 110 };
+const PAIR_TOP_TARGET = { x: 290, y: 150 };
+const EDGE_ARROWS_BASE = { x: 252, y: 378 };
+const CORNER_ARROWS_BASE = { x: 341, y: 378 };
+const OTHER_COLORS_ARROWS: { start: ScreenPoint; edge: StickerEdge }[] = [
+  { start: EDGE_ARROWS_BASE, edge: { from: [208.4, 327], to: [285.3, 351.1], at: 0.3 } },
+  { start: EDGE_ARROWS_BASE, edge: { from: [203.8, 240.6], to: [284.9, 261.7], at: 0.7 } },
+  { start: CORNER_ARROWS_BASE, edge: { from: [290.5, 352.8], to: [375.8, 379.5], at: 0.3 } },
+  { start: CORNER_ARROWS_BASE, edge: { from: [290.4, 263.1], to: [380.9, 286.6], at: 0.7 } },
+];
+const WHITE_STICKER_EDGE: StickerEdge = { from: [427, 250.8], to: [421.2, 334.2], at: 0.5 };
+const OTHER_COLORS_LABEL = { x: 300, y: 405 };
+const CROSS_ICON = { x: 476, y: 200, size: 56 };
+const CROSS_ICON_DESCRIPTOR = crossIcon(DEFAULT_SCENE_LOOK.colors.W, "#161018");
+const ARROWHEAD_REACH = 12;
+const STICKER_EDGE_GAP = 5;
+
+type SceneSpot = [number, number];
+type ScenePlacement = { x: number; y: number; scale: number };
+type StickerEdge = { from: SceneSpot; to: SceneSpot; at: number };
+
+function sceneToPanel(placement: ScenePlacement, [x, y]: SceneSpot) {
+  return { x: placement.x + x * placement.scale, y: placement.y + y * placement.scale };
+}
+
+function arrowToStickerPath(start: ScreenPoint, { from, to, at }: StickerEdge) {
+  const edgePoint = sceneToPanel(PAIR_PLACEMENT, [from[0] + (to[0] - from[0]) * at, from[1] + (to[1] - from[1]) * at]);
+  const length = Math.hypot(edgePoint.x - start.x, edgePoint.y - start.y);
+  const pullback = (ARROWHEAD_REACH + STICKER_EDGE_GAP) / length;
+  const endX = edgePoint.x - (edgePoint.x - start.x) * pullback;
+  const endY = edgePoint.y - (edgePoint.y - start.y) * pullback;
+  return `M${start.x} ${start.y}L${endX} ${endY}`;
+}
+
+type PanelSize = { width: number; height: number };
+
+const PAIR_PANEL: PanelSize = { width: PAIR_PANEL_WIDTH, height: PAIR_PANEL_HEIGHT };
+
+function PanelPlacedCube({ placement, panel, ...image }: CubeImageProps & { placement: ScenePlacement; panel: PanelSize }) {
+  return (
+    <div
+      className="absolute"
+      style={{
+        left: `${(placement.x / panel.width) * 100}%`,
+        top: `${(placement.y / panel.height) * 100}%`,
+        width: `${((SCENE_PX * placement.scale) / panel.width) * 100}%`,
+      }}
+    >
+      <CubeImage {...image} className="block w-full h-auto" />
+    </div>
+  );
+}
+
+function PanelLabel({ x, y, text, anchor = "middle" }: ScreenPoint & { text: ReactNode; anchor?: "start" | "middle" | "end" }) {
+  return (
+    <text
+      x={x}
+      y={y}
+      textAnchor={anchor}
+      dominantBaseline="central"
+      fontSize={28}
+      strokeWidth={6}
+      paintOrder="stroke"
+      className="font-semibold fill-primary-100 stroke-primary-900 select-none"
+    >
+      {text}
+    </text>
+  );
+}
+
+function PanelArrowMarker({ id }: { id: string }) {
+  return (
+    <marker
+      id={id}
+      viewBox="0 0 6 6"
+      refX={1}
+      refY={3}
+      markerWidth={3.5}
+      markerHeight={3.5}
+      orient="auto"
+      overflow="visible"
+    >
+      <path
+        d="M0,0 L6,3 L0,6 z"
+        strokeWidth={2.1}
+        strokeLinejoin="round"
+        paintOrder="stroke"
+        className="fill-dark_accent stroke-primary-900"
+      />
+    </marker>
+  );
+}
+
+function PanelArrow({ d, markerId }: { d: string; markerId: string }) {
+  return (
+    <>
+      <path d={d} fill="none" strokeWidth={9} strokeLinecap="round" className="stroke-primary-900" />
+      <path
+        d={d}
+        fill="none"
+        strokeWidth={4}
+        strokeLinecap="round"
+        className="stroke-dark_accent"
+        markerEnd={`url(#${markerId})`}
+      />
+    </>
+  );
+}
+
+function PairColorsDiagram() {
+  const circleCenter = sceneToPanel(CUBE_PLACEMENT, PAIR_SCENE_CENTER);
+  const circleRadii = {
+    x: PAIR_CIRCLE_SCENE_RADII.x * CUBE_PLACEMENT.scale,
+    y: PAIR_CIRCLE_SCENE_RADII.y * CUBE_PLACEMENT.scale,
+  };
+  const circleRight = { x: circleCenter.x + circleRadii.x, y: circleCenter.y };
+  const pairArrowEndY = PAIR_TOP_TARGET.y - ARROWHEAD_REACH;
+  const pairArrowPath = `M${circleRight.x} ${circleRight.y}C${circleRight.x + 90} ${circleRight.y} ${PAIR_TOP_TARGET.x} ${pairArrowEndY - 80} ${PAIR_TOP_TARGET.x} ${pairArrowEndY}`;
+  const crossArrowStart = { x: CROSS_ICON.x - 8, y: CROSS_ICON.y + CROSS_ICON.size / 2 };
+  const crossArrowPath = arrowToStickerPath(crossArrowStart, WHITE_STICKER_EDGE);
+  return (
+    <figure
+      className="relative w-full max-w-lg mb-6 border border-neutral-400 rounded-sm overflow-hidden"
+      style={{ aspectRatio: `${PAIR_PANEL_WIDTH} / ${PAIR_PANEL_HEIGHT}` }}
+      role="img"
+      aria-label="Cube with white cross solved. The orange-blue-white corner and orange-blue edge are circled. An arrow points from the circle to the two pieces drawn alone. A cross icon labeled Cross points to the white sticker on the corner. The label Two other colors points to the orange and blue stickers on both pieces."
+    >
+      <PanelPlacedCube placement={CUBE_PLACEMENT} panel={PAIR_PANEL} facelets={FINDING_PIECES_FACELETS} highlight={FINDING_PIECES_HIGHLIGHT} />
+      <PanelPlacedCube placement={PAIR_PLACEMENT} panel={PAIR_PANEL} facelets={FINDING_PIECES_FACELETS} highlight={["BO", "WBO"]} dim={0} />
+      <svg viewBox={`0 0 ${PAIR_PANEL_WIDTH} ${PAIR_PANEL_HEIGHT}`} className="absolute inset-0 size-full">
+        <defs>
+          <PanelArrowMarker id="pair-colors-arrow" />
+        </defs>
+        <PanelArrow d={pairArrowPath} markerId="pair-colors-arrow" />
+        <ellipse cx={circleCenter.x} cy={circleCenter.y} rx={circleRadii.x} ry={circleRadii.y} fill="none" strokeWidth={9} className="stroke-primary-900" />
+        <ellipse cx={circleCenter.x} cy={circleCenter.y} rx={circleRadii.x} ry={circleRadii.y} fill="none" strokeWidth={4} className="stroke-dark_accent" />
+        {OTHER_COLORS_ARROWS.map(({ start, edge }) => (
+          <PanelArrow key={edge.from.join()} d={arrowToStickerPath(start, edge)} markerId="pair-colors-arrow" />
+        ))}
+        <PanelArrow d={crossArrowPath} markerId="pair-colors-arrow" />
+        <PanelLabel {...OTHER_COLORS_LABEL} text="Two other colors" />
+        <PanelLabel x={CROSS_ICON.x + CROSS_ICON.size / 2} y={CROSS_ICON.y + CROSS_ICON.size + 24} text="Cross" />
+        <svg
+          x={CROSS_ICON.x}
+          y={CROSS_ICON.y}
+          width={CROSS_ICON.size}
+          height={CROSS_ICON.size}
+          viewBox={CROSS_ICON_DESCRIPTOR.viewBox}
+          stroke="#52525b"
+          strokeWidth={1}
+        >
+          {CROSS_ICON_DESCRIPTOR.shapes.map((shape, i) => shape.type === "rect" && (
+            <rect key={i} x={shape.x} y={shape.y} width={shape.width} height={shape.height} fill={shape.fill} />
+          ))}
+        </svg>
+      </svg>
+    </figure>
+  );
+}
+
+const GOOD_EDGE_FACELETS = "BGBGYYYRGYWRWWWRWYOBWOOOROBOBWBBRYBBRYOYRGORGWRGOGYWGG";
+const GOOD_EDGE_HIGHLIGHT: PieceName[] = [...CROSS_PIECES, "BR"];
+const GOOD_EDGE_PANEL: PanelSize = { width: 600, height: 520 };
+const GOOD_EDGE_PLACEMENT: ScenePlacement = { x: -20, y: -100, scale: 1 };
+const TOP_STICKER_LEFT_EDGE: SceneSpot = [272, 239];
+const SIDE_STICKER_RIGHT_EDGE: SceneSpot = [370, 308];
+const GOOD_EDGE_ANGLES = { x: 30, y: 0 };
+const GOOD_EDGE_LABEL_X = { left: 75, right: 525 };
+const GOOD_EDGE_SWATCH_SIZE = 64;
+const GOOD_EDGE_SWATCH_TOP = 356;
+const SWATCH_ARROW_GAP = 8;
+const GOOD_EDGE_SWATCHES = [
+  {
+    text: "Left",
+    x: GOOD_EDGE_LABEL_X.left,
+    color: DEFAULT_SCENE_LOOK.colors.G,
+    side: 1,
+    centerFrontEdge: { x: 0, y: 150, z: 50 },
+    curveControl: { x: 130, y: 300 },
+  },
+  {
+    text: "Right",
+    x: GOOD_EDGE_LABEL_X.right,
+    color: DEFAULT_SCENE_LOOK.colors.B,
+    side: -1,
+    centerFrontEdge: { x: 300, y: 150, z: 50 },
+    curveControl: { x: 470, y: 300 },
+  },
+];
+const CAPTION_Y = 472;
+const CAPTION_ARROW = { startX: 427, endX: 483 };
+const CAPTION_TEXT_GAP = 12;
+const GOOD_BOX = { left: CAPTION_ARROW.endX + 4, padding: 10, fontSize: 28, border: 2.5, radius: 8 };
+
+function panelUnits(size: number) {
+  return `${(size / GOOD_EDGE_PANEL.width) * 100}cqw`;
+}
+
+function curvedArrowToPoint(start: ScreenPoint, control: ScreenPoint, tip: ScreenPoint) {
+  const length = Math.hypot(tip.x - control.x, tip.y - control.y);
+  const endX = tip.x - ((tip.x - control.x) / length) * ARROWHEAD_REACH;
+  const endY = tip.y - ((tip.y - control.y) / length) * ARROWHEAD_REACH;
+  return `M${start.x} ${start.y}Q${control.x} ${control.y} ${endX} ${endY}`;
+}
+
+function GoodEdgeDiagram() {
+  const arrowGap = ARROWHEAD_REACH + STICKER_EDGE_GAP;
+  const topSticker = sceneToPanel(GOOD_EDGE_PLACEMENT, TOP_STICKER_LEFT_EDGE);
+  const sideSticker = sceneToPanel(GOOD_EDGE_PLACEMENT, SIDE_STICKER_RIGHT_EDGE);
+  const topArrowPath = `M${GOOD_EDGE_LABEL_X.left} 96Q${GOOD_EDGE_LABEL_X.left} ${topSticker.y} ${topSticker.x - arrowGap} ${topSticker.y}`;
+  const sideArrowPath = `M${GOOD_EDGE_LABEL_X.right} 96Q${GOOD_EDGE_LABEL_X.right} ${sideSticker.y} ${sideSticker.x + arrowGap} ${sideSticker.y}`;
+  const swatchMidY = GOOD_EDGE_SWATCH_TOP + GOOD_EDGE_SWATCH_SIZE / 2;
+  const centerArrowPaths = GOOD_EDGE_SWATCHES.map((swatch) => {
+    const start = { x: swatch.x + swatch.side * (GOOD_EDGE_SWATCH_SIZE / 2 + SWATCH_ARROW_GAP), y: swatchMidY };
+    const projected = projectToScene(GOOD_EDGE_ANGLES, swatch.centerFrontEdge);
+    const tip = sceneToPanel(GOOD_EDGE_PLACEMENT, [projected.x, projected.y]);
+    return curvedArrowToPoint(start, swatch.curveControl, tip);
+  });
+  const captionArrowPath = `M${CAPTION_ARROW.startX} ${CAPTION_Y}L${CAPTION_ARROW.endX - ARROWHEAD_REACH} ${CAPTION_Y}`;
+  return (
+    <figure
+      className="w-full max-w-sm mb-6 p-4 border border-neutral-400 rounded-sm overflow-hidden"
+      role="img"
+      aria-label="Cube with a red and blue edge in the top front. An arrow labeled Top sticker points to the red sticker on top. An arrow labeled Side sticker points to the blue sticker on the front. The left center is green and the right center is blue. Good means the side sticker matches the left or right center."
+    >
+      <div
+        className="@container relative w-full"
+        style={{ aspectRatio: `${GOOD_EDGE_PANEL.width} / ${GOOD_EDGE_PANEL.height}` }}
+      >
+        <PanelPlacedCube
+          placement={GOOD_EDGE_PLACEMENT}
+          panel={GOOD_EDGE_PANEL}
+          facelets={GOOD_EDGE_FACELETS}
+          angles={GOOD_EDGE_ANGLES}
+          labels
+          highlight={GOOD_EDGE_HIGHLIGHT}
+        />
+        <svg viewBox={`0 0 ${GOOD_EDGE_PANEL.width} ${GOOD_EDGE_PANEL.height}`} className="absolute inset-0 size-full">
+          <defs>
+            <PanelArrowMarker id="good-edge-arrow" />
+          </defs>
+          <PanelArrow d={topArrowPath} markerId="good-edge-arrow" />
+          <PanelArrow d={sideArrowPath} markerId="good-edge-arrow" />
+          {centerArrowPaths.map((path) => (
+            <PanelArrow key={path} d={path} markerId="good-edge-arrow" />
+          ))}
+          <PanelArrow d={captionArrowPath} markerId="good-edge-arrow" />
+          <PanelLabel x={GOOD_EDGE_LABEL_X.left} y={36} text="Top" />
+          <PanelLabel x={GOOD_EDGE_LABEL_X.left} y={68} text="sticker" />
+          <PanelLabel x={GOOD_EDGE_LABEL_X.right} y={36} text="Side" />
+          <PanelLabel x={GOOD_EDGE_LABEL_X.right} y={68} text="sticker" />
+          {GOOD_EDGE_SWATCHES.map((swatch) => (
+            <g key={swatch.text}>
+              <PanelLabel x={swatch.x} y={330} text={swatch.text} />
+              <rect
+                x={swatch.x - GOOD_EDGE_SWATCH_SIZE / 2}
+                y={GOOD_EDGE_SWATCH_TOP}
+                width={GOOD_EDGE_SWATCH_SIZE}
+                height={GOOD_EDGE_SWATCH_SIZE}
+                rx={6}
+                fill={swatch.color}
+                strokeWidth={3}
+                className="stroke-primary-900"
+              />
+            </g>
+          ))}
+          <PanelLabel x={CAPTION_ARROW.startX - CAPTION_TEXT_GAP} y={CAPTION_Y} anchor="end" text={
+            <>
+              <tspan fill={DEFAULT_SCENE_LOOK.colors.B}>Side</tspan>
+              {" matches "}
+              <tspan fill={DEFAULT_SCENE_LOOK.colors.G}>Left</tspan>
+              {" or "}
+              <tspan fill={DEFAULT_SCENE_LOOK.colors.B}>Right</tspan>
+            </>
+          } />
+        </svg>
+        <span
+          className="absolute -translate-y-1/2 border-solid border-dark_accent bg-primary-800 font-semibold leading-none text-primary-100 select-none [text-box:trim-both_cap_alphabetic]"
+          style={{
+            left: `${(GOOD_BOX.left / GOOD_EDGE_PANEL.width) * 100}%`,
+            top: `${(CAPTION_Y / GOOD_EDGE_PANEL.height) * 100}%`,
+            fontSize: panelUnits(GOOD_BOX.fontSize),
+            padding: panelUnits(GOOD_BOX.padding),
+            paddingTop: `calc(${panelUnits(GOOD_BOX.padding)} + 2px)`,
+            borderWidth: panelUnits(GOOD_BOX.border),
+            borderRadius: panelUnits(GOOD_BOX.radius),
+          }}
+        >
+          Good
+        </span>
       </div>
     </figure>
   );
