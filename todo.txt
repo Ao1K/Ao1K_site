@@ -100,10 +100,4 @@ Best f2l:
 
 Ctrl+K to search for algs... somewhere.
 
-CubeGraphic.tsx passes an alg string to the external sr-puzzlegen library. Remove sr-puzzlegen and use new CubeImage
-
 Try using "buttons" styling for each stat in OG preview
-
-Disallow non-number and "." characters in time box
-
-Clean up Info panel with new info

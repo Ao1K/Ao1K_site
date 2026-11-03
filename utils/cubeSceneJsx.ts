@@ -71,6 +71,7 @@ export function formatCubeSceneJsx(scene: AuthoredScene): string {
   if (scene.progress) props.push({ name: 'progress', value: '' })
   if (scene.startHighlighted) props.push({ name: 'startHighlighted', value: '' })
   if (scene.orbit) props.push({ name: 'orbit', value: '' })
+  if (scene.autoplay) props.push({ name: 'autoplay', value: '' })
 
   return serialize('CubeScene', props)
 }

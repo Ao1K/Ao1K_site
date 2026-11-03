@@ -99,6 +99,7 @@ function main() {
                 progress: false,
                 startHighlighted,
                 orbit: false,
+                autoplay: false,
               };
               const server = buildCubeSvgBody(islandFrameZero(island));
               const client = runtimeFirstFrame(island);

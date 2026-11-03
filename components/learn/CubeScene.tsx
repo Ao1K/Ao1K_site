@@ -21,6 +21,7 @@ export type CubeSceneProps = CubeLookProps & {
   startHighlighted?: boolean;
   /** Drag the cube to rotate the view. Default `false`. */
   orbit?: boolean;
+  autoplay?: boolean;
 };
 
 export default function CubeScene({ className, ...scene }: CubeSceneProps) {
@@ -40,8 +41,8 @@ export default function CubeScene({ className, ...scene }: CubeSceneProps) {
         dangerouslySetInnerHTML={{ __html: frameZero }}
       />
       {hasMoves && (
-        <div className="overlay" style={{ background: "rgba(0,0,0,0.45)" }}>
-          <svg className="icon-play" viewBox="0 0 256 256" style={{ opacity: 0.85 }}>
+        <div className="overlay" style={{ background: island.autoplay ? "transparent" : "rgba(0,0,0,0.45)" }}>
+          <svg className="icon-play" viewBox="0 0 256 256" style={{ opacity: island.autoplay ? 0 : 0.85 }}>
             <path d={PLAY_PATH} />
           </svg>
         </div>

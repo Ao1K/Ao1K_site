@@ -39,6 +39,7 @@ export type AuthoredScene = {
   progress?: boolean
   startHighlighted?: boolean
   orbit?: boolean
+  autoplay?: boolean
 }
 
 export function parseScramble(scramble: string): Move3x3[] {
@@ -78,5 +79,6 @@ export function buildSceneIsland(scene: AuthoredScene): SceneIsland {
     progress: scene.progress ?? false,
     startHighlighted: scene.startHighlighted ?? false,
     orbit: scene.orbit ?? false,
+    autoplay: scene.autoplay ?? false,
   }
 }

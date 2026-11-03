@@ -10,6 +10,11 @@ import DropdownIcon from '../icons/dropdown';
 import Image from 'next/image';
 import InfoPanelSection from './InfoPanelSection';
 import ExternalLink from '../ExternalLink';
+import CubeScene from '../learn/CubeScene';
+import CubeSceneLoader from '../learn/CubeSceneLoader';
+
+const SPLASH_WIDTH = 279;
+const SPLASH_HEIGHT = 247;
 
 const dummyButtons = [
   { label: 'M', title: 'Mirror M' },
@@ -43,20 +48,32 @@ export default function InfoPanelContent() {
         <Image
           src="/recon/reconSplash.png"
           alt="Reconstruct tool splash"
-          width={279}
-          height={247}
+          width={SPLASH_WIDTH}
+          height={SPLASH_HEIGHT}
           loading="lazy"
-          className="min-w-0 w-1/2 object-contain"
+          className="min-w-0 h-auto object-contain"
+          style={{ flex: `${SPLASH_WIDTH} 1 0%` }}
         />
-        <Image
-          src="/recon/reconSplash.gif"
-          alt="Example cube solve reconstruction"
-          width={320}
-          height={320}
-          unoptimized
-          loading="lazy"
-          className="min-w-0 w-1/2 -m-2 object-contain"
-        />
+        <CubeSceneLoader />
+        <div className="min-w-0" style={{ flex: `${SPLASH_HEIGHT} 1 0%` }}>
+          <CubeScene
+            scramble="D L D B2 D' R B' U' F D L2 D R2 F2 U F2 L2 U F2 D' B2 D"
+            hints
+            labels
+            lines={[
+              { moves: ["F", "B'", "D'", "F2"], durations: [636, 636, 636, 954], delay: 507, highlight: ["W", "O", "G", "R", "B", "Y", "YG", "YR", "YB", "YO"] },
+              { moves: ["U2", "R'", "U", "R", "U'", "L", "U", "L'"], durations: [461, 308, 308, 308, 308, 308, 308, 308], delay: 507, highlight: ["W", "O", "G", "R", "B", "Y", "YG", "YR", "YB", "YO", "BO", "YBO"] },
+              { moves: ["U'", "R'", "U", "R", "U'", "R'", "U", "R"], durations: [327, 327, 327, 327, 327, 327, 327, 327], delay: 507, highlight: ["W", "O", "G", "R", "B", "Y", "YG", "YR", "YB", "YO", "BO", "YBO", "BR", "YBR"] },
+              { moves: ["U", "F'", "U2'", "F", "R", "U", "R'"], durations: [297, 297, 445, 297, 297, 297, 297], delay: 507, highlight: ["W", "O", "G", "R", "B", "Y", "YG", "YR", "YB", "YO", "BO", "YBO", "BR", "YBR", "GR", "YGR"] },
+              { moves: ["U'", "L'", "U", "L", "U", "F", "U", "F'"], durations: [327, 327, 327, 327, 327, 327, 327, 327], delay: 507 },
+              { moves: ["U'", "l'", "U'", "L", "U'", "L'", "U", "L", "U'", "L'", "U2", "l"], durations: [53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 80, 53], delay: 507 },
+              { moves: ["U'", "R'", "U", "R'", "U'", "R3", "U'", "R'", "U", "R", "U", "R2'"], durations: [50, 50, 50, 50, 50, 100, 50, 50, 50, 50, 50, 66], delay: 507 }
+            ]}
+            loop
+            startHighlighted
+            autoplay
+          />
+        </div>
       </div>
 
       <InfoPanelSection title="The basics">
@@ -64,7 +81,7 @@ export default function InfoPanelContent() {
           If you or someone else does a cube solve, you can use this tool to write it down.
         </p>
         <p>
-          You&apos;ll need to know <ExternalLink href="https://jperm.net/3x3/moves" text="cubing notation" />. 
+          You&apos;ll need to know <a className="underline underline-offset-2" target="_blank" href="/learn/notation">cubing notation</a>. 
           Then you can start writing:
         </p>
         <ol className="list-decimal list-inside pl-2 space-y-4 marker:text-dark_accent marker:text-lg marker:space-x-2">
@@ -174,8 +191,8 @@ export default function InfoPanelContent() {
           </div>
         </div>
         <p>
-          These buttons let you modify moves. Select line(s) of text, then click a button to modify. 
-          If you don&apos;t select a line, 
+          These buttons let you modify moves. Select some text, then click a button to modify it. 
+          If you don&apos;t select any text, 
           the button will modify all of the last textbox you had selected.
         </p>
         <h3 className="py-1 text-lg mt-12 mb-2 pl-2 w-1/2 text-dark bg-primary-200">{`>>`} Settings menu</h3>
@@ -188,7 +205,7 @@ export default function InfoPanelContent() {
                 style={{ color: ['#EEFF00','#FFA914','#FF0000','#3EF600','#2870FF'][(i * 7) % 6] }}
               >{char}</span>
             ))
-          }{' '}, enable adding splits, and more.
+          }{' '}, turn on, and more.
         </p>
       </InfoPanelSection>
 
@@ -256,7 +273,7 @@ export default function InfoPanelContent() {
       <InfoPanelSection title="Learning from your solves">
         <p>
           There&apos;s an autocomplete functionality built into the Solution text editor. 
-          It only works for CFOP solves. More coming soon!
+          It gives suggestions for CFOP solves by default, but you can adjust this in the settings.
         </p>
         <p>
           After you complete a recon, try adding a new line before a troublesome part of your solve.

@@ -536,7 +536,7 @@ export function createScene(root: HTMLElement, island: SceneIsland): void {
 
   const totalMoves = island.lines.reduce((sum, line) => sum + line.moves.length, 0)
 
-  let paused = true
+  let paused = !island.autoplay
   let timeoutId: ReturnType<typeof setTimeout> | null = null
   let lineIdx = 0
   let moveIdx = 0
@@ -631,6 +631,8 @@ export function createScene(root: HTMLElement, island: SceneIsland): void {
     else if (moveIdx === 0) timeoutId = setTimeout(() => playLine(lineIdx), CYCLE_PAUSE_START_MS)
     else timeoutId = setTimeout(() => playMove(lineIdx, moveIdx), CYCLE_PAUSE_START_MS)
   })
+
+  if (island.autoplay) timeoutId = setTimeout(() => playLine(0), CYCLE_PAUSE_START_MS)
 }
 
 export function mountScenes(scope: ParentNode = document): void {
