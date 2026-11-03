@@ -6,10 +6,12 @@ const ACTIVE_PENALTY_CLASSES = 'border-primary-100 bg-primary-100 text-primary-9
 const INACTIVE_PENALTY_CLASSES = 'border-neutral-600 text-primary-100';
 const ACTIVE_PENALTY_HOVER = 'hover:bg-primary-300';
 const INACTIVE_PENALTY_HOVER = 'hover:bg-neutral-600';
+const TIME_INPUT_PATTERN = /^\d{0,5}(\.\d{0,3})?$/;
 
 interface TimeAreaProps {
   solveTime: number | string;
-  onSolveTimeChange: (solveTime: number | string) => void;
+  solveTimeInput: string;
+  onSolveTimeInputChange: (solveTimeInput: string) => void;
   penaltyStatus: PenaltyStatus;
   onPenaltyStatusChange: (penaltyStatus: PenaltyStatus) => void;
   totalMoves: number;
@@ -21,7 +23,8 @@ interface TimeAreaProps {
 
 export default function TimeArea({
   solveTime,
-  onSolveTimeChange,
+  solveTimeInput,
+  onSolveTimeInputChange,
   penaltyStatus,
   onPenaltyStatusChange,
   totalMoves,
@@ -35,13 +38,12 @@ export default function TimeArea({
 
   const handleSolveTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    const regex = /^\d{0,5}(\.\d{1,3})?$/;
 
-    if (!regex.test(value)) {
+    if (!TIME_INPUT_PATTERN.test(value)) {
       return;
     }
 
-    onSolveTimeChange(value === '' ? '' : parseFloat(value));
+    onSolveTimeInputChange(value);
     updateURL('time', value);
   }
 
@@ -113,13 +115,13 @@ export default function TimeArea({
         >
           <input
             id="time-input"
-            type="number"
+            type="text"
+            inputMode="decimal"
             placeholder="00.000"
-            className="pt-2 pb-2 px-2 text-xl text-primary-100 bg-primary-900 group-focus:border-primary-100 hover:bg-primary-800 rounded-sm box-content no-spinner w-17"
-            value={isTimeHidden ? '' : solveTime}
+            className="pt-2 pb-2 px-2 text-xl text-primary-100 bg-primary-900 group-focus:border-primary-100 hover:bg-primary-800 rounded-sm box-content w-17"
+            value={isTimeHidden ? '' : solveTimeInput}
             onChange={handleSolveTimeChange}
             onFocus={handleTimeFocus}
-            onWheel={(e) => e.currentTarget.blur()}
             autoComplete="off"
             tabIndex={4}
           />

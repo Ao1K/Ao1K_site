@@ -92,7 +92,7 @@ interface ClearedPageSnapshot {
   allMoves: Move3x3[][][];
   moveLocation: [number, number, number];
   playerParams: PlayerParams;
-  solveTime: number | string;
+  solveTimeInput: string;
   penaltyStatus: PenaltyStatus;
   solveTitle: string;
   splits: string[];
@@ -199,7 +199,9 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   const [speed, setSpeed] = useState<number>(30);
   currentSpeed = speed;
 
-  const [solveTime, setSolveTime] = useState<number | string>('');
+  const [solveTimeInput, setSolveTimeInput] = useState<string>('');
+  const parsedSolveTime = parseFloat(solveTimeInput);
+  const solveTime: number | string = Number.isNaN(parsedSolveTime) ? '' : parsedSolveTime;
   const [penaltyStatus, setPenaltyStatus] = useState<PenaltyStatus>(0);
   const [solveTitle, setSolveTitle] = useState<string>('');
   const [topButtonAlert, setTopButtonAlert] = useState<{ id: string; message: string; messageType: 'info' | 'warn' }>({ id: "", message: "", messageType: 'info' });
@@ -1005,7 +1007,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     if (required.length === 0) return;
     if (!required.every(i => newSplits[i] != null && newSplits[i] !== '')) return;
 
-    setSolveTime(Math.round(newSum * 1000) / 1000);
+    setSolveTimeInput(`${Math.round(newSum * 1000) / 1000}`);
     updateURL('time', newSum.toFixed(3));
   };
 
@@ -1077,7 +1079,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     allMoves: allMovesRef.current.map(textbox => textbox.map(line => [...line])),
     moveLocation: [...moveLocation.current] as [number, number, number],
     playerParams: { ...playerParams, animationTimes: [...playerParams.animationTimes] },
-    solveTime,
+    solveTimeInput,
     penaltyStatus,
     solveTitle,
     splits: [...splits],
@@ -1121,7 +1123,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     publishHistoryPosition();
 
     setPlayerParams(snapshot.playerParams);
-    setSolveTime(snapshot.solveTime);
+    setSolveTimeInput(snapshot.solveTimeInput);
     setPenaltyStatus(snapshot.penaltyStatus);
     setSolveTitle(snapshot.solveTitle);
     setSplits(snapshot.splits);
@@ -1144,7 +1146,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     setPlayerParams({ animationTimes: [], solution: [], scramble: [] });
     scrambleMethodsRef.current?.setContent('');
     solutionMethodsRef.current?.setContent('');
-    setSolveTime('');
+    setSolveTimeInput('');
     setPenaltyStatus(0);
     setSolveTitle('');
     setSplits([]);
@@ -1720,7 +1722,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       const parsedTime = parseFloat(time);
       if (!isNaN(parsedTime)) {
         // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrating from the URL query string, which only exists client-side; must run once at mount
-        setSolveTime(parsedTime);
+        setSolveTimeInput(`${parsedTime}`);
       }
     }
 
@@ -2099,7 +2101,8 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
         </div>
         <TimeArea
           solveTime={solveTime}
-          onSolveTimeChange={setSolveTime}
+          solveTimeInput={solveTimeInput}
+          onSolveTimeInputChange={setSolveTimeInput}
           penaltyStatus={penaltyStatus}
           onPenaltyStatusChange={setPenaltyStatus}
           totalMoves={totalMoves}
