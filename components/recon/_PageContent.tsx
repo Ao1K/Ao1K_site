@@ -1990,7 +1990,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
               }}
             >
               <div className="flex flex-row items-stretch">
-                <button
+                {/* <button
                   type="button"
                   autoComplete="off"
                   disabled={!isBreakdownOpen && !hasReviewFeedback}
@@ -2001,7 +2001,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
                   <span className="inline-block whitespace-nowrap" style={flightStyle(PAGE_TRANSITION_NAMES.reviewLabel)}>
                     {isBreakdownOpen ? 'Go back to editor' : 'Review'}
                   </span>
-                </button>
+                </button> */}
                 {!isBreakdownOpen && (
                   <ColumnSelector
                     showIcons={isIconsColumnEnabled}
