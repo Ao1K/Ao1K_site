@@ -1333,7 +1333,7 @@ function PanelLabel({ x, y, text, anchor = "middle" }: ScreenPoint & { text: Rea
       x={x}
       y={y}
       textAnchor={anchor}
-      dominantBaseline="central"
+      dy="0.35em"
       fontSize={28}
       strokeWidth={6}
       paintOrder="stroke"
@@ -1436,7 +1436,7 @@ function PairColorsDiagram() {
 
 const GOOD_EDGE_FACELETS = "BGBGYYYRGYWRWWWRWYOBWOOOROBOBWBBRYBBRYOYRGORGWRGOGYWGG";
 const GOOD_EDGE_HIGHLIGHT: PieceName[] = [...CROSS_PIECES, "BR"];
-const GOOD_EDGE_PANEL: PanelSize = { width: 600, height: 520 };
+const GOOD_EDGE_PANEL: PanelSize = { width: 600, height: 540 };
 const GOOD_EDGE_PLACEMENT: ScenePlacement = { x: -20, y: -100, scale: 1 };
 const TOP_STICKER_LEFT_EDGE: SceneSpot = [272, 239];
 const SIDE_STICKER_RIGHT_EDGE: SceneSpot = [370, 308];
@@ -1463,7 +1463,7 @@ const GOOD_EDGE_SWATCHES = [
     curveControl: { x: 470, y: 300 },
   },
 ];
-const CAPTION_Y = 472;
+const CAPTION_Y = 492;
 const CAPTION_ARROW = { startX: 427, endX: 483 };
 const CAPTION_TEXT_GAP = 12;
 const GOOD_BOX = { left: CAPTION_ARROW.endX + 4, padding: 10, fontSize: 28, border: 2.5, radius: 8 };
@@ -1551,13 +1551,12 @@ function GoodEdgeDiagram() {
           } />
         </svg>
         <span
-          className="absolute -translate-y-1/2 border-solid border-dark_accent bg-primary-800 font-semibold leading-none text-primary-100 select-none [text-box:trim-both_cap_alphabetic]"
+          className="absolute -translate-y-1/2 border-solid border-dark_accent bg-primary-800 font-semibold leading-[0.7] text-primary-100 select-none"
           style={{
             left: `${(GOOD_BOX.left / GOOD_EDGE_PANEL.width) * 100}%`,
             top: `${(CAPTION_Y / GOOD_EDGE_PANEL.height) * 100}%`,
             fontSize: panelUnits(GOOD_BOX.fontSize),
             padding: panelUnits(GOOD_BOX.padding),
-            paddingTop: `calc(${panelUnits(GOOD_BOX.padding)} + 2px)`,
             borderWidth: panelUnits(GOOD_BOX.border),
             borderRadius: panelUnits(GOOD_BOX.radius),
           }}
