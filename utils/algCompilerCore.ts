@@ -10,25 +10,34 @@ import {
 import type { ExactAlg } from "./rawAlgs";
 import { SimpleCubeInterpreter, type StepInfo, type HashAlgset } from "../composables/recon/SimpleCubeInterpreter";
 import { SimpleCube } from '../composables/recon/SimpleCube';
-import { reverseMove, replacementTable_Y, replacementTable_M } from '../composables/recon/transformHTML';
+import { cube3x3 } from './parser/cube3x3';
+import type { Layer3x3, Move3x3, Rotation3x3 } from './parser/cube3x3';
 import AlgSpeedEstimator from '../composables/recon/AlgSpeedEstimator';
 import type { CompiledLLAlg } from '../composables/recon/LLsuggester';
 import type { CompilableLLStep } from '../composables/recon/LLinterpreter';
 import { ollFrequencies, pllFrequencies } from './algFrequencies';
 import { collapseAufGroups, canonicalizeAufHashes } from './collapseAufVariants';
-import { combineMoves, formatMove, parseMove } from './moveUtils';
 import { eoAngleOfAlg } from './canonicalizeAuf';
 
-const LL_REPAIR_ROTATIONS = ['x', "x'", 'x2', 'z', "z'", 'z2'];
-const ANGLE_MOVE = /^[Uy](?:'|2'?)?$/;
+const LL_REPAIR_ROTATIONS: Rotation3x3[] = ['x', "x'", 'x2', 'z', "z'", 'z2'];
+const U_ANGLE_MOVES = new Set<Move3x3>(['U', "U'", 'U2']);
+const Y_ANGLE_MOVES = new Set<Move3x3>(['y', "y'", 'y2']);
+const LL_ANGLE_MOVES = new Set<Move3x3>(['U', "U'", 'U2', "U2'", 'y', "y'", 'y2', "y2'"]);
+const SETUP_LAYERS = new Set<Layer3x3>(['y', 'U', 'd']);
+const LEFT_SLOT_MOVES = new Set<Move3x3>(['L', "L'", 'L2']);
+const RIGHT_SLOT_MOVES = new Set<Move3x3>(['R', "R'", 'R2']);
+
+type ExactAlgMoves = Omit<ExactAlg, 'value'> & { moves: Move3x3[] };
 
 interface CompiledExactAlg {
-  alg: string;
+  moves: Move3x3[];
   hash: string;
   eoValue: number;
 }
 
-interface ExpandedExactAlg extends ExactAlg {
+type CompiledLLAlgMoves = Omit<CompiledLLAlg, 'alg'> & { moves: Move3x3[] };
+
+interface ExpandedExactAlg extends ExactAlgMoves {
   originalIndex: number;
 }
 
@@ -50,6 +59,18 @@ export interface CompileOptions {
   shouldContinue?: () => boolean;
 }
 
+const parseRawAlg = (text: string): Move3x3[] => {
+  const { moves, invalid } = cube3x3.parse(text);
+  if (invalid.length > 0) {
+    const tokens = invalid.map(token => `"${token}"`).join(', ');
+    throw new Error(`Invalid move ${tokens} in alg "${text}"`);
+  }
+  return moves;
+};
+
+const unprimeHalfTurns = (moves: readonly Move3x3[]): Move3x3[] =>
+  moves.map(move => cube3x3.amount(move) === -2 ? cube3x3.make(cube3x3.layer(move), 2) : move);
+
 /**
  * Environment-free algorithm compiler. Callers decide what to do with emitted files,
  * so the same pipeline drives both the in-browser tool and the CLI script.
@@ -58,87 +79,77 @@ export function compileAlgs({ types, emit, shouldContinue = () => true }: Compil
   const simpleCube = new SimpleCube();
   const selectedAlgTypes = new Set<AlgorithmType>(types);
 
-  const getAlgInverse = (alg: string): string => {
-    let reversedAlg = '';
-    const moves = alg.split(' ').reverse();
-    moves.forEach((move) => {
-      let reversedMove = reverseMove(move);
-      if (reversedMove) {
-        reversedAlg += reversedMove + ' ';
-      }
-    });
-    return reversedAlg.trim();
-  };
-
-  const getAllowedAngles = (alg: ExactAlg): string[] => {
+  const getAllowedAngles = (alg: ExactAlgMoves): Move3x3[][] => {
     if (!alg.add_y) {
-      return ['', 'U', "U'", 'U2'];
+      return [[], ['U'], ["U'"], ['U2']];
     }
 
     if (alg.step === 'f2l') {
       // all combinations of y and U, except any y2
-      return ['', 'y', "y'", 'U', "U'", 'U2', 'y U', "y U'", 'y U2', "y' U", "y' U'", "y' U2"];
+      return [
+        [], ['y'], ["y'"], ['U'], ["U'"], ['U2'],
+        ['y', 'U'], ['y', "U'"], ['y', 'U2'], ["y'", 'U'], ["y'", "U'"], ["y'", 'U2'],
+      ];
     }
 
-    return ['', 'y', "y'", "y2", 'U', "U'", 'U2', 'y U', "y U'", 'y U2', "y' U", "y' U'", "y' U2", "y2 U", "y2 U'", "y2 U2"];
+    return [
+      [], ['y'], ["y'"], ['y2'], ['U'], ["U'"], ['U2'],
+      ['y', 'U'], ['y', "U'"], ['y', 'U2'], ["y'", 'U'], ["y'", "U'"], ["y'", 'U2'], ['y2', 'U'], ['y2', "U'"], ['y2', 'U2'],
+    ];
   }
 
   /**
-   * Reorders algorithm by flipping U and y moves using regex
+   * Reorders algorithm by flipping U and y moves
    * Example: "U2 y' R U R'" becomes "y' U2 R U R'"
    */
-  const reorderAnglingInAlg = (angle: string, algValue: string): string => {
-    const combined = (angle ? `${angle} ` : '') + algValue;
-    const moves = combined.trim().split(/\s+/).filter(m => m.length > 0);
+  const reorderAnglingInAlg = (angle: Move3x3[], algMoves: Move3x3[]): Move3x3[] => {
+    const combined = [...angle, ...algMoves];
+    const firstNonAngle = combined.findIndex(move => !U_ANGLE_MOVES.has(move) && !Y_ANGLE_MOVES.has(move));
+    const leading = combined.slice(0, firstNonAngle === -1 ? combined.length : firstNonAngle);
 
-    let leadingCount = 0;
-    while (leadingCount < moves.length && /^[Uy]['2]?$/.test(moves[leadingCount])) {
-      leadingCount++;
+    const reordered: Move3x3[] = [];
+    for (let i = 0; i < leading.length; i++) {
+      const next = leading[i + 1];
+      if (U_ANGLE_MOVES.has(leading[i]) && next !== undefined && Y_ANGLE_MOVES.has(next)) {
+        reordered.push(next, leading[i]);
+        i++;
+      } else {
+        reordered.push(leading[i]);
+      }
     }
 
-    const leading = moves.slice(0, leadingCount).join(' ').replace(/(U'?2?)\s+(y'?2?)/g, '$2 $1');
-    const rest = moves.slice(leadingCount).join(' ');
-
-    return `${leading} ${rest}`.trim();
+    return [...reordered, ...combined.slice(leading.length)];
   };
 
   /**
    * Validates that algorithm doesn't have more than 2 leading rotation/AUF moves
    * and not more than 1 of each type (U and y)
    */
-  const validateAlg = (alg: string): boolean => {
-    const moves = alg.trim().split(/\s+/);
-    const leadingMoves = [];
-    
-    // Get leading U and y moves
-    for (const move of moves) {
-      if (move.match(/^[Uy]['2]?$/)) {
-        leadingMoves.push(move);
-      } else {
-        break;
-      }
-    }
-    
+  const validateAlg = (moves: Move3x3[]): boolean => {
+    const alg = cube3x3.format(moves);
+    const firstNonAngle = moves.findIndex(move => !U_ANGLE_MOVES.has(move) && !Y_ANGLE_MOVES.has(move));
+    const leadingMoves = moves.slice(0, firstNonAngle === -1 ? moves.length : firstNonAngle);
+
     // Check if we have more than 2 leading moves
     if (leadingMoves.length > 2) {
       console.error(`Invalid algorithm pattern detected: ${alg}. Too many leading rotation/AUF moves (${leadingMoves.length}). Halting processing.`);
       return false;
     }
-    
+
     // Check if we have more than 1 of each type
-    const uMoves = leadingMoves.filter(move => move.startsWith('U'));
-    const yMoves = leadingMoves.filter(move => move.startsWith('y'));
-    
+    const uMoves = leadingMoves.filter(move => U_ANGLE_MOVES.has(move));
+    const yMoves = leadingMoves.filter(move => Y_ANGLE_MOVES.has(move));
+
     if (uMoves.length > 1) {
       console.error(`Invalid algorithm pattern detected: ${alg}. Too many leading U moves (${uMoves.length}). Halting processing.`);
       return false;
     }
-    
+
     if (yMoves.length > 1) {
       console.error(`Invalid algorithm pattern detected: ${alg}. Too many leading y moves (${yMoves.length}). Halting processing.`);
       return false;
     }
-    
+
     return true;
   };
 
@@ -165,135 +176,41 @@ export function compileAlgs({ types, emit, shouldContinue = () => true }: Compil
     }
   };
 
-  /**
-   * Checks for moves that cancel out or combine (ex1: U U' = '', ex2: U U = U2).
-   */
-  const simplifyAlgValue = (value: string): string => {
-    let current = (value ?? '').trim().replace(/\s+/g, ' ').split(' ');
-    let previous: string[] = [];
-
-    while (current.length !== previous.length) {
-      previous = [...current];
-
-      const combined = combineMoves(current);
-
-      current = combined.filter(move => move !== '');
-    }
-
-    return current.join(' ');
+  const stripLeadingSetupMoves = (moves: Move3x3[]): Move3x3[] => {
+    const firstKept = moves.findIndex(move => !SETUP_LAYERS.has(cube3x3.layer(move)));
+    return firstKept === -1 ? [] : moves.slice(firstKept);
   };
 
-  const stripLeadingSetupMoves = (value: string): string => {
-    const moves = value.split(' ').filter(move => move.length > 0);
-
-    while (moves.length > 0) {
-      const parsed = parseMove(moves[0]);
-
-      if (!parsed) {
-        break;
-      }
-
-      if (parsed.base === 'y' || parsed.base === 'U' || parsed.base === 'd') {
-        moves.shift();
-        continue;
-      }
-
-      break;
-    }
-
-    return moves.join(' ');
+  const simplifyExactAlgs = (algs: ExactAlgMoves[]): ExactAlgMoves[] => {
+    return algs.map(alg => ({ ...alg, moves: cube3x3.combine(alg.moves) }));
   };
 
-  const simplifyExactAlgs = (algs: ExactAlg[]): ExactAlg[] => {
-    return algs.map(alg => ({ ...alg, value: simplifyAlgValue(alg.value) }));
+  const simplifyLLalgs = (algs: Move3x3[][]): Move3x3[][] => {
+    return algs.map(moves => stripLeadingSetupMoves(cube3x3.combine(moves)));
   };
 
-  const simplifyLLalgs = (algs: string[]): string[] => {
-    return algs.map(alg => stripLeadingSetupMoves(simplifyAlgValue(alg)));
+  const stripTrailingYMoves = (moves: Move3x3[]): Move3x3[] => {
+    let end = moves.length;
+    while (end > 0 && Y_ANGLE_MOVES.has(moves[end - 1])) {
+      end--;
+    }
+    return moves.slice(0, end);
   };
 
-  const stripTrailingYMoves = (alg: string): string => {
-    const moves = alg.trim().split(/\s+/).filter(m => m.length > 0);
-    while (moves.length > 0 && /^y['2]?$/.test(moves[moves.length - 1])) {
-      moves.pop();
-    }
-    return moves.join(' ');
-  };
-
-  const getY2Variant = (alg: string): string => {
-    const moves = alg.trim().split(/\s+/);
-    if (!moves.length || (moves.length === 1 && moves[0] === '')) return alg;
-
-    const rootMoves = new Set<string>();
-    for (const move of moves) {
-      if (!move) continue;
-      const root = move.replace(/['23]/g, '');
-      rootMoves.add(root);
-    }
-
-    const yRU_set = new Set(['y', 'R', 'U']);
-    const yLU_set = new Set(['y', 'L', 'U']);
-    
-    let is_yRU = true;
-    let is_yLU = true;
-    
-    for (const root of rootMoves) {
-      if (!yRU_set.has(root)) is_yRU = false;
-      if (!yLU_set.has(root)) is_yLU = false;
-    }
-    
+  const isOneSidedYU = (moves: Move3x3[]): boolean => {
+    const layers = [...new Set(moves.map(move => cube3x3.layer(move)))];
+    const is_yRU = layers.every(layer => layer === 'y' || layer === 'R' || layer === 'U');
+    const is_yLU = layers.every(layer => layer === 'y' || layer === 'L' || layer === 'U');
     // must be just yRU or just yLU
-    if ((is_yRU && is_yLU) || (!is_yRU && !is_yLU)) {
-      return alg;
-    }
-
-    const newMoves = moves.map(move => {
-        let transformed = move;
-        
-        // apply y transform twice
-        // let program crash if not found in table
-        transformed = replacementTable_Y[transformed]
-        transformed = replacementTable_Y[transformed]
-
-        return transformed;
-    });
-
-    return newMoves.join(' ');
+    return is_yRU !== is_yLU;
   };
 
-  const getMirrorMVariant = (alg: string): string => {
-    const moves = alg.trim().split(/\s+/);
-    if (!moves.length || (moves.length === 1 && moves[0] === '')) return alg;
+  const getY2Variant = (moves: Move3x3[]): Move3x3[] => {
+    return isOneSidedYU(moves) ? cube3x3.rotate(moves, 'y2') : moves;
+  };
 
-    const rootMoves = new Set<string>();
-    for (const move of moves) {
-      if (!move) continue;
-      const root = move.replace(/['23]/g, '');
-      rootMoves.add(root);
-    }
-
-    const yRU_set = new Set(['y', 'R', 'U']);
-    const yLU_set = new Set(['y', 'L', 'U']);
-
-    let is_yRU = true;
-    let is_yLU = true;
-
-    for (const root of rootMoves) {
-      if (!yRU_set.has(root)) is_yRU = false;
-      if (!yLU_set.has(root)) is_yLU = false;
-    }
-
-    // must be just yRU or just yLU
-    if ((is_yRU && is_yLU) || (!is_yRU && !is_yLU)) {
-      return alg;
-    }
-
-    const newMoves = moves.map(move => {
-        // let program crash if not found in table
-        return replacementTable_M[move];
-    });
-
-    return newMoves.join(' ');
+  const getMirrorMVariant = (moves: Move3x3[]): Move3x3[] => {
+    return isOneSidedYU(moves) ? cube3x3.mirror(moves, 'M') : moves;
   };
 
   /**
@@ -309,9 +226,9 @@ export function compileAlgs({ types, emit, shouldContinue = () => true }: Compil
    * 3. For left slot algs (L/L'): if there's an R move that doesn't change the value at the slot's indices, filter out
    * 4. If the alg starts with a U move (after optional y), and it doesn't change the value at the slot's indices, filter out
    */
-  const filterInefficientNewF2LAlgs = <T extends ExactAlg>(newAlgs: T[]): T[] => {
+  const filterInefficientNewF2LAlgs = <T extends ExactAlgMoves>(newAlgs: T[]): T[] => {
     // Slot indices in hash: edge index comes from 0-11, corner from 12-19
-    const slotIndices: { [key: string]: { edge: number; corner: number } } = {
+    const slotIndices: Partial<Record<Move3x3, { edge: number; corner: number }>> = {
       "R'": { edge: 8, corner: 16 },  // FR slot
       "R": { edge: 10, corner: 19 },  // BR slot
       "L'": { edge: 11, corner: 18 }, // BL slot
@@ -319,16 +236,16 @@ export function compileAlgs({ types, emit, shouldContinue = () => true }: Compil
     };
 
     const inefficientEndings = new Set([
-      "U2 L' U2 L", 
-      "U2 L U2 L'", 
-      "U2 R' U2 R", 
-      "U2 R U2 R'", 
-      "U' L' U2 L", 
-      "U L U2 L'", 
-      "U R U2 R'", 
-      "U' R' U2 R", 
-      "U' R U' R'", 
-      "U R' U R", 
+      "U2 L' U2 L",
+      "U2 L U2 L'",
+      "U2 R' U2 R",
+      "U2 R U2 R'",
+      "U' L' U2 L",
+      "U L U2 L'",
+      "U R U2 R'",
+      "U' R' U2 R",
+      "U' R U' R'",
+      "U R' U R",
       "U L' U L",
       "U' L U' L'",
       "U R U2 R'",
@@ -337,43 +254,42 @@ export function compileAlgs({ types, emit, shouldContinue = () => true }: Compil
       "U' L' U2 L"
     ])
 
-    // Pattern to detect opposite-side moves for each ending move
-    const oppositeMovePattern: { [key: string]: RegExp } = {
-      "R'": /^L['2]?$/,  // Right slot algs - look for L moves
-      "R": /^L['2]?$/,
-      "L'": /^R['2]?$/,  // Left slot algs - look for R moves
-      "L": /^R['2]?$/,
+    // Opposite-side moves for each ending move
+    const oppositeMoves: Partial<Record<Move3x3, ReadonlySet<Move3x3>>> = {
+      "R'": LEFT_SLOT_MOVES,  // Right slot algs - look for L moves
+      "R": LEFT_SLOT_MOVES,
+      "L'": RIGHT_SLOT_MOVES,  // Left slot algs - look for R moves
+      "L": RIGHT_SLOT_MOVES,
     };
 
     const filteredAlgs: T[] = [];
 
     for (const alg of newAlgs) {
-      const DEBUG = alg.value === "";
+      const moves = alg.moves;
+      const algText = cube3x3.format(moves);
+      const DEBUG = algText === "";
 
       if (alg.step !== 'f2l' && alg.step !== 'zbls') {
         filteredAlgs.push(alg);
-        console.log(`Keeping non-f2l/zbls alg: "${alg.value}"`);
+        console.log(`Keeping non-f2l/zbls alg: "${algText}"`);
         continue;
       }
 
       // Check if alg ends with an inefficient pattern
-      const hasInefficientEnding = Array.from(inefficientEndings).some(ending => alg.value.endsWith(ending));
-      if (hasInefficientEnding) {
-        console.log(`Filtering out alg with inefficient ending: "${alg.value}"`);
+      if (inefficientEndings.has(cube3x3.format(moves.slice(-4)))) {
+        console.log(`Filtering out alg with inefficient ending: "${algText}"`);
         continue;
       }
 
-      const moves = alg.value.trim().split(/\s+/).filter(m => m.length > 0);
       if (moves.length <= 1) {
         continue;
       }
 
       // Initialize cube with inverse of alg
-      const inverseAlg = getAlgInverse(alg.value);
+      const inverseMoves = cube3x3.invert(moves);
       const tempCube = new SimpleCube();
       const tempInterpreter = new SimpleCubeInterpreter();
 
-      const inverseMoves = inverseAlg.split(' ').filter(m => m.length > 0);
       let cubeState = tempCube.getCubeState(inverseMoves);
       const inverseSteps = tempInterpreter.getStepsCompleted(cubeState);
       const inverseF2lSolved = inverseSteps.filter(s => s.type === 'f2l').length;
@@ -392,21 +308,21 @@ export function compileAlgs({ types, emit, shouldContinue = () => true }: Compil
 
       const lastMove = moves[moves.length - 1];
       const slot = slotIndices[lastMove];
-      const oppositePattern = oppositeMovePattern[lastMove];
+      const opposite = oppositeMoves[lastMove];
 
-      if (DEBUG) console.log(`DEBUG: lastMove=${lastMove}, slot=${JSON.stringify(slot)}, oppositePattern=${oppositePattern}`);
+      if (DEBUG) console.log(`DEBUG: lastMove=${lastMove}, slot=${JSON.stringify(slot)}, opposite=${opposite && [...opposite]}`);
 
-      if (!slot || !oppositePattern) {
-        if (DEBUG) console.log(`DEBUG: No slot or oppositePattern, keeping alg`);
+      if (!slot || !opposite) {
+        if (DEBUG) console.log(`DEBUG: No slot or opposite moves, keeping alg`);
         filteredAlgs.push(alg);
         continue;
       }
 
       // Check if there are any opposite-side moves in the alg
-      const hasOppositeMove = moves.some(m => oppositePattern.test(m));
+      const hasOppositeMove = moves.some(m => opposite.has(m));
       if (DEBUG) console.log(`DEBUG: hasOppositeMove=${hasOppositeMove}, moves=${JSON.stringify(moves)}`);
       if (!hasOppositeMove) {
-        // If the alg doesn't change both sides of the cube, 
+        // If the alg doesn't change both sides of the cube,
         // this function has nothing to make an easy check against,
         // so we keep these algs by default.
         if (DEBUG) console.log(`DEBUG: No opposite moves, keeping alg`);
@@ -416,14 +332,14 @@ export function compileAlgs({ types, emit, shouldContinue = () => true }: Compil
 
       let prevHash = tempInterpreter.getCurrentState()?.hash || '';
 
-      if (DEBUG) console.log(`DEBUG: inverseAlg="${inverseAlg}", initial prevHash="${prevHash}"`);
+      if (DEBUG) console.log(`DEBUG: inverseAlg="${cube3x3.format(inverseMoves)}", initial prevHash="${prevHash}"`);
 
       // Check if any opposite-side move or starting U move doesn't change the value at slot indices
       let hasUselessMove = false;
 
       // Determine the index of the first U move (after optional y)
-      const movesAfterY = /^y['2]?$/.test(moves[0]) ? moves.slice(1) : moves;
-      const firstUMoveIndex = /^U['2]?$/.test(movesAfterY[0])
+      const movesAfterY = Y_ANGLE_MOVES.has(moves[0]) ? moves.slice(1) : moves;
+      const firstUMoveIndex = U_ANGLE_MOVES.has(movesAfterY[0])
         ? (moves.length - movesAfterY.length)
         : -1;
 
@@ -455,7 +371,7 @@ export function compileAlgs({ types, emit, shouldContinue = () => true }: Compil
         }
 
         // If this is an opposite-side move, check if it changed the value at slot indices
-        if (oppositePattern.test(move)) {
+        if (opposite.has(move)) {
           const edgeChanged = prevHash[slot.edge] !== currHash[slot.edge];
           const cornerChanged = prevHash[slot.corner] !== currHash[slot.corner];
 
@@ -473,7 +389,7 @@ export function compileAlgs({ types, emit, shouldContinue = () => true }: Compil
       }
 
       if (hasUselessMove) {
-        console.log(`Filtering out inefficient F2L alg: "${alg.value}" - move doesn't change value at slot indices (edge: ${slot.edge}, corner: ${slot.corner})`);
+        console.log(`Filtering out inefficient F2L alg: "${algText}" - move doesn't change value at slot indices (edge: ${slot.edge}, corner: ${slot.corner})`);
       } else {
         if (DEBUG) console.log(`DEBUG: Keeping alg - no useless moves found`);
         filteredAlgs.push(alg);
@@ -484,9 +400,9 @@ export function compileAlgs({ types, emit, shouldContinue = () => true }: Compil
     return filteredAlgs;
   };
 
-  const findUniqueNewAlgs = (algs: ExactAlg[], expandedAlgs: ExpandedExactAlg[]) => {
+  const findUniqueNewAlgs = (algs: ExactAlgMoves[], expandedAlgs: ExpandedExactAlg[]) => {
 
-    const newAlgs: ExactAlg[] = [];
+    const newAlgs: ExactAlgMoves[] = [];
     const existingAlgs = new Set<string>();
     const checkedIndices = new Set<number>();
     for (let i = 0; i < expandedAlgs.length; i++) {
@@ -500,8 +416,10 @@ export function compileAlgs({ types, emit, shouldContinue = () => true }: Compil
       // the other expanded angle variants are expected to differ from the original by design
       if (originalAlg && !checkedIndices.has(index)) {
         checkedIndices.add(index);
-        if (!originalAlg.new && originalAlg.value !== simplifiedAlg.value) {
-          console.warn(`Algorithm at index ${index} is not in simplified form. Original: "${originalAlg.value}", Simplified: "${simplifiedAlg.value}"`);
+        const originalText = cube3x3.format(originalAlg.moves);
+        const simplifiedText = cube3x3.format(simplifiedAlg.moves);
+        if (!originalAlg.new && originalText !== simplifiedText) {
+          console.warn(`Algorithm at index ${index} is not in simplified form. Original: "${originalText}", Simplified: "${simplifiedText}"`);
         }
       }
 
@@ -509,25 +427,24 @@ export function compileAlgs({ types, emit, shouldContinue = () => true }: Compil
       if (simplifiedAlg.new) {
         newAlgs.push(simplifiedAlg);
       } else {
-        // remove N2'-type moves and turn into N2
-        const cleanExistingValue = simplifiedAlg.value.replace(/2'/g, '2');
-        existingAlgs.add(cleanExistingValue);
+        existingAlgs.add(cube3x3.format(unprimeHalfTurns(simplifiedAlg.moves)));
       }
     }
 
     console.log('new alg size:', newAlgs.length);
-    const actuallyNewAlgs = newAlgs.filter(alg => !existingAlgs.has(alg.value));
+    const actuallyNewAlgs = newAlgs.filter(alg => !existingAlgs.has(cube3x3.format(alg.moves)));
 
-    // filter out duplicate alg.values within new algs
+    // filter out duplicate algs within new algs
     const uniqueNewAlgSet = new Set<string>();
-    const uniqueNewAlgs: ExactAlg[] = [];
+    const uniqueNewAlgs: ExactAlgMoves[] = [];
     actuallyNewAlgs.forEach(alg => {
-      const cleanNewAlgValue = alg.value.replace(/2'/g, '2');
+      const newAlgKey = cube3x3.format(alg.moves);
+      const unprimedNewAlgKey = cube3x3.format(unprimeHalfTurns(alg.moves));
 
       // verify both that the alg isn't in the uniqueSet
       // and also not in existingAlgs in its cleaned version
-      if (!uniqueNewAlgSet.has(alg.value) && !existingAlgs.has(cleanNewAlgValue)) {
-        uniqueNewAlgSet.add(alg.value);
+      if (!uniqueNewAlgSet.has(newAlgKey) && !existingAlgs.has(unprimedNewAlgKey)) {
+        uniqueNewAlgSet.add(newAlgKey);
         uniqueNewAlgs.push(alg);
       }
     });
@@ -536,43 +453,38 @@ export function compileAlgs({ types, emit, shouldContinue = () => true }: Compil
     return uniqueNewAlgs;
   };
 
-  const preservesF2L = (cubeInterpreter: SimpleCubeInterpreter, alg: string): boolean => {
-    const cube = simpleCube.getCubeState(alg.split(' '));
+  const preservesF2L = (cubeInterpreter: SimpleCubeInterpreter, moves: Move3x3[]): boolean => {
+    const cube = simpleCube.getCubeState(moves);
     const steps: StepInfo[] = cubeInterpreter.getStepsCompleted(cube);
     return steps.filter(step => step.type === 'f2l').length === 4;
   };
 
-  const getSuffixVariants = (move: string): string[] => {
-    const parsed = parseMove(move);
-    if (!parsed) return [];
-
-    return [1, 2, 3]
-      .filter(amount => amount !== parsed.amount)
-      .map(amount => formatMove(parsed.base, amount));
+  const getSuffixVariants = (move: Move3x3): Move3x3[] => {
+    const layer = cube3x3.layer(move);
+    const variants = [cube3x3.make(layer, 1), cube3x3.make(layer, 2), cube3x3.make(layer, -1)];
+    return variants.filter(variant => cube3x3.turns(variant) !== cube3x3.turns(move));
   };
 
   /**
    * Attempts to salvage an LL alg that doesn't preserve F2L. First tries a trailing
    * rotation, then a single wrong move suffix, then both together.
    */
-  const repairLLalg = (cubeInterpreter: SimpleCubeInterpreter, alg: string): string | null => {
-    const moves = alg.trim().split(/\s+/).filter(move => move.length > 0);
+  const repairLLalg = (cubeInterpreter: SimpleCubeInterpreter, moves: Move3x3[]): Move3x3[] | null => {
     if (moves.length === 0) return null;
 
     for (const rotation of LL_REPAIR_ROTATIONS) {
-      const candidate = [...moves, rotation].join(' ');
+      const candidate = [...moves, rotation];
       if (preservesF2L(cubeInterpreter, candidate)) return candidate;
     }
 
-    for (const rotation of ['', ...LL_REPAIR_ROTATIONS]) {
+    for (const rotation of [null, ...LL_REPAIR_ROTATIONS]) {
       for (let i = moves.length - 1; i >= 0; i--) {
         for (const variant of getSuffixVariants(moves[i])) {
           const patched = [...moves];
           patched[i] = variant;
           if (rotation) patched.push(rotation);
 
-          const candidate = patched.join(' ');
-          if (preservesF2L(cubeInterpreter, candidate)) return candidate;
+          if (preservesF2L(cubeInterpreter, patched)) return patched;
         }
       }
     }
@@ -580,14 +492,15 @@ export function compileAlgs({ types, emit, shouldContinue = () => true }: Compil
     return null;
   };
 
-  const emitRepairedRawLLalgs = (algs: string[], label: string) => {
-    emit({ kind: 'repairedRaw', label, contents: `${JSON.stringify(algs, null, 2)}\n` });
+  const emitRepairedRawLLalgs = (algs: Move3x3[][], label: string) => {
+    const rawAlgs = algs.map(moves => cube3x3.format(moves));
+    emit({ kind: 'repairedRaw', label, contents: `${JSON.stringify(rawAlgs, null, 2)}\n` });
   };
 
-  const repairBrokenLLalgs = (algs: string[], step: CompilableLLStep, label: string): string[] => {
+  const repairBrokenLLalgs = (algs: Move3x3[][], step: CompilableLLStep, label: string): Move3x3[][] => {
     const cubeInterpreter = new SimpleCubeInterpreter();
 
-    const repairedAlgs: string[] = [];
+    const repairedAlgs: Move3x3[][] = [];
     let repairedCount = 0;
     let unrepairableCount = 0;
 
@@ -604,11 +517,11 @@ export function compileAlgs({ types, emit, shouldContinue = () => true }: Compil
 
       const repaired = repairLLalg(cubeInterpreter, alg);
       if (repaired) {
-        console.log(`Repaired LL alg "${alg}" to "${repaired}"`);
+        console.log(`Repaired LL alg "${cube3x3.format(alg)}" to "${cube3x3.format(repaired)}"`);
         repairedAlgs.push(repaired);
         repairedCount++;
       } else {
-        console.warn(`LL alg "${alg}" does not preserve F2L and could not be repaired.`);
+        console.warn(`LL alg "${cube3x3.format(alg)}" does not preserve F2L and could not be repaired.`);
         repairedAlgs.push(alg);
         unrepairableCount++;
       }
@@ -626,11 +539,11 @@ export function compileAlgs({ types, emit, shouldContinue = () => true }: Compil
   /**
    * Find algs that preserve F2L. For PLL, doesn't check if OLL is solved. Only checks F2L.
    */
-  const findWorkingLLalgs = (algs: string[]) => {
+  const findWorkingLLalgs = (algs: Move3x3[][]) => {
 
     const cubeInterpreter = new SimpleCubeInterpreter();
 
-    const usableAlgs: string[] = [];
+    const usableAlgs: Move3x3[][] = [];
     console.log(`Filtering ${algs.length} LL algs for F2L-preserving ones...`);
     for (const alg of algs) {
 
@@ -650,7 +563,7 @@ export function compileAlgs({ types, emit, shouldContinue = () => true }: Compil
   /**
    * Creates the full list of algs based on all allowed angles.
    */
-  const expandAlgs = (algs: ExactAlg[]) => {
+  const expandAlgs = (algs: ExactAlgMoves[]) => {
     const expandedAlgs: (ExpandedExactAlg)[] = [];
 
     algs.forEach((alg, index) => {
@@ -658,21 +571,21 @@ export function compileAlgs({ types, emit, shouldContinue = () => true }: Compil
       angles.forEach((angle) => {
 
         // add AUF/rotation and reorder if needed (y moves should go before U moves)
-        const completeAlg = reorderAnglingInAlg(angle, alg.value);
+        const completeAlg = reorderAnglingInAlg(angle, alg.moves);
 
         expandedAlgs.push({
           ...alg,
-          value: completeAlg,
+          moves: completeAlg,
           originalIndex: index,
         } as ExpandedExactAlg);
       });
     });
 
     algs.forEach((alg) => {
-      const y2Variant = stripTrailingYMoves(getY2Variant(alg.value));
-      if (y2Variant !== alg.value) {
+      const y2Variant = stripTrailingYMoves(getY2Variant(alg.moves));
+      if (cube3x3.format(y2Variant) !== cube3x3.format(alg.moves)) {
         expandedAlgs.push({
-          value: y2Variant,
+          moves: y2Variant,
           originalIndex: -1, // no need to associate with original index
           step: alg.step,
           new: true,
@@ -681,10 +594,10 @@ export function compileAlgs({ types, emit, shouldContinue = () => true }: Compil
     });
 
     algs.forEach((alg) => {
-      const mirrorVariant = stripTrailingYMoves(getMirrorMVariant(alg.value));
-      if (mirrorVariant !== alg.value) {
+      const mirrorVariant = stripTrailingYMoves(getMirrorMVariant(alg.moves));
+      if (cube3x3.format(mirrorVariant) !== cube3x3.format(alg.moves)) {
         expandedAlgs.push({
-          value: mirrorVariant,
+          moves: mirrorVariant,
           originalIndex: -1, // no need to associate with original index
           step: alg.step,
           new: true,
@@ -695,13 +608,13 @@ export function compileAlgs({ types, emit, shouldContinue = () => true }: Compil
     // sort algs by index
     expandedAlgs.sort((a, b) => {
       return a.originalIndex - b.originalIndex;
-    });       
+    });
 
     return expandedAlgs;
   }
 
   const findUniqueOldAlgSet = (expandedAlgs: ExpandedExactAlg[]) => {
-    const algSet = new Set<ExactAlg>();
+    const algSet = new Set<ExactAlgMoves>();
     expandedAlgs.forEach((alg) => {
       // Don't include new variants in the base set
       if (alg.new) return;
@@ -715,25 +628,27 @@ export function compileAlgs({ types, emit, shouldContinue = () => true }: Compil
     return algSet;
   }
 
-  const emitUniqueNewAlgs = (algs: ExactAlg[], label: string) => {
+  const emitUniqueNewAlgs = (algs: ExactAlgMoves[], label: string) => {
     if (algs.length === 0) return;
 
-    algs = algs.map(alg => ({
+    const collapsedAlgs = collapseAufGroups(algs.map(alg => ({ moves: alg.moves, step: alg.step })));
+
+    const rawAlgs = collapsedAlgs.map(alg => ({
       new: false,
-      value: alg.value,
+      value: cube3x3.format(alg.moves),
       step: alg.step,
       add_y: false,
     }));
 
-    algs = collapseAufGroups(algs);
-
-    const prettyJson = '[\n  ' + algs.map(alg => JSON.stringify(alg).replaceAll(',',', ')).join(',\n  ') + '\n]';
+    const prettyJson = '[\n  ' + rawAlgs.map(alg => JSON.stringify(alg).replaceAll(',',', ')).join(',\n  ') + '\n]';
     emit({ kind: 'newAlgs', label, contents: prettyJson });
   };
 
-  const prepareExactAlgs = (algs: ExactAlg[], downloadLabel: string): ExactAlg[] => {
+  const prepareExactAlgs = (rawAlgs: ExactAlg[], downloadLabel: string): ExactAlgMoves[] => {
 
-    console.log(`Preparing Exact algorithms... Total algs: ${algs.length}`);
+    console.log(`Preparing Exact algorithms... Total algs: ${rawAlgs.length}`);
+
+    const algs: ExactAlgMoves[] = rawAlgs.map(({ value, ...rest }) => ({ ...rest, moves: parseRawAlg(value) }));
 
     const simplifiedAlgs = simplifyExactAlgs(algs);
 
@@ -772,131 +687,86 @@ export function compileAlgs({ types, emit, shouldContinue = () => true }: Compil
     return allAlgs;
   };
 
-  const prepareLLAlgs = (algs: string[], step: CompilableLLStep, label: string): string[] => {
+  const prepareLLAlgs = (algs: Move3x3[][], step: CompilableLLStep, label: string): Move3x3[][] => {
 
     console.log(`Preparing LastLayer algorithms... Total algs: ${algs.length}`);
 
     const repairedAlgs = repairBrokenLLalgs(algs, step, label);
 
-    const uniqueAlgs = Array.from(new Set(simplifyLLalgs(repairedAlgs)));
+    const algsByKey = new Map(simplifyLLalgs(repairedAlgs).map(moves => [cube3x3.format(moves), moves]));
+    const uniqueAlgs = [...algsByKey.values()];
     console.log('unique alg count:', uniqueAlgs.length);
 
     // make sure applying alg keeps F2L solved
     return findWorkingLLalgs(uniqueAlgs);
   };
 
-  const removeAngleFromAlg = (alg: string): string => {
-    const moves = alg.trim().split(/\s+/);
-    const firstNonAngleMove = moves.findIndex((move) => !ANGLE_MOVE.test(move));
-    return firstNonAngleMove === -1 ? '' : moves.slice(firstNonAngleMove).join(' ');
+  const removeAngleFromAlg = (moves: Move3x3[]): Move3x3[] => {
+    const firstNonAngleMove = moves.findIndex((move) => !LL_ANGLE_MOVES.has(move));
+    return firstNonAngleMove === -1 ? [] : moves.slice(firstNonAngleMove);
   };
 
-  const normalizeAlgForMatching = (alg: string): string => {
-    const validBases = new Set(['U', 'D', 'R', 'L', 'F', 'B', 'u', 'd', 'r', 'l', 'f', 'b', 'M', 'E', 'S', 'x', 'y', 'z']);
+  const normalizeAlgForMatching = (moves: Move3x3[]): string => {
+    const commutingAxisOf = (move: Move3x3) => cube3x3.isRotation(move) ? null : cube3x3.geometry(move).axis;
 
-    const getAxis = (move: string): string | null => {
-      const base = move[0];
-      if (!base) return null;
-      if ('UDudE'.includes(base)) return 'UD';
-      if ('RLrlM'.includes(base)) return 'RL';
-      if ('FBfbS'.includes(base)) return 'FB';
-      return null; // x, y, z rotations — not commutative
-    };
-
-    // convert move to canonical form: M2' → M2, R3 → R', etc.
-    const canonicalizeMove = (move: string): string => {
-      if (!move) return move;
-      const base = move.charAt(0);
-      if (!validBases.has(base)) return move;
-      let index = 1;
-      let amount = 1;
-      const digit = move.charAt(index);
-      if (digit === '2') {
-        amount = 2;
-        index += 1;
-      } else if (digit === '3') {
-        // keep R3 as-is (distinct from R')
-        return move;
-      }
-      if (move.charAt(index) === "'") {
-        amount = (4 - amount) % 4;
-        index += 1;
-      }
-      if (index !== move.length) return move; // unparseable, keep as-is
-      const normalized = amount % 4;
-      if (normalized === 0) return ''; // identity
-      if (normalized === 1) return base;
-      if (normalized === 2) return `${base}2`;
-      return `${base}'`;
-    };
-
-    const moves = alg.trim().split(/\s+/).filter(m => m.length > 0);
-    const canonicalized = moves.map(canonicalizeMove).filter(m => m.length > 0);
+    // convert move to canonical form: M2' → M2. R3 stays distinct from R'
+    const canonicalized = unprimeHalfTurns(moves);
 
     // sort consecutive same-axis (commuting) groups alphabetically
-    const result: string[] = [];
+    const result: Move3x3[] = [];
     let i = 0;
     while (i < canonicalized.length) {
-      const axis = getAxis(canonicalized[i]);
+      const axis = commutingAxisOf(canonicalized[i]);
       if (!axis) {
         result.push(canonicalized[i]);
         i++;
         continue;
       }
-      const group: string[] = [];
-      while (i < canonicalized.length && getAxis(canonicalized[i]) === axis) {
+      const group: Move3x3[] = [];
+      while (i < canonicalized.length && commutingAxisOf(canonicalized[i]) === axis) {
         group.push(canonicalized[i]);
         i++;
       }
       group.sort();
       result.push(...group);
     }
-    return result.join(' ');
+    return cube3x3.format(result);
   };
 
-  const isPureLefty = (alg: string): boolean => {
-    let hasR = false;
-    let hasL = false;
-    for (const move of alg.trim().split(/\s+/)) {
-      const base = move[0];
-      if (base === 'R' || base === 'r') hasR = true;
-      if (base === 'L' || base === 'l') hasL = true;
-    }
+  const isPureLefty = (moves: Move3x3[]): boolean => {
+    const layers = moves.map(move => cube3x3.layer(move));
+    const hasR = layers.some(layer => layer === 'R' || layer === 'r');
+    const hasL = layers.some(layer => layer === 'L' || layer === 'l');
     return hasL && !hasR;
   };
 
-  const mirrorToRighty = (alg: string): string => {
-    return alg.trim().split(/\s+/).filter(m => m.length > 0)
-      .map(move => replacementTable_M[move] ?? move)
-      .join(' ');
-  };
-
-  const normalizeToRightyForFrequency = (alg: string): { value: string; wasMirrored: boolean } => {
-    if (isPureLefty(alg)) {
-      return { value: mirrorToRighty(alg), wasMirrored: true };
+  const normalizeToRightyForFrequency = (moves: Move3x3[]): { moves: Move3x3[]; wasMirrored: boolean } => {
+    if (isPureLefty(moves)) {
+      return { moves: cube3x3.mirror(moves, 'M'), wasMirrored: true };
     }
-    return { value: alg, wasMirrored: false };
+    return { moves, wasMirrored: false };
   };
 
-  const identifyLLalgs = (algs: string[], step: CompilableLLStep): CompiledLLAlg[] => {
+  const identifyLLalgs = (algs: Move3x3[][], step: CompilableLLStep): CompiledLLAlgMoves[] => {
 
     const cubeInterpreter = new SimpleCubeInterpreter();
-    const compiledData: CompiledLLAlg[] = [];
+    const compiledData: CompiledLLAlgMoves[] = [];
 
-    for (const alg of algs) {
+    for (const moves of algs) {
       if (!shouldContinue()) {
         break;
       }
 
-      const deangledAlg = removeAngleFromAlg(alg);
-      const algInverse = getAlgInverse(deangledAlg);
+      const algInverse = cube3x3.invert(removeAngleFromAlg(moves));
 
-      const cube = simpleCube.getCubeState(algInverse.split(' '));
+      const cube = simpleCube.getCubeState(algInverse);
 
       if (!cube) {
-        console.error('Failed to get cube state for algorithm:', algInverse);
+        console.error('Failed to get cube state for algorithm:', cube3x3.format(algInverse));
         continue;
       }
+
+      const alg = cube3x3.format(moves);
 
       // Update the cube interpreter with current cube state
       cubeInterpreter.getStepsCompleted(cube);
@@ -904,7 +774,7 @@ export function compileAlgs({ types, emit, shouldContinue = () => true }: Compil
       const { index: caseIndex, refPieceMovement, minMovements } = cubeInterpreter.identifyLLcase(step, alg);
 
       compiledData.push({
-        alg,
+        moves,
         caseIndex,
         refPieceMovement,
         minMovements,
@@ -917,14 +787,14 @@ export function compileAlgs({ types, emit, shouldContinue = () => true }: Compil
   /**
    * Attaches competition frequency data. Only OLL and PLL have frequencies available.
    */
-  const addLLfrequencies = (compiledData: CompiledLLAlg[], step: 'oll' | 'pll'): CompiledLLAlg[] => {
+  const addLLfrequencies = (compiledData: CompiledLLAlgMoves[], step: 'oll' | 'pll'): CompiledLLAlgMoves[] => {
 
     // build normalized frequency lookup for this step only
     const stepFrequencies = step === 'oll' ? ollFrequencies : pllFrequencies;
     type FreqEntry = { frequency: number; originalValue: string; directMatchCount: number; mirroredMatchCount: number };
     const normalizedFreqMap = new Map<string, FreqEntry>();
     stepFrequencies.forEach(f => {
-      const key = normalizeAlgForMatching(f.value);
+      const key = normalizeAlgForMatching(parseRawAlg(f.value));
       if (normalizedFreqMap.has(key)) {
         const existing = normalizedFreqMap.get(key)!;
         console.error(`algFrequencies has duplicate normalized entries: "${f.value}" and "${existing.originalValue}" both normalize to "${key}"`);
@@ -934,7 +804,7 @@ export function compileAlgs({ types, emit, shouldContinue = () => true }: Compil
     });
 
     const withFrequencies = compiledData.map(compiled => {
-      const { value: rightyForFrequency, wasMirrored } = normalizeToRightyForFrequency(compiled.alg);
+      const { moves: rightyForFrequency, wasMirrored } = normalizeToRightyForFrequency(compiled.moves);
       const normalizedKey = normalizeAlgForMatching(rightyForFrequency);
       const freqEntry = normalizedFreqMap.get(normalizedKey);
       if (freqEntry) {
@@ -944,7 +814,7 @@ export function compileAlgs({ types, emit, shouldContinue = () => true }: Compil
           freqEntry.directMatchCount++;
         }
         if (freqEntry.directMatchCount > 1 || freqEntry.mirroredMatchCount > 1) {
-          console.error(`algFrequency entry "${freqEntry.originalValue}" matched more than one compiled alg of the same handedness (also matched: "${compiled.alg}")`);
+          console.error(`algFrequency entry "${freqEntry.originalValue}" matched more than one compiled alg of the same handedness (also matched: "${cube3x3.format(compiled.moves)}")`);
           throw new Error('algFrequency entry matched more than one compiled alg');
         }
       }
@@ -961,8 +831,9 @@ export function compileAlgs({ types, emit, shouldContinue = () => true }: Compil
     return withFrequencies;
   }
 
-  const compileLLalgorithms = (algs: string[], step: CompilableLLStep, label: string = step) => {
+  const compileLLalgorithms = (rawAlgs: string[], step: CompilableLLStep, label: string = step) => {
 
+    const algs = rawAlgs.map(alg => parseRawAlg(alg));
     const compiledData = identifyLLalgs(prepareLLAlgs(algs, step, label), step);
 
     emitCompiledAlgs(step === 'zbll' ? compiledData : addLLfrequencies(compiledData, step), label);
@@ -971,7 +842,7 @@ export function compileAlgs({ types, emit, shouldContinue = () => true }: Compil
   /**
    * Takes an array of cubing algs, determines the cube hash, then creates a json file and downloads it.
    */
-  const compileExactAlgorithms = (algs: ExactAlg[], stepLabel: string) => {
+  const compileExactAlgorithms = (algs: ExactAlgMoves[], stepLabel: string) => {
 
     const cubeInterpreter = new SimpleCubeInterpreter();
 
@@ -982,42 +853,38 @@ export function compileAlgs({ types, emit, shouldContinue = () => true }: Compil
         break;
       }
 
-      const completeAlg = alg.value;
-      
+      const completeAlg = alg.moves;
+
       // Validate the algorithm - skip processing if invalid
       if (!validateAlg(completeAlg)) {
         continue;
       }
-      
+
       // Start alg green front, white top.
       // Extract leading y moves from complete algorithm for normalization
-      const moves = completeAlg.trim().split(/\s+/);
-      const leadingYMoves = [];
-      
+      const leadingYMoves: Move3x3[] = [];
+
       // Get leading y moves only
-      for (const move of moves) {
-        if (move.match(/^y['2]?$/)) {
+      for (const move of completeAlg) {
+        if (Y_ANGLE_MOVES.has(move)) {
           leadingYMoves.push(move);
-        } else if (!move.match(/^U['2]?$/)) {
+        } else if (!U_ANGLE_MOVES.has(move)) {
           // Stop if we hit a non-U, non-y move
           break;
         }
       }
 
       if (leadingYMoves.length > 1) {
-        console.error(`Invalid algorithm pattern detected after cleanup: ${completeAlg}. Too many leading y moves (${leadingYMoves.length}). Skipping.`);
+        console.error(`Invalid algorithm pattern detected after cleanup: ${cube3x3.format(completeAlg)}. Too many leading y moves (${leadingYMoves.length}). Skipping.`);
         continue;
       }
-      
-      const angleNormalization = leadingYMoves.length > 0 ? leadingYMoves[0] + ' ' : '';
-      
-      const algInverse = angleNormalization + getAlgInverse(completeAlg);
-      // console.log(`Processing Alg: ${completeAlg}`);
-      
-      const cube = simpleCube.getCubeState(algInverse.split(' '));
-      
+
+      const algInverse = [...leadingYMoves, ...cube3x3.invert(completeAlg)];
+
+      const cube = simpleCube.getCubeState(algInverse);
+
       if (!cube) {
-        console.error('Failed to get cube state for algorithm:', algInverse);
+        console.error('Failed to get cube state for algorithm:', cube3x3.format(algInverse));
         continue;
       }
 
@@ -1026,18 +893,16 @@ export function compileAlgs({ types, emit, shouldContinue = () => true }: Compil
 
       const isCrossSolved = steps.some(step => step.type === 'cross');
       if (!isCrossSolved) {
-        console.error(`Algorithm either does not solve the cross or does nothing: ${completeAlg}. Skipping.`);
+        console.error(`Algorithm either does not solve the cross or does nothing: ${cube3x3.format(completeAlg)}. Skipping.`);
         continue;
       }
       const cubeState = cubeInterpreter.getCurrentState();
       const hash = cubeState?.hash || 'unknown';
       const eoValue = cubeInterpreter.getEOvalue(eoAngleOfAlg(completeAlg));
 
-      // console.log(`Algorithm: ${completeAlg}, Hash: ${hash}`);
-
       // Add to compiled data
       compiledData.push({
-        alg: completeAlg,
+        moves: completeAlg,
         hash: hash,
         eoValue,
       });
@@ -1050,21 +915,21 @@ export function compileAlgs({ types, emit, shouldContinue = () => true }: Compil
   /**
    * Emits the compiled algorithms data as JSON
    */
-  const emitCompiledAlgs = (data: CompiledExactAlg[] | CompiledLLAlg[], step: string) => {
+  const emitCompiledAlgs = <T extends { moves: Move3x3[] }>(data: T[], step: string) => {
     if (!shouldContinue()) {
       return;
     }
 
     // sort by speed estimate (fastest first)
     const speedEstimator = new AlgSpeedEstimator();
-    const scores = new Map(data.map(d => [d, speedEstimator.calcScore(d.alg)]));
+    const scores = new Map(data.map(d => [d, speedEstimator.calcScore(d.moves)]));
     data.sort((a, b) => scores.get(a)! - scores.get(b)!);
 
     const jsonData = {
       timestamp: new Date().toISOString(),
       step,
       totalAlgorithms: data.length,
-      algorithms: data
+      algorithms: data.map(({ moves, ...rest }) => ({ alg: cube3x3.format(moves), ...rest })),
     };
 
     emit({ kind: 'compiled', label: step, contents: JSON.stringify(jsonData, null, 2) });

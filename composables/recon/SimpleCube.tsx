@@ -1,18 +1,14 @@
+import { cube3x3, type Move3x3 } from '../../utils/parser/cube3x3';
+
 export type Color = 'W' | 'Y' | 'R' | 'O' | 'G' | 'B'
 export type Line = [Color, Color, Color];
 export type Face = [Line, Line, Line];
 export type CubeState = [Face, Face, Face, Face, Face, Face];
-type BaseMove = 'U' | 'D' | 'F' | 'B' | 'L' | 'R' | 'u' | 'd' | 'f' | 'b' | 'l' | 'r' | 'M' | 'E' | 'S' | 'x' | 'y' | 'z';
-type MoveModifier = "'" | '2' | '';
-type PermissiveMoveModifier = MoveModifier | '3' | "3'" | "2'";
-type Move = `${BaseMove}${MoveModifier}`;
-type PermissiveMove = `${BaseMove}${PermissiveMoveModifier}`;
 type StrategyType = 'START_OVER' | 'ADD' | 'UNDO';
-type Strategy = { type: StrategyType, moves: Move[] };
+type Strategy = { type: StrategyType, moves: Move3x3[] };
 
 /**
  * A simple 3x3 Rubik's Cube simulator that can apply moves and return the cube state.
- * Assumes that moves are already validated (type PermissiveMove).
  */
 export class SimpleCube {
 
@@ -23,17 +19,15 @@ export class SimpleCube {
   private back: Face = [['B', 'B', 'B'], ['B', 'B', 'B'], ['B', 'B', 'B']]; // 4, y2 to face
   private left: Face = [['O', 'O', 'O'], ['O', 'O', 'O'], ['O', 'O', 'O']]; // 5, y' to face
   private readonly cube: CubeState = [this.up, this.down, this.front, this.right, this.back, this.left];
-  private currentMoves: Move[] = [];
-  
+  private currentMoves: Move3x3[] = [];
+
   constructor() {}
 
-  public getCubeState(moves: string[]): CubeState {
+  public getCubeState(moves: readonly Move3x3[]): CubeState {
     // console.log('[SimpleCube] getCubeState called with', moves.length, 'moves:', moves);
-    const parsedMoves: PermissiveMove[] = this.parseMoves(moves);
-
     const oldMoves = this.currentMoves;
 
-    const simplifiedMoves: Move[] = this.simplifyMoves(parsedMoves);
+    const simplifiedMoves = cube3x3.normalize(moves);
 
     const updateStrategy: Strategy = this.calcStrategy(oldMoves, simplifiedMoves);
     switch (updateStrategy.type) {
@@ -45,7 +39,7 @@ export class SimpleCube {
         this.addMoves(updateStrategy.moves);
         break;
       case 'UNDO':
-        this.undoMoves(updateStrategy.moves);
+        this.addMoves(cube3x3.invert(updateStrategy.moves));
         break;
     }
 
@@ -53,32 +47,6 @@ export class SimpleCube {
     // this.logCubeVisual();
     return this.cube;
   }
-
-  /**
-   * Filter out invalid moves from the input list. Does not parse "Rw"-style root moves, only "r"-style.
-   * @param moves 
-   * @returns valid moves only
-   */
-  private parseMoves(moves: string[]): PermissiveMove[] {
-    const parsedMoves: PermissiveMove[] = [];
-    const validBaseMoves: BaseMove[] = ['U', 'D', 'F', 'B', 'L', 'R', 'u', 'd', 'f', 'b', 'l', 'r', 'M', 'E', 'S', 'x', 'y', 'z'];
-    const validModifiers: PermissiveMoveModifier[] = ["", "'", '2', "3'", '3', "2'"];
-    for (const move of moves) {
-      const start = move[0];
-      if (!validBaseMoves.includes(start as BaseMove)) {
-        console.warn(`[SimpleCube] Ignoring invalid move: ${move}`);
-        continue;
-      }
-      const modifier = move.slice(1);
-      if (!validModifiers.includes(modifier as PermissiveMoveModifier)) {
-        console.warn(`[SimpleCube] Ignoring invalid move: ${move}`);
-        continue;
-      }
-      parsedMoves.push(move as PermissiveMove);
-    }
-    return parsedMoves;
-  }
-      
 
   private logCubeVisual(): void {
     const colorMap: Record<Color, string> = {
@@ -116,28 +84,13 @@ export class SimpleCube {
     console.log('╚════════════════════════════════════╝\n');
   }
 
-  private simplifyMoves(moves: PermissiveMove[]): Move[] {
-    return moves.map((move): Move => {
-      const baseMove = move[0] as BaseMove;
-      const modifier = move.slice(1) as PermissiveMoveModifier;
-
-      let normalizedModifier: MoveModifier;
-      if (modifier === "3'") normalizedModifier = '';
-      else if (modifier === "2'") normalizedModifier = '2';
-      else if (modifier === '3') normalizedModifier = "'";
-      else normalizedModifier = modifier;
-
-      return `${baseMove}${normalizedModifier}` as Move;
-    });
-  }
-
-  private calcStrategy(oldMoves: Move[], newMoves: Move[]): Strategy {
+  private calcStrategy(oldMoves: Move3x3[], newMoves: Move3x3[]): Strategy {
     let devisedStrategy: Strategy = { type: 'START_OVER', moves: newMoves };
 
     /**
      * Checks if prefix is a starting subsequence of longer
      */
-    const startsWith = (longer: Move[], prefix: Move[]): boolean => {
+    const startsWith = (longer: Move3x3[], prefix: Move3x3[]): boolean => {
       if (prefix.length > longer.length) return false;
       for (let i = 0; i < prefix.length; i++) {
         if (longer[i] !== prefix[i]) return false;
@@ -189,113 +142,75 @@ export class SimpleCube {
     fillFace(this.left, 'O');
   }
 
-  private addMoves(moves: Move[]): void {
+  private addMoves(moves: Move3x3[]): void {
     for (const move of moves) {
       this.executeMove(move);
     }
   }
 
-  private undoMoves(moves: Move[]): void {
-    // reverse moves to undo them in correct order
-    const reversedMoves = moves.slice().reverse();
-    
-    for (const move of reversedMoves) {
-      const inverseMove = this.getInverseMove(move);
-      this.executeMove(inverseMove);
-    }
-  }
+  private executeMove(move: Move3x3): void {
+    const turns = cube3x3.turns(move);
 
-  private getInverseMove(move: Move): Move {
-    const baseMove = move[0] as BaseMove;
-    const modifier = move.slice(1) as MoveModifier;
-
-    if (modifier === '2') {
-      return move;
-    }
-    if (modifier === "'") {
-      return baseMove;
-    }
-
-    return `${baseMove}'`;
-  }
-
-  private runMoves(moves: Move[]): void {
-    for (const move of moves) {
-      this.executeMove(move);
-    }
-  }
-
-  private runMovesIntered(moves: Move[]): void {
-    // does not reverse move order, assumes move components are independent
-    for (const move of moves) {
-      this.executeMove(this.getInverseMove(move));
-    }
-  }
-
-  private executeMove(move: Move): void {
-    const baseMove = move[0] as BaseMove;
-    const modifier = move.slice(1) as MoveModifier;
-
-    const runCompoundMove = (moves: Move[]): void => {
-      if (modifier === '') {
-        this.runMoves(moves);
+    const runCompoundMove = (moves: Move3x3[]): void => {
+      if (turns === 1) {
+        this.addMoves(moves);
         return;
       }
 
-      if (modifier === '2') {
-        this.runMoves(moves);
-        this.runMoves(moves);
+      if (turns === 2) {
+        this.addMoves(moves);
+        this.addMoves(moves);
         return;
       }
 
-      this.runMovesIntered(moves);
+      this.addMoves(cube3x3.invert(moves));
     };
 
-    switch (baseMove) {
+    switch (cube3x3.layer(move)) {
       case 'U':
-        if (modifier === '') this.Umove();
-        else if (modifier === "'") this.Uprimemove();
+        if (turns === 1) this.Umove();
+        else if (turns === 3) this.Uprimemove();
         else this.U2move();
         return;
       case 'D':
-        if (modifier === '') this.Dmove();
-        else if (modifier === "'") this.Dprimemove();
+        if (turns === 1) this.Dmove();
+        else if (turns === 3) this.Dprimemove();
         else this.D2move();
         return;
       case 'F':
-        if (modifier === '') this.Fmove();
-        else if (modifier === "'") this.Fprimemove();
+        if (turns === 1) this.Fmove();
+        else if (turns === 3) this.Fprimemove();
         else this.F2move();
         return;
       case 'B':
-        if (modifier === '') this.Bmove();
-        else if (modifier === "'") this.Bprimemove();
+        if (turns === 1) this.Bmove();
+        else if (turns === 3) this.Bprimemove();
         else this.B2move();
         return;
       case 'L':
-        if (modifier === '') this.Lmove();
-        else if (modifier === "'") this.Lprimemove();
+        if (turns === 1) this.Lmove();
+        else if (turns === 3) this.Lprimemove();
         else this.L2move();
         return;
       case 'R':
-        if (modifier === '') this.Rmove();
-        else if (modifier === "'") this.Rprimemove();
+        if (turns === 1) this.Rmove();
+        else if (turns === 3) this.Rprimemove();
         else this.R2move();
         return;
 
       case 'M':
-        if (modifier === '') this.Mmove();
-        else if (modifier === "'") this.Mprimemove();
+        if (turns === 1) this.Mmove();
+        else if (turns === 3) this.Mprimemove();
         else this.M2move();
         return;
       case 'E':
-        if (modifier === '') this.Emove();
-        else if (modifier === "'") this.Eprimemove();
+        if (turns === 1) this.Emove();
+        else if (turns === 3) this.Eprimemove();
         else this.E2move();
         return;
       case 'S':
-        if (modifier === '') this.Smove();
-        else if (modifier === "'") this.Sprimemove();
+        if (turns === 1) this.Smove();
+        else if (turns === 3) this.Sprimemove();
         else this.S2move();
         return;
 

@@ -4,9 +4,10 @@ import { useRef, useState } from "react";
 import Image from "next/image";
 import MovesTextEditor from "../../recon/MovesTextEditor";
 import StepIcons from "../StepIconsExample";
-import CubeGraphic from "../CubeGraphic";
+import CubeImage from "../../learn/CubeImage";
 import QuestionIcon from "../../icons/info";
-import type { PNGVisualizerOptions } from "sr-puzzlegen";
+
+const YELLOW_TOP_RED_FRONT = "z2 y' ";
 
 type PlaceholderMoveHistory = {
   history: string[][];
@@ -29,19 +30,6 @@ export default function ReconstructV04() {
   const [editorHTML2, setEditorHTML2] = useState<string>("");
 
   const handleTrackMoves = () => {};
-
-  const customMask: PNGVisualizerOptions = {
-    puzzle: {
-      mask: {
-      U: [0,1,2,3,4,5,6,8],
-      R: [0,1,2,3,4,5,6,7,8],
-      F: [0,2,3,4,5,6,7,8],
-      D: [0,1,2,3,4,5,6,7,8],
-      L: [0,1,2,3,4,5,6,7,8],
-      B: [0,1,2,3,4,5,6,7,8],
-      }
-    }
-  };
 
   return (
     <>
@@ -79,7 +67,7 @@ export default function ReconstructV04() {
           moveHistory={placeholderMoveHistory}
           html={editorHTML}
           setHTML={setEditorHTML}
-          initialContent={"<div>R U R' U' // this is a comment <span class=\"paste-marker\"></span><br></div><div>R U R' U' / this is not<span class=\"paste-marker\"></span><br></div><div>R U R' U' \\\\ you need to be banned<span class=\"paste-marker\"></span><br></div>"}
+          initialContent={"R U R' U' // this is a comment \nR U R' U' / this is not\nR U R' U' \\\\ you need to be banned"}
         />
       </div>
       <div className="flex flex-col gap-6 pt-6">
@@ -93,7 +81,7 @@ export default function ReconstructV04() {
           moveHistory={placeholderMoveHistory}
           html={editorHTML2}
           setHTML={setEditorHTML2}
-          initialContent={"<div>R2 M F 🏃‍♂️🛹🤘 S R r B // xcross + a sweet kickflip<span class=\"paste-marker\"></span><br></div>"}
+          initialContent={"R2 M F 🏃‍♂️🛹🤘 S R r B // xcross + a sweet kickflip"}
         />
       </div>
       <div className="flex flex-row gap-4 min-w-12.5 py-6">
@@ -180,10 +168,10 @@ export default function ReconstructV04() {
       </p>
       <div className="flex flex-row">
         <div className="w-64 h-64 mx-auto my-8">
-          <CubeGraphic alg="R U R' U'"/>
+          <CubeImage scramble={`${YELLOW_TOP_RED_FRONT}R U R' U'`} className="w-full h-auto"/>
         </div>      
         <div className="w-64 h-64 mx-auto my-8">
-          <CubeGraphic alg="y R U R' U'"/>
+          <CubeImage scramble={`${YELLOW_TOP_RED_FRONT}y R U R' U'`} className="w-full h-auto"/>
         </div>
       </div>
       <p className="pt-6">
@@ -234,10 +222,10 @@ export default function ReconstructV04() {
       </p>
       <div className="flex flex-row">
         <div className="w-64 h-64 mx-auto my-8">
-          <CubeGraphic alg="R U R' U'"/>
+          <CubeImage scramble={`${YELLOW_TOP_RED_FRONT}R U R' U'`} className="w-full h-auto"/>
         </div>      
         <div className="w-64 h-64 mx-auto my-8">
-          <CubeGraphic alg="y R U R' U'"/>
+          <CubeImage scramble={`${YELLOW_TOP_RED_FRONT}y R U R' U'`} className="w-full h-auto"/>
         </div>
       </div> 
 
@@ -269,10 +257,10 @@ export default function ReconstructV04() {
       </p>
       <div className="flex flex-row">
         <div className="w-64 h-64 mx-auto my-8">
-          <CubeGraphic alg="R U R' U'"/>
+          <CubeImage scramble={`${YELLOW_TOP_RED_FRONT}R U R' U'`} className="w-full h-auto"/>
         </div>      
         <div className="w-64 h-64 mx-auto my-8">
-          <CubeGraphic alg="R U R' U'"/>
+          <CubeImage scramble={`${YELLOW_TOP_RED_FRONT}R U R' U'`} className="w-full h-auto"/>
         </div>
       </div> 
 
@@ -288,7 +276,7 @@ export default function ReconstructV04() {
         Using our color mapping, we look for the yellow-red piece instead:
       </p>
       <div className="w-64 h-64 mx-auto my-8">
-        <CubeGraphic alg="R U R' U'" customMask={customMask}/>
+        <CubeImage scramble={`${YELLOW_TOP_RED_FRONT}R U R' U'`} highlight={["YR"]} className="w-full h-auto"/>
       </div>
       <p className="pt-6">
         It&apos;s between the Up and Front centers! That was easy, it didn&apos;t move.
@@ -378,7 +366,7 @@ export default function ReconstructV04() {
         but one that would benefit from having the same algorithm applied:
       </p>
       <div className="w-64 h-64 mx-auto my-8">
-        <CubeGraphic alg="x2 y' B F2 D' U' L2 U' R2 F2 D' F2 U F2 B R B F' L2 D' B' F x2 F' R D' F R U' L U2 L' F' U F R U R' U' B U B' L' B L B' U2 R' U' R  R U R' U "/>
+        <CubeImage scramble={`${YELLOW_TOP_RED_FRONT}x2 y' B F2 D' U' L2 U' R2 F2 D' F2 U F2 B R B F' L2 D' B' F x2 F' R D' F R U' L U2 L' F' U F R U R' U' B U B' L' B L B' U2 R' U' R  R U R' U `} className="w-full h-auto"/>
       </div>
       <p className="pt-6">
         The pattern for this cube is:
@@ -395,7 +383,7 @@ export default function ReconstructV04() {
         This cube also has a couple pieces solved in the back. Let&apos;s look at those quick:
       </p>
       <div className="w-64 h-64 mx-auto my-8">
-        <CubeGraphic alg="x2 y' B F2 D' U' L2 U' R2 F2 D' F2 U F2 B R B F' L2 D' B' F x2 F' R D' F R U' L U2 L' F' U F R U R' U' B U B' L' B L B' U2 R' U' R  R U R' U y x"/>
+        <CubeImage scramble={`${YELLOW_TOP_RED_FRONT}x2 y' B F2 D' U' L2 U' R2 F2 D' F2 U F2 B R B F' L2 D' B' F x2 F' R D' F R U' L U2 L' F' U F R U R' U' B U B' L' B L B' U2 R' U' R  R U R' U y x`} className="w-full h-auto"/>
       </div>
       <p className="pt-6">
         So the algorithm must:

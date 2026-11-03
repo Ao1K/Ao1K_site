@@ -1,39 +1,32 @@
 import { canonicalizePair } from './canonicalizeAuf';
+import { cube3x3 } from './parser/cube3x3';
+import type { Move3x3 } from './parser/cube3x3';
 
 export type AufPart = '' | 'U' | "U'" | 'U2';
 
 export const AUF_PARTS: AufPart[] = ['', 'U', "U'", 'U2'];
 
-const Y_TOKEN_RE = /^y['2]?$/;
-const U_TOKEN_RE = /^U['2]?$/;
+const AUF_PART_BY_TURNS: Record<1 | 2 | 3, AufPart> = { 1: 'U', 2: 'U2', 3: "U'" };
+
 const KEY_SEP = '||';
 
-export function splitLeadingAuf(value: string): { coreKey: string; aufPart: AufPart } {
-  const tokens = value.trim().replace(/2'/g, '2').split(/\s+/);
-  let idx = 0;
+export function splitLeadingAuf(moves: readonly Move3x3[]): { core: Move3x3[]; coreKey: string; aufPart: AufPart } {
+  const halfTurnsUnprimed = moves.map(move => cube3x3.turns(move) === 2 ? cube3x3.make(cube3x3.layer(move), 2) : move);
+  const isTurnOf = (move: Move3x3 | undefined, layer: 'U' | 'y') => move !== undefined && cube3x3.layer(move) === layer;
 
-  let yPart = '';
-  if (tokens[idx] && Y_TOKEN_RE.test(tokens[idx])) {
-    yPart = tokens[idx];
-    idx += 1;
-  }
+  const yMoves = isTurnOf(halfTurnsUnprimed[0], 'y') ? halfTurnsUnprimed.slice(0, 1) : [];
+  const afterY = halfTurnsUnprimed.slice(yMoves.length);
+  const aufMove = isTurnOf(afterY[0], 'U') ? afterY[0] : undefined;
+  const aufPart = aufMove ? AUF_PART_BY_TURNS[cube3x3.turns(aufMove)] : '';
 
-  let aufPart: AufPart = '';
-  if (tokens[idx] && U_TOKEN_RE.test(tokens[idx])) {
-    aufPart = tokens[idx] as AufPart;
-    idx += 1;
-  }
-
-  const rest = tokens.slice(idx).join(' ');
-  const coreKey = yPart ? `${yPart} ${rest}`.trim() : rest;
-
-  return { coreKey, aufPart };
+  const core = [...yMoves, ...afterY.slice(aufMove ? 1 : 0)];
+  return { core, coreKey: cube3x3.format(core), aufPart };
 }
 
 export function groupCleanAufSets<T>(
   items: T[],
   groupKeyOf: (item: T) => string,
-  valueOf: (item: T) => string,
+  valueOf: (item: T) => readonly Move3x3[],
 ): Map<string, Map<AufPart, T>> {
   const raw = new Map<string, Map<AufPart, T[]>>();
 
@@ -74,7 +67,7 @@ export function groupCleanAufSets<T>(
 }
 
 interface AufSourceAlg {
-  value: string;
+  moves: readonly Move3x3[];
   step: string;
 }
 
@@ -82,14 +75,14 @@ export function collapseAufGroups<T extends AufSourceAlg>(algs: T[]): T[] {
   const cleanGroups = groupCleanAufSets(
     algs,
     (a) => a.step,
-    (a) => a.value,
+    (a) => a.moves,
   );
 
   const emitted = new Set<string>();
   const result: T[] = [];
 
   algs.forEach((alg) => {
-    const { coreKey } = splitLeadingAuf(alg.value);
+    const { core, coreKey } = splitLeadingAuf(alg.moves);
     const key = `${alg.step}${KEY_SEP}${coreKey}`;
     const group = cleanGroups.get(key);
 
@@ -102,14 +95,14 @@ export function collapseAufGroups<T extends AufSourceAlg>(algs: T[]): T[] {
     emitted.add(key);
 
     const base = group.get('')!;
-    result.push({ ...base, value: coreKey });
+    result.push({ ...base, moves: core });
   });
 
   return result;
 }
 
 interface AufSourceHash {
-  alg: string;
+  moves: readonly Move3x3[];
   hash: string;
   step?: string;
 }
@@ -129,14 +122,14 @@ export function canonicalizeAufHashes<T extends AufSourceHash>(entries: T[]): T[
   const cleanGroups = groupCleanAufSets(
     entries,
     (e) => e.step ?? '',
-    (e) => e.alg,
+    (e) => e.moves,
   );
 
   const emitted = new Set<string>();
   const result: T[] = [];
 
   entries.forEach((entry) => {
-    const { coreKey } = splitLeadingAuf(entry.alg);
+    const { coreKey } = splitLeadingAuf(entry.moves);
     const key = `${entry.step ?? ''}${KEY_SEP}${coreKey}`;
     const group = cleanGroups.get(key);
 

@@ -1,123 +1,77 @@
 import { solveKociemba } from './cubeSolverClient';
-import { reverseMove, replacementTable_X, replacementTable_Y, replacementTable_Z } from './transformHTML';
+import { cube3x3, GEOMETRY_3X3 } from '../../utils/parser/cube3x3';
+import type { Layer3x3, Move3x3, Rotation3x3 } from '../../utils/parser/cube3x3';
+import type { Amount } from '../../utils/parser';
 
-const rotationTables: Record<string, Record<string, string>> = {
-  x: replacementTable_X,
-  y: replacementTable_Y,
-  z: replacementTable_Z,
-};
+const undoRotations = (moves: readonly Move3x3[], rotations: readonly Rotation3x3[]): Move3x3[] =>
+  cube3x3.invert(rotations).filter(cube3x3.isRotation).reduce(cube3x3.rotate, [...moves]);
 
-const quarterTurnsBySuffix: Record<string, number> = { '': 1, "'": 3, '2': 2, "2'": 2, '3': 3, "3'": 1 };
-
-const turnMoveThroughRotationTable = (move: string, rotation: string, quarterTurns: number) => {
-  const table = rotationTables[rotation[0]];
-  let turnedMove = move;
-  for (let i = 0; i < quarterTurns % 4; i++) {
-    turnedMove = table[turnedMove] ?? turnedMove;
-  }
-  return turnedMove;
-};
-
-const undoRotation = (move: string, rotation: string) =>
-  turnMoveThroughRotationTable(move, rotation, 4 - (quarterTurnsBySuffix[rotation.slice(1)] ?? 4));
-
-const applyRotation = (move: string, rotation: string) =>
-  turnMoveThroughRotationTable(move, rotation, quarterTurnsBySuffix[rotation.slice(1)]);
-
-const splitOutRotations = (alg: string) => {
-  const rotations: string[] = [];
-  const moves: string[] = [];
-  for (const move of alg.split(' ')) {
-    if (move[0] in rotationTables) {
+const splitOutRotations = (alg: readonly Move3x3[]) => {
+  const rotations: Rotation3x3[] = [];
+  const moves: Move3x3[] = [];
+  for (const move of alg) {
+    if (cube3x3.isRotation(move)) {
       rotations.push(move);
     } else {
-      moves.push(rotations.reduceRight(undoRotation, move));
+      moves.push(...undoRotations([move], rotations));
     }
   }
   return { moves, rotations };
 };
 
-export const removeRotations = (alg: string) => splitOutRotations(alg).moves.join(' ');
+export const removeRotations = (alg: readonly Move3x3[]) => splitOutRotations(alg).moves;
 
-const suffixByQuarterTurns: Record<number, string> = { 1: '', 2: '2', 3: "'" };
+const FACE_AND_ROTATION_LAYERS: readonly Layer3x3[] = ['U', 'D', 'R', 'L', 'F', 'B', 'x', 'y', 'z'];
 
-const singleRotations = ['x', 'y', 'z'].flatMap((axis) => ['', "'", '2'].map((suffix) => axis + suffix));
-
-const rotationCandidatesShortestFirst = [
-  [],
-  ...singleRotations.map((rotation) => [rotation]),
-  ...singleRotations.flatMap((first) => singleRotations
-    .filter((second) => second[0] !== first[0])
-    .map((second) => [first, second])),
-];
-
-const getOrientationKey = (rotations: string[]) => ['U', 'F'].map((face) => rotations.reduceRight(undoRotation, face)).join(' ');
-
-const shortenRotations = (rotations: string[]) => {
-  const orientationKey = getOrientationKey(rotations);
-  return rotationCandidatesShortestFirst.find((candidate) => getOrientationKey(candidate) === orientationKey)!;
-};
-
-const faceMovesAndRotationBySliceOrWideMove: Record<string, string[]> = {
-  M: ['R', "L'", "x'"],
-  E: ['U', "D'", "y'"],
-  S: ["F'", 'B', 'z'],
-  r: ['L', 'x'],
-  l: ['R', "x'"],
-  u: ['D', 'y'],
-  d: ['U', "y'"],
-  f: ['B', 'z'],
-  b: ['F', "z'"],
-};
-
-const expandSliceOrWideMove = (move: string) => {
-  const expansion = faceMovesAndRotationBySliceOrWideMove[move[0]];
-  if (!expansion) {
+const expandSliceOrWideMove = (move: Move3x3): Move3x3[] => {
+  const { axis, layers, sign } = cube3x3.geometry(move);
+  const isSliceOrWide = layers.includes(0) && layers.length < 3;
+  if (!isSliceOrWide) {
     return [move];
   }
 
-  const quarterTurns = quarterTurnsBySuffix[move.slice(1)];
-  return expansion.map((part) => {
-    const partQuarterTurns = (quarterTurnsBySuffix[part.slice(1)] * quarterTurns) % 4;
-    return part[0] + suffixByQuarterTurns[partQuarterTurns];
+  const signedTurns = sign * cube3x3.amount(move);
+  return FACE_AND_ROTATION_LAYERS.flatMap((layer) => {
+    const part = GEOMETRY_3X3[layer];
+    const isWholeCube = part.layers.length === 3;
+    const isTurnedByMove = !isWholeCube && layers.includes(part.layers[0]);
+    if (part.axis !== axis || isTurnedByMove) {
+      return [];
+    }
+    const partSignedTurns = isWholeCube ? signedTurns : -signedTurns;
+    return [cube3x3.make(layer, (partSignedTurns * part.sign) as Amount)];
   });
 };
 
-const normalizeMoveForCubeSolver = (move: string) => {
-  const rootMove = move[0];
-  const suffix = move.slice(1);
+const invertForCubeSolver = (moves: readonly Move3x3[]) => cube3x3.normalize(cube3x3.invert(moves));
 
-  switch (suffix) {
-    case "2'":
-      return `${rootMove}2`;
-    case '3':
-      return `${rootMove}'`;
-    case "3'":
-      return rootMove;
-    default:
-      return move;
-  }
-};
-
-const invertAlgMoves =(alg: string) => alg.split(' ')
-  .reverse()
-  .map(reverseMove)
-  .map(normalizeMoveForCubeSolver)
-  .join(' ');
-
-const solveForFaceMovesAndRotations = async (setupMoves: string) => {
-  const { moves: faceMoves, rotations } = splitOutRotations(setupMoves.split(' ').flatMap(expandSliceOrWideMove).join(' '));
-  const kociembaSolution = faceMoves.length > 0 ? await solveKociemba(invertAlgMoves(faceMoves.join(' '))) : '';
+const solveForFaceMovesAndRotations = async (setupMoves: readonly Move3x3[]) => {
+  const { moves: faceMoves, rotations } = splitOutRotations(setupMoves.flatMap(expandSliceOrWideMove));
+  const kociembaSolution = faceMoves.length > 0 ? await solveKociemba(cube3x3.format(invertForCubeSolver(faceMoves))) : '';
   if (kociembaSolution === null) {
     return null;
   }
 
-  return { faceMoves: kociembaSolution.split(' ').filter(Boolean), rotations: shortenRotations(rotations) };
+  return { faceMoves: cube3x3.parse(kociembaSolution).moves, rotations: cube3x3.simplifyRotations(rotations) };
 };
 
-export const simplifySetupMoves = async (setupMoves: string) => {
-  if (!setupMoves) {
-    return '';
+export const simplifySetupMoves = async (setupMoves: readonly Move3x3[]): Promise<Move3x3[]> => {
+  if (setupMoves.length === 0) {
+    return [];
+  }
+
+  const solved = await solveForFaceMovesAndRotations(setupMoves);
+  if (!solved) {
+    return [...setupMoves];
+  }
+
+  return [...solved.faceMoves, ...solved.rotations];
+};
+
+export const inferScrambleFromSolution = async (solution: readonly Move3x3[]): Promise<Move3x3[]> => {
+  const setupMoves = invertForCubeSolver(removeRotations(solution));
+  if (setupMoves.length === 0) {
+    return [];
   }
 
   const solved = await solveForFaceMovesAndRotations(setupMoves);
@@ -125,19 +79,5 @@ export const simplifySetupMoves = async (setupMoves: string) => {
     return setupMoves;
   }
 
-  return [...solved.faceMoves, ...solved.rotations].join(' ');
-};
-
-export const inferScrambleFromSolution = async (solution: string) => {
-  const setupMoves = invertAlgMoves(removeRotations(solution));
-  if (!setupMoves) {
-    return '';
-  }
-
-  const solved = await solveForFaceMovesAndRotations(setupMoves);
-  if (!solved) {
-    return setupMoves;
-  }
-
-  return solved.faceMoves.map((move) => solved.rotations.reduce(applyRotation, move)).join(' ');
+  return solved.rotations.reduce(cube3x3.rotate, solved.faceMoves);
 };

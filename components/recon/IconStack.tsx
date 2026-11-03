@@ -4,6 +4,7 @@ import debounce from 'lodash.debounce';
 import type { StepInfo } from '../../composables/recon/SimpleCubeInterpreter';
 import { useSyncedSettings, ICON_SIZE_CONFIG, type CubeColors } from '../../composables/useSettings';
 import { getLineStepInfo } from '../../composables/recon/getLineStepInfo';
+import type { Move3x3 } from '../../utils/parser/cube3x3';
 import { getStepIconDescriptor, type ColorConfig, type IconDescriptor, type SvgShape } from '@/composables/recon/stepIconDescriptors';
 
 // Helper to determine if a color is dark (needs light background)
@@ -18,7 +19,7 @@ function isColorDark(hexColor: string): boolean {
 }
 
 export interface LineIconDatum {
-  line: string;
+  line: Move3x3[];
   isWhitespace: boolean;
   compiledStepInfo: StepInfo | null;
   descriptor: IconDescriptor | null;
@@ -40,14 +41,14 @@ export const getCrossBg = (crossColor: string) =>
   isColorDark(crossColor) ? '#ECE6EF' : '#161018';
 
 export function computeLineIconData(
-  solutionLines: string[],
+  solutionLines: Move3x3[][],
   lineSteps: StepInfo[][] | null,
   cubeColors: CubeColors,
 ): LineIconDatum[] {
   const colorConfig = buildIconColorConfig(cubeColors);
 
   return solutionLines.map((line, index) => {
-    const isWhitespace = line.trim() === '';
+    const isWhitespace = line.length === 0;
     const currentSteps = lineSteps?.[index] || [];
     const prevSteps = lineSteps?.slice(0, index).flat() || [];
     const { stepInfo: compiledStepInfo, hasEO } = getLineStepInfo(currentSteps, prevSteps);
@@ -103,7 +104,7 @@ export function StepIconSvg({ descriptor: desc, nameType }: { descriptor: IconDe
 
 interface IconStackProps {
   position: [number, number, number] | null;
-  moves: string[][][] | null;
+  moves: Move3x3[][][] | null;
   lineIconData: LineIconDatum[];
   editableElement?: HTMLElement | null;
   zoomLayerHost?: HTMLElement | null;

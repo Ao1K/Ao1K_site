@@ -5,6 +5,7 @@ import { ContinuationIcon, CrossIcon } from './SuggestionCard';
 import FeedbackNotes from './FeedbackNotes';
 import { CopyAlgButton, PlayAlgButton, type PlaybackControls } from './ReviewAlgButtons';
 import DropdownIcon from '../icons/dropdown';
+import { cube3x3 } from '../../utils/parser/cube3x3';
 
 const CATEGORY_LABELS: Record<CrossPickCategory, string> = {
   fastest: 'Best',
@@ -26,7 +27,7 @@ interface CrossPanelProps extends PlaybackControls {
 function CrossPanel({ cross, categories = [], ...playback }: CrossPanelProps) {
   const { settings: { cubeColors } } = useSyncedSettings();
   const { solution, shownMoves } = cross;
-  const alg = shownMoves.join(' ');
+  const alg = cube3x3.format(shownMoves);
   const isShown = playback.playingAlg === alg;
 
   return (
@@ -43,10 +44,10 @@ function CrossPanel({ cross, categories = [], ...playback }: CrossPanelProps) {
         <summary className="flex flex-col gap-1 cursor-pointer list-none [&::-webkit-details-marker]:hidden text-neutral-500 group-hover:text-neutral-200 group-has-[button:hover]:text-neutral-500 transition-colors">
           <div className="flex flex-row items-center gap-2">
             <CrossIcon stepInfo={crossStepInfo(solution)} cubeColors={cubeColors} />
-            <span className="grow ff-space-adjust text-primary-100">{shownMoves.join(' ')}</span>
+            <span className="grow ff-space-adjust text-primary-100">{alg}</span>
             <ContinuationIcon cross={solution} cubeColors={cubeColors} />
-            <CopyAlgButton alg={alg} noun="cross" />
-            <PlayAlgButton alg={alg} noun="cross" {...playback} />
+            <CopyAlgButton moves={shownMoves} noun="cross" />
+            <PlayAlgButton moves={shownMoves} noun="cross" {...playback} />
             <DropdownIcon className="shrink-0 text-lg transition-transform duration-300 rotate-180 group-open:rotate-0" />
           </div>
         </summary>
@@ -56,10 +57,10 @@ function CrossPanel({ cross, categories = [], ...playback }: CrossPanelProps) {
               {categories.map(category => <li key={category}>{CATEGORY_MEANINGS[category]}</li>)}
             </ul>
           )}
-          {solution.continuation && (
+          {solution.continuation.length > 0 && (
             <p>
               <span className="whitespace-nowrap">Next pair ({solution.category}):</span>{' '}
-              <span className="inline-block ff-space-adjust text-primary-100">{solution.continuation}</span>
+              <span className="inline-block ff-space-adjust text-primary-100">{cube3x3.format(solution.continuation)}</span>
             </p>
           )}
         </div>
@@ -84,14 +85,14 @@ export default function CrossReviewFeedback({ review, ...playback }: { review: C
       <div className="inline-grid w-fit gap-2">
         <ul className={`${cardGridClass} overflow-y-hidden`}>
           {review.picks.map(({ categories, cross }) => (
-            <CrossPanel key={cross.shownMoves.join(' ')} cross={cross} categories={categories} {...playback} />
+            <CrossPanel key={cube3x3.format(cross.shownMoves)} cross={cross} categories={categories} {...playback} />
           ))}
         </ul>
         {review.others.length > 0 && (
           <details className={closedButSizedClass}>
             <summary className="cursor-pointer text-neutral-400">+{review.others.length} alternative{review.others.length === 1 ? '' : 's'}</summary>
             <ul className={`mt-2 ${cardGridClass} overflow-y-auto max-h-100`}>
-              {review.others.map(cross => <CrossPanel key={cross.shownMoves.join(' ')} cross={cross} {...playback} />)}
+              {review.others.map(cross => <CrossPanel key={cube3x3.format(cross.shownMoves)} cross={cross} {...playback} />)}
             </ul>
           </details>
         )}

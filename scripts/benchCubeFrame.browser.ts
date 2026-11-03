@@ -5,7 +5,8 @@ import { cameraView, smootherStep, timelineMoveMs, turnRotation } from '../compo
 import { DEFAULT_SCENE_LOOK } from '../utils/cubeSceneAuthoring'
 import { DEFAULT_HINT_FACELETS_ELEVATION, DEFAULT_STICKER_SCALE, DEFAULT_CAMERA_FOV } from '../utils/sharedConstants'
 import { SimpleCube } from '../composables/recon/SimpleCube'
-import { faceletsFromState, type RotationInfo } from '../utils/cubeMoves'
+import { faceletsFromState } from '../utils/cubeFacelets'
+import type { Move3x3 } from '../utils/parser/cube3x3'
 
 declare global {
   interface Window {
@@ -13,17 +14,21 @@ declare global {
   }
 }
 
-const SCRAMBLE = "U B2 D2 L2 B' D2 B U2 B' R2 B D2 F' L U L2 B2 F' U2 R U'"
-const SOLUTION = "x' B' D' R F' D2 y' R' U2 R2 U R' y' R U2 R' F' L F L' U2 S L' U' L S' R D' R' U R D R' R U2 R' U2 L' U R U' R' L"
+const SCRAMBLE: Move3x3[] = [
+  'U', 'B2', 'D2', 'L2', "B'", 'D2', 'B', 'U2', "B'", 'R2', 'B', 'D2', "F'", 'L', 'U', 'L2', 'B2', "F'", 'U2', 'R', "U'",
+]
+const SOLUTION: Move3x3[] = [
+  "x'", "B'", "D'", 'R', "F'", 'D2', "y'", "R'", 'U2', 'R2', 'U', "R'", "y'", 'R', 'U2', "R'", "F'", 'L', 'F', "L'", 'U2',
+  'S', "L'", "U'", 'L', "S'", 'R', "D'", "R'", 'U', 'R', 'D', "R'", 'R', 'U2', "R'", 'U2', "L'", 'U', 'R', "U'", "R'", 'L',
+]
 const VIEWPORT = { width: 1280, height: 720 }
 
 type FramePose = { angles: { x: number; y: number }; cubies: RuntimeCubie[]; dim: number }
 
 function buildFramePoses(frames: number): FramePose[] {
-  const facelets = faceletsFromState(new SimpleCube().getCubeState(SCRAMBLE.split(' ')))
-  const moves = SOLUTION.split(' ')
-  const groups = moves.map(move => [turnRotation(move)].filter((turn): turn is RotationInfo => turn !== null))
-  const durations = moves.map(timelineMoveMs)
+  const facelets = faceletsFromState(new SimpleCube().getCubeState(SCRAMBLE))
+  const groups = SOLUTION.map(move => [turnRotation(move)])
+  const durations = SOLUTION.map(timelineMoveMs)
   const totalMs = durations.reduce((sum, ms) => sum + ms, 0)
 
   return Array.from({ length: frames }, (_, i) => {

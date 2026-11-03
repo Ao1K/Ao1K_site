@@ -1,8 +1,11 @@
 import type { Color } from '../composables/recon/SimpleCube'
 import { SimpleCube } from '../composables/recon/SimpleCube'
 import { DEFAULT_CUBE_COLORS, type CubeColors } from './sharedConstants'
-import { faceletsFromState, parseMoveRotation, type RotationInfo } from './cubeMoves'
+import { faceletsFromState } from './cubeFacelets'
+import type { RotationInfo } from './cubeSvgRender'
 import { DEFAULT_TURN_MS, type SceneIsland, type SceneLine } from './cubeSceneIsland'
+import { cube3x3, type Move3x3 } from './parser/cube3x3'
+import { turnRotation } from '../composables/recon/reconCube'
 
 export function buildColorHex(c: CubeColors): Record<Color, string> {
   return { W: c.up, Y: c.down, G: c.front, R: c.right, B: c.back, O: c.left }
@@ -15,10 +18,8 @@ export const DEFAULT_SCENE_LOOK = {
   dim: 0.6,
 }
 
-export type SceneMove = string | string[]
-
 export type AuthoredLine = {
-  moves: SceneMove[]
+  moves: (Move3x3 | Move3x3[])[]
   durations?: number[]
   delay?: number
   highlight?: string[] | null
@@ -40,10 +41,15 @@ export type AuthoredScene = {
   orbit?: boolean
 }
 
+export function parseScramble(scramble: string): Move3x3[] {
+  const { moves, invalid } = cube3x3.parse(scramble)
+  if (invalid.length > 0) throw new Error(`invalid scramble moves: ${invalid.join(', ')} in "${scramble}"`)
+  return moves
+}
+
 function faceletsOf(scene: AuthoredScene): string {
   if (scene.facelets) return scene.facelets
-  const moves = (scene.scramble ?? '').trim().split(/\s+/).filter(Boolean)
-  return faceletsFromState(new SimpleCube().getCubeState(moves))
+  return faceletsFromState(new SimpleCube().getCubeState(parseScramble(scene.scramble ?? '')))
 }
 
 export function buildSceneIsland(scene: AuthoredScene): SceneIsland {
@@ -51,9 +57,7 @@ export function buildSceneIsland(scene: AuthoredScene): SceneIsland {
     const moves: RotationInfo[][] = []
     const durations: number[] = []
     line.moves.forEach((entry, i) => {
-      const group = (Array.isArray(entry) ? entry : [entry])
-        .map(parseMoveRotation)
-        .filter((r): r is RotationInfo => r !== null)
+      const group = (Array.isArray(entry) ? entry : [entry]).map(turnRotation)
       if (group.length === 0) return
       moves.push(group)
       durations.push(line.durations?.[i] ?? DEFAULT_TURN_MS)

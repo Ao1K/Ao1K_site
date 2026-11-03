@@ -1,5 +1,5 @@
 import { SimpleCube, type Color, type CubeState } from '../recon/SimpleCube';
-import { invertTokens, tokenize } from './algMoves';
+import { cube3x3, type Move3x3 } from '../../utils/parser/cube3x3';
 
 export type SlotKey = 'FL' | 'FR' | 'BL' | 'BR';
 
@@ -40,9 +40,10 @@ const SLOT_KEYS: SlotKey[] = ['FL', 'FR', 'BL', 'BR'];
 
 // a half turn can complete a slot halfway through, and its written direction doesn't say which
 // quarter that is, so both readings are sampled and either one counts
-const halfTurnQuarters = (token: string): string[] => {
-  const base = token.replace(/2'?$/, '');
-  return base === token ? [] : [base, base + "'"];
+const halfTurnQuarters = (move: Move3x3): Move3x3[] => {
+  if (cube3x3.turns(move) !== 2) return [];
+  const layer = cube3x3.layer(move);
+  return [cube3x3.make(layer, 1), cube3x3.make(layer, -1)];
 };
 
 function readPieces(state: CubeState): Map<string, boolean> {
@@ -92,8 +93,8 @@ const SIDE_GROUPS: { label: string; slots: [SlotKey, SlotKey] }[] = [
 
 const capitalize = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
 
-export function f2lPairTitle(alg: string, setName = 'F2L'): string {
-  const slots = new Set(algSolvedSlots(alg));
+export function f2lPairTitle(moves: Move3x3[], setName = 'F2L'): string {
+  const slots = new Set(algSolvedSlots(moves));
   if (slots.size === 0) return setName;
   if (slots.size === 4) return 'What did you do';
 
@@ -115,14 +116,13 @@ export function f2lPairTitle(alg: string, setName = 'F2L'): string {
   return `${capitalize(phrase)} ${setName} pair${slots.size > 1 ? '(s)' : ''}`;
 }
 
-export function algSolvedSlots(alg: string): SlotKey[] {
-  const tokens = tokenize(alg);
+export function algSolvedSlots(tokens: Move3x3[]): SlotKey[] {
   if (tokens.length === 0) return [];
 
   const cube = new SimpleCube();
-  const setup = invertTokens(tokens);
+  const setup = cube3x3.invert(tokens);
   const faceOfColor = faceOfEachColor(cube.getCubeState([...setup, ...tokens]));
-  const slotsAfter = (moves: string[]) =>
+  const slotsAfter = (moves: Move3x3[]) =>
     solvedSlots(cube.getCubeState([...setup, ...moves]), faceOfColor);
 
   const timeline = [slotsAfter([])];

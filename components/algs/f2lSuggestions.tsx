@@ -12,6 +12,7 @@ import { IconSvg } from './f2lDefaults';
 import { useCubeColors } from '../../composables/useSettings';
 import { useAlgFavorites } from '../../composables/algs/algFavorites';
 import { classifyAlg } from '../../composables/algs/classifyAlg';
+import { cube3x3, type Move3x3 } from '../../utils/parser/cube3x3';
 import F2lAlgCard from './f2lAlgCard';
 import type { F2lCaseConfig } from './f2lSetup';
 import { configToRaw, isFullEOActive, isFullEOValid, isPairSolved } from '../../composables/algs/f2lCaseId';
@@ -26,9 +27,9 @@ interface F2lSuggestionsProps {
   playingAlg?: string | null;
   // index of the move being animated, highlighted on the playing card
   highlightedMove?: number;
-  // request playback on the shared cube; `alg` identifies the suggestion, `playbackAlg` is the
+  // request playback on the shared cube; `moves` identifies the suggestion, `playbackMoves` is the
   // form to animate, which is the breakdown's split-up moves when its dropdown is open
-  onPlay?: (alg: string, playbackAlg: string) => void;
+  onPlay?: (moves: Move3x3[], playbackMoves: Move3x3[]) => void;
 }
 
 const COLOR_OF: Record<FaceKey, Color> = {
@@ -83,9 +84,9 @@ const F2lSuggestions = ({ config, cross, pair, suggestions, ready, playingAlg, h
   const pairSolved = isPairSolved(config, cross, pair);
 
   const eoConfigured = eoActive && eoValid;
-  const savedAlgset = (alg: string): Algset | undefined => {
+  const savedAlgset = (moves: Move3x3[]): Algset | undefined => {
     if (!eoConfigured) return undefined;
-    return classifyAlg(alg).kind === 'multislot' ? 'f2leo' : 'zbls';
+    return classifyAlg(moves).kind === 'multislot' ? 'f2leo' : 'zbls';
   };
 
   const shownSuggestions = useMemo(
@@ -133,10 +134,10 @@ const F2lSuggestions = ({ config, cross, pair, suggestions, ready, playingAlg, h
         {ready && hasPair && !pairSolved && (!eoActive || eoValid) && shownSuggestions.length === 0 && <NoSolutionsDisclaimer />}
         {ready && hasPair && !pairSolved && (!eoActive || eoValid) && shownSuggestions.length > 0 && (
           <ul className="flex flex-col gap-2">
-            {shownSuggestions.map((s, i) => (
+            {shownSuggestions.map((s) => ({ ...s, alg: cube3x3.format(s.moves) })).map((s, i) => (
               <li key={`${s.alg}-${i}`}>
                 <F2lAlgCard
-                  alg={s.alg}
+                  moves={s.moves}
                   steps={s.steps}
                   cross={cross}
                   caseState={caseState}
@@ -145,9 +146,9 @@ const F2lSuggestions = ({ config, cross, pair, suggestions, ready, playingAlg, h
                   colorConfig={colorConfig}
                   isPlaying={playingAlg === s.alg}
                   highlightedMove={playingAlg === s.alg ? highlightedMove : -1}
-                  isFavorited={isFavorite(s.alg)}
-                  onPlay={(playbackAlg) => onPlay?.(s.alg, playbackAlg)}
-                  onToggleFavorite={() => toggleFavorite(s.alg, savedAlgset(s.alg))}
+                  isFavorited={isFavorite(s.moves)}
+                  onPlay={(playbackMoves) => onPlay?.(s.moves, playbackMoves)}
+                  onToggleFavorite={() => toggleFavorite(s.moves, savedAlgset(s.moves))}
                 />
               </li>
             ))}

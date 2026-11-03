@@ -8,7 +8,7 @@ import CubeAnglePreview from './CubeAnglePreview';
 import { compileStaticCubeImage } from '../../app/devActions';
 import { formatCubeImageJsx } from '../../utils/cubeSceneJsx';
 import { buildColorHex } from '../../utils/cubeSceneAuthoring';
-import { faceletsFromState } from '../../utils/cubeMoves';
+import { faceletsFromState } from '../../utils/cubeFacelets';
 import type { CubeState } from '../../composables/recon/SimpleCube';
 import UnfoldedCube, { allHighlightSet } from './UnfoldedCube';
 

@@ -1,8 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { tokenize } from './algMoves';
 import { classifyAlg } from './classifyAlg';
+import { cube3x3, type Move3x3 } from '../../utils/parser/cube3x3';
 import type { ImperativeRef } from '../../components/recon/MovesTextEditor';
 
 /**
@@ -19,7 +19,7 @@ interface AlgDraftOptions {
 
 export function useAlgDraft(initialAlg: string, onCommit: (alg: string) => void, options: AlgDraftOptions = {}) {
   const { resetOnCommit = false, onChange } = options;
-  const [value, setValue] = useState(initialAlg);
+  const [moves, setMoves] = useState<Move3x3[]>(() => cube3x3.parse(initialAlg).moves);
   const [html, setHTML] = useState(initialAlg === '' ? '' : `<div>${initialAlg}<br></div>`);
   const [confirming, setConfirming] = useState(false);
 
@@ -46,21 +46,20 @@ export function useAlgDraft(initialAlg: string, onCommit: (alg: string) => void,
     return () => cancelAnimationFrame(frame);
   }, []);
 
-  const trackMoves = useCallback((_idIndex: number, _lineIndex: number, _caretIndex: number, moves: string[][]) => {
-    const next = moves.flat().filter(Boolean).join(' ');
-    setValue(next);
-    onChangeRef.current?.(tokenize(next).join(' '));
+  const trackMoves = useCallback((_idIndex: number, _lineIndex: number, _caretIndex: number, lineMoves: Move3x3[][]) => {
+    const next = lineMoves.flat();
+    setMoves(next);
+    onChangeRef.current?.(cube3x3.format(next));
     // re-editing invalidates a pending confirmation prompt
     setConfirming(false);
   }, []);
 
-  // collapse runs of whitespace so storage and the icon see a clean move sequence
-  const normalized = useMemo(() => tokenize(value).join(' '), [value]);
-  const classification = useMemo(() => classifyAlg(normalized), [normalized]);
+  const normalized = cube3x3.format(moves);
+  const classification = useMemo(() => classifyAlg(moves), [moves]);
   const recognized = normalized !== '' && classification.kind !== 'unknown';
 
   const reset = () => {
-    setValue('');
+    setMoves([]);
     setConfirming(false);
     onChangeRef.current?.('');
     editorRef.current?.setContent('');

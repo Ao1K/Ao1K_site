@@ -6,6 +6,7 @@
 import { f2lIsoDescriptor } from './f2lIsoIcon';
 import { f2lPairTitle } from './multislotSlots';
 import { type AlgClassification } from './classifyAlg';
+import type { Move3x3 } from '../../utils/parser/cube3x3';
 import {
   getStepIconDescriptor,
   type ColorConfig,
@@ -46,12 +47,12 @@ export interface AlgIconData {
   title: string;
 }
 
-export function buildAlgIcon(c: AlgClassification, alg: string, cubeColors: CubeColors): AlgIconData {
+export function buildAlgIcon(c: AlgClassification, moves: Move3x3[], cubeColors: CubeColors): AlgIconData {
   if (c.kind === 'f2l' || c.kind === 'multislot' || c.kind === 'zbls' || c.kind === 'f2leo') {
     const solvesEO = c.kind === 'zbls' || c.kind === 'f2leo';
     return {
-      descriptor: f2lIsoDescriptor(alg, realColorConfig(cubeColors), solvesEO ? cubeColors.eo : undefined),
-      title: f2lPairTitle(alg, c.group),
+      descriptor: f2lIsoDescriptor(moves, realColorConfig(cubeColors), solvesEO ? cubeColors.eo : undefined),
+      title: f2lPairTitle(moves, c.group),
     };
   }
   if (c.kind === 'oll' && c.stepInfo) {

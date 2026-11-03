@@ -1,6 +1,6 @@
 import { DEFAULT_HINT_FACELETS_ELEVATION } from '../../utils/sharedConstants';
-import { parseMoveRotation, type RotationInfo } from '../../utils/cubeMoves';
-import { CUBE_PX, SCENE_PX, type SceneView } from '../../utils/cubeSvgRender';
+import { CUBE_PX, SCENE_PX, type RotationInfo, type SceneView } from '../../utils/cubeSvgRender';
+import { cube3x3, type Move3x3 } from '../../utils/parser/cube3x3';
 
 const REFERENCE_CAMERA_FOV = 75;
 
@@ -10,15 +10,15 @@ export const ORBIT_DAMPING = 0.15;
 
 export const smootherStep = (x: number) => x * x * x * (10 - x * (15 - 6 * x));
 
-export const turnRotation = (move: string): RotationInfo | null => {
-  if (!move.includes('3')) return parseMoveRotation(move);
-  const quarterTurn = parseMoveRotation(move.replace('3', ''));
-  return quarterTurn && { ...quarterTurn, angle: quarterTurn.angle * 3 };
+export const turnRotation = (move: Move3x3): RotationInfo => {
+  const { axis, layers, sign } = cube3x3.geometry(move);
+  return { axis, layers: [...layers], angle: sign * cube3x3.amount(move) * 90 };
 };
 
-export const timelineMoveMs = (move: string) => {
-  if (move.includes('3')) return 2000;
-  if (move.includes('2')) return 1500;
+export const timelineMoveMs = (move: Move3x3) => {
+  const quarterTurns = Math.abs(cube3x3.amount(move));
+  if (quarterTurns === 3) return 2000;
+  if (quarterTurns === 2) return 1500;
   return 1000;
 };
 

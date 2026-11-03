@@ -7,6 +7,7 @@
 import { type AlgClassification } from '../../composables/algs/classifyAlg';
 import { buildAlgIcon } from '../../composables/algs/algIcon';
 import { type CubeColors } from '../../composables/useSettings';
+import type { Move3x3 } from '../../utils/parser/cube3x3';
 import { type IconDescriptor, type SvgShape } from '../../composables/recon/stepIconDescriptors';
 
 function renderShape(shape: SvgShape, i: number) {
@@ -64,13 +65,13 @@ function TextIcon({ label }: { label: string }) {
 
 interface AlgIconProps {
   classification: AlgClassification;
-  alg: string;
+  moves: Move3x3[];
   cubeColors: CubeColors;
 }
 
-export function AlgIcon({ classification, alg, cubeColors }: AlgIconProps) {
+export function AlgIcon({ classification, moves, cubeColors }: AlgIconProps) {
   const text = classification.label;
-  const { descriptor, title } = buildAlgIcon(classification, alg, cubeColors);
+  const { descriptor, title } = buildAlgIcon(classification, moves, cubeColors);
   if (!descriptor) return <TextIcon label={text} />;
   return <IconSvg descriptor={descriptor} title={title} />;
 }

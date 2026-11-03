@@ -1,7 +1,10 @@
-import { applyMoves, faceOfSticker, FACELET_COUNT, getMovePermutation, solvedFacelets } from './faceletCube';
+import { applyMoves, faceOfSticker, FACELET_COUNT, getMoveStickerMap, solvedFacelets } from './faceletCube';
 import type { Facelets } from './faceletCube';
 import { FACE_COLOR_NAMES } from './cubeHashState';
 import type { ColorName } from './cubeHashState';
+import { cube3x3 } from '../../utils/parser/cube3x3';
+import type { Move3x3 } from '../../utils/parser/cube3x3';
+import type { Amount } from '../../utils/parser';
 
 export interface PairDisturbance {
   pairColors: [ColorName, ColorName];
@@ -9,7 +12,7 @@ export interface PairDisturbance {
 }
 
 export interface CrossSolution {
-  moves: string[];
+  moves: Move3x3[];
   pairDisturbances: PairDisturbance[];
 }
 
@@ -18,9 +21,9 @@ export interface CrossSearchOptions {
   extraDepth?: number;
 }
 
-const SEARCH_FACES = ['U', 'D', 'F', 'B', 'L', 'R'] as const;
-const SEARCH_SUFFIXES = ['', '2', "'"] as const;
-const SEARCH_MOVES = SEARCH_FACES.flatMap(face => SEARCH_SUFFIXES.map(suffix => `${face}${suffix}`));
+const SEARCH_FACES: readonly Move3x3[] = ['U', 'D', 'F', 'B', 'L', 'R'];
+const SEARCH_AMOUNTS: readonly Amount[] = [1, 2, -1];
+const SEARCH_MOVES = SEARCH_FACES.flatMap(face => SEARCH_AMOUNTS.map(amount => cube3x3.make(cube3x3.layer(face), amount)));
 const MOVE_COUNT = SEARCH_MOVES.length;
 
 const EDGE_FACELET_PAIRS: readonly [number, number][] = [
@@ -61,7 +64,7 @@ const positionOfFacelet = new Map<number, number>(edgePositionFacelets.map((face
 const crossHomePositions = D_EDGE_HOME_FACELETS.map(facelet => positionOfFacelet.get(facelet)!);
 
 const turnedFacesKey = (facelet: number) =>
-  SEARCH_FACES.filter(face => getMovePermutation(face)[facelet] !== facelet).join('');
+  SEARCH_FACES.filter(face => getMoveStickerMap(face)[facelet] !== facelet).join('');
 const cornerPositionFacelets = allFacelets.filter(facelet =>
   facelet !== centerFaceletOf(facelet) && !positionOfFacelet.has(facelet)
 );
@@ -74,7 +77,7 @@ const cornerMatesOf = new Map<number, number[]>(cornerPositionFacelets.map(facel
 function buildFaceletDestinationTable(): Uint8Array {
   const table = new Uint8Array(MOVE_COUNT * FACELET_COUNT);
   SEARCH_MOVES.forEach((move, moveIndex) => {
-    getMovePermutation(move).forEach((sourceFacelet, destinationFacelet) => {
+    getMoveStickerMap(move).forEach((sourceFacelet, destinationFacelet) => {
       table[moveIndex * FACELET_COUNT + sourceFacelet] = destinationFacelet;
     });
   });
@@ -299,6 +302,6 @@ export function findCrossSolutions(facelets: Facelets, options: CrossSearchOptio
   return solutions;
 }
 
-export function findCrossSolutionsForMoves(moves: readonly string[], options?: CrossSearchOptions): CrossSolution[] {
+export function findCrossSolutionsForMoves(moves: readonly Move3x3[], options?: CrossSearchOptions): CrossSolution[] {
   return findCrossSolutions(applyMoves(solvedFacelets(), moves), options);
 }

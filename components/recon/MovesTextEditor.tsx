@@ -1,29 +1,55 @@
 'use client';
 
 import React, { useImperativeHandle, useEffect, useLayoutEffect, memo, useEffectEvent, useRef } from 'react';
-import sanitizeHtml from 'sanitize-html';
 
-import parseTextInput from "../../composables/recon/validateTextInput";
-import parsingToTokens, { degroup } from "../../composables/recon/validationToMoves";
-import type { MovesDisplayValidation as MovesDisplayParsing } from "../../composables/recon/validationToMoves";
-import type { MovesParsing } from "../../composables/recon/validateTextInput";
+import {
+  applyInputRules,
+  countMovesBeforeCaret,
+  expandLine,
+  findDomPoint,
+  linesToHTML,
+  mapCaretOffset,
+  paintLine,
+  parseLine,
+  readEditorLines,
+  type Caret,
+  type DomPoint,
+  type Segment,
+  type SelectionTransform,
+} from '../../composables/recon/editorDocument';
 import updateURL from '../../composables/recon/updateURL';
 
 import { customDecodeURL } from '../../composables/recon/urlEncoding';
 
-import type { Token } from "../../composables/recon/validationToMoves";
+import { cube3x3, type Move3x3 } from '../../utils/parser/cube3x3';
 import type { Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
-import { colorDict, highlightClass, editorAliases } from '../../utils/sharedConstants';
+import { editorAliases } from '../../utils/sharedConstants';
 import {
   SuggestionManager,
   type SuggestionManagerHandle,
 } from './SuggestionManager';
 import { KEYBOARD_KEEPER_SELECTOR } from './KeyboardKeeper';
 
-interface HTMLUpdateItem {
-  html?: string;
-  change: 'modified' | 'none';
-}
+type EditorSelection = { anchor: Caret; focus: Caret };
+
+type EditorLine = {
+  text: string;
+  segments: Segment<Move3x3>[];
+  moves: Move3x3[];
+  html: string;
+};
+
+const buildEditorLine = (text: string): EditorLine => {
+  const segments = parseLine(text, cube3x3);
+  return {
+    text,
+    segments,
+    moves: expandLine(segments),
+    html: `<div>${paintLine(text, segments)}<br></div>`,
+  };
+};
+
+const EMPTY_EDITOR_LINE = buildEditorLine('');
 
 // the ghost anchor is measured from the freshly painted text, so it must run before paint to
 // stay in lockstep with the recalculated suggestion text. fall back to useEffect on the server.
@@ -40,9 +66,18 @@ const keyLeavesFocusOnKeeper = (e: KeyboardEvent) =>
   || suggestionNavigationKeys.has(e.key)
   || bareModifierKeys.has(e.key);
 
+const domPointFromCoordinates = (x: number, y: number): DomPoint | null => {
+  if (document.caretPositionFromPoint) {
+    const position = document.caretPositionFromPoint(x, y);
+    return position ? { node: position.offsetNode, offset: position.offset } : null;
+  }
+  const range = document.caretRangeFromPoint?.(x, y);
+  return range ? { node: range.startContainer, offset: range.startOffset } : null;
+};
+
 interface EditorProps {
   name: string;
-  trackMoves: (idIndex: number, lineIndex: number, caretIndex: number, moves: string[][]) => void;
+  trackMoves: (idIndex: number, lineIndex: number, caretIndex: number, moves: Move3x3[][]) => void;
   autofocus: boolean;
   moveHistory: React.RefObject<any>;
   onHistoryChange?: () => void;
@@ -61,6 +96,7 @@ export interface ImperativeRef {
   undo: () => void;
   redo: () => void;
   setContent: (html: string) => void;
+  transformSelection: (transform: SelectionTransform) => void;
   highlightMove: (moveIndex: number, lineIndex: number) => void;
   removeHighlight: () => void;
   getElement: () => HTMLDivElement | null;
@@ -90,73 +126,49 @@ function MovesTextEditor({
   const editorWrapperRef = useRef<HTMLDivElement>(null);
   const moveOffsetRef = useRef<number>(0); // number of moves before and at the caret. 0 is at the start of the line before any moves.
   const lineOffsetRef = useRef<number>(0);
-  const textboxMovesRef = useRef<string[][]>([['']]); // inner array for line of moves, outer array for all lines in textbox
+  const editorLinesRef = useRef<EditorLine[]>([EMPTY_EDITOR_LINE]);
+  const caretRef = useRef<Caret>({ line: 0, offset: 0 });
+  const caretPlacedRef = useRef(false);
+  const pendingSelectionRef = useRef<EditorSelection | null>(null);
   const suggestionManagerRef = useRef<SuggestionManagerHandle | null>(null);
   const restoreFrameRef = useRef<number | null>(null);
+  const dragStartedInEditorRef = useRef(false);
 
   const updateURLTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  const oldHTMLlinesRef = useRef<string[]>(['']);
   const oldLineMoveCounts = useRef<number[]>([0]);
 
   const idIndex = name === 'scramble' ? 0 : 1;
   const fallbackEditorTopInset = 9;
   const fallbackLineHeight = lineHeight || 28;
 
-  const sanitizeConf = {
-    allowedTags: ["b", "i", "br", "div"],
-    allowedAttributes: { span: ["className", "class"] },
-    nonTextTags: ['script', 'style', 'textarea', 'option', 'xmp'],
+  const scheduleURLUpdate = () => {
+    updateURLTimeout.current ? clearTimeout(updateURLTimeout.current) : null;
+    updateURLTimeout.current = setTimeout(passURLupdate, 500);
   };
 
-  const localColorDict = useRef(JSON.parse(JSON.stringify(colorDict)));
+  const handleInput = () => {
+    const root = contentEditableRef.current;
+    if (!root) return;
 
-  const handleInput = (shouldUpdateURL = true) => {
-    if (!contentEditableRef.current) return;
+    const selection = window.getSelection();
+    const focusNode = selection?.focusNode;
+    const canReadCaret = moveHistory.current.undo_redo_done !== false && !!focusNode && root.contains(focusNode);
+    const focusPoints: DomPoint[] = canReadCaret ? [{ node: focusNode, offset: selection!.focusOffset }] : [];
 
-    onInputChange();
-
-    // Only debounce URL updates for user interactions, not initialization
-    if (shouldUpdateURL) {
-      updateURLTimeout.current ? clearTimeout(updateURLTimeout.current) : null;
-      updateURLTimeout.current = setTimeout(passURLupdate, 500);
-    }
+    const { lines, points: [caret] } = readEditorLines(root, focusPoints);
+    processLines(lines, caret ?? null);
+    scheduleURLUpdate();
   };
 
-  const htmlToLineArray = (html: string) => {
-    // strip properties from div tags
-    html = html.replace(/<div[^>]*>/g, '<div>');
+  const mappedCaret = (newLines: string[]): Caret | null => {
+    if (!caretPlacedRef.current) return null;
 
-    // remove obvious nested divs
-    html = html.replace(/<div><div>/g, '');
-    html = html.replace(/<\/div><\/div>/g, '');
-
-    // remove empty divs
-    html = html.replace(/<div><\/div>/g, '');
-
-    // replace newlines with div split
-    // newlines are created by pressing shift+enter 
-    // (chrome)
-    html = html.replace(/\n/g, '<br></div><div>');
-    // (firefox)
-    html = html.replace(/>(<br>)(?=<[^/])/g, '>$1</div><div>');
-
-    // remove any old highlight spans and replace with primary text
-    html = html.replace(new RegExp(`<span class="${highlightClass}">`, 'g'), '<span class="text-primary-100">');
-
-    let lines = splitHTMLintoLines(html);
-    lines = cleanLines(lines);
-
-    // simpleInput disables multi-line input
-    if (simpleInput && lines.length > 1) {
-      const merged = lines
-        .map((line) => line.replace(/^<div>/, '').replace(/<br><\/div>$/, ''))
-        .join(' ');
-      lines = cleanLines([merged]);
-    }
-
-    return lines;
-  }
+    const oldLines = editorLinesRef.current.map((line) => line.text);
+    const line = Math.min(caretRef.current.line, newLines.length - 1);
+    const offset = mapCaretOffset(oldLines[line] ?? '', newLines[line], caretRef.current.offset);
+    return { line, offset };
+  };
 
   const getCurrentLineHeights = (element: HTMLDivElement) => {
     const lineDivs = Array.from(element.children).filter(
@@ -184,236 +196,6 @@ function MovesTextEditor({
     return editorTopInset + totalHeight + fallbackLineHeight;
   };
 
-  const findHTMLchanges = (oldHTML: string[], newHTML: string[]): HTMLUpdateItem[] => {
-    const htmlUpdateMatrix: HTMLUpdateItem[] = [];
-
-    newHTML.forEach((line, index) => {
-      const oldLine = oldHTML[index];
-
-      // adds changed lines or lines that are not painted
-      if (line !== oldLine || !line.includes('span')) {
-        htmlUpdateMatrix.push({
-          html: line,
-          change: 'modified'
-        });
-      } else {
-        htmlUpdateMatrix.push({
-          change: 'none'
-        });
-      }
-    });
-    return htmlUpdateMatrix;
-  }
-
-  const findEndOfWordOnCaret = (parsing: [string, string, number?][], caretOffset: number): number => {
-    // counts characters
-    // increment caretOffset until it finds the end of the word
-    const validWordTypes = ['move', 'rep', 'hashtag'];
-    let i = caretOffset;
-    try {
-      for (i; i < parsing.length; i++) {
-        const type = parsing[i][1];
-        if (validWordTypes.includes(type)) {
-          continue;
-        } else {
-          break;
-        }
-      }
-    } catch (e) {
-      console.error('Error in findEndOfMoveOnCaret:', e);
-    }
-    return i;
-
-  };
-
-  // Auto-substitution patterns for automatic text replacement
-  const autoSubstitutions = [
-    // this substitutions are applied in order
-
-    // X -> x conversion
-    // placed high in this list because XX should become xx, then x2
-    { pattern: /([XYZ])/g,
-      replacement: (_match: string, axis: string) => axis.toLowerCase()
-    },
-    
-    // Convert repeated moves to numbered notation (NN → N2)
-    { pattern: /([UDFBLRMESudfblrxyz])(?!\s)\1/g, replacement: '$12' },
-    
-    // Convert N2N into N3 for r and l moves only. 
-    // Other moves can't really be fingertricked as N3.
-    { pattern: /([LRlr])2(?!\s)\1/g, replacement: (_match: string, move: string) => {
-      const face = move.charAt(0);
-      return `${face}3`;
-    } },
-    
-    // UD/DU with double/triple moves - just add a space (before the grouping patterns catch them)
-    { pattern: /([UD])([23])('?)([DU])/g, replacement: '$1$2$3 $4' },
-    { pattern: /([UD])('?)([DU][23])/g, replacement: '$1$2 $3' },
-
-    // Special UD/DU patterns
-    { pattern: /U('?)(?!2)D('?)(?!2)\s/g, replacement: '(U$1 D$2) ' },
-    { pattern: /D('?)(?!2)U('?)(?!2)\s/g, replacement: '(U$2 D$1) ' },
-    
-    // Nw → n conversion
-    { pattern: /([UDFBLR])[wW]('?)(?!2)/g, 
-      replacement: (_match: string, face: string, prime: string) =>
-        `${face.toLowerCase()}${prime} ` 
-    },
-
-    // Fix missing spaces between moves
-    { pattern: /([UDFBLRMESudfblrxyz])([23]?)('?)([UDFBLRMESudfblrxyzfblr])/g,
-      replacement: (match: string, m1: string, num: string, prime: string, m2: string) => {
-        // Skip if it's UD or DU (handled by special patterns above)
-        if ((m1 === 'U' && m2 === 'D') || (m1 === 'D' && m2 === 'U')) return match;
-        return `${m1}${num}${prime} ${m2}`;
-      }
-    },
-    // Add more substitution patterns here as needed
-  ];
-
-  /**
-   * Applies automatic text substitutions to the input text.
-   * Skips text inside comment spans to preserve comments as-is.
-   */
-  const applyAutoSubstitutions = (html: string): [string, string] => {
-    const caretMarker = '___CARET___';
-    
-    // Extract plain text from HTML, tracking caret position
-    let workingHtml = html.replace(/<span id="caretNode"[^>]*>.*?<\/span>/i, caretMarker);
-    let plainText = workingHtml.replace(/<[^>]+>/g, '');
-    
-    // detect comment ranges from plain text — works regardless of span attributes (class= or style=)
-    const commentRanges: Array<{start: number, end: number}> = [];
-    const commentPattern = /\/\/[^\n]*/g;
-    let commentMatch;
-    while ((commentMatch = commentPattern.exec(plainText)) !== null) {
-      commentRanges.push({ start: commentMatch.index, end: commentMatch.index + commentMatch[0].length });
-    }
-    
-    // Apply substitutions to non-comment portions
-    let processedText = plainText;
-    
-    // Replace comment ranges with placeholders first, while positions
-    // (computed against plainText) are still valid
-    const commentPlaceholders: string[] = [];
-    for (let i = commentRanges.length - 1; i >= 0; i--) {
-      const range = commentRanges[i];
-      if (range.end !== -1) {
-        const placeholder = `\u0000\u0004${i}\u0005\u0000`;
-        commentPlaceholders[i] = processedText.substring(range.start, range.end);
-        processedText = processedText.substring(0, range.start) + placeholder + processedText.substring(range.end);
-      }
-    }
-    
-    // Protect caret marker from substitution patterns by temporarily replacing it
-    // (done after comment placeholders since those use position-based indexing)
-    const caretPlaceholder = '\u0000\u0001\u0002\u0003';
-    processedText = processedText.replace(caretMarker, caretPlaceholder);
-    
-    // Apply all substitutions to the text (outside of comments)
-    for (const sub of autoSubstitutions) {
-      processedText = processedText.replace(sub.pattern, sub.replacement as any);
-    }
-    
-    // Restore comments
-    for (let i = 0; i < commentPlaceholders.length; i++) {
-      processedText = processedText.replace(`\u0000\u0004${i}\u0005\u0000`, commentPlaceholders[i]);
-    }
-    
-    // Restore caret marker
-    processedText = processedText.replace(caretPlaceholder, caretMarker);
-    
-    // Restore caret marker position
-    const modifiedText = processedText.replace(caretMarker, '');
-    let modifiedHtml = processedText.replace(caretMarker, '<span id="caretNode"></span>');
-    
-    // Wrap in div if not already wrapped (preserve structure)
-    if (!html.startsWith('<div>')) {
-      modifiedHtml = `<div>${modifiedHtml}<br></div>`;
-    } else {
-      modifiedHtml = `<div>${modifiedHtml}<br></div>`;
-    }
-    
-    return [modifiedText, modifiedHtml];
-  };
-
-  const getMovesFromTokens = (tokens: Token[]): string[] => {
-    return tokens
-      .filter((token) => token.type === 'move')
-      .map((token) => token.value);
-  }
-
-  const handleLineModified = (updateItem: HTMLUpdateItem, i: number, lineMoveCounts: number[]): string => {
-    let line = updateItem.html || '';
-
-    // get html
-    let text = line.replace(/<[^>]+>/g, '');
-
-    [text, line] = applyAutoSubstitutions(line);
-
-    const parsed = parseTextInput(text);
-
-    const [newHTMLline, caretIndex] = updateLine(parsed, line);
-
-    // get move and line offsets
-    let moves: string[];
-    if (caretIndex !== null) {
-      let caretSplitIndex = findEndOfWordOnCaret(parsed, caretIndex);
-
-      const tokensBeforeCaret = parsingToTokens(parsed.slice(0, caretSplitIndex)); // before and including move at caret
-      const movesBeforeCaret: string[] = getMovesFromTokens(tokensBeforeCaret);
-      moveOffsetRef.current = movesBeforeCaret.length; // not minus 1. 0 represents before any moves.
-
-      // TODO: could be optimized.
-      // Can't create tokensAfterCaret because the caret might be in the middle of a group 
-      // [ex: (R U | R' U')2]
-      // would need to create a parsed array that includes the caret,
-      // then extract movesBeforeCaret.length from it
-      moves = getMovesFromTokens(parsingToTokens(parsed));
-
-      lineOffsetRef.current = i; // could be wrong in certain situations? (copy-paste)
-
-    } else {
-      // in the future, may need to expand to handle other types of tokens, such as hashtags
-      moves = getMovesFromTokens(parsingToTokens(parsed));
-    }
-
-    lineMoveCounts[i] = moves.length;
-    textboxMovesRef.current[i] = moves;
-
-    return newHTMLline;
-  };
-
-  const handleHTMLlines = (htmlUpdateMatrix: HTMLUpdateItem[], lineMoveCounts: number[]): [string[], number[]] => {
-
-    if (textboxMovesRef.current.length > htmlUpdateMatrix.length) {
-      textboxMovesRef.current = textboxMovesRef.current.slice(0, htmlUpdateMatrix.length);
-    }
-
-    // iterate line by line and return painted HTML
-    const paintedHTML = htmlUpdateMatrix.map((updateItem, i) => {
-
-      if (!textboxMovesRef.current[i]) {
-        textboxMovesRef.current[i] = [''];
-      }
-
-      if (lineMoveCounts[i] === undefined) {
-        lineMoveCounts.push(0);
-      }
-
-      switch (updateItem.change) {
-        case 'modified':
-          return handleLineModified(updateItem, i, lineMoveCounts);
-        case 'none':
-        default:
-          return oldHTMLlinesRef.current[i];
-      }
-
-    });
-
-    return [paintedHTML, lineMoveCounts];
-  };
-
   const isQuantifiableMoveChange = (oldMoveCounts: number[], newMoveCounts: number[]) => {
     //Remove trailing zeros. Clean empty count arrays.
     while (oldMoveCounts[oldMoveCounts.length - 1] === 0) oldMoveCounts.pop();
@@ -430,7 +212,7 @@ function MovesTextEditor({
     return false;
   }
 
-  const updateMoveHistory = (html: string, moveCountChanged: boolean) => {
+  const updateMoveHistory = (text: string, moveCountChanged: boolean) => {
 
     if (moveHistory.current.status === 'loading') {
       moveHistory.current.history = [["", ""]];
@@ -475,331 +257,99 @@ function MovesTextEditor({
     moveCountChanged ? moveHistory.current.history = moveHistory.current.history.slice(0, i + 1) : null;
 
     idIndex === 0 ?
-      moveHistory.current.history[i] = [html, '<unchanged>'] :
-      moveHistory.current.history[i] = ['<unchanged>', html];
+      moveHistory.current.history[i] = [text, '<unchanged>'] :
+      moveHistory.current.history[i] = ['<unchanged>', text];
   }
 
-  const updateLine = (parsing: [string, string, number?][], line: string): [string, number | null] => {
-    line = removeSpansExceptCaret(line);
-    line = line.replace(/&nbsp;/g, ' ');
+  const processLines = (rawLines: string[], caret: Caret | null) => {
+    const root = contentEditableRef.current;
+    if (!root) return;
 
-    let { updatedLine, caretIndex } = processParsing(parsing, line);
-
-    return [updatedLine, caretIndex];
-  }
-
-  const processParsing = (parsing: [string, string, number?][], line: string): { updatedLine: string, caretIndex: number | null } => {
-    let valIndex = 0;
-    let valOffset = 0;
-    let matchOffset = 0;
-
-    let caretIndex: number | null = null;
-
-    // find strings between ">" and "<" and modify each
-    line = line.replace(/>[^<>]+<|caretNode">/g, (match) => { // matches the ">" of caretNode to ensure no user text match. 
-      if (match === 'caretNode">') {
-        caretIndex = valIndex;
-        return 'caretNode">';
+    let lines = rawLines;
+    let nextCaret = caret;
+    if (simpleInput && lines.length > 1) {
+      if (nextCaret) {
+        const offset = lines
+          .slice(0, nextCaret.line)
+          .reduce((total, line) => total + line.length + 1, nextCaret.offset);
+        nextCaret = { line: 0, offset };
       }
+      lines = [lines.join(' ')];
+    }
 
-      match = match.substring(1, match.length - 1); // remove ">" and "<"
+    const previousLines = editorLinesRef.current;
+    const editorLines = lines.map((text, index) => {
+      const previous = previousLines[index];
+      if (previous && previous.text === text) return previous;
 
-      let remainingMatchLength = match.length;
-      let paintedMatch = '';
-      let prevNonspaceType = '';
-
-      while (remainingMatchLength > 0) {
-        if (!(parsing[valIndex] && parsing[valIndex][0])) {
-          console.error(`ERROR: Parsing at ${valIndex} is undefined`);
-          break;
-        }
-        const valLength = parsing[valIndex][0].substring(valOffset).length;
-        const type = parsing[valIndex][1];
-        let color = localColorDict.current[type as keyof typeof localColorDict.current];
-        if (!color) {
-          console.error(`Color not found for type: ${type}`);
-          color = 'text-primary-100';
-        }
-
-        const allowableMatchOffset = valLength - valOffset;
-        let matchEnd = matchOffset + remainingMatchLength;
-        let oldOffset = matchOffset;
-
-        if (remainingMatchLength > valLength) {
-          matchEnd = allowableMatchOffset + matchOffset;
-          remainingMatchLength -= allowableMatchOffset;
-          matchOffset += allowableMatchOffset;
-          valIndex++;
-          valOffset = 0;
-        } else if (remainingMatchLength < valLength) {
-          console.error('ERROR: remainingMatchLength < valLength');
-          matchOffset = 0;
-          valOffset += remainingMatchLength;
-          remainingMatchLength = 0;
-        } else {
-          matchOffset = 0;
-          valOffset = 0;
-          remainingMatchLength = 0;
-          valIndex++;
-        }
-
-        const matchString = match.substring(oldOffset, matchEnd).replace(/\s/g, ' ');
-
-        const typeContinuationWhitelist = ['move', 'comment', 'space', 'invalid', 'paren', 'rep', 'hashtag'];
-        const isAllowableContinuation =
-          (type === 'space'
-            && typeContinuationWhitelist.includes(prevNonspaceType)
-            && matchString);
-
-        if (type === prevNonspaceType || isAllowableContinuation) {
-          // append match to existing span
-          paintedMatch = paintedMatch.replace(/<\/span>$/, matchString + '</span>');
-        } else {
-          // create new span
-          paintedMatch += `<span class="${color}">${matchString}</span>`;
-        }
-
-        if (type !== 'space') {
-          prevNonspaceType = type;
-        }
-      }
-
-      paintedMatch = ">" + paintedMatch + "<";
-
-      return paintedMatch;
+      const caretOffset = nextCaret?.line === index ? nextCaret.offset : null;
+      const substituted = applyInputRules(text, caretOffset, cube3x3.inputRules);
+      if (substituted.caretOffset !== null) nextCaret = { line: index, offset: substituted.caretOffset };
+      return buildEditorLine(substituted.text);
     });
 
-    return { updatedLine: line, caretIndex };
-  }
-
-  const removeSpansExceptCaret = (line: string): string => {
-    let line2 = '';
-    while (line2 !== line) {
-      // strip any span except caretNode (including browser-injected style= spans)
-      line2 = line.replace(/<span(?! id="caretNode")[^>]*>|<\/span>/g, '');
-      line = line2;
-    }
-    line = line.replace(/<span id="caret.*?>/, '<span id="caretNode"></span>');
-    return line;
-  }
-
-  const splitHTMLintoLines = (html: string): string[] => {
-    const lines: string[] = [];
-
-    const segments = splitByDiv(html);
-    for (const segment of segments) {
-
-      if (isDivBlock(segment)) {
-        if (!divIsEmpty(segment)) lines.push(segment);
-      } else {
-        const outsideLines = splitByBr(segment);
-        for (const line of outsideLines) {
-          if (line !== "") lines.push(line);
-        }
-      }
-    }
-    return lines;
-  }
-
-  const splitByDiv = (html: string): string[] => {
-    const segments: string[] = [];
-    const divRegex = /<div>[\s\S]*?<\/div>/gi;
-    let lastIndex = 0;
-    let match: RegExpExecArray | null;
-    while ((match = divRegex.exec(html)) !== null) {
-      if (match.index > lastIndex) {
-        segments.push(html.substring(lastIndex, match.index));
-      }
-      segments.push(match[0]);
-      lastIndex = divRegex.lastIndex;
-    }
-    if (lastIndex < html.length) {
-      segments.push(html.substring(lastIndex));
-    }
-    return segments;
-  }
-
-  const isDivBlock = (segment: string): boolean => {
-    return /^<div>[\s\S]*<\/div>$/i.test(segment);
-  }
-
-  const divIsEmpty = (divHtml: string): boolean => {
-
-    // count caret node as content
-    if (/<span id="caretNode">/i.test(divHtml)) return false;
-
-    const inner = divHtml.replace(/^<div>([\s\S]*)<\/div>$/i, '$1');
-    const withoutSpans = inner.replace(/<\/?span[^>]*>/gi, '');
-    return withoutSpans === '';
-  }
-
-  const splitByBr = (segment: string): string[] => {
-    const withoutSpaces = segment.replace(/\s/g, '');
-    if (/^(<br>)+$/i.test(withoutSpaces)) {
-      const count = (segment.match(/<br>/gi) || []).length;
-      return Array(count).fill('<br>');
+    if (nextCaret) {
+      const line = Math.min(nextCaret.line, editorLines.length - 1);
+      caretRef.current = { line, offset: Math.min(nextCaret.offset, editorLines[line].text.length) };
+      caretPlacedRef.current = true;
+      lineOffsetRef.current = line;
+      moveOffsetRef.current = countMovesBeforeCaret(editorLines[line].segments, caretRef.current.offset);
     } else {
-      return segment.split(/<br>/gi);
+      const line = Math.min(caretRef.current.line, editorLines.length - 1);
+      caretRef.current = { line, offset: Math.min(caretRef.current.offset, editorLines[line].text.length) };
     }
-  }
 
-  const onInputChange = () => {
-    // core functionality of the input change sequence:
-    // 1. Store existing caret node. Textbox caret is later restored via useEffect.
-    // 2. The lines of in the textbox are found. Changes are pushed into updateMatrix.
-    // 3. Based on updateMatrix, lines in textbox are painted by functional class (valid, invalid, paren, etc).
-    // 4. Concurrently, get data for updating refs
-    // moveCount is stored for the purposes of undo/redo. 
-    // MoveHistory updated.
-    // 5. Refs updated.
-    // 6. State update queued.
-    // 7. Cube visualization state passed to page through trackMoves().
-
-    // 1
-    setCaretSpanToCaret();
-
-    // 2
-    let htmlLines = htmlToLineArray(contentEditableRef.current!.innerHTML);
-    const htmlUpdateMatrix = findHTMLchanges(oldHTMLlinesRef.current, htmlLines);
-
-    // 4
-    let lineMoveCounts = [...oldLineMoveCounts.current];
-    lineMoveCounts = lineMoveCounts.slice(0, htmlLines.length);
-
-    // 3, 4
-    [htmlLines, lineMoveCounts] = handleHTMLlines(htmlUpdateMatrix, lineMoveCounts);
-    const newHTMLlines = htmlLines.join('');
-
-    // 4
-    const moveCountChanged = isQuantifiableMoveChange(oldLineMoveCounts.current, lineMoveCounts);
-    updateMoveHistory(newHTMLlines, moveCountChanged);
+    const lineMoveCounts = editorLines.map((line) => line.moves.length);
+    const moveCountChanged = isQuantifiableMoveChange([...oldLineMoveCounts.current], [...lineMoveCounts]);
+    updateMoveHistory(editorLines.map((line) => line.text).join('\n'), moveCountChanged);
     onHistoryChange?.();
 
-    // 5
-    oldHTMLlinesRef.current = htmlLines;
+    editorLinesRef.current = editorLines;
     oldLineMoveCounts.current = lineMoveCounts;
 
-    // 6
-    setHTML(newHTMLlines);
+    const newHTML = editorLines.map((line) => line.html).join('');
+    setHTML(newHTML);
 
-    // in case live DOM and painted HTML are out of sync, update the live DOM and restore caret position
-    if (newHTMLlines === html && contentEditableRef.current!.innerHTML !== newHTMLlines) {
-      contentEditableRef.current!.innerHTML = newHTMLlines;
-      setCaretToCaretSpan();
+    if (newHTML === html && root.innerHTML !== newHTML) {
+      root.innerHTML = newHTML;
+      restoreCaret();
     }
 
-    // 7
-    trackMoves(idIndex, lineOffsetRef.current, moveOffsetRef.current, textboxMovesRef.current);
+    trackMoves(idIndex, lineOffsetRef.current, moveOffsetRef.current, editorLines.map((line) => line.moves));
   };
 
-  const cleanLines = (lines: string[]) => {
+  const selectCaret = () => {
+    const root = contentEditableRef.current;
+    if (!root) return;
 
-    // Keep an empty line around in the code to match the behavior of the contentEditable div, 
-    // which always has at least one line.
-    // Useful for handleEmptyLineSuggestions.
-    lines = lines.length === 0 ? [''] : lines;
-
-    lines = lines
-      .map((line: string) => line.replace(/<\/?div>|<br>/g, ""))
-      .map((line: string) => `<div>${line}<br></div>`)
-      ;
-
-    return lines;
+    const point = findDomPoint(root, caretRef.current);
+    window.getSelection()?.collapse(point.node, point.offset);
   };
 
-  /**
-   * Sets the caret span (span with id=caretNode) to the current caret position
-   */
-  const setCaretSpanToCaret = () => {
-    if (!contentEditableRef.current) {
-      return;
-    }
-    if (moveHistory.current.undo_redo_done === false) {
-      return;
-    }
+  const selectEditorRange = ({ anchor, focus }: EditorSelection) => {
+    const root = contentEditableRef.current;
+    if (!root) return;
 
-    const selection = window.getSelection();
-    if (!selection) {
-      return;
-    }
-
-    const isSelectionInEditor = contentEditableRef.current.contains(selection.focusNode);
-    const selectionIsEditor = selection.focusNode === contentEditableRef.current;
-    if (!isSelectionInEditor && !selectionIsEditor) {
-      return;
-    }
-
-    const focusNode = selection.focusNode;
-
-    const focusIsEditorRoot = focusNode === contentEditableRef.current;
-    const focusIsBareLineBreak = focusIsEditorRoot
-      && contentEditableRef.current.childNodes[selection.focusOffset]?.nodeName === 'BR';
-
-    // if focus is the outer contentEditable, keep the existing caret span
-    if (focusIsEditorRoot && !focusIsBareLineBreak) {
-      return;
-    }
-
-    const existingCaretNodes = contentEditableRef.current.querySelectorAll('#caretNode');
-
-    const caretNode = document.createElement('span');
-    caretNode.id = 'caretNode';
-
-    const range = document.createRange();
-    const node: Node | null = focusNode || null;
-
-    // add new caretSpan, 
-    // then remove old ones after to avoid any weird cleanup effects by browser
-    if (node) {
-
-      try {
-        range.setStart(node, selection.focusOffset);
-        range.setEnd(node, selection.focusOffset);
-        range.insertNode(caretNode);
-
-        // old caret node may contain new one, so preserve child nodes
-        existingCaretNodes.forEach((node) => {
-          if (node.childNodes.length > 0) {
-            node.replaceWith(...Array.from(node.childNodes));
-          } else {
-            node.remove();
-          }
-        });
-      } catch (e) {
-        console.error('Error in testInsertCaretSpan:', e);
-      }
-
-      if (node.nodeType === Node.ELEMENT_NODE &&
-        (node as Element).tagName === 'DIV' &&
-        !(node as Element).querySelector('br')) {
-        (node as Element).appendChild(document.createElement('br'));
-      }
-
-    }
+    const anchorPoint = findDomPoint(root, anchor);
+    const focusPoint = findDomPoint(root, focus);
+    window.getSelection()?.setBaseAndExtent(anchorPoint.node, anchorPoint.offset, focusPoint.node, focusPoint.offset);
+    if (document.activeElement !== root) root.focus({ preventScroll: true });
   };
 
-  /**
-   * Sets the caret to the location of the caret span (span with id=caretNode)
-   */
-  const selectCaretSpan = () => {
-    const existingCaretSpan = contentEditableRef.current?.querySelector('#caretNode');
-    if (existingCaretSpan) {
-      const selection = window.getSelection();
-      const range = document.createRange();
-      range.setStart(existingCaretSpan, 0);
-      range.collapse(true);
-      selection?.removeAllRanges();
-      selection?.addRange(range);
+  const restoreCaret = () => {
+    const pendingSelection = pendingSelectionRef.current;
+    if (pendingSelection) {
+      pendingSelectionRef.current = null;
+      selectEditorRange(pendingSelection);
+      return;
     }
-  }
 
-  const setCaretToCaretSpan = () => {
     if (document && document.activeElement !== contentEditableRef.current) {
       return;
     }
 
-    selectCaretSpan();
-  }
+    selectCaret();
+  };
 
   const handleCopy = (e: React.ClipboardEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -807,70 +357,60 @@ function MovesTextEditor({
     e.clipboardData?.setData('text/plain', text);
   };
 
-  const getAncestors = (node: Node, stopNode: Node): HTMLElement[] => {
-    const ancestors: HTMLElement[] = [];
-    let curr: Node | null = node;
-    while (curr && curr !== stopNode) {
-      if (curr.parentElement && curr.parentElement !== stopNode) {
-        ancestors.push(curr.parentElement);
-      }
-      curr = curr.parentNode;
-    }
-    return ancestors;
+  const insertPlainText = (text: string, startPoint: DomPoint, endPoint: DomPoint) => {
+    const root = contentEditableRef.current;
+    if (!root) return;
+
+    const newLines = text
+      .replace(/’/g, "'")
+      .replace(/\r\n?/g, '\n')
+      .split('\n');
+
+    const { lines, points: [start, end] } = readEditorLines(root, [startPoint, endPoint]);
+    if (!start || !end) return;
+
+    const textBefore = lines[start.line].slice(0, start.offset);
+    const textAfter = lines[end.line].slice(end.offset);
+    const insertedLines = newLines.map((line, index) => {
+      const withBefore = index === 0 ? textBefore + line : line;
+      return index === newLines.length - 1 ? withBefore + textAfter : withBefore;
+    });
+    const lastInsertedLine = insertedLines[insertedLines.length - 1];
+    const caret = {
+      line: start.line + insertedLines.length - 1,
+      offset: lastInsertedLine.length - textAfter.length,
+    };
+
+    processLines([...lines.slice(0, start.line), ...insertedLines, ...lines.slice(end.line + 1)], caret);
+    scheduleURLUpdate();
   };
 
   const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
     e.stopPropagation();
     e.preventDefault();
 
-    let text = e.clipboardData.getData("text");
-    let sanitizedText = sanitizeHtml(text, sanitizeConf)
-      .replace(/’/g, "'")
-
-      // this probably has some unfortunate edge cases with comments, 
-      // but people shouldn't be making comments anyway
-      .replace(/([UDFBLR])w/g, (_match, p1) => p1.toLowerCase());
-
     const selection = window.getSelection();
-    if (selection && contentEditableRef.current) {
-      const container = contentEditableRef.current;
-      const range = selection.getRangeAt(0);
+    if (!selection || selection.rangeCount === 0) return;
 
-      const startAncestors = getAncestors(range.startContainer, container);
-      const endAncestors = getAncestors(range.endContainer, container);
-      const affected = new Set([...startAncestors, ...endAncestors]);
+    const range = selection.getRangeAt(0);
+    insertPlainText(
+      e.clipboardData.getData('text'),
+      { node: range.startContainer, offset: range.startOffset },
+      { node: range.endContainer, offset: range.endOffset },
+    );
+  };
 
-      range.deleteContents();
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    // let the browser handle drags within this editor so the dragged text gets moved, not copied.
+    if (dragStartedInEditorRef.current) return;
+    e.preventDefault();
 
-      // remove empty parent nodes
-      affected.forEach((el) => {
-        if (el.textContent?.trim() === "") {
-          el.parentElement?.removeChild(el);
-        }
-      });
+    const root = contentEditableRef.current;
+    const dropPoint = domPointFromCoordinates(e.clientX, e.clientY);
+    if (!root || !dropPoint || !root.contains(dropPoint.node)) return;
 
-      const lines = sanitizedText.split("\n").reverse();
-      lines.forEach((line, index) => {
-        const tempElement = document.createElement("div");
-        tempElement.innerHTML = line;
-
-        // Add caret node to the last line
-        if (index === 0) { // First element in reversed array is the last line
-          const caretNode = document.createElement('span');
-          caretNode.id = 'caretNode';
-          tempElement.appendChild(caretNode);
-        }
-
-        range.insertNode(tempElement);
-      });
-
-      // existing selection invalid. Clear and reset to new caret.
-      selection.removeAllRanges();
-      setCaretToCaretSpan();
-    }
-
-    // setHTML(contentEditableRef.current!.innerHTML);
-    onInputChange();
+    root.focus({ preventScroll: true });
+    insertPlainText(e.dataTransfer.getData('text/plain'), dropPoint, dropPoint);
   };
 
   const passURLupdate = () => {
@@ -902,155 +442,39 @@ function MovesTextEditor({
     return isMulti
   };
 
-  // counts one unit per character and one per <br>, so the same visual caret position gives the
-  // same number no matter how the DOM splits it into nodes. Empty spans count for nothing.
-  const countCaretUnits = (node: Node) => {
-    let units = 0;
-    const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
-    while (walker.nextNode()) {
-      const current = walker.currentNode;
-      if (current.nodeType === Node.TEXT_NODE) {
-        units += (current as Text).data.length;
-      } else if ((current as Element).tagName === 'BR') {
-        units += 1;
-      }
-    }
-    return units;
-  };
-
-  const caretUnitsBeforePoint = (node: Node, offset: number) => {
+  const readMovedCaret = () => {
     const root = contentEditableRef.current;
     if (!root) return null;
-
-    const range = document.createRange();
-    try {
-      range.setStart(root, 0);
-      range.setEnd(node, offset);
-    } catch {
-      return null;
-    }
-    return countCaretUnits(range.cloneContents());
-  };
-
-  const caretUnitsBeforeNode = (target: Node) => {
-    const root = contentEditableRef.current;
-    if (!root) return null;
-
-    const range = document.createRange();
-    try {
-      range.setStart(root, 0);
-      range.setEndBefore(target);
-    } catch {
-      return null;
-    }
-    return countCaretUnits(range.cloneContents());
-  };
-
-  const caretSpanNeedsMove = () => {
-    const root = contentEditableRef.current;
-    if (!root) return false;
-    if (moveHistory.current.undo_redo_done === false) return false;
-    if (isMultiSelect()) return false;
+    if (moveHistory.current.undo_redo_done === false) return null;
+    if (isMultiSelect()) return null;
 
     const selection = window.getSelection();
     const focusNode = selection?.focusNode;
-    if (!focusNode || focusNode === root || !root.contains(focusNode)) return false;
+    if (!focusNode || !root.contains(focusNode)) return null;
 
-    if (focusNode.nodeType === Node.ELEMENT_NODE
-      && (focusNode as Element).tagName === 'DIV'
-      && !(focusNode as Element).querySelector('br')) {
-      return true;
-    }
+    const { lines, points: [caret] } = readEditorLines(root, [{ node: focusNode, offset: selection!.focusOffset }]);
+    const isSameCaret = !!caret
+      && caret.line === caretRef.current.line
+      && caret.offset === caretRef.current.offset;
+    if (!caret || isSameCaret) return null;
 
-    const caretSpans = root.querySelectorAll('#caretNode');
-    if (caretSpans.length !== 1) return true;
-
-    const spanUnits = caretUnitsBeforeNode(caretSpans[0]);
-    const focusUnits = caretUnitsBeforePoint(focusNode, selection!.focusOffset);
-    if (spanUnits === null || focusUnits === null) return false;
-
-    return spanUnits !== focusUnits;
+    return { lines, caret };
   };
 
-  /**
-   * Reads the current caret state and returns structured data. Does not touch the DOM.
-   */
-  const readCaretState = () => {
-    const element = contentEditableRef.current;
-    if (!element) return null;
+  const applyMovedCaret = ({ lines, caret }: NonNullable<ReturnType<typeof readMovedCaret>>) => {
+    caretRef.current = caret;
+    caretPlacedRef.current = true;
+    lineOffsetRef.current = caret.line;
+    moveOffsetRef.current = countMovesBeforeCaret(parseLine(lines[caret.line], cube3x3), caret.offset);
 
-    const html = element.innerHTML;
+    const editorLines = editorLinesRef.current;
+    const isDomPainted = lines.length === editorLines.length
+      && lines.every((text, index) => text === editorLines[index].text);
 
-    return {
-      element,
-      lines: htmlToLineArray(html),
-      html
-    };
-  };
-
-  /**
-   * Updates refs and state based on parsed caret state.
-   * Calculates move and line offsets, updates HTML and tracking.
-   */
-  const setCaretState = (state: NonNullable<ReturnType<typeof readCaretState>>) => {
-    const { element, lines } = state;
-    let caretLine = '';
-    let caretOffset = 0;
-
-    const newLineOffset = lines.findIndex((line) => line.includes('<span id="caretNode">'));
-
-    if (newLineOffset === -1) return;
-
-    lineOffsetRef.current = newLineOffset;
-
-    caretLine = lines[lineOffsetRef.current];
-    const lineTextArray = caretLine?.match(/>[^<>]+<|caretNode">/g);
-
-    if (!lineTextArray) return;
-
-    let fullRawText = '';
-    let caretReached = false;
-
-    // find number of characters before caret and get full text for parsing    
-    for (let text of lineTextArray) {
-
-      if (text === 'caretNode">') {
-        caretReached = true;
-        continue;
-      }
-
-      text = text.substring(1, text.length - 1);
-      fullRawText += text;
-
-      // accumulate characters before caret
-      if (!caretReached) {
-        caretOffset += text.length;
-      }
+    if (isDomPainted) {
+      setHTML(editorLines.map((line) => line.html).join(''));
     }
-    let parsing = parseTextInput(fullRawText);
-
-    let i = findEndOfWordOnCaret(parsing, caretOffset);
-
-    // calculate number of moves before caret
-    let tokens = parsingToTokens(parsing.slice(0, i));
-    let moveTokens = tokens.filter((token) => token.type === 'move').map((token) => token.value);
-    moveOffsetRef.current = moveTokens.length;
-
-    // text outside a painted span means the html is still being loaded and parsed by
-    // onInputChange. Setting it now would cause a race condition.
-    const unpaintedText = element.innerHTML
-      .replace(/<span id="caretNode">.*?<\/span>/i, '')
-      .replace(/<span class="[^"]+">[^<]*<\/span>/g, '')
-      .replace(/<[^>]+>/g, '')
-      .replace(/&nbsp;/g, ' ')
-      .trim();
-
-    if (!unpaintedText) {
-      // Clean html for case where user changed caret during move replay
-      const noHighlightHTML = element.innerHTML.replace(new RegExp(`<span class="${highlightClass}">`, 'g'), '<span class="text-primary-100">');
-      setHTML(noHighlightHTML);
-    }
-    trackMoves(idIndex, lineOffsetRef.current, moveOffsetRef.current, textboxMovesRef.current);
+    trackMoves(idIndex, lineOffsetRef.current, moveOffsetRef.current, editorLines.map((line) => line.moves));
   };
 
   const lastTextNodeIn = (node: Node): Text | null => {
@@ -1098,7 +522,7 @@ function MovesTextEditor({
     if (!rect) {
       // empty/unmeasurable line: fall back to the right edge of the last painted span,
       // then to the start of the line box.
-      const spans = lineDiv.querySelectorAll('span:not(#caretNode)');
+      const spans = lineDiv.querySelectorAll('span');
       const lastSpan = spans[spans.length - 1] as HTMLElement | undefined;
       const box = (lastSpan ?? lineDiv).getBoundingClientRect();
       rect = new DOMRect(lastSpan ? box.right : box.left, box.top, 0, box.height);
@@ -1109,11 +533,12 @@ function MovesTextEditor({
     // contentEditable and reset the caret (React re-applies dangerouslySetInnerHTML).
     // height is the caret box height so the ghost text aligns to the typed text, not the full
     // line box (which would center the smaller glyphs lower than the typed text).
-    suggestionManagerRef.current?.updateCaretRect(
-      rect.left - wrapperRect.left,
-      rect.top - wrapperRect.top,
-      rect.height,
-    );
+    suggestionManagerRef.current?.updateCaretAnchor({
+      lineIndex: lineOffsetRef.current,
+      left: rect.left - wrapperRect.left,
+      top: rect.top - wrapperRect.top,
+      height: rect.height,
+    });
   };
 
   /**
@@ -1121,26 +546,19 @@ function MovesTextEditor({
    * Gets moveOffset and lineOffset, validates text, and updates move history.
    */
   const handleCaretChange = () => {
-    if (!caretSpanNeedsMove()) return;
+    const movedCaret = readMovedCaret();
+    if (!movedCaret) return;
 
-    setCaretSpanToCaret();
-
-    const state = readCaretState();
-    if (!state) return;
-    setCaretState(state);
+    applyMovedCaret(movedCaret);
     measureCaretRect();
   };
 
-  // focusing without moving the caret span leaves the caret span where it is, so suggestions for
-  // the line the caret already sits on would never be generated.
   const handleFocus = () => {
-    if (caretSpanNeedsMove()) {
-      setCaretSpanToCaret();
-
-      const state = readCaretState();
-      if (state) setCaretState(state);
+    const movedCaret = readMovedCaret();
+    if (movedCaret) {
+      applyMovedCaret(movedCaret);
     } else {
-      trackMoves(idIndex, lineOffsetRef.current, moveOffsetRef.current, textboxMovesRef.current);
+      trackMoves(idIndex, lineOffsetRef.current, moveOffsetRef.current, editorLinesRef.current.map((line) => line.moves));
     }
     measureCaretRect();
   };
@@ -1162,22 +580,9 @@ function MovesTextEditor({
     const selectionText = (selection.toString() || range.cloneContents().textContent || '').replace(/\u200B/g, '');
     if (selectionText.length > 0) return;
 
-    const isCaretNode = (node: Node | null) => !!node && (
-      (node.nodeType === Node.ELEMENT_NODE && (node as Element).id === 'caretNode')
-      || node.parentElement?.id === 'caretNode'
-    );
-    const collapseNode = !isCaretNode(selection.focusNode)
-      ? selection.focusNode
-      : !isCaretNode(selection.anchorNode)
-        ? selection.anchorNode
-        : null;
-    const collapseOffset = !isCaretNode(selection.focusNode)
-      ? selection.focusOffset
-      : selection.anchorOffset;
+    if (!selection.focusNode) return;
 
-    if (!collapseNode) return;
-
-    selection.collapse(collapseNode, collapseOffset);
+    selection.collapse(selection.focusNode, selection.focusOffset);
     handleCaretChange();
   };
 
@@ -1210,7 +615,7 @@ function MovesTextEditor({
     const editor = contentEditableRef.current;
     if (!editor || !keyboardKeeperHasFocus()) return false;
 
-    selectCaretSpan();
+    selectCaret();
     editor.focus();
     measureCaretRect();
     return true;
@@ -1340,22 +745,12 @@ function MovesTextEditor({
       // append at the end of the active line — where the ghost is anchored — rather than at
       // the live caret, which may have been moved back into the line. the remaining string
       // already carries its own leading space when one is needed, so it inserts verbatim.
-      const lineDivs = Array.from(root.children).filter(
-        (child): child is HTMLDivElement => child instanceof HTMLDivElement,
-      );
-      const lineDiv = lineDivs[targetLineIndex] ?? lineDivs[lineDivs.length - 1];
-      if (!lineDiv) return;
+      const { lines } = readEditorLines(root);
+      const lineIndex = Math.min(targetLineIndex, lines.length - 1);
+      const newLines = lines.map((line, index) => index === lineIndex ? line + remaining : line);
 
-      root.querySelectorAll('#caretNode').forEach((node) => node.remove());
-      const caret = document.createElement('span');
-      caret.id = 'caretNode';
-
-      const br = lineDiv.querySelector('br');
-      lineDiv.insertBefore(document.createTextNode(remaining), br ?? null);
-      lineDiv.insertBefore(caret, br ?? null);
-
-      setCaretToCaretSpan();
-      handleInput();
+      processLines(newLines, { line: lineIndex, offset: newLines[lineIndex].length });
+      scheduleURLUpdate();
     });
   }
 
@@ -1368,11 +763,15 @@ function MovesTextEditor({
     }
   };
 
-  const simpleRestore = (html: string) => {
-    contentEditableRef.current!.innerHTML = html;
-    setCaretToCaretSpan();
+  const restoreHistoryText = (text: string) => {
+    const lines = text.split('\n');
+    processLines(lines, mappedCaret(lines));
+    scheduleURLUpdate();
+  };
+
+  const simpleRestore = (text: string) => {
     moveHistory.current.status = 'in_progress_one';
-    handleInput();
+    restoreHistoryText(text);
     moveHistory.current.status = 'ready';
   };
 
@@ -1382,12 +781,12 @@ function MovesTextEditor({
     if (index < 1) return;
     moveHistory.current.index = --index;
 
-    let prevHTML = history[index][idIndex];
-    while (prevHTML === '<unchanged>' && index > 0) {
-      prevHTML = history[--index][idIndex];
+    let prevText = history[index][idIndex];
+    while (prevText === '<unchanged>' && index > 0) {
+      prevText = history[--index][idIndex];
     }
 
-    simpleRestore(prevHTML);
+    simpleRestore(prevText);
   };
 
   const simpleRedo = () => {
@@ -1396,12 +795,12 @@ function MovesTextEditor({
     if (index + 1 > moveHistory.current.MAX_HISTORY || index + 1 >= history.length) return;
     moveHistory.current.index = ++index;
 
-    let nextHTML = history[index][idIndex];
-    while (nextHTML === '<unchanged>' && index + 1 < history.length) {
-      nextHTML = history[++index][idIndex];
+    let nextText = history[index][idIndex];
+    while (nextText === '<unchanged>' && index + 1 < history.length) {
+      nextText = history[++index][idIndex];
     }
 
-    simpleRestore(nextHTML);
+    simpleRestore(nextText);
   };
 
   const handleUndo = () => {
@@ -1438,16 +837,14 @@ function MovesTextEditor({
     const textbox = parentElement?.querySelector<HTMLDivElement>('div[contenteditable="true"]');
     textbox?.focus({ preventScroll: true });
 
-    let prevHTML = history[index][idIndex];
-    while (prevHTML === '<unchanged>' && index > 0) {
+    let prevText = history[index][idIndex];
+    while (prevText === '<unchanged>' && index > 0) {
       index--;
       //don't update moveHistory.current.index here. While loop would cause skips.
-      prevHTML = history[index][idIndex];
+      prevText = history[index][idIndex];
     }
 
-    contentEditableRef.current!.innerHTML = prevHTML;
-    setCaretToCaretSpan(); // updating contentEditableRef causes refresh which misplaces caret
-    handleInput(); // updates URL, oldlineCounts, oldHTMLlines, and moveAnimationTimes
+    restoreHistoryText(prevText);
 
     incrementStatus('success'); // placed at end to give correct moveHistory state to updateMoveHistory
   };
@@ -1487,92 +884,69 @@ function MovesTextEditor({
     const textbox = parentElement?.querySelector<HTMLDivElement>('div[contenteditable="true"]');
     textbox?.focus({ preventScroll: true });
 
-    let nextHTML = history[index][idIndex];
-    while (nextHTML === '<unchanged>' && index > moveHistory.current.MAX_HISTORY) {
+    let nextText = history[index][idIndex];
+    while (nextText === '<unchanged>' && index > moveHistory.current.MAX_HISTORY) {
       index++;
-      nextHTML = history[index][idIndex];
+      nextText = history[index][idIndex];
     }
 
-    contentEditableRef.current!.innerHTML = nextHTML;
-    setCaretToCaretSpan();
-    handleInput();
+    restoreHistoryText(nextText);
 
     incrementStatus('success');
   }
 
   const handleSetContent = (newHTML: string) => {
-    contentEditableRef.current!.innerHTML = newHTML;
+    const template = document.createElement('template');
+    template.innerHTML = newHTML;
+    const { lines } = readEditorLines(template.content);
+
     oldLineMoveCounts.current = [-1]; // ensures that moveHistory contains the new moves
-    setCaretToCaretSpan();
-    handleInput();
+    processLines(lines, mappedCaret(lines));
+    scheduleURLUpdate();
   }
 
-  const findEndOfMove = (degroupedParsing: MovesDisplayParsing[], startIndex: number): number => {
-    let i = startIndex;
-    while (i < degroupedParsing.length && degroupedParsing[i][1] === 'move') {
-      i++;
-    }
-    return i;
+  const handleTransformSelection = (transform: SelectionTransform) => {
+    const root = contentEditableRef.current;
+    if (!root) return;
+
+    const selection = window.getSelection();
+    const anchorNode = selection?.anchorNode;
+    const focusNode = selection?.focusNode;
+    const hasSelectionInEditor = !!selection && !selection.isCollapsed
+      && !!anchorNode && root.contains(anchorNode)
+      && !!focusNode && root.contains(focusNode);
+    const selectionPoints: DomPoint[] = hasSelectionInEditor
+      ? [{ node: anchorNode, offset: selection.anchorOffset }, { node: focusNode, offset: selection.focusOffset }]
+      : [];
+    const { lines, points: [anchor, focus] } = readEditorLines(root, selectionPoints);
+
+    const lastLine = lines.length - 1;
+    const wholeDocument = { start: { line: 0, offset: 0 }, end: { line: lastLine, offset: lines[lastLine].length } };
+    const isBackward = !!anchor && !!focus
+      && (focus.line < anchor.line || (focus.line === anchor.line && focus.offset < anchor.offset));
+    const selectedRange = anchor && focus && (isBackward ? { start: focus, end: anchor } : { start: anchor, end: focus });
+    const transformed = transform(lines, selectedRange || wholeDocument);
+    if (transformed.lines.join('\n') === lines.join('\n')) return;
+
+    const { start, end } = transformed.selection;
+    const [newAnchor, newFocus] = isBackward ? [end, start] : [start, end];
+    oldLineMoveCounts.current = [-1];
+    processLines(transformed.lines, newFocus);
+    scheduleURLUpdate();
+
+    const finalLines = editorLinesRef.current.map((line) => line.text);
+    const anchorLine = Math.min(newAnchor.line, finalLines.length - 1);
+    const anchorOffset = mapCaretOffset(transformed.lines[anchorLine] ?? '', finalLines[anchorLine], newAnchor.offset);
+    pendingSelectionRef.current = { anchor: { line: anchorLine, offset: anchorOffset }, focus: caretRef.current };
+
+    const isRenderPending = editorLinesRef.current.map((line) => line.html).join('') !== html;
+    if (!isRenderPending) restoreCaret();
   }
 
   const handleRemoveHighlight = () => {
     if (!contentEditableRef.current) return;
     if (name === 'scramble') return; // no highlights in scramble
-    const noHighlightHTML = contentEditableRef.current.innerHTML.replace(new RegExp(`<span class="${highlightClass}">`, 'g'), '<span class="text-primary-100">');
-    contentEditableRef.current.innerHTML = noHighlightHTML;
-  }
-
-  /**
-   * Runs through parsing array until it finds moveIndex and returns moveDisplayIndex of that move.
-   * @param degroupedParsing 
-   * @returns moveDisplayIndex
-   */
-  const findMoveDisplayIndex = (degroupedParsing: MovesDisplayParsing[], moveIndex: number): number => {
-    let moveCounter = 0;
-    for (let i = 0; i < degroupedParsing.length; i++) {
-
-      const type = degroupedParsing[i][1];
-      if (type !== 'move') {
-        continue;
-      } else {
-        if (moveCounter === moveIndex - 1) { // moveIndex of 0 is before first move
-          return (degroupedParsing[i][3] + 1);
-        }
-        moveCounter++;
-        i = findEndOfMove(degroupedParsing, i);
-      }
-    }
-    return -1; // not found
-  }
-
-  const addHighlightParsing = (parsing: MovesParsing[], moveDisplayIndex: number): MovesParsing[] => {
-    if (parsing.length === 0) {
-      console.warn('No moves to highlight');
-      console.info('parsing:', parsing);
-      return parsing;
-    }
-
-    if (moveDisplayIndex < 0) {
-      // acceptably occurs when moveIndex is placed before the first move
-      return parsing;
-    }
-
-    const highlightedParsing: MovesParsing[] = [];
-    let moveCounter = 0;
-    let lastType = ''
-    for (let i = 0; i < parsing.length; i++) {
-      const type = parsing[i][1];
-      if (type === 'move' && lastType !== 'move') {
-        moveCounter++;
-      }
-      lastType = type;
-      if (type === 'move' && moveCounter === moveDisplayIndex) {
-        highlightedParsing.push([parsing[i][0], 'highlight', parsing[i][2]]);
-      } else {
-        highlightedParsing.push([parsing[i][0], type, parsing[i][2]]);
-      }
-    }
-    return highlightedParsing
+    contentEditableRef.current.innerHTML = editorLinesRef.current.map((line) => line.html).join('');
   }
 
   /**
@@ -1584,30 +958,16 @@ function MovesTextEditor({
     if (name === 'scramble') return;
     if (moveIndex < 0 || lineIndex < 0) return; // invalid move index or line index
 
-    // should only highlight if moves have been painted
-    if (!contentEditableRef.current.innerHTML.includes('<span')) return;
+    const editorLines = editorLinesRef.current;
+    if (lineIndex >= editorLines.length) return; // invalid line index
+    if (editorLines.every((line) => line.segments.length === 0)) return;
 
-    let lines = htmlToLineArray(contentEditableRef.current.innerHTML);
-
-    if (lineIndex >= lines.length) return; // invalid line index
-    const line = lines[lineIndex];
-
-    // iterate through valid spans, counting moves, and highlighting the move at moveIndex
-    const text = line.replace(/<[^>]+>/g, '');
-    const parsing = parseTextInput(text);
-    const newVal = degroup(parsing, true) as MovesDisplayParsing[];
-    const moveDisplayIndex = findMoveDisplayIndex(newVal, moveIndex);
-
-    const highlightedParsing: MovesParsing[] = addHighlightParsing(parsing, moveDisplayIndex);
-
-    // apply highlighted class. Do some cleanup.
-    let [updatedLine, _] = updateLine(highlightedParsing, line);
-
-    lines[lineIndex] = updatedLine;
-
-    // Update the contentEditable with highlighted content
-    const newHTML = lines.join('');
-    setHTML(newHTML);
+    const highlightedHTML = editorLines
+      .map((line, index) => index === lineIndex
+        ? `<div>${paintLine(line.text, line.segments, moveIndex - 1)}<br></div>`
+        : line.html)
+      .join('');
+    setHTML(highlightedHTML);
   }
 
   const solutionScrollElement = contentEditableRef.current?.closest('#solution') as HTMLDivElement | null;
@@ -1626,6 +986,10 @@ function MovesTextEditor({
 
     setContent: (newHTML: string) => {
       handleSetContent(newHTML);
+    },
+
+    transformSelection: (transform: SelectionTransform) => {
+      handleTransformSelection(transform);
     },
 
     highlightMove: (moveIndex: number, lineIndex: number) => {
@@ -1716,32 +1080,21 @@ function MovesTextEditor({
       } catch {
         decodedText = customDecodeURL(editorText);
       }
-      const safeText = sanitizeHtml(decodedText, sanitizeConf);
-      const lines = safeText.replace(/\n+/g, '\n').split('\n');
-      const formattedHTML = lines.map(line => `<div>${line}<br></div>`).join('');
-      contentEditableRef.current.innerHTML = formattedHTML;
+      const lines = decodedText.replace(/\n+/g, '\n').split('\n');
+      contentEditableRef.current.innerHTML = linesToHTML(lines);
 
     } else if (initialContent && !otherEditorText) {
-      // if initial content (such as scramble of day) gets passed in,
-      // pass it in as pre-formatted html
-      contentEditableRef.current.innerHTML = initialContent;
+      contentEditableRef.current.innerHTML = linesToHTML(initialContent.split('\n'));
     }
 
     // Run for syntax highlighting, but skip URL update since we just loaded from URL
-    handleInput(false);
+    processLines(readEditorLines(contentEditableRef.current).lines, null);
 
 
     if (autofocus && editorText && !otherEditorText) { // TODO: `&& !otherURLtext` isn't desired, but an unknown bug causes animation desync otherwise.
-      // adds caretNode span, which then is processed by onInputChange
-      const selection = window.getSelection();
-      const range = document.createRange();
-      const caretNode = document.createElement('span');
-      caretNode.id = 'caretNode';
-      range.selectNodeContents(contentEditableRef.current);
-      range.collapse(false);
-      range.insertNode(caretNode);
-      selection?.removeAllRanges();
-      selection?.addRange(range);
+      const lastLineIndex = editorLinesRef.current.length - 1;
+      caretRef.current = { line: lastLineIndex, offset: editorLinesRef.current[lastLineIndex].text.length };
+      selectCaret();
     } else if (autofocus) {
       // select the other textbox
       const parentOtherElement = document.getElementById(otherID);
@@ -1790,7 +1143,7 @@ function MovesTextEditor({
         return;
       }
 
-      setCaretToCaretSpan();
+      restoreCaret();
     });
   };
 
@@ -1799,14 +1152,16 @@ function MovesTextEditor({
     if (typeof window === 'undefined') {
     } else if (!contentEditableRef.current) {
     } else {
-      if (isMultiSelect()) {
+      if (pendingSelectionRef.current) {
+        restoreCaret();
+      } else if (isMultiSelect()) {
         const selection = window.getSelection();
         if (selection && selection.rangeCount === 1) {
           queueCaretRestore('multi-range-deferral');
         } else {
         }
       } else {
-        setCaretToCaretSpan();
+        restoreCaret();
       }
     }
   };
@@ -1838,9 +1193,12 @@ function MovesTextEditor({
             ? 'border-transparent'
             : 'min-h-[4.7rem] border-neutral-600 focus:border-primary-100 hover:border-primary-100 bg-primary-800'}`}
         style={{ lineHeight: lineHeight ? `${lineHeight}px` : '1.75rem' }}
-        onInput={() => handleInput(true)}
+        onInput={handleInput}
         onCopy={handleCopy}
         onPaste={handlePaste}
+        onDrop={handleDrop}
+        onDragStart={() => { dragStartedInEditorRef.current = true; }}
+        onDragEnd={() => { dragStartedInEditorRef.current = false; }}
         onFocus={handleFocus}
         onBlur={() => passURLupdate()}
         dangerouslySetInnerHTML={{ __html: html }}
@@ -1854,8 +1212,7 @@ function MovesTextEditor({
       <SuggestionManager
         ref={suggestionManagerRef}
         name={name}
-        activeLineIndex={lineOffsetRef.current}
-        lines={oldHTMLlinesRef.current}
+        lines={editorLinesRef.current.map((line) => line.html)}
         overlayElement={suggestionOverlayElement}
         topOffset={suggestionTopOffset}
         leftOffset={suggestionLeftOffset}

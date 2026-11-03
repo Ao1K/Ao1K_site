@@ -1,20 +1,19 @@
 import { SimpleCube } from './SimpleCube';
 import type { Color, CubeState, Face, Line } from './SimpleCube';
-import { parseMove } from '../../utils/moveUtils';
+import { cube3x3, MOVES_3X3 } from '../../utils/parser/cube3x3';
+import type { Move3x3 } from '../../utils/parser/cube3x3';
 
 export type Facelets = Uint8Array;
 
 export const FACELET_COUNT = 54;
 
-const MOVE_BASES = ['U', 'D', 'F', 'B', 'L', 'R', 'u', 'd', 'f', 'b', 'l', 'r', 'M', 'E', 'S', 'x', 'y', 'z'] as const;
-const SUFFIX_BY_AMOUNT = ['', '', '2', "'"] as const;
 const FACE_COLORS: readonly Color[] = ['W', 'Y', 'G', 'R', 'B', 'O'];
 
 const faceletIndex = (face: number, row: number, col: number) => face * 9 + row * 3 + col;
 
 export const faceOfSticker = (sticker: number) => (sticker / 9) | 0;
 
-function derivePermutation(move: string): Uint8Array {
+function deriveStickerMap(move: Move3x3): Uint8Array {
   const cube = new SimpleCube();
   const labeled = cube.getCubeState([]);
   for (let face = 0; face < 6; face++) {
@@ -26,30 +25,29 @@ function derivePermutation(move: string): Uint8Array {
   }
 
   const moved = cube.getCubeState([move]);
-  const permutation = new Uint8Array(FACELET_COUNT);
+  const stickerMap = new Uint8Array(FACELET_COUNT);
   for (let face = 0; face < 6; face++) {
     for (let row = 0; row < 3; row++) {
       for (let col = 0; col < 3; col++) {
-        permutation[faceletIndex(face, row, col)] = moved[face][row][col] as unknown as number;
+        stickerMap[faceletIndex(face, row, col)] = moved[face][row][col] as unknown as number;
       }
     }
   }
-  return permutation;
+  return stickerMap;
 }
 
-const permutationsByMove = new Map<string, Uint8Array>();
-for (const base of MOVE_BASES) {
-  for (const amount of [1, 2, 3]) {
-    const move = `${base}${SUFFIX_BY_AMOUNT[amount]}`;
-    permutationsByMove.set(move, derivePermutation(move));
-  }
+const stickerMapsByMove = new Map<Move3x3, Uint8Array>();
+for (const move of MOVES_3X3) {
+  const [canonicalMove] = cube3x3.normalize([move]);
+  const stickerMap = stickerMapsByMove.get(canonicalMove) ?? deriveStickerMap(canonicalMove);
+  stickerMapsByMove.set(canonicalMove, stickerMap);
+  stickerMapsByMove.set(move, stickerMap);
 }
 
-export function getMovePermutation(move: string): Uint8Array {
-  const parsed = parseMove(move);
-  const permutation = parsed && permutationsByMove.get(`${parsed.base}${SUFFIX_BY_AMOUNT[parsed.amount]}`);
-  if (!permutation) throw new Error(`unsupported move: ${move}`);
-  return permutation;
+export function getMoveStickerMap(move: Move3x3): Uint8Array {
+  const stickerMap = stickerMapsByMove.get(move);
+  if (!stickerMap) throw new Error(`unsupported move: ${move}`);
+  return stickerMap;
 }
 
 export function solvedFacelets(): Facelets {
@@ -58,15 +56,15 @@ export function solvedFacelets(): Facelets {
   return facelets;
 }
 
-export function applyPermutation(facelets: Facelets, permutation: Uint8Array, out: Facelets = new Uint8Array(FACELET_COUNT)): Facelets {
-  for (let i = 0; i < FACELET_COUNT; i++) out[i] = facelets[permutation[i]];
+export function applyStickerMap(facelets: Facelets, stickerMap: Uint8Array, out: Facelets = new Uint8Array(FACELET_COUNT)): Facelets {
+  for (let i = 0; i < FACELET_COUNT; i++) out[i] = facelets[stickerMap[i]];
   return out;
 }
 
-export function applyMoves(facelets: Facelets, moves: readonly string[]): Facelets {
+export function applyMoves(facelets: Facelets, moves: readonly Move3x3[]): Facelets {
   let current = facelets;
   for (const move of moves) {
-    current = applyPermutation(current, getMovePermutation(move));
+    current = applyStickerMap(current, getMoveStickerMap(move));
   }
   return current;
 }

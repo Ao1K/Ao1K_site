@@ -13,11 +13,12 @@ import AddIcon from '../icons/plus';
 import { useAlgFavorites } from '../../composables/algs/algFavorites';
 import { showToast } from '../../composables/toast';
 import { classifyFavorite } from '../../composables/algs/classifyAlg';
+import { cube3x3, type Move3x3 } from '../../utils/parser/cube3x3';
 import { keywordsForAlg, keywordLabel, compareKeywords } from '../../composables/algs/algKeywords';
 import YourAlgCard from './YourAlgCard';
 import AddAlgRow from './AddAlgRow';
 import TransferMenu from './TransferMenu';
-import type { AlgStatus } from '../../composables/algs/algFavorites';
+import type { AlgStatus, FavoriteAlg } from '../../composables/algs/algFavorites';
 import type { ParsedImport } from '../../composables/algs/importFavorites';
 import type { AlgClassification } from '../../composables/algs/classifyAlg';
 
@@ -34,7 +35,7 @@ type AlgsetFilter = string | 'all';
 type KeywordFilter = string | 'all';
 type SortKey = 'added' | 'moves' | 'alpha';
 type SortDir = 'asc' | 'desc';
-type ActiveEditor = { kind: 'add' } | { kind: 'card'; alg: string } | null;
+type ActiveEditor = { kind: 'add' } | { kind: 'card'; algKey: string } | null;
 
 const PER_PAGE_OPTIONS = [10, 25, 50, 100];
 
@@ -63,12 +64,6 @@ const STATUS_LABEL: Record<AlgStatus, string> = {
   learning: 'Learning',
   learned: 'Memorized',
   none: 'Unlearned',
-};
-
-// movecount is the number of spaces plus one (the count of space-separated moves)
-const moveCount = (alg: string): number => {
-  const trimmed = alg.trim();
-  return trimmed === '' ? 0 : trimmed.split(/\s+/).length;
 };
 
 // custom dropdown (not a native <select>) so that clicking from one open menu straight to
@@ -252,7 +247,7 @@ const YourAlgsList = ({ hasSolutions }: YourAlgsListProps) => {
   const { favorites, addFavorite, setFavoriteStatus, setFavoriteAlgset, setFavoriteAlg, removeFavorite, mergeFavorites } = useAlgFavorites();
 
   const [activeEditor, setActiveEditor] = useState<ActiveEditor>(null);
-  const [confirmingAlg, setConfirmingAlg] = useState<string | null>(null);
+  const [confirmingAlgKey, setConfirmingAlgKey] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [algsetFilter, setAlgsetFilter] = useState<AlgsetFilter>('all');
@@ -284,13 +279,13 @@ const YourAlgsList = ({ hasSolutions }: YourAlgsListProps) => {
   const toggleMenu = (menu: 'filter' | 'algset' | 'keyword' | 'sort' | 'download' | 'perPage') =>
     setOpenMenu((cur) => (cur === menu ? null : menu));
 
-  const handleAdd = (alg: string) => {
-    if (addFavorite(alg)) return true;
+  const handleAdd = (moves: Move3x3[]) => {
+    if (addFavorite(moves)) return true;
     showToast({
       addMethod: 'replace',
       closable: false,
       icon: <Parrot filled className="w-6 h-6 text-primary-800" />,
-      message: <span>{alg} is already in Your Algs</span>,
+      message: <span>{cube3x3.format(moves)} is already in Your Algs</span>,
     });
     return false;
   };
@@ -316,12 +311,12 @@ const YourAlgsList = ({ hasSolutions }: YourAlgsListProps) => {
     importToast(`Imported ${added} alg${added === 1 ? '' : 's'}${skipped ? ` (skipped ${skipped})` : ''}`);
   };
 
-  const handleSetAlg = (alg: string, nextAlg: string) => {
-    if (!setFavoriteAlg(alg, nextAlg)) return;
+  const handleSetAlg = (moves: Move3x3[], nextMoves: Move3x3[]) => {
+    if (!setFavoriteAlg(moves, nextMoves)) return;
     showToast({
       addMethod: 'replace',
       icon: <Parrot filled className="w-6 h-6 text-primary-800" />,
-      message: <span>{nextAlg} was added previously. The old entry was replaced.</span>,
+      message: <span>{cube3x3.format(nextMoves)} was added previously. The old entry was replaced.</span>,
     });
   };
 
@@ -339,8 +334,8 @@ const YourAlgsList = ({ hasSolutions }: YourAlgsListProps) => {
   // the effective algset of each alg is its manual override or the detected classification label;
   // cached so the interpreter isn't re-run on every render (only when the favorites change)
   const classificationByAlg = useMemo(() => {
-    const map = new Map<string, AlgClassification>();
-    favorites.forEach((f) => map.set(f.alg, classifyFavorite(f)));
+    const map = new Map<FavoriteAlg, AlgClassification>();
+    favorites.forEach((f) => map.set(f, classifyFavorite(f)));
     return map;
   }, [favorites]);
 
@@ -355,11 +350,11 @@ const YourAlgsList = ({ hasSolutions }: YourAlgsListProps) => {
     algsetFilter !== 'all' && availableAlgsets.includes(algsetFilter) ? algsetFilter : 'all';
 
   const keywordsByAlg = useMemo(() => {
-    const map = new Map<string, string[]>();
+    const map = new Map<FavoriteAlg, string[]>();
     if (effectiveAlgset === 'all') return map;
-    classificationByAlg.forEach((classification, alg) => {
+    classificationByAlg.forEach((classification, favorite) => {
       if (classification.group !== effectiveAlgset) return;
-      map.set(alg, keywordsForAlg(alg, classification));
+      map.set(favorite, keywordsForAlg(favorite.moves, classification));
     });
     return map;
   }, [classificationByAlg, effectiveAlgset]);
@@ -379,13 +374,13 @@ const YourAlgsList = ({ hasSolutions }: YourAlgsListProps) => {
     // filters are AND-based: an alg must pass the status, algset and keyword filters to show
     let filtered = favorites;
     if (effectiveStatus !== 'all') filtered = filtered.filter((f) => f.status === effectiveStatus);
-    if (effectiveAlgset !== 'all') filtered = filtered.filter((f) => classificationByAlg.get(f.alg)?.group === effectiveAlgset);
-    if (effectiveKeyword !== 'all') filtered = filtered.filter((f) => keywordsByAlg.get(f.alg)?.includes(effectiveKeyword));
+    if (effectiveAlgset !== 'all') filtered = filtered.filter((f) => classificationByAlg.get(f)?.group === effectiveAlgset);
+    if (effectiveKeyword !== 'all') filtered = filtered.filter((f) => keywordsByAlg.get(f)?.includes(effectiveKeyword));
     const dir = sortDir === 'asc' ? 1 : -1;
     if (sortKey === 'added') return sortDir === 'asc' ? filtered : [...filtered].reverse();
-    if (sortKey === 'alpha') return [...filtered].sort((a, b) => dir * a.alg.localeCompare(b.alg));
+    if (sortKey === 'alpha') return [...filtered].sort((a, b) => dir * cube3x3.format(a.moves).localeCompare(cube3x3.format(b.moves)));
     // stable sort keeps added-order among algs of equal length
-    return [...filtered].sort((a, b) => dir * (moveCount(a.alg) - moveCount(b.alg)));
+    return [...filtered].sort((a, b) => dir * (a.moves.length - b.moves.length));
   }, [favorites, effectiveStatus, effectiveAlgset, effectiveKeyword, classificationByAlg, keywordsByAlg, sortKey, sortDir]);
 
   const statusOptions: { value: StatusFilter; label: string }[] = [
@@ -544,27 +539,30 @@ const YourAlgsList = ({ hasSolutions }: YourAlgsListProps) => {
       </div>
       {favorites.length > 0 && (
         <ul className="flex flex-col gap-1">
-          {pageItems.map((fav) => (
-            <li key={fav.alg}>
-              <YourAlgCard
-                alg={fav.alg}
-                status={fav.status}
-                algset={fav.algset}
-                sourceAlgset={fav.sourceAlgset}
-                editMode={editMode}
-                active={activeEditor?.kind === 'card' && activeEditor.alg === fav.alg}
-                confirming={confirmingAlg === fav.alg}
-                onEditStart={() => setActiveEditor({ kind: 'card', alg: fav.alg })}
-                onEditEnd={() => setActiveEditor((cur) => (cur?.kind === 'card' && cur.alg === fav.alg ? null : cur))}
-                onConfirmDelete={() => setConfirmingAlg(fav.alg)}
-                onCancelDelete={() => setConfirmingAlg((cur) => (cur === fav.alg ? null : cur))}
-                onToggleStatus={() => setFavoriteStatus(fav.alg, nextStatus(fav.status))}
-                onSetAlgset={(algset) => setFavoriteAlgset(fav.alg, algset)}
-                onSetAlg={(next) => handleSetAlg(fav.alg, next)}
-                onDelete={() => { removeFavorite(fav.alg); setConfirmingAlg(null); }}
-              />
-            </li>
-          ))}
+          {pageItems.map((fav) => {
+            const algKey = cube3x3.format(fav.moves);
+            return (
+              <li key={algKey}>
+                <YourAlgCard
+                  moves={fav.moves}
+                  status={fav.status}
+                  algset={fav.algset}
+                  sourceAlgset={fav.sourceAlgset}
+                  editMode={editMode}
+                  active={activeEditor?.kind === 'card' && activeEditor.algKey === algKey}
+                  confirming={confirmingAlgKey === algKey}
+                  onEditStart={() => setActiveEditor({ kind: 'card', algKey })}
+                  onEditEnd={() => setActiveEditor((cur) => (cur?.kind === 'card' && cur.algKey === algKey ? null : cur))}
+                  onConfirmDelete={() => setConfirmingAlgKey(algKey)}
+                  onCancelDelete={() => setConfirmingAlgKey((cur) => (cur === algKey ? null : cur))}
+                  onToggleStatus={() => setFavoriteStatus(fav.moves, nextStatus(fav.status))}
+                  onSetAlgset={(algset) => setFavoriteAlgset(fav.moves, algset)}
+                  onSetAlg={(next) => handleSetAlg(fav.moves, next)}
+                  onDelete={() => { removeFavorite(fav.moves); setConfirmingAlgKey(null); }}
+                />
+              </li>
+            );
+          })}
         </ul>
       )}
 

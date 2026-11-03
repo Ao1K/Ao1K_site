@@ -3,24 +3,25 @@ import { warmUpCubeSolver } from '../../composables/recon/cubeSolverClient';
 import { simplifySetupMoves } from '../../composables/recon/setupMoves';
 import PlayerControls from './PlayerControls';
 import CubeImageDialog from './CubeImageDialog';
-import { reverseMove } from '../../composables/recon/transformHTML';
 import type { ControllerRequestOptions } from './_PageContent';
 import type { PlayerParams as RenderRefProps } from './_PageContent';
 import { createCubeImageCapture, type ScreenshotSetupStatus } from '../../composables/recon/cubeImageCapture';
 import { useSyncedSettings, useShowControls, useHintFaceletsElevation, useStickerScale, useCameraFov } from '../../composables/useSettings';
 import { SimpleCube } from '../../composables/recon/SimpleCube';
+import { cube3x3, type Move3x3 } from '../../utils/parser/cube3x3';
+import type { Amount } from '../../utils/parser';
 import { cameraView, INITIAL_ANGLES, ORBIT_DAMPING, smootherStep, timelineMoveMs, turnRotation } from '../../composables/recon/reconCube';
 import { createCubeScene, type CubeScene } from '../../utils/cubeSceneRuntime.client';
 import { createCanvasPainter } from '../../utils/cubeCanvasRender';
-import type { SceneDrawable } from '../../utils/cubeSvgRender';
-import { faceletsFromState, type RotationInfo } from '../../utils/cubeMoves';
+import type { RotationInfo, SceneDrawable } from '../../utils/cubeSvgRender';
+import { faceletsFromState } from '../../utils/cubeFacelets';
 import { buildColorHex, DEFAULT_SCENE_LOOK } from '../../utils/cubeSceneAuthoring';
 import CameraIcon from '../icons/camera';
 
 export interface CubePlayerImperativeRef {
   setTempoScale: (scale: number) => void;
   setInstantOverride: (instant: boolean) => void;
-  playPreview: (setupAlg: string, alg: string, onEnd: () => void) => void;
+  playPreview: (setupMoves: Move3x3[], moves: Move3x3[], onEnd: () => void) => void;
   stopPreview: () => void;
   restoreSolveState: () => void;
 }
@@ -32,8 +33,8 @@ const HINT_RISE_DELAY_MS = 500;
 const HINT_RISE_MS = 1000;
 
 interface PlayerProps {
-  scrambleRequest: string;
-  solutionRequest: string;
+  scrambleRequest: Move3x3[];
+  solutionRequest: Move3x3[];
   speed: number;
   animationTimesRequest: number[];
   handleControllerRequest: (request: ControllerRequestOptions) => void;
@@ -69,17 +70,17 @@ const AVAILABLE_SCREENSHOT_SETUP_STATUS: ScreenshotSetupStatus = {
   message: '',
 };
 
-const getDisplayedSolutionAlg = (solution: string, animationTimes: number[]) => {
+const getDisplayedSolutionAlg = (solution: Move3x3[], animationTimes: number[]): Move3x3[] => {
   if (animationTimes.length === 0) {
-    return '';
+    return [];
   }
 
   if (animationTimes.length === 1 && (animationTimes[0] === 0 || animationTimes[0] === 1)) {
-    return '';
+    return [];
   }
 
   const appliedMoveCount = animationTimes.filter((time) => time > 0).length;
-  return solution.split(' ').slice(0, appliedMoveCount).join(' ');
+  return solution.slice(0, appliedMoveCount);
 };
 
 const Player = React.memo(({
@@ -117,8 +118,8 @@ const Player = React.memo(({
   const lastStickerScaleRef = useRef(stickerScale);
   const lastCameraFovRef = useRef(cameraFov);
 
-  const lastSolution = useRef<string>('');
-  const lastScramble = useRef<string>('');
+  const lastSolution = useRef<Move3x3[]>([]);
+  const lastScramble = useRef<Move3x3[]>([]);
   const lastAnimationTimes = useRef<number[]>([]);
   const lastSpeed = useRef<number>(0);
 
@@ -126,7 +127,7 @@ const Player = React.memo(({
   const pendingQueueRef = useRef<RenderRefProps[]>([]);
   const instantOverrideRef = useRef<boolean>(false);
   const previewTokenRef = useRef(0);
-  const previewSetupRef = useRef<string | null>(null);
+  const previewSetupRef = useRef<Move3x3[] | null>(null);
 
   const cubeSpeed = calcCubeSpeed(speed);
   const cubeSpeedRef = useRef(cubeSpeed);
@@ -153,9 +154,8 @@ const Player = React.memo(({
     }));
   });
 
-  const faceletsAfter = (...algs: string[]) => {
-    const moves = algs.join(' ').split(' ').filter((move) => move !== '');
-    return faceletsFromState(simpleCube.getCubeState(moves));
+  const faceletsAfter = (...algs: Move3x3[][]) => {
+    return faceletsFromState(simpleCube.getCubeState(algs.flat()));
   };
 
   const applyView = () => {
@@ -196,16 +196,15 @@ const Player = React.memo(({
     applyView();
   }
 
-  const playPreview = (setupAlg: string, alg: string, onEnd: () => void) => {
+  const playPreview = (setupMoves: Move3x3[], moves: Move3x3[], onEnd: () => void) => {
     previewTokenRef.current++;
     const scene = sceneRef.current;
     if (!scene) return;
 
     const token = previewTokenRef.current;
-    previewSetupRef.current = setupAlg;
-    scene.setFacelets(faceletsAfter(setupAlg));
+    previewSetupRef.current = setupMoves;
+    scene.setFacelets(faceletsAfter(setupMoves));
 
-    const moves = alg.split(' ').filter((move) => move !== '');
     const playFrom = (index: number) => {
       if (token !== previewTokenRef.current) return;
       if (index >= moves.length) {
@@ -258,8 +257,9 @@ const Player = React.memo(({
     setDisplayedSetupMoves(setupMoves);
   };
 
-  const syncDisplayedSetupMoves = async (scramble: string, displayedSolutionAlg: string) => {
-    const nextUnsimplifiedSetupMoves = `${scramble} ${displayedSolutionAlg}`.trim();
+  const syncDisplayedSetupMoves = async (scramble: Move3x3[], displayedSolutionAlg: Move3x3[]) => {
+    const unsimplifiedMoves = [...scramble, ...displayedSolutionAlg];
+    const nextUnsimplifiedSetupMoves = cube3x3.format(unsimplifiedMoves);
     pendingSetupMovesRef.current = nextUnsimplifiedSetupMoves;
 
     if (setupMoveSimplificationCacheRef.current.unsimplified === nextUnsimplifiedSetupMoves) {
@@ -269,7 +269,7 @@ const Player = React.memo(({
 
     applyDisplayedSetupMoves(nextUnsimplifiedSetupMoves);
 
-    const nextSetupMoves = await simplifySetupMoves(nextUnsimplifiedSetupMoves);
+    const nextSetupMoves = cube3x3.format(await simplifySetupMoves(unsimplifiedMoves));
     if (pendingSetupMovesRef.current !== nextUnsimplifiedSetupMoves) {
       return;
     }
@@ -348,7 +348,7 @@ const Player = React.memo(({
     handleControllerRequest({ type: 'fullRight' });
   };
 
-  const setInstantPlayerProps = (scramble: string, solution: string, animationTimes: number[]) => {
+  const setInstantPlayerProps = (scramble: Move3x3[], solution: Move3x3[], animationTimes: number[]) => {
     if (!sceneRef.current) return;
 
     if (lastSpeed.current !== speed) {
@@ -358,14 +358,14 @@ const Player = React.memo(({
     sceneRef.current.setFacelets(faceletsAfter(scramble, getDisplayedSolutionAlg(solution, animationTimes)));
   };
 
-  const updateLastPlayerProps = (scramble: string, solution: string, animationTimes: number[]) => {
+  const updateLastPlayerProps = (scramble: Move3x3[], solution: Move3x3[], animationTimes: number[]) => {
     lastSolution.current = solution;
     lastAnimationTimes.current = animationTimes;
     lastScramble.current = scramble;
     lastSpeed.current = speed;
   };
 
-  const findSingleMovecountChange = (moves: string[], prevMoves: string[], times: number[]): { singleMove: string, movesBefore: string } => {
+  const findSingleMovecountChange = (moves: Move3x3[], prevMoves: Move3x3[], times: number[]): { singleMove: Move3x3 | null, movesBefore: Move3x3[] } => {
     let longerMoves;
     let shorterMoves;
     let isAdded: boolean;
@@ -389,21 +389,19 @@ const Player = React.memo(({
     const longerAfterChange = longerMoves.slice(changeIndex + 1);
     const shorterAfterChange = shorterMoves.slice(changeIndex);
 
-    if (longerBeforeChange.join(' ') !== shorterBeforeChange.join(' ') || longerAfterChange.join(' ') !== shorterAfterChange.join(' ')) {
-      return { singleMove: '', movesBefore: '' };
+    const isBeforeSame = cube3x3.format(longerBeforeChange) === cube3x3.format(shorterBeforeChange);
+    const isAfterSame = cube3x3.format(longerAfterChange) === cube3x3.format(shorterAfterChange);
+    const changedMove = longerMoves[changeIndex];
+    if (!isBeforeSame || !isAfterSame || changedMove === undefined) {
+      return { singleMove: null, movesBefore: [] };
     }
 
-    let singleMoveChange = longerMoves[changeIndex];
-    const movesBeforeChange = longerBeforeChange.join(' ');
+    const singleMoveChange = isAdded ? changedMove : cube3x3.invert([changedMove])[0];
 
-    if (!isAdded) {
-      singleMoveChange = reverseMove(singleMoveChange);
-    }
-
-    return { singleMove: singleMoveChange, movesBefore: movesBeforeChange };
+    return { singleMove: singleMoveChange, movesBefore: longerBeforeChange };
   };
 
-  const findAlgBeforeSingle = (solution: string, singleMoveChange: string, movesBeforeChange: string, moveChangeDelta: number) => {
+  const findAlgBeforeSingle = (solution: Move3x3[], singleMoveChange: Move3x3, movesBeforeChange: Move3x3[], moveChangeDelta: number) => {
     let alg = solution;
     if (singleMoveChange) {
       switch (moveChangeDelta) {
@@ -411,7 +409,7 @@ const Player = React.memo(({
           alg = movesBeforeChange;
           break;
         case -1:
-          alg = movesBeforeChange + " " + reverseMove(singleMoveChange);
+          alg = [...movesBeforeChange, ...cube3x3.invert([singleMoveChange])];
           break;
         case 0:
           alg = movesBeforeChange;
@@ -424,18 +422,18 @@ const Player = React.memo(({
     return alg;
   };
 
-  const findAlgAfterSingle = (solution: string, singleMoveChange: string, movesBeforeChange: string, moveChangeDelta: number) => {
+  const findAlgAfterSingle = (solution: Move3x3[], singleMoveChange: Move3x3, movesBeforeChange: Move3x3[], moveChangeDelta: number) => {
     let currentAlg = solution;
     if (singleMoveChange) {
       switch (moveChangeDelta) {
         case 1:
-          currentAlg = movesBeforeChange + " " + singleMoveChange;
+          currentAlg = [...movesBeforeChange, singleMoveChange];
           break;
         case -1:
           currentAlg = movesBeforeChange;
           break;
         case 0:
-          currentAlg = solution.split(' ').slice(0, movesBeforeChange.split(' ').length).join(' ');
+          currentAlg = solution.slice(0, movesBeforeChange.length);
           break;
         default:
           break;
@@ -444,123 +442,71 @@ const Player = React.memo(({
     return currentAlg;
   };
 
-  const findSingleMoveSwitch = (solution: string, animationTimes: number[]): { singleMove: string, movesBefore: string, isForward: boolean | undefined } => {
-    const noSingle = { singleMove: '', movesBefore: '', isForward: undefined };
+  const findSingleMoveSwitch = (solution: Move3x3[], animationTimes: number[]): { singleMove: Move3x3 | null, movesBefore: Move3x3[], isForward: boolean | undefined } => {
+    const noSingle = { singleMove: null, movesBefore: [], isForward: undefined };
     if (!sceneRef.current) return noSingle;
-    if (solution !== lastSolution.current) {
+    if (cube3x3.format(solution) !== cube3x3.format(lastSolution.current)) {
       return noSingle;
     }
 
     const positionChangeDelta = animationTimes.length - lastAnimationTimes.current.length;
 
-    let movesBefore: string = "";
-    let singleMove: string = "";
+    let movesBefore: Move3x3[] = [];
+    let singleMove: Move3x3 | null = null;
     if (positionChangeDelta === 1) {
-      movesBefore = solution.split(' ').slice(0, animationTimes.length - 1).join(' ');
-      singleMove = solution.split(' ')[animationTimes.length - 1];
+      movesBefore = solution.slice(0, animationTimes.length - 1);
+      singleMove = solution[animationTimes.length - 1] ?? null;
     } else if (positionChangeDelta === -1) {
-      movesBefore = lastSolution.current.split(' ').slice(0, lastAnimationTimes.current.length - 1).join(' ');
-      singleMove = reverseMove(lastSolution.current.split(' ')[animationTimes.length]);
+      movesBefore = lastSolution.current.slice(0, lastAnimationTimes.current.length - 1);
+      const undoneMove = lastSolution.current[animationTimes.length];
+      singleMove = undoneMove === undefined ? null : cube3x3.invert([undoneMove])[0];
     }
 
     return { singleMove: singleMove, movesBefore: movesBefore, isForward: positionChangeDelta > 0 };
   };
 
-  const calcMoveBetweenSingles = (singleBeforeChange: string, singleAfterChange: string): string | undefined => {
+  const calcMoveBetweenSingles = (singleBeforeChange: Move3x3 | undefined, singleAfterChange: Move3x3 | undefined): Move3x3 | null => {
     if (!singleBeforeChange || !singleAfterChange) {
       console.warn('move modified detected but found no move');
-      return '';
+      return null;
     }
 
-    const singleBeforeChangeRoot = singleBeforeChange[0];
-    const singleAfterChangeRoot = singleAfterChange[0];
-
-    if (singleBeforeChangeRoot !== singleAfterChangeRoot) {
-      return '';
-    }
-    const root = singleBeforeChangeRoot;
-
-    const singleBeforeChangeSuffix = singleBeforeChange.slice(1);
-    const singleAfterChangeSuffix = singleAfterChange.slice(1);
-
-    if (singleBeforeChangeSuffix === singleAfterChangeSuffix) {
-      return '';
+    const layer = cube3x3.layer(singleBeforeChange);
+    if (layer !== cube3x3.layer(singleAfterChange)) {
+      return null;
     }
 
-    const beforeAfter = singleBeforeChangeSuffix + " " + singleAfterChangeSuffix;
-    let delta = 0;
-
-    switch (beforeAfter) {
-      case " '":
-        delta = -2;
-        break;
-      case "' ":
-        delta = 2;
-        break;
-      case " 2":
-        delta = 1;
-        break;
-      case "2 ":
-        delta = -1;
-        break;
-      case " 3":
-        delta = 2;
-        break;
-      case "3 ":
-        delta = -2;
-        break;
-      case "2' 2":
-        delta = 0;
-        break;
-      case "2 2'":
-        delta = 0;
-        break;
-      case "3' 3":
-        delta = 2;
-        break;
-      case "3 3'":
-        delta = -2;
-        break;
-      default:
-        return '';
+    const amountChange = cube3x3.amount(singleAfterChange) - cube3x3.amount(singleBeforeChange);
+    const wrappedAmountChange = Math.abs(amountChange) > 3 ? amountChange - 4 * Math.sign(amountChange) : amountChange;
+    if (wrappedAmountChange === 0) {
+      return null;
     }
 
-    switch (delta) {
-      case 0:
-        return '';
-      case 1:
-        return root;
-      case -1:
-        return root + "'";
-      case 2:
-        return root + "2";
-      case -2:
-        return root + "2'";
-      default:
-        return '';
-    }
+    return cube3x3.make(layer, wrappedAmountChange as Amount);
   };
 
-  const findSingleMoveModify = (solution: string, animationTimes: number[]): { singleMove: string, movesBefore: string } => {
-    const noSingle = { singleMove: '', movesBefore: '' };
+  const findSingleMoveModify = (solution: Move3x3[], animationTimes: number[]): { singleMove: Move3x3 | null, movesBefore: Move3x3[] } => {
+    const noSingle = { singleMove: null, movesBefore: [] };
 
     if (!sceneRef.current) return noSingle;
 
-    const lastSolutionArray = lastSolution.current.split(' ');
-    const solutionArray = solution.split(' ');
+    const lastSolutionMoves = lastSolution.current;
+    const lastLength = lastAnimationTimes.current.length;
 
-    const leftBeforeChange = lastSolutionArray.slice(0, lastAnimationTimes.current.length - 1).join(' ');
-    const rightBeforeChange = lastSolutionArray.slice(lastAnimationTimes.current.length).join(' ');
+    const leftBeforeChange = lastSolutionMoves.slice(0, lastLength - 1);
+    const rightBeforeChange = lastSolutionMoves.slice(lastLength);
 
-    const leftAfterChange = solutionArray.slice(0, animationTimes.length - 1).join(' ');
-    const rightAfterChange = solutionArray.slice(animationTimes.length).join(' ');
+    const leftAfterChange = solution.slice(0, animationTimes.length - 1);
+    const rightAfterChange = solution.slice(animationTimes.length);
 
-    if (leftBeforeChange !== leftAfterChange || rightBeforeChange !== rightAfterChange) {
+    const isLeftSame = cube3x3.format(leftBeforeChange) === cube3x3.format(leftAfterChange);
+    const isRightSame = cube3x3.format(rightBeforeChange) === cube3x3.format(rightAfterChange);
+    if (!isLeftSame || !isRightSame) {
       return noSingle;
     }
 
-    const singleBeforeChange = lastSolutionArray[lastAnimationTimes.current.length - 1];
-    const singleAfterChange = solutionArray[animationTimes.length - 1];
+    const singleBeforeChange = lastSolutionMoves[lastLength - 1];
+    const singleAfterChange = solution[animationTimes.length - 1];
 
     const singleMoveChange = calcMoveBetweenSingles(singleBeforeChange, singleAfterChange);
 
@@ -568,20 +514,20 @@ const Player = React.memo(({
       return noSingle;
     }
 
-    return { singleMove: singleMoveChange, movesBefore: leftBeforeChange + " " + singleBeforeChange };
+    return { singleMove: singleMoveChange, movesBefore: [...leftBeforeChange, singleBeforeChange] };
   };
 
   const displaySingleChange = (
-    scramble: string,
-    solution: string,
+    scramble: Move3x3[],
+    solution: Move3x3[],
     animationTimes: number[],
-    singleMoveChange: string,
-    movesBeforeChange: string,
+    singleMoveChange: Move3x3,
+    movesBeforeChange: Move3x3[],
     delta: number
   ): RotationInfo | null => {
     const algBeforeSingle = findAlgBeforeSingle(solution, singleMoveChange, movesBeforeChange, delta);
     const algAfterSingle = findAlgAfterSingle(solution, singleMoveChange, movesBeforeChange, delta);
-    const timeArrayAfterSingle = animationTimes.slice(0, algAfterSingle.split(' ').length);
+    const timeArrayAfterSingle = animationTimes.slice(0, algAfterSingle.length);
 
     if (!sceneRef.current) return null;
 
@@ -597,11 +543,11 @@ const Player = React.memo(({
   };
 
   const handleSingleMovecountChange = (
-    moves: string[],
-    lastMoves: string[],
+    moves: Move3x3[],
+    lastMoves: Move3x3[],
     moveChangeDelta: number,
-    scramble: string,
-    solution: string,
+    scramble: Move3x3[],
+    solution: Move3x3[],
     animationTimes: number[]
   ): RotationInfo | null => {
     const { singleMove: singleMoveChange, movesBefore: movesBeforeChange } = findSingleMovecountChange(moves, lastMoves, animationTimes);
@@ -616,8 +562,8 @@ const Player = React.memo(({
   };
 
   const handleSingleMoveSwitch = (
-    scramble: string,
-    solution: string,
+    scramble: Move3x3[],
+    solution: Move3x3[],
     animationTimes: number[]
   ): RotationInfo | null => {
     const { singleMove: singleMoveChange, movesBefore: movesBeforeChange, isForward } = findSingleMoveSwitch(solution, animationTimes);
@@ -634,8 +580,8 @@ const Player = React.memo(({
   };
 
   const handleSingleMoveModify = (
-    scramble: string,
-    solution: string,
+    scramble: Move3x3[],
+    solution: Move3x3[],
     animationTimes: number[]
   ): RotationInfo | null => {
     const { singleMove: singleMoveChange, movesBefore: movesBeforeChange } = findSingleMoveModify(solution, animationTimes);
@@ -660,8 +606,8 @@ const Player = React.memo(({
       return null;
     }
 
-    const moves = solution.split(' ').filter(move => move !== '');
-    const lastMoves = lastSolution.current ? lastSolution.current.split(' ').filter(move => move !== '') : [];
+    const moves = solution;
+    const lastMoves = lastSolution.current;
 
     const movecountDelta = moves.length - lastMoves.length;
 

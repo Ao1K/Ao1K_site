@@ -7,6 +7,7 @@ import type { SvgShape } from '../recon/stepIconDescriptors';
 import type { CubeColors } from '../useSettings';
 import { classifyFavorite, type AlgClassification } from './classifyAlg';
 import { buildAlgIcon } from './algIcon';
+import { cube3x3, type Move3x3 } from '../../utils/parser/cube3x3';
 
 const STATUS_LABEL: Record<AlgStatus, string> = {
   learning: 'Learning',
@@ -16,14 +17,6 @@ const STATUS_LABEL: Record<AlgStatus, string> = {
 
 // status order used to group the PDF list
 const STATUS_ORDER: AlgStatus[] = ['learning', 'learned', 'none'];
-
-// collapse runs of whitespace so spacing reads cleanly regardless of how the alg was entered
-const cleanAlg = (alg: string): string => alg.trim().replace(/\s+/g, ' ');
-
-// slice turn metric, matching the recon page: count moves but skip rotations (x/y/z) and
-// bare modifier tokens, i.e. anything made only of x, y, z, 2 or '
-const moveCount = (alg: string): number =>
-  cleanAlg(alg).split(' ').filter((move) => /[^xyz2']/.test(move)).length;
 
 const dateStamp = (d: Date): string =>
   `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
@@ -38,7 +31,7 @@ export const favoritesToCsv = (favorites: FavoriteAlg[]): string => {
   const rows = [
     ['Version', String(STORE_VERSION)],
     ['Algorithm', 'Algset', 'Status', 'Moves'],
-    ...favorites.map((f) => [cleanAlg(f.alg), algsetLabel(f), STATUS_LABEL[f.status], String(moveCount(f.alg))]),
+    ...favorites.map((f) => [cube3x3.format(f.moves), algsetLabel(f), STATUS_LABEL[f.status], String(cube3x3.count(f.moves, 'stm'))]),
   ];
   return rows.map((r) => r.map(csvEscape).join(',')).join('\r\n');
 };
@@ -70,8 +63,8 @@ const shapeToSvg = (shape: SvgShape): string => {
 };
 
 // the same step icon shown on each card, serialized as inline SVG (matching AlgIcon)
-const algIconSvg = (c: AlgClassification, alg: string, cubeColors: CubeColors, label: string): string => {
-  const { descriptor } = buildAlgIcon(c, alg, cubeColors);
+const algIconSvg = (c: AlgClassification, moves: Move3x3[], cubeColors: CubeColors, label: string): string => {
+  const { descriptor } = buildAlgIcon(c, moves, cubeColors);
   if (!descriptor) {
     return `<span class="text-icon">${escapeHtml(label.slice(0, 6) || '?')}</span>`;
   }
@@ -100,9 +93,8 @@ const buildPrintHtml = (favorites: FavoriteAlg[], cubeColors: CubeColors): strin
     .map(({ status, algs }) => {
       const rows = algs
         .map((f, i) => {
-          const alg = cleanAlg(f.alg);
-          const icon = algIconSvg(classifyFavorite(f), f.alg, cubeColors, algsetLabel(f));
-          return `<tr><td class="num">${i + 1}.</td><td class="icon-cell">${icon}</td><td class="alg">${escapeHtml(alg)}</td><td class="moves">${moveCount(alg)} stm</td></tr>`;
+          const icon = algIconSvg(classifyFavorite(f), f.moves, cubeColors, algsetLabel(f));
+          return `<tr><td class="num">${i + 1}.</td><td class="icon-cell">${icon}</td><td class="alg">${escapeHtml(cube3x3.format(f.moves))}</td><td class="moves">${cube3x3.count(f.moves, 'stm')} stm</td></tr>`;
         })
         .join('');
       const heading = `${escapeHtml(STATUS_LABEL[status])} <span class="tally">(${algs.length})</span>`;

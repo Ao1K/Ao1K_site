@@ -5,8 +5,8 @@ import { applyMovesSafely } from './crossAutocomplete';
 import { bestContinuationScore, rateCrossSolutions, Y_ROTATIONS } from './crossContinuations';
 import type { RatedCrossSolution } from './crossContinuations';
 import type { F2LScoreIndex } from './f2lPairLookup';
-import { combineMoves } from '../../utils/moveUtils';
-import simplifyRotations from './simplifyRotations';
+import { cube3x3 } from '../../utils/parser/cube3x3';
+import type { Move3x3, Rotation3x3 } from '../../utils/parser/cube3x3';
 import type { FeedbackNote, ReviewFeedback } from '../../components/recon/FeedbackNotes';
 import type { FeedbackCategory } from '../../utils/sharedConstants';
 
@@ -17,7 +17,7 @@ type ContinuationFeedbackCategory = Exclude<FeedbackCategory, 'bad'>;
 
 export interface ReviewedCross {
   solution: RatedCrossSolution;
-  shownMoves: string[];
+  shownMoves: Move3x3[];
   continuationDisturbance: number;
   isUserCross: boolean;
 }
@@ -35,7 +35,7 @@ export interface CrossReview extends ReviewFeedback {
 const POOL_SIZE = 20;
 const DISTURBANCE_WEIGHT = 0.4;
 const D_CENTER_FACELET = 13;
-const ROTATIONS_TO_D = [[], ['x'], ["x'"], ['x2'], ['z'], ["z'"]];
+const ROTATIONS_TO_D: readonly Rotation3x3[][] = [[], ['x'], ["x'"], ['x2'], ['z'], ["z'"]];
 
 const MOVES_PER_CONTINUATION_SECOND = 4;
 const SCORE_CEILINGS: readonly [FeedbackCategory, number][] = [
@@ -53,8 +53,6 @@ const CONTINUATION_NOTES: Record<ContinuationFeedbackCategory, string> = {
   okay: 'Weaker continuation than alternatives',
 };
 
-const isRotation = (move: string) => /^[xyz]/.test(move);
-
 const solvedCrossColors = (facelets: Facelets): string[] => {
   const state = readHashStateFromFacelets(facelets);
   return state ? calcCrossColorsSolved(state) : [];
@@ -71,7 +69,7 @@ export interface CrossLine {
   crossColor: string;
 }
 
-export function findCrossLine(scrambleMoves: readonly string[], solutionLines: readonly (readonly string[])[]): CrossLine | null {
+export function findCrossLine(scrambleMoves: readonly Move3x3[], solutionLines: readonly (readonly Move3x3[])[]): CrossLine | null {
   let facelets = applyMovesSafely(solvedFacelets(), scrambleMoves);
   if (!facelets || solvedCrossColors(facelets).length > 0) return null;
 
@@ -116,11 +114,9 @@ interface UserCrossScores {
 
 const pluralMoves = (count: number) => `${count} move${count === 1 ? '' : 's'}`;
 
-const countTurns = (alg: string) => alg.split(' ').filter(move => move && !isRotation(move)).length;
-
 function crossPlusOneMoveCount({ cross, solvedPairs, continuation }: RatedCrossSolution): number {
   if (solvedPairs.length > 0) return cross.length;
-  return continuation ? cross.length + countTurns(continuation) : Infinity;
+  return continuation.length > 0 ? cross.length + cube3x3.count(continuation, 'stm') : Infinity;
 }
 
 function buildXCrossMoveFeedback(moveCount: number, alternatives: readonly ReviewedCross[]) {
@@ -188,14 +184,14 @@ function buildCrossFeedback(
 
 function scoreUserCross(
   crossLine: CrossLine,
-  userLine: readonly string[],
-  userCrossMoves: readonly string[],
+  userLine: readonly Move3x3[],
+  userCrossMoves: readonly Move3x3[],
   index: F2LScoreIndex,
 ): UserCrossScores {
   const faceletsAfterLine = applyMoves(crossLine.faceletsBeforeLine, userLine);
   const crossDown = applyMoves(faceletsAfterLine, rotationToDown(faceletsAfterLine, crossLine.crossColor));
   return {
-    moveCount: userCrossMoves.filter(move => !isRotation(move)).length,
+    moveCount: cube3x3.count(userCrossMoves, 'stm'),
     solvedPairCount: countSolvedPairs(faceletsAfterLine, crossLine.crossColor),
     continuationScore: bestContinuationScore(crossDown, index),
   };
@@ -208,7 +204,7 @@ function countSolvedPairs(facelets: Facelets, crossColor: string): number {
     : 0;
 }
 
-export function hasCrossFeedback(scrambleMoves: readonly string[], solutionLines: readonly (readonly string[])[]): boolean {
+export function hasCrossFeedback(scrambleMoves: readonly Move3x3[], solutionLines: readonly (readonly Move3x3[])[]): boolean {
   const crossLine = findCrossLine(scrambleMoves, solutionLines);
   if (!crossLine) return false;
   const faceletsAfterLine = applyMoves(crossLine.faceletsBeforeLine, solutionLines[crossLine.lineIndex]);
@@ -238,15 +234,23 @@ function rateCrossSolutionsCached(crossDownFacelets: Facelets, index: F2LScoreIn
   return solutions;
 }
 
-export function reviewCross(crossLine: CrossLine, userLine: readonly string[], index: F2LScoreIndex): CrossReview | null {
-  const leadingRotationCount = userLine.findIndex(move => !isRotation(move));
-  const userRotations = userLine.slice(0, leadingRotationCount === -1 ? userLine.length : leadingRotationCount);
+function leadingRotations(moves: readonly Move3x3[]): Rotation3x3[] {
+  const rotations: Rotation3x3[] = [];
+  for (const move of moves) {
+    if (!cube3x3.isRotation(move)) break;
+    rotations.push(move);
+  }
+  return rotations;
+}
+
+export function reviewCross(crossLine: CrossLine, userLine: readonly Move3x3[], index: F2LScoreIndex): CrossReview | null {
+  const userRotations = leadingRotations(userLine);
   const userOrientation = applyMoves(crossLine.faceletsBeforeLine, userRotations);
   const extraRotation = rotationToDown(userOrientation, crossLine.crossColor);
   const setupMoves = [...userRotations, ...extraRotation];
 
   const userEndFacelets = applyMoves(crossLine.faceletsBeforeLine, [...userLine, ...extraRotation]);
-  const matchesUserCross = (yRotation: string, shownMoves: readonly string[]) => {
+  const matchesUserCross = (yRotation: Rotation3x3 | null, shownMoves: readonly Move3x3[]) => {
     const userFaceletsAtAngle = applyMoves(userEndFacelets, yRotation ? [yRotation] : []);
     const crossFacelets = applyMoves(crossLine.faceletsBeforeLine, shownMoves);
     return crossFacelets.every((sticker, position) => sticker === userFaceletsAtAngle[position]);
@@ -254,11 +258,8 @@ export function reviewCross(crossLine: CrossLine, userLine: readonly string[], i
 
   const crosses: ReviewedCross[] = rateCrossSolutionsCached(applyMoves(userOrientation, extraRotation), index)
     .map(solution => {
-      const setupRotations = [...setupMoves, solution.yRotation].filter(Boolean);
-      const simplifiedRotations = setupRotations.length > 0
-        ? simplifyRotations(setupRotations.join(' ')).filter(Boolean)
-        : [];
-      const shownMoves = combineMoves([...simplifiedRotations, ...solution.cross]);
+      const setupRotations = [...setupMoves, ...(solution.yRotation ? [solution.yRotation] : [])];
+      const shownMoves = cube3x3.combine([...cube3x3.simplifyRotations(setupRotations), ...solution.cross]);
       return {
         solution,
         shownMoves,

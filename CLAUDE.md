@@ -74,7 +74,7 @@ If a function has multiple different return blocks, assign the return value to a
 There's a small local bundle used for rendering server-side svg cube images and videos. 
 
 If you modify any of that pipeline, such as:
-`cubeSceneEntry.client.ts`, `cubeSceneRuntime.client.ts`, `cubeSvgRender.ts`, `cubeSceneIsland.ts`, or `cubeMoves.ts`,
+`cubeSceneEntry.client.ts`, `cubeSceneRuntime.client.ts`, `cubeSvgRender.ts`, `cubeSceneIsland.ts`, or `cubeFacelets.ts`,
 then be sure to run `build-cube-runtime` and `verify-cube-parity` from the package.json.
 
 # Testing

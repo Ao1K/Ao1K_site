@@ -6,6 +6,7 @@ import { reviewF2L, type F2LReview } from './f2lReview';
 import { reviewAlg, type AlgReview, type CubeStateReader } from './algReview';
 import { isOneAUFAway, isLastLayerDone, reviewAUF, WRONG_AUF_NOTE, type AUFReview } from './aufReview';
 import type { F2LScoreIndex } from './f2lPairLookup';
+import type { Move3x3 } from '../../utils/parser/cube3x3';
 
 export type LineReview =
   | { kind: 'cross'; value: CrossReview }
@@ -20,9 +21,9 @@ export interface SolveReview {
 
 interface SolveLine {
   lineIndex: number;
-  lineMoves: readonly string[];
-  movesBefore: readonly string[];
-  nextLineMoves: readonly string[] | null;
+  lineMoves: readonly Move3x3[];
+  movesBefore: readonly Move3x3[];
+  nextLineMoves: readonly Move3x3[] | null;
   isFinalLine: boolean;
   stepInfo: StepInfo | null;
 }
@@ -59,8 +60,8 @@ function isLastLayerAlgStep(stepInfo: StepInfo): boolean {
 }
 
 export function hasReviewContent(
-  scrambleMoves: readonly string[],
-  solutionLines: readonly (readonly string[])[],
+  scrambleMoves: readonly Move3x3[],
+  solutionLines: readonly (readonly Move3x3[])[],
   lineIconData: readonly LineIconDatum[],
 ): boolean {
   if (hasCrossFeedback(scrambleMoves, solutionLines)) return true;
@@ -87,8 +88,8 @@ function reviewTakeaways(lineReviews: readonly LineReview[]): ReviewFeedback {
 }
 
 export function reviewSolve(
-  scrambleMoves: readonly string[],
-  solutionLines: readonly (readonly string[])[],
+  scrambleMoves: readonly Move3x3[],
+  solutionLines: readonly (readonly Move3x3[])[],
   lineIconData: readonly LineIconDatum[],
   index: F2LScoreIndex | null,
   reader: CubeStateReader,

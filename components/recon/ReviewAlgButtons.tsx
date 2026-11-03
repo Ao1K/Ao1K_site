@@ -6,23 +6,24 @@ import ReplayIcon from '../icons/replay';
 import Parrot from '../icons/parrot';
 import { useFavoriteToggle } from './SuggestionCard';
 import type { Algset } from '../../composables/recon/SimpleCubeInterpreter';
+import { cube3x3, type Move3x3 } from '../../utils/parser/cube3x3';
 
 export interface PlaybackControls {
   playingAlg: string | null;
   isPlaybackFinished: boolean;
-  onPlay: (alg: string) => void;
+  onPlay: (moves: Move3x3[]) => void;
   onStop: () => void;
 }
 
 const iconButtonClass = 'shrink-0 text-neutral-500 hover:text-neutral-200 focus-visible:outline-none';
 
-export function CopyAlgButton({ alg, noun }: { alg: string; noun: string }) {
+export function CopyAlgButton({ moves, noun }: { moves: Move3x3[]; noun: string }) {
   const [copied, setCopied] = useState(false);
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleCopy = (event: React.MouseEvent) => {
     event.preventDefault();
-    navigator.clipboard?.writeText(alg).then(() => {
+    navigator.clipboard?.writeText(cube3x3.format(moves)).then(() => {
       setCopied(true);
       if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
       copyTimerRef.current = setTimeout(() => setCopied(false), 1200);
@@ -54,7 +55,8 @@ export function CopyAlgButton({ alg, noun }: { alg: string; noun: string }) {
   );
 }
 
-export function PlayAlgButton({ alg, noun, playingAlg, isPlaybackFinished, onPlay, onStop }: { alg: string; noun: string } & PlaybackControls) {
+export function PlayAlgButton({ moves, noun, playingAlg, isPlaybackFinished, onPlay, onStop }: { moves: Move3x3[]; noun: string } & PlaybackControls) {
+  const alg = cube3x3.format(moves);
   const isShown = playingAlg === alg;
   const isPlaying = isShown && !isPlaybackFinished;
   const isFinished = isShown && isPlaybackFinished;
@@ -62,7 +64,7 @@ export function PlayAlgButton({ alg, noun, playingAlg, isPlaybackFinished, onPla
   const handlePlay = (event: React.MouseEvent) => {
     event.preventDefault();
     if (isPlaying) onStop();
-    else onPlay(alg);
+    else onPlay(moves);
   };
 
   const playbackLabel = `${isPlaying ? 'Stop' : isFinished ? 'Replay' : 'Play'} ${noun}`;
@@ -80,8 +82,8 @@ export function PlayAlgButton({ alg, noun, playingAlg, isPlaybackFinished, onPla
   );
 }
 
-export function FavoriteAlgButton({ alg, algset }: { alg: string; algset?: Algset }) {
-  const { favorited, animating, toggle, handleAnimationEnd } = useFavoriteToggle(alg, algset);
+export function FavoriteAlgButton({ moves, algset }: { moves: Move3x3[]; algset?: Algset }) {
+  const { favorited, animating, toggle, handleAnimationEnd } = useFavoriteToggle(moves, algset);
   const favoriteLabel = favorited ? 'Unfavorite alg' : 'Favorite alg';
 
   return (

@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import type { Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
 import type { CrossSuggestionDetails } from '../../composables/recon/crossAutocomplete';
 import { MAX_SHOWN_SUGGESTIONS } from '../../composables/recon/suggestionRanking';
+import { cube3x3 } from '../../utils/parser/cube3x3';
 import { SuggestionBox } from './SuggestionBox';
 import { SuggestionGhost } from './SuggestionGhost';
 import { colorDict } from '../../utils/sharedConstants';
@@ -29,9 +30,16 @@ export interface SuggestionManagerHandle {
   getAcceptText: () => string | null;
   // ghost anchor box (relative to the overlay) for aligning the ghost. kept in the manager
   // so updating it re-renders only the ghost, never the editor's contentEditable.
-  updateCaretRect: (left: number, top: number, height: number) => void;
+  updateCaretAnchor: (anchor: CaretAnchor) => void;
   setSuggestions: (suggestions: Suggestion[], lineIndex: number | null) => void;
   getSuggestionLineIndex: () => number | null;
+}
+
+interface CaretAnchor {
+  lineIndex: number;
+  left: number;
+  top: number;
+  height: number;
 }
 
 interface SuggestionState {
@@ -51,7 +59,6 @@ interface FilteredSuggestionItem {
 
 interface SuggestionManagerProps {
   name: string;
-  activeLineIndex: number;
   lines: string[];
   overlayElement: HTMLElement | null;
   topOffset: number;
@@ -63,7 +70,7 @@ interface SuggestionManagerProps {
 }
 
 const buildSuggestionSignature = (suggestions?: Suggestion[]) =>
-  suggestions?.map((suggestion) => suggestion.alg).join('|') || '';
+  suggestions?.map((suggestion) => cube3x3.format(suggestion.moves)).join('|') || '';
 
 const lineHasComments = (lineHtml = '', commentClass: string) =>
   lineHtml.includes(`class="${commentClass}"`);
@@ -95,15 +102,16 @@ const resolveAppendedRemaining = (suggestionAlg: string, visibleText: string): s
 
 const resolveCrossRemaining = (suggestion: Suggestion, cross: CrossSuggestionDetails, visibleText: string): string => {
   const { lastInputMoveMerge } = cross;
-  if (!lastInputMoveMerge) return resolveAppendedRemaining(suggestion.alg, visibleText);
+  if (!lastInputMoveMerge) return resolveAppendedRemaining(cube3x3.format(suggestion.moves), visibleText);
   if (!visibleText.endsWith(lastInputMoveMerge.inputMove)) return '';
-  return [lastInputMoveMerge.suffix, ...lastInputMoveMerge.remainingMoves].join(' ');
+  const remainingText = cube3x3.format(lastInputMoveMerge.remainingMoves);
+  return remainingText ? `${lastInputMoveMerge.suffix} ${remainingText}` : lastInputMoveMerge.suffix;
 };
 
 const resolveRemaining = (suggestion: Suggestion, visibleText: string): string =>
   suggestion.cross
     ? resolveCrossRemaining(suggestion, suggestion.cross, visibleText)
-    : resolvePrefixRemaining(suggestion.alg, visibleText);
+    : resolvePrefixRemaining(cube3x3.format(suggestion.moves), visibleText);
 
 const NO_REGION = -2;
 
@@ -139,7 +147,6 @@ const filterSuggestionsForDisplay = ({
 
 export function SuggestionManager({
   name,
-  activeLineIndex,
   lines,
   overlayElement,
   topOffset,
@@ -156,10 +163,9 @@ export function SuggestionManager({
   // the only genuine state: which suggestion is highlighted, and whether Esc was pressed.
   const [selectedOriginalIndex, setSelectedOriginalIndex] = useState<number | null>(null);
   const [dismissed, setDismissed] = useState(false);
-  // ghost anchor box pushed in by the editor; lives here so it re-renders only the ghost.
-  const [caretLeft, setCaretLeft] = useState(0);
-  const [caretTop, setCaretTop] = useState(0);
-  const [caretHeight, setCaretHeight] = useState(0);
+  // the caret's line and the ghost's position, set by the editor. Kept here so updating them re-renders the manager instead of the editor.
+  const [caretAnchor, setCaretAnchor] = useState<CaretAnchor>({ lineIndex: 0, left: 0, top: 0, height: 0 });
+  const activeLineIndex = caretAnchor.lineIndex;
 
   // suggestions are only valid in the region they were generated for; in any other region
   // they're stale (e.g. backspacing onto an earlier line whose suggestions were never recomputed).
@@ -209,11 +215,7 @@ export function SuggestionManager({
     showSuggestion: () => setDismissed(false),
     dismissSuggestion: () => setDismissed(true),
     getAcceptText: () => (shouldShow && remaining ? remaining : null),
-    updateCaretRect: (left: number, top: number, height: number) => {
-      setCaretLeft(left);
-      setCaretTop(top);
-      setCaretHeight(height);
-    },
+    updateCaretAnchor: setCaretAnchor,
     setSuggestions: (next: Suggestion[], nextLineIndex: number | null) => {
       setSuggestionState((prev) =>
         prev.lineIndex === nextLineIndex && buildSuggestionSignature(prev.suggestions) === buildSuggestionSignature(next)
@@ -256,9 +258,9 @@ export function SuggestionManager({
         <SuggestionGhost
           remaining={remaining}
           showTabHint={showTabHint}
-          left={caretLeft}
-          top={caretTop}
-          height={caretHeight}
+          left={caretAnchor.left}
+          top={caretAnchor.top}
+          height={caretAnchor.height}
         />
       </div>
     </>

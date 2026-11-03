@@ -71,9 +71,8 @@ export async function generateMetadata(
 }
 
 export default async function Page() {
-  let dailyScramble = await fetchDailyScramble();
-  const [comment, scramble] = dailyScramble.split('\n');
-  dailyScramble = `<div><span class="text-gray-500">// Scramble of the day</span><br></div><div><span class="text-gray-500">// ${comment}</span><br></div><div><span class="text-primary-100">${scramble}</span><br></div>`;
+  const [comment, scramble] = (await fetchDailyScramble()).split('\n');
+  const dailyScramble = `// Scramble of the day\n// ${comment}\n${scramble}`;
 
   const cookieStore = await cookies();
   const infoPanelDismissed = cookieStore.get('infoPanelDismissed_v1')?.value === 'true';

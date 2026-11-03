@@ -5,16 +5,20 @@ import { rateCrossSolutions, Y_ROTATIONS } from './crossContinuations';
 import type { ContinuationCategory, PairColors, RatedCrossSolution } from './crossContinuations';
 import type { F2LScoreIndex } from './f2lPairLookup';
 import type { StepInfo, Suggestion } from './SimpleCubeInterpreter';
+import { cube3x3 } from '../../utils/parser/cube3x3';
+import type { Move3x3, Rotation3x3 } from '../../utils/parser/cube3x3';
+import type { Amount, Axis } from '../../utils/parser';
 
 export interface LastInputMoveMerge {
-  inputMove: string;
+  inputMove: Move3x3;
+  mergedMove: Move3x3;
   suffix: string;
-  remainingMoves: string[];
+  remainingMoves: Move3x3[];
 }
 
 export interface CrossSuggestionDetails {
   stepInfo: StepInfo;
-  continuation: string;
+  continuation: Move3x3[];
   continuationPair: PairColors | null;
   category: ContinuationCategory;
   followsInput: boolean;
@@ -22,13 +26,19 @@ export interface CrossSuggestionDetails {
 }
 
 const MAX_CROSS_SUGGESTIONS = 10;
-const AXIS_OF_FACE: Record<string, string> = { U: 'UD', D: 'UD', F: 'FB', B: 'FB', L: 'LR', R: 'LR' };
-const MERGE_SUFFIX_BY_MOVE_SUFFIX: Record<string, string> = { '': '2', '2': "'" };
-const Y_ROTATIONS_MERGEABLE_INTO_Y = ['', 'y', 'y2'];
-const isRotation = (move: string) => /^[xyz]/.test(move);
+const SUFFIX_TYPED_AFTER_BARE_MOVE: Partial<Record<Amount, string>> = { 1: '', 2: '2', [-1]: "'" };
+const Y_ROTATIONS_MERGEABLE_INTO_Y: readonly (Rotation3x3 | null)[] = [null, 'y', 'y2'];
 
-const leadingAxisRun = (moves: readonly string[], axis: string): readonly string[] => {
-  const runEnd = moves.findIndex(move => AXIS_OF_FACE[move[0]] !== axis);
+const isFaceMove = (move: Move3x3) => {
+  const { layers } = cube3x3.geometry(move);
+  return layers.length === 1 && layers[0] !== 0;
+};
+
+const faceAxisOf = (move: Move3x3 | undefined): Axis | null =>
+  move !== undefined && isFaceMove(move) ? cube3x3.geometry(move).axis : null;
+
+const leadingAxisRun = (moves: readonly Move3x3[], axis: Axis): readonly Move3x3[] => {
+  const runEnd = moves.findIndex(move => faceAxisOf(move) !== axis);
   return runEnd === -1 ? moves : moves.slice(0, runEnd);
 };
 
@@ -39,7 +49,7 @@ const isAnyCrossSolved = (facelets: Facelets): boolean => {
   return !!state && calcCrossColorsSolved(state).length > 0;
 };
 
-export const applyMovesSafely = (facelets: Facelets, moves: readonly string[]): Facelets | null => {
+export const applyMovesSafely = (facelets: Facelets, moves: readonly Move3x3[]): Facelets | null => {
   try {
     return applyMoves(facelets, moves);
   } catch {
@@ -47,7 +57,7 @@ export const applyMovesSafely = (facelets: Facelets, moves: readonly string[]): 
   }
 };
 
-export function applyMovesUntilCross(moveGroups: readonly (readonly string[])[]): Facelets | null {
+export function applyMovesUntilCross(moveGroups: readonly (readonly Move3x3[])[]): Facelets | null {
   let facelets = solvedFacelets();
   for (const moves of moveGroups) {
     const next = applyMovesSafely(facelets, moves);
@@ -73,28 +83,28 @@ interface CrossCandidate {
   lastInputMoveMerge: LastInputMoveMerge | null;
 }
 
-const movesLeftToInput = ({ solution, lastInputMoveMerge }: CrossCandidate): readonly string[] =>
+const movesLeftToInput = ({ solution, lastInputMoveMerge }: CrossCandidate): readonly Move3x3[] =>
   lastInputMoveMerge?.remainingMoves ?? solution.cross;
 
 const ghostKey = (candidate: CrossCandidate): string =>
-  `${candidate.lastInputMoveMerge?.suffix ?? ''}|${candidate.solution.yRotation}|${movesLeftToInput(candidate).join(' ')}`;
+  `${candidate.lastInputMoveMerge?.suffix ?? ''}|${candidate.solution.yRotation ?? ''}|${cube3x3.format(movesLeftToInput(candidate))}`;
 
 function scoreMovesLeftToInput(candidate: CrossCandidate, index: F2LScoreIndex): CrossCandidate {
-  const crossScore = index.scoreAlg(movesLeftToInput(candidate).join(' '));
+  const crossScore = index.scoreAlg(movesLeftToInput(candidate));
   const totalScore = crossScore + candidate.solution.continuationScore;
   return { ...candidate, solution: { ...candidate.solution, crossScore, totalScore } };
 }
 
-function toSuggestion({ solution, lastInputMoveMerge }: CrossCandidate, inputMoves: readonly string[]): Suggestion {
+function toSuggestion({ solution, lastInputMoveMerge }: CrossCandidate, inputMoves: readonly Move3x3[]): Suggestion {
   const stepInfo = crossStepInfo(solution);
   const shownMoves = lastInputMoveMerge
-    ? [lastInputMoveMerge.inputMove + lastInputMoveMerge.suffix, ...lastInputMoveMerge.remainingMoves]
+    ? [lastInputMoveMerge.mergedMove, ...lastInputMoveMerge.remainingMoves]
     : [...(solution.yRotation ? [solution.yRotation] : []), ...solution.cross];
   const inputMovesBeforeShownMoves = lastInputMoveMerge ? inputMoves.slice(0, -1) : inputMoves;
   const followsInput = inputMovesBeforeShownMoves.length > 0;
 
   return {
-    alg: shownMoves.join(' '),
+    moves: shownMoves,
     time: solution.totalScore,
     steps: [stepInfo.step],
     cross: {
@@ -108,45 +118,43 @@ function toSuggestion({ solution, lastInputMoveMerge }: CrossCandidate, inputMov
   };
 }
 
-function findSameAxisOverlaps(inputMoves: readonly string[], cross: readonly string[]): readonly string[] {
-  const axis = AXIS_OF_FACE[inputMoves.at(-1)?.[0] ?? ''];
+function findSameAxisOverlaps(inputMoves: readonly Move3x3[], cross: readonly Move3x3[]): readonly Move3x3[] {
+  const axis = faceAxisOf(inputMoves.at(-1));
   if (!axis) return [];
 
-  const inputFaces = leadingAxisRun(inputMoves.toReversed(), axis).map(move => move[0]);
-  return leadingAxisRun(cross, axis).filter(move => inputFaces.includes(move[0]));
+  const inputLayers = leadingAxisRun(inputMoves.toReversed(), axis).map(cube3x3.layer);
+  return leadingAxisRun(cross, axis).filter(move => inputLayers.includes(cube3x3.layer(move)));
 }
 
-function findLastInputMoveMerge(lastInputMove: string, cross: readonly string[], overlap: string): LastInputMoveMerge | null {
-  const suffix = MERGE_SUFFIX_BY_MOVE_SUFFIX[overlap.slice(1)];
-  const canMergeByAppending = lastInputMove === overlap[0] && suffix !== undefined;
-
-  const merge = {
-    inputMove: lastInputMove,
-    suffix,
-    remainingMoves: cross.toSpliced(cross.indexOf(overlap), 1),
-  };
-  return canMergeByAppending ? merge : null;
+function mergeOntoBareMove(inputMove: Move3x3, addedMove: Move3x3, remainingMoves: Move3x3[]): LastInputMoveMerge | null {
+  const isBareMove = inputMove === cube3x3.make(cube3x3.layer(addedMove), 1);
+  const merged = cube3x3.combine([inputMove, addedMove]);
+  const suffix = merged.length === 1 ? SUFFIX_TYPED_AFTER_BARE_MOVE[cube3x3.amount(merged[0])] : undefined;
+  const merge = suffix === undefined ? null : { inputMove, mergedMove: merged[0], suffix, remainingMoves };
+  return isBareMove ? merge : null;
 }
 
-function findAllowedYRotations(inputMoves: readonly string[]): readonly string[] {
-  const lastInputMove = inputMoves.at(-1) ?? '';
-  if (!inputMoves.every(isRotation)) return [''];
+function findAllowedYRotations(inputMoves: readonly Move3x3[]): readonly (Rotation3x3 | null)[] {
+  const lastInputMove = inputMoves.at(-1);
+  if (!inputMoves.every(cube3x3.isRotation)) return [null];
   if (lastInputMove === 'y') return Y_ROTATIONS_MERGEABLE_INTO_Y;
-  if (lastInputMove.startsWith('y')) return [''];
+  if (lastInputMove !== undefined && cube3x3.layer(lastInputMove) === 'y') return [null];
   return Y_ROTATIONS;
 }
 
-function findYRotationMerge(inputMoves: readonly string[], { yRotation, cross }: RatedCrossSolution): LastInputMoveMerge | null {
-  const merge = { inputMove: 'y', suffix: MERGE_SUFFIX_BY_MOVE_SUFFIX[yRotation.slice(1)], remainingMoves: cross };
-  return inputMoves.at(-1) === 'y' ? merge : null;
+function findYRotationMerge(inputMoves: readonly Move3x3[], yRotation: Rotation3x3, cross: Move3x3[]): LastInputMoveMerge | null {
+  const lastInputMove = inputMoves.at(-1);
+  return lastInputMove === 'y' ? mergeOntoBareMove(lastInputMove, yRotation, cross) : null;
 }
 
-function candidateAfterInput(solution: RatedCrossSolution, inputMoves: readonly string[]): CrossCandidate | null {
-  if (solution.yRotation) return { solution, lastInputMoveMerge: findYRotationMerge(inputMoves, solution) };
+function candidateAfterInput(solution: RatedCrossSolution, inputMoves: readonly Move3x3[]): CrossCandidate | null {
+  if (solution.yRotation) {
+    return { solution, lastInputMoveMerge: findYRotationMerge(inputMoves, solution.yRotation, solution.cross) };
+  }
 
   const overlaps = findSameAxisOverlaps(inputMoves, solution.cross);
   const lastInputMoveMerge = overlaps.length === 1
-    ? findLastInputMoveMerge(inputMoves.at(-1)!, solution.cross, overlaps[0])
+    ? mergeOntoBareMove(inputMoves.at(-1)!, overlaps[0], solution.cross.toSpliced(solution.cross.indexOf(overlaps[0]), 1))
     : null;
 
   const fitsAfterInput = overlaps.length === 0 || lastInputMoveMerge !== null;
@@ -154,28 +162,32 @@ function candidateAfterInput(solution: RatedCrossSolution, inputMoves: readonly 
   return fitsAfterInput ? candidate : null;
 }
 
-function toReplacementCandidate(solution: RatedCrossSolution, inputMoves: readonly string[], replacement: string): CrossCandidate {
+function toReplacementCandidate(solution: RatedCrossSolution, inputMoves: readonly Move3x3[], replacement: Move3x3): CrossCandidate {
   const remainingMoves = solution.cross.toSpliced(solution.cross.indexOf(replacement), 1);
-  const suffix = replacement.slice(1);
-  const lastInputMoveMerge = { inputMove: inputMoves.at(-1)!, suffix, remainingMoves };
+  const suffix = SUFFIX_TYPED_AFTER_BARE_MOVE[cube3x3.amount(replacement)] ?? '';
+  const lastInputMoveMerge = { inputMove: inputMoves.at(-1)!, mergedMove: replacement, suffix, remainingMoves };
 
   const plainCandidate = { solution: { ...solution, cross: remainingMoves }, lastInputMoveMerge: null };
   const mergeCandidate = { solution, lastInputMoveMerge };
   return suffix === '' ? plainCandidate : mergeCandidate;
 }
 
-function findLastInputMoveReplacement(inputMoves: readonly string[], cross: readonly string[]): string | undefined {
+function findLastInputMoveReplacement(inputMoves: readonly Move3x3[], cross: readonly Move3x3[]): Move3x3 | undefined {
   const overlaps = findSameAxisOverlaps(inputMoves, cross);
-  const replacesLastInputMove = overlaps.length === 1 && overlaps[0][0] === inputMoves.at(-1);
+  const lastInputMove = inputMoves.at(-1);
+  const replacesLastInputMove = overlaps.length === 1
+    && lastInputMove === cube3x3.make(cube3x3.layer(overlaps[0]), 1);
   return replacesLastInputMove ? overlaps[0] : undefined;
 }
 
 function findCandidatesReplacingLastInputMove(
   facelets: Facelets,
-  inputMoves: readonly string[],
+  inputMoves: readonly Move3x3[],
   index: F2LScoreIndex,
 ): CrossCandidate[] {
-  const isLastInputBareFaceMove = (inputMoves.at(-1) ?? '') in AXIS_OF_FACE;
+  const lastInputMove = inputMoves.at(-1);
+  const isLastInputBareFaceMove = lastInputMove !== undefined && isFaceMove(lastInputMove)
+    && cube3x3.amount(lastInputMove) === 1;
   const faceletsBeforeLastMove = isLastInputBareFaceMove ? applyMovesSafely(facelets, inputMoves.slice(0, -1)) : null;
 
   const solutions = faceletsBeforeLastMove
@@ -198,7 +210,7 @@ const uniqueByGhost = (candidates: CrossCandidate[]): CrossCandidate[] => {
   });
 };
 
-export function getCrossSuggestions(facelets: Facelets, lineMoves: readonly string[], index: F2LScoreIndex): Suggestion[] {
+export function getCrossSuggestions(facelets: Facelets, lineMoves: readonly Move3x3[], index: F2LScoreIndex): Suggestion[] {
   const lineFacelets = applyMovesSafely(facelets, lineMoves);
   if (!lineFacelets || isAnyCrossSolved(lineFacelets)) return [];
 

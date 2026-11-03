@@ -3,8 +3,11 @@ import { ollCases, pllCases, zbllCases } from './llCases';
 import type { ExactAlg } from "./rawAlgs";
 import { SimpleCubeInterpreter } from "../composables/recon/SimpleCubeInterpreter";
 import { SimpleCube } from '../composables/recon/SimpleCube';
-import { reverseMove } from '../composables/recon/transformHTML';
+import { cube3x3 } from './parser/cube3x3';
+import type { Move3x3 } from './parser/cube3x3';
 import LLinterpreter from '../composables/recon/LLinterpreter';
+
+const ANGLE_MOVES = new Set<Move3x3>(['U', "U'", 'U2', 'y', "y'", 'y2']);
 
 interface AlgPattern {
   caseIndex: number;
@@ -28,44 +31,19 @@ export default function LLpatternBuilder() {
 
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const getAlgInverse = (alg: string): string => {
-    let reversedAlg = '';
-    const moves = alg.split(' ').reverse();
-    moves.forEach((move) => {
-      let reversedMove = reverseMove(move);
-      if (reversedMove) {
-        reversedAlg += reversedMove + ' ';
-      }
-    });
-    return reversedAlg.trim();
-  };
-
-
   /**
    * Removes all leading or trailing U and y moves.
    */
-  const trimExtraMoves = (algValue: string): string => {
-    const moves = algValue.trim().split(/\s+/);
-    // remove leading
-    for (const move of moves) {
-      if (move.match(/^[Uy]['2]?$/)) {
-        moves.shift();
-      } else {
-        break;
-      }
+  const trimExtraMoves = (algValue: string): Move3x3[] => {
+    const { moves, invalid } = cube3x3.parse(algValue);
+    if (invalid.length > 0) {
+      throw new Error(`Invalid move "${invalid.join('", "')}" in alg "${algValue}"`);
     }
 
-    // remove trailing
-    for (let i = moves.length - 1; i >= 0; i--) {
-      if (moves[i].match(/^[Uy]['2]?$/)) {
-        moves.pop();
-      } else {
-        break;
-      }
-    }
-
-    const alg = moves.join(' ');
-    return alg.trim();
+    const firstKept = moves.findIndex(move => !ANGLE_MOVES.has(move));
+    if (firstKept === -1) return [];
+    const lastKept = moves.findLastIndex(move => !ANGLE_MOVES.has(move));
+    return moves.slice(firstKept, lastKept + 1);
   };
 
   /**
@@ -88,15 +66,15 @@ export default function LLpatternBuilder() {
       try {
         
         // remove leading/trailing U and y moves
-        let completeAlg = trimExtraMoves(algCase.alg);
-        
-        const algInverse = getAlgInverse(completeAlg);
-        console.log(`Processing Alg: ${completeAlg}, Inverse: ${algInverse}`);
-        
-        const cube = simpleCubeRef.current.getCubeState(algInverse.split(' '));
-        
+        const completeAlg = trimExtraMoves(algCase.alg);
+
+        const algInverse = cube3x3.invert(completeAlg);
+        console.log(`Processing Alg: ${cube3x3.format(completeAlg)}, Inverse: ${cube3x3.format(algInverse)}`);
+
+        const cube = simpleCubeRef.current.getCubeState(algInverse);
+
         if (!cube) {
-          console.error('Failed to get cube state for algorithm:', algInverse);
+          console.error('Failed to get cube state for algorithm:', cube3x3.format(algInverse));
           continue;
         }
 

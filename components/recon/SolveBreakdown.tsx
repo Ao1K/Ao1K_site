@@ -9,6 +9,7 @@ import AlgReviewFeedback from './AlgReviewFeedback';
 import AUFReviewFeedback from './AUFReviewFeedback';
 import type { LineReview } from '../../composables/recon/solveReview';
 import { colorDict } from '../../utils/sharedConstants';
+import { cube3x3, type Move3x3 } from '../../utils/parser/cube3x3';
 import {
   FLIGHT_BOX_CLASS,
   PAGE_TRANSITION_NAMES,
@@ -31,7 +32,7 @@ const stepLabel = (line: BreakdownLine) => {
 
 export interface BreakdownPlayRequest {
   lineIndex: number;
-  alg: string;
+  moves: Move3x3[];
   isFinished?: boolean;
 }
 
@@ -46,7 +47,7 @@ interface LineReviewFeedbackProps {
   review: LineReview | undefined;
   playingAlg: string | null;
   isPlaybackFinished: boolean;
-  onPlay: (alg: string) => void;
+  onPlay: (moves: Move3x3[]) => void;
   onStop: () => void;
 }
 
@@ -88,7 +89,10 @@ export default function SolveBreakdown({ session, playingRequest, onPlay, onStop
           const isUnknownStep = !line.review && (!stepInfo || stepInfo.step === 'unknown');
           const hasNotes = (line.review?.value.notes.length ?? 0) > 0;
           const hasGrade = hasNotes || (line.review?.value.category ?? null) !== null;
-          const hasNonRotationMove = line.words.some(word => word.className === colorDict.move && !/^[xyz]/.test(word.text));
+          const hasNonRotationMove = line.words.some(word => {
+            const move = word.className === colorDict.move ? cube3x3.parseMove(word.text) : null;
+            return move !== null && !cube3x3.isRotation(move);
+          });
           return (
             <li key={line.index} className="grid gap-x-3" style={{ gridTemplateColumns: `${iconWidth}px minmax(0, 1fr)` }}>
               <div style={descriptor ? flightStyle(iconTransitionName(line.index)) : undefined}>
@@ -117,9 +121,9 @@ export default function SolveBreakdown({ session, playingRequest, onPlay, onStop
                 {label && <div className="font-medium text-primary-100">{label}</div>}
                 <LineReviewFeedback
                   review={line.review}
-                  playingAlg={playingRequest?.lineIndex === line.index ? playingRequest.alg : null}
+                  playingAlg={playingRequest?.lineIndex === line.index ? cube3x3.format(playingRequest.moves) : null}
                   isPlaybackFinished={playingRequest?.isFinished ?? false}
-                  onPlay={alg => onPlay({ lineIndex: line.index, alg })}
+                  onPlay={moves => onPlay({ lineIndex: line.index, moves })}
                   onStop={onStop}
                 />
               </div>}

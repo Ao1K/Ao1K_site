@@ -22,10 +22,12 @@ import {
   sceneGeometry,
   type CubeLooks,
   type Look,
+  type RotationInfo,
   type SceneView,
 } from '@/utils/cubeSvgRender';
 import { drawSceneToCanvas } from '@/utils/cubeCanvasRender';
-import { faceletsFromState, type RotationInfo } from '@/utils/cubeMoves';
+import { faceletsFromState } from '@/utils/cubeFacelets';
+import { cube3x3, type Move3x3 } from '@/utils/parser/cube3x3';
 import { buildColorHex, DEFAULT_SCENE_LOOK } from '@/utils/cubeSceneAuthoring';
 
 const CHECKERBOARD_STYLE = {
@@ -215,13 +217,13 @@ function downloadBlob(blob: Blob, filename: string) {
 }
 
 export interface GifSolveLine {
-  moves: string[];
+  moves: Move3x3[];
   isWhitespace: boolean;
 }
 
 interface CubeGifDialogProps {
   onClose: () => void;
-  scramble: string;
+  scramble: Move3x3[];
   solutionLines: GifSolveLine[];
   lineIconData: LineIconDatum[];
   splits: string[];
@@ -296,13 +298,10 @@ export default function CubeGifDialog({
   }, [solutionLines]);
 
   const timeline = useMemo(() => {
-    const scrambleMoves = scramble.split(' ').filter(move => move !== '');
-    const groups: RotationInfo[][] = lineEntries.flatMap(entry => entry.moves.map(move => {
-      const turn = turnRotation(move);
-      return turn ? [turn] : [];
-    }));
+    const groups: RotationInfo[][] = lineEntries.flatMap(entry =>
+      entry.moves.map(move => [turnRotation(move)]));
     return {
-      facelets: faceletsFromState(new SimpleCube().getCubeState(scrambleMoves)),
+      facelets: faceletsFromState(new SimpleCube().getCubeState(scramble)),
       groups,
       durations: lineEntries.flatMap(entry => entry.moveDurations),
     };
@@ -853,7 +852,7 @@ export default function CubeGifDialog({
       );
 
       const blob = new Blob([gifBytes], { type: 'image/gif' });
-      downloadBlob(blob, buildGifFilename(scramble, new Date()));
+      downloadBlob(blob, buildGifFilename(cube3x3.format(scramble), new Date()));
     } catch (e) {
       console.error(e);
       setError(e instanceof Error ? e.message : 'Failed to generate GIF.');

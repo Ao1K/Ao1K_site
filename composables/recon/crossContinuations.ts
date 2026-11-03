@@ -5,19 +5,20 @@ import type { CrossSolution, PairDisturbance } from './crossSolver';
 import { effectiveToActualColor, getF2LPairStatus, readHashStateFromFacelets } from './cubeHashState';
 import type { HashState } from './cubeHashState';
 import { buildF2LPairQueries, reconstructF2LAlg } from './f2lPairLookup';
-import { replacementTable_Y } from './transformHTML';
 import type { BestPairScore, F2LPairQuery, F2LScoreIndex } from './f2lPairLookup';
+import { cube3x3 } from '../../utils/parser/cube3x3';
+import type { Move3x3, Rotation3x3 } from '../../utils/parser/cube3x3';
 
 export type ContinuationCategory = 'great' | 'good' | 'okay' | 'bad';
 
 export type PairColors = [string, string];
 
 export interface RatedCrossSolution {
-  yRotation: string;
-  cross: string[];
+  yRotation: Rotation3x3 | null;
+  cross: Move3x3[];
   crossColor: string;
   solvedPairs: PairColors[];
-  continuation: string;
+  continuation: Move3x3[];
   continuationPair: PairColors | null;
   crossScore: number;
   continuationScore: number;
@@ -29,8 +30,8 @@ export interface RatedCrossSolution {
 const F2L_ONLY = new Set(['f2l']);
 const DEFAULT_LIMIT = 10;
 const EFFECTIVE_DOWN_COLOR = 'yellow';
-export const Y_ROTATIONS: readonly string[] = ['', 'y', 'y2', "y'"];
-const NO_Y_ROTATION: readonly string[] = [''];
+export const Y_ROTATIONS: readonly (Rotation3x3 | null)[] = [null, 'y', 'y2', "y'"];
+const NO_Y_ROTATION: readonly (Rotation3x3 | null)[] = [null];
 
 const CATEGORY_CEILINGS: readonly [ContinuationCategory, number][] = [
   ['great', 0.6],
@@ -75,11 +76,11 @@ export function bestContinuationScore(facelets: Facelets, index: F2LScoreIndex):
   return best?.match.score ?? Infinity;
 }
 
-function continuationText(index: F2LScoreIndex, best: BestContinuation | null): string {
-  if (!best) return '';
+function continuationMoves(index: F2LScoreIndex, best: BestContinuation | null): Move3x3[] {
+  if (!best) return [];
   const { query, match } = best;
   const entry = index.entry(match.entryIndex);
-  return reconstructF2LAlg(entry.alg, entry.eoValue, query.q, query.isTopLayer, false, query.eoValue).alg;
+  return reconstructF2LAlg(entry.moves, entry.eoValue, query.q, query.isTopLayer, false, query.eoValue).moves;
 }
 
 function findSolvedPairs(state: HashState, crossColor: string): PairColors[] {
@@ -89,22 +90,15 @@ function findSolvedPairs(state: HashState, crossColor: string): PairColors[] {
 }
 
 interface CrossAngle {
-  yRotation: string;
-  cross: string[];
+  yRotation: Rotation3x3 | null;
+  cross: Move3x3[];
   crossScore: number;
 }
 
-const relabelForYTurns = (moves: readonly string[], yTurns: number): string[] =>
-  moves.map(move => {
-    let relabeled = move;
-    for (let turn = 0; turn < yTurns; turn++) relabeled = replacementTable_Y[relabeled];
-    return relabeled;
-  });
-
-function listCrossAngles(moves: string[], index: F2LScoreIndex, yRotations: readonly string[]): CrossAngle[] {
+function listCrossAngles(moves: Move3x3[], index: F2LScoreIndex, yRotations: readonly (Rotation3x3 | null)[]): CrossAngle[] {
   return yRotations.map(yRotation => {
-    const cross = relabelForYTurns(moves, Y_ROTATIONS.indexOf(yRotation));
-    return { yRotation, cross, crossScore: index.scoreAlg(cross.join(' ')) };
+    const cross = yRotation ? cube3x3.rotate(moves, yRotation) : moves;
+    return { yRotation, cross, crossScore: index.scoreAlg(cross) };
   });
 }
 
@@ -128,7 +122,7 @@ function rateCrossSolution(
   facelets: Facelets,
   { moves, pairDisturbances }: CrossSolution,
   index: F2LScoreIndex,
-  yRotations: readonly string[],
+  yRotations: readonly (Rotation3x3 | null)[],
   cache: PairScoreCache,
 ) {
   const faceletsAfterCross = applyMoves(facelets, moves);
@@ -145,7 +139,11 @@ function rateCrossSolution(
 export function rateCrossSolutions(
   facelets: Facelets,
   index: F2LScoreIndex,
-  options: { limit?: number; keepMoves?: (moves: readonly string[]) => boolean; yRotations?: readonly string[] } = {},
+  options: {
+    limit?: number;
+    keepMoves?: (moves: readonly Move3x3[]) => boolean;
+    yRotations?: readonly (Rotation3x3 | null)[];
+  } = {},
 ): RatedCrossSolution[] {
   const { limit = DEFAULT_LIMIT, keepMoves, yRotations = NO_Y_ROTATION } = options;
   const cache: PairScoreCache = new Map();
@@ -157,7 +155,7 @@ export function rateCrossSolutions(
     .slice(0, limit)
     .map(({ best, ...solution }) => ({
       ...solution,
-      continuation: continuationText(index, best),
+      continuation: continuationMoves(index, best),
       continuationPair: best?.query.pairColors ?? null,
       category: categorizeContinuation(solution.continuationScore),
     }));

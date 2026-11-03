@@ -3,9 +3,9 @@
 // row and every column but the alg itself are optional, so a plain one-column list of algs
 // imports too. Rows whose alg isn't a move sequence are reported as invalid instead of stored.
 
-import { STORE_VERSION, migrateFavorites, type AlgStatus, type FavoriteAlg } from './algFavorites';
-import { isMoveSequence, tokenize } from './algMoves';
+import { STORE_VERSION, migrateFavorites, type AlgStatus, type FavoriteAlg, type StoredFavorite } from './algFavorites';
 import { classifyAlg } from './classifyAlg';
+import { cube3x3, type Move3x3 } from '../../utils/parser/cube3x3';
 
 export interface ParsedImport {
   favorites: FavoriteAlg[];
@@ -80,10 +80,10 @@ const columnMap = (header: string[]) => {
 
 // an algset column that already matches what the alg classifies as carries no information, so
 // only a genuine override is stored; that keeps an export/import round trip lossless
-const overrideFor = (alg: string, algset: string): string | undefined => {
+const overrideFor = (moves: Move3x3[], algset: string): string | undefined => {
   const trimmed = algset.trim();
   if (trimmed === '' || trimmed === '?') return undefined;
-  if (trimmed === classifyAlg(alg).label) return undefined;
+  if (trimmed === classifyAlg(moves).label) return undefined;
   return trimmed.slice(0, ALGSET_MAX);
 };
 
@@ -96,20 +96,21 @@ export const parseFavoritesCsv = (text: string): ParsedImport => {
     .slice(headerAt + 1)
     .filter((row) => headerAt !== -1 || normalizeHeader(row[0]) !== 'version');
 
-  const favorites: FavoriteAlg[] = [];
+  const favorites: StoredFavorite[] = [];
   const seen = new Set<string>();
   let invalid = 0;
 
   body.forEach((row) => {
-    const alg = tokenize(row[columns.alg] ?? '').join(' ');
-    if (!isMoveSequence(alg)) {
+    const parsed = cube3x3.parse(row[columns.alg] ?? '');
+    if (parsed.moves.length === 0 || parsed.invalid.length > 0) {
       invalid += 1;
       return;
     }
+    const alg = cube3x3.format(parsed.moves);
     if (seen.has(alg)) return;
     seen.add(alg);
     const status = STATUS_BY_LABEL[normalizeHeader(row[columns.status] ?? '')] ?? 'learning';
-    favorites.push({ alg, status, algset: overrideFor(alg, row[columns.algset] ?? '') });
+    favorites.push({ alg, status, algset: overrideFor(parsed.moves, row[columns.algset] ?? '') });
   });
 
   // a file with no version row is read as the current shape: it is either hand-written or a

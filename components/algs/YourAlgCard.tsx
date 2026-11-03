@@ -9,6 +9,7 @@ import { useMemo, useState } from 'react';
 import type { AlgStatus } from '../../composables/algs/algFavorites';
 import type { Algset } from '../../composables/recon/SimpleCubeInterpreter';
 import { classifyAlg, classifyFavorite } from '../../composables/algs/classifyAlg';
+import { cube3x3, type Move3x3 } from '../../utils/parser/cube3x3';
 import { useCubeColors } from '../../composables/useSettings';
 import AlgIcon from './AlgIcon';
 import AlgTextEditor from './AlgTextEditor';
@@ -16,7 +17,7 @@ import CloseIcon from '../icons/close';
 import PencilIcon from '../icons/write';
 
 interface YourAlgCardProps {
-  alg: string;
+  moves: Move3x3[];
   status: AlgStatus;
   algset?: string;
   sourceAlgset?: Algset;
@@ -29,7 +30,7 @@ interface YourAlgCardProps {
   onCancelDelete: () => void;
   onToggleStatus: () => void;
   onSetAlgset: (algset: string) => void;
-  onSetAlg: (alg: string) => void;
+  onSetAlg: (moves: Move3x3[]) => void;
   onDelete: () => void;
 }
 
@@ -52,8 +53,8 @@ const EditButton = ({ className, onClick }: { className: string; onClick: (event
   </button>
 );
 
-const YourAlgCard = ({ alg, status, algset, sourceAlgset, editMode, active, confirming, onEditStart, onEditEnd, onConfirmDelete, onCancelDelete, onToggleStatus, onSetAlgset, onSetAlg, onDelete }: YourAlgCardProps) => {
-  const [algDraft, setAlgDraft] = useState<string | null>(null);
+const YourAlgCard = ({ moves, status, algset, sourceAlgset, editMode, active, confirming, onEditStart, onEditEnd, onConfirmDelete, onCancelDelete, onToggleStatus, onSetAlgset, onSetAlg, onDelete }: YourAlgCardProps) => {
+  const [algDraft, setAlgDraft] = useState<Move3x3[] | null>(null);
   const [editingAlgset, setEditingAlgset] = useState(false);
   const [algsetDraft, setAlgsetDraft] = useState('');
 
@@ -61,11 +62,11 @@ const YourAlgCard = ({ alg, status, algset, sourceAlgset, editMode, active, conf
   const view = STATUS_VIEW[status] || STATUS_VIEW.none;
   const editingAlg = active;
   // the icon follows the uncommitted draft while editing, so it updates as the alg is typed
-  const iconAlg = active ? (algDraft ?? alg) : alg;
-  const classification = useMemo(() => classifyAlg(iconAlg, sourceAlgset), [iconAlg, sourceAlgset]);
+  const iconMoves = active ? (algDraft ?? moves) : moves;
+  const classification = useMemo(() => classifyAlg(iconMoves, sourceAlgset), [iconMoves, sourceAlgset]);
   const iconClassification = useMemo(
-    () => (algset ? classifyFavorite({ alg: iconAlg, algset, sourceAlgset }) : classification),
-    [iconAlg, algset, sourceAlgset, classification],
+    () => (algset ? classifyFavorite({ moves: iconMoves, algset, sourceAlgset }) : classification),
+    [iconMoves, algset, sourceAlgset, classification],
   );
 
   const handleCardClick = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -80,12 +81,12 @@ const YourAlgCard = ({ alg, status, algset, sourceAlgset, editMode, active, conf
   const openAlgEditor = (event: React.MouseEvent) => {
     event.stopPropagation();
     onCancelDelete();
-    setAlgDraft(alg);
+    setAlgDraft(moves);
     onEditStart();
   };
 
   const commitAlg = (next: string) => {
-    onSetAlg(next);
+    onSetAlg(cube3x3.parse(next).moves);
     setAlgDraft(null);
     onEditEnd();
   };
@@ -134,12 +135,17 @@ const YourAlgCard = ({ alg, status, algset, sourceAlgset, editMode, active, conf
           title="Click to set algset"
           className="group/icon self-stretch -my-2 aspect-square flex shrink-0 items-center justify-center tracking-normal focus-visible:outline-none focus-visible:ring focus-visible:ring-primary-900"
         >
-          <AlgIcon classification={iconClassification} alg={iconAlg} cubeColors={cubeColors} />
+          <AlgIcon classification={iconClassification} moves={iconMoves} cubeColors={cubeColors} />
         </button>
       )}
 
       {editingAlg ? (
-        <AlgTextEditor alg={alg} onCommit={commitAlg} onChange={setAlgDraft} onCancel={cancelAlgEdit} />
+        <AlgTextEditor
+          alg={cube3x3.format(moves)}
+          onCommit={commitAlg}
+          onChange={(draft) => setAlgDraft(cube3x3.parse(draft).moves)}
+          onCancel={cancelAlgEdit}
+        />
       ) : (
         <>
           <div className="relative group-hover:static self-stretch -my-2 flex items-center min-w-0">
@@ -148,7 +154,7 @@ const YourAlgCard = ({ alg, status, algset, sourceAlgset, editMode, active, conf
               ${status === 'none' ? '' : `underline decoration-2 underline-offset-4 ${view.decoration}`}`}
               style={{wordSpacing: '8px'}}
             >
-              {alg}
+              {cube3x3.format(moves)}
             </span>
             <span aria-hidden className={`pointer-events-none absolute inset-0 hidden md:block group-hover:border ${status === 'none' ? '' : 'border-b ' + view.border}`} />
           </div>

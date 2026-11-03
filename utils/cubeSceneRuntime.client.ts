@@ -9,6 +9,7 @@ import {
   sceneDrawables,
   sceneGeometry,
   type Axis,
+  type RotationInfo,
   type CubeLooks,
   type Mat,
   type PathAttrs,
@@ -19,7 +20,7 @@ import {
   type SceneView,
   type Sticker,
 } from './cubeSvgRender'
-import { stateFromFacelets, type RotationInfo } from './cubeMoves'
+import { stateFromFacelets } from './cubeFacelets'
 import type { Color } from '../composables/recon/SimpleCube'
 import {
   CUBE_SVG_CLASS,

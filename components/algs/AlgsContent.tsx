@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { SimpleCubeInterpreter, type Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
-import type { Doc } from '../../composables/recon/ExactAlgSuggester';
+import type { CompiledDoc } from '../../composables/recon/ExactAlgSuggester';
 import { MAX_SHOWN_SUGGESTIONS } from '../../composables/recon/suggestionRanking';
 import { buildF2lCubeState } from '../../composables/algs/f2lCubeState';
 import { type FaceKey } from '../../composables/algs/cubePaint';
@@ -42,8 +42,8 @@ const AlgsContent = ({ initialCross, initialPair, initialConfig, initialAlgset }
     ]).then(([f2lDoc, zblsDoc]) => {
       if (cancelled) return;
       const interpreter = new SimpleCubeInterpreter();
-      interpreter.addAlgset('f2l', f2lDoc.default.algorithms as Doc[]);
-      interpreter.addAlgset('zbls', zblsDoc.default.algorithms as Doc[]);
+      interpreter.addAlgset('f2l', f2lDoc.default.algorithms as CompiledDoc[]);
+      interpreter.addAlgset('zbls', zblsDoc.default.algorithms as CompiledDoc[]);
       interpreterRef.current = interpreter;
       setReady(true);
     });

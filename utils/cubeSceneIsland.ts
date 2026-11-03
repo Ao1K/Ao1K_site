@@ -1,6 +1,6 @@
 import type { Color } from '../composables/recon/SimpleCube'
-import type { CubeSvgOptions } from './cubeSvgRender'
-import { stateFromFacelets, type RotationInfo } from './cubeMoves'
+import type { CubeSvgOptions, RotationInfo } from './cubeSvgRender'
+import { stateFromFacelets } from './cubeFacelets'
 
 export type SceneLine = {
   moves: RotationInfo[][]

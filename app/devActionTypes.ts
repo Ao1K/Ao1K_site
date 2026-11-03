@@ -1,12 +1,12 @@
 import type { CubeState } from '../composables/recon/SimpleCube'
 import type { CubeColors } from '../utils/sharedConstants'
+import type { Move3x3 } from '../utils/parser/cube3x3'
 
 export type Angles = { x: number; y: number }
 
 export type CompiledLine = {
-  // raw move strings in playback order, grouped into turns played at the same time
-  // (server-side parsing filters invalid ones)
-  moveGroups: string[][]
+  // moves in playback order, grouped into turns played at the same time
+  moveGroups: Move3x3[][]
   // animation duration per group in ms (same length as moveGroups)
   moveDurationsMs: number[]
   // pause (ms) before this line's moves begin to play

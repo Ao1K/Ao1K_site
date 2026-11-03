@@ -4,10 +4,13 @@
  * May be improved in the future.
  */
 import type { Handedness } from '../useSettings';
+import { cube3x3 } from '../../utils/parser/cube3x3';
+import type { Layer3x3, Move3x3 } from '../../utils/parser/cube3x3';
+import type { Amount } from '../../utils/parser';
 
 export default class AlgSpeedEstimator {
 
-  private readonly speedMap: Record<string, number> = {
+  private readonly speedMap: Record<Layer3x3, number> = {
     // numbers are arbitrary
     "U": 1,
     "D": 1.05,
@@ -29,16 +32,16 @@ export default class AlgSpeedEstimator {
     "z": 1.5,
   }
 
-  private readonly moveTypeWeights: Record<string, number> = {
-    "": 1,
-    "'": 1,
-    "2": 1.6,
-    "2'": 1.6,
-    "3": 2.2,
-    "3'": 2.2
+  private readonly moveTypeWeights: Record<Amount, number> = {
+    1: 1,
+    [-1]: 1,
+    2: 1.6,
+    [-2]: 1.6,
+    3: 2.2,
+    [-3]: 2.2
   }
 
-  private readonly eoRegex = new RegExp(["F", "B", "r","l", "u", "d", "f", "b", "M", "E", "S", "x", "y", "z"].join("|"));
+  private readonly eoLayers: ReadonlySet<Layer3x3> = new Set<Layer3x3>(["F", "B", "r","l", "u", "d", "f", "b", "M", "E", "S", "x", "y", "z"]);
 
   constructor(handedness: Handedness = 'right') {
     this.setHandedness(handedness);
@@ -52,31 +55,29 @@ export default class AlgSpeedEstimator {
   /**
   * naive check for moves that could theoretically change the orientation of an edge
   */
-  private isEOManipulationLikely(alg: string): boolean {
-    
+  private isEOManipulationLikely(moves: readonly Move3x3[]): boolean {
+
     // fails to check for things like F2, y2, which don't change EO
     // but for the purposes of ranking f2l, possibly good enough
 
-    return this.eoRegex.test(alg);
+    return moves.some(move => this.eoLayers.has(cube3x3.layer(move)));
   }
 
-  public calcScore(alg: string): number {
+  public calcScore(moves: readonly Move3x3[]): number {
     let score = 0;
 
-    const moves = alg.split(" ").filter(m => m.length > 0);
-    const moveGenerators = new Set(); // generator is cubing lingo for types of base moves
+    const moveGenerators = new Set<Layer3x3>(); // generator is cubing lingo for types of base moves
 
     for (const move of moves) {
-      const rootMove = move.charAt(0);
-      moveGenerators.add(rootMove);
-      const moveType = move.slice(1);
+      const layer = cube3x3.layer(move);
+      moveGenerators.add(layer);
 
-      const moveSpeed = this.speedMap[rootMove] || 0;
-      const typeWeight = this.moveTypeWeights[moveType] || 0;
+      const moveSpeed = this.speedMap[layer];
+      const typeWeight = this.moveTypeWeights[cube3x3.amount(move)];
       score += moveSpeed * typeWeight;
     }
 
-    const eoPenalty = this.isEOManipulationLikely(alg) ? 1.5 : 1;
+    const eoPenalty = this.isEOManipulationLikely(moves) ? 1.5 : 1;
     
     const genWeight = 1.2 ** moveGenerators.size
     // divide by ten to approximate time in seconds. Completely arbitrary.

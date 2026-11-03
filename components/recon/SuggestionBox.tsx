@@ -81,7 +81,7 @@ export const SuggestionBox = ({suggestions, selectedOriginalIndex, topOffset, le
             id={`suggestion-card-${index}`}
             placement={placement}
             isFocused={selectedIndex === index}
-            alg={item.suggestion.alg}
+            moves={item.suggestion.moves}
             steps={item.suggestion.steps}
             hasEOsolved={item.suggestion.hasEOsolved}
             algset={item.suggestion.algset}

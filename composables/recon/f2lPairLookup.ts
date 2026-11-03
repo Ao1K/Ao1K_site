@@ -10,7 +10,8 @@ import {
   aufTokenToVal,
   aufValToToken,
 } from '../../utils/canonicalizeAuf';
-import { combineMoves } from '../../utils/moveUtils';
+import { cube3x3 } from '../../utils/parser/cube3x3';
+import type { Move3x3 } from '../../utils/parser/cube3x3';
 import {
   CROSS_PIECE_INDICES,
   SOLVED_HASH,
@@ -145,34 +146,36 @@ export function buildF2LPairQueries(state: HashState): F2LPairQuery[] {
   });
 }
 
-const prependAuf = (token: string, text: string): string => {
-  const tokens = [token, ...text.trim().split(/\s+/)].filter(Boolean);
-  const combined = combineMoves(tokens).join(' ').trim();
+const prependAuf = (auf: Move3x3[], core: readonly Move3x3[]): Move3x3[] => {
+  const combined = cube3x3.combine([...auf, ...core]);
+  const [first, second, ...rest] = combined;
   // U and y rotate about the same axis and always commute; reorder to the codebase's
   // established "y before U" display convention (see reorderAnglingInAlg in AlgCompiler.tsx)
-  return combined.replace(/^(U'?2?)\s+(y'?2?)/, '$2 $1');
+  const startsWithAufThenY = first !== undefined && second !== undefined
+    && cube3x3.layer(first) === 'U' && cube3x3.layer(second) === 'y';
+  return startsWithAufThenY ? [second, first, ...rest] : combined;
 };
 
 const EO_AUF_CANDIDATES = ['', 'U', "U'", 'U2'].map(aufTokenToVal);
 
 interface SplitAlg {
-  coreKey: string;
+  core: Move3x3[];
   entryAuf: number;
 }
 
-function splitAlg(algText: string): SplitAlg {
-  const { coreKey, aufPart } = splitLeadingAuf(algText);
-  return { coreKey, entryAuf: aufTokenToVal(aufPart) };
+function splitAlg(moves: readonly Move3x3[]): SplitAlg {
+  const { core, aufPart } = splitLeadingAuf(moves);
+  return { core, entryAuf: aufTokenToVal(aufPart) };
 }
 
 interface F2LAlgPlan {
-  coreKey: string;
+  core: Move3x3[];
   auf: number | null;
   hasEOsolved: boolean;
 }
 
 function planF2LAlg(
-  { coreKey, entryAuf }: SplitAlg,
+  { core, entryAuf }: SplitAlg,
   algEOvalue: number | undefined,
   q: number,
   isTopLayer: boolean,
@@ -187,7 +190,7 @@ function planF2LAlg(
     // the piece is forced to move under any leading AUF, so the reconstructed rotation m is
     // forced too: strip the compiled alg's own leading rotation and recombine it with q.
     const m = (q + entryAuf) % 4;
-    return { coreKey, auf: m, hasEOsolved: isCoreEOsolvedAt(m) };
+    return { core, auf: m, hasEOsolved: isCoreEOsolvedAt(m) };
   }
 
   // neither of this pair's pieces is in the U layer, so no AUF is needed to solve the pair
@@ -199,32 +202,35 @@ function planF2LAlg(
   if (wantsEORanking) {
     const eoAuf = EO_AUF_CANDIDATES.find(isCoreEOsolvedAt);
     if (eoAuf !== undefined) {
-      return { coreKey, auf: eoAuf, hasEOsolved: true };
+      return { core, auf: eoAuf, hasEOsolved: true };
     }
   }
 
-  return { coreKey, auf: null, hasEOsolved: isCoreEOsolvedAt(0) };
+  return { core, auf: null, hasEOsolved: isCoreEOsolvedAt(0) };
 }
 
-const planText = ({ coreKey, auf }: Pick<F2LAlgPlan, 'coreKey' | 'auf'>) =>
-  auf === null ? coreKey : prependAuf(aufValToToken(auf), coreKey);
+function planMoves({ core, auf }: Pick<F2LAlgPlan, 'core' | 'auf'>): Move3x3[] {
+  if (auf === null) return core;
+  const aufToken = aufValToToken(auf);
+  return prependAuf(aufToken === '' ? [] : [aufToken], core);
+}
 
 /**
- * Reconstructs the preAUF-correct alg text and EO-solved signal for a matched compiled alg,
- * per the two cases in docs/auf-canonical-search.md section 5. `algText`/`algEOvalue` are the
- * matched compiled entry's own stored alg text and eoValue; `q` is this pair's canonicalizing
+ * Reconstructs the preAUF-correct alg moves and EO-solved signal for a matched compiled alg,
+ * per the two cases in docs/auf-canonical-search.md section 5. `algMoves`/`algEOvalue` are the
+ * matched compiled entry's own stored alg and eoValue; `q` is this pair's canonicalizing
  * turn from buildF2LPairQueries.
  */
 export function reconstructF2LAlg(
-  algText: string,
+  algMoves: readonly Move3x3[],
   algEOvalue: number | undefined,
   q: number,
   isTopLayer: boolean,
   wantsEORanking: boolean,
   currentEO: number,
-): { alg: string; hasEOsolved: boolean } {
-  const plan = planF2LAlg(splitAlg(algText), algEOvalue, q, isTopLayer, wantsEORanking, currentEO);
-  return { alg: planText(plan), hasEOsolved: plan.hasEOsolved };
+): { moves: Move3x3[]; hasEOsolved: boolean } {
+  const plan = planF2LAlg(splitAlg(algMoves), algEOvalue, q, isTopLayer, wantsEORanking, currentEO);
+  return { moves: planMoves(plan), hasEOsolved: plan.hasEOsolved };
 }
 
 const AUF_COUNT = 4;
@@ -252,12 +258,12 @@ export class F2LScoreIndex {
     return this.docs[entryIndex];
   }
 
-  scoreAlg(alg: string): number {
-    return this.estimator.calcScore(alg);
+  scoreAlg(moves: readonly Move3x3[]): number {
+    return this.estimator.calcScore(moves);
   }
 
   private splitAt(entryIndex: number): SplitAlg {
-    return this.splits[entryIndex] ??= splitAlg(this.docs[entryIndex].alg);
+    return this.splits[entryIndex] ??= splitAlg(this.docs[entryIndex].moves);
   }
 
   private scoreAt(entryIndex: number, auf: number): number {
@@ -265,7 +271,7 @@ export class F2LScoreIndex {
     const cached = this.scores[key];
     if (cached !== undefined) return cached;
 
-    return this.scores[key] = this.estimator.calcScore(planText({ coreKey: this.splitAt(entryIndex).coreKey, auf }));
+    return this.scores[key] = this.estimator.calcScore(planMoves({ core: this.splitAt(entryIndex).core, auf }));
   }
 
   bestPairScore(pairQuery: F2LPairQuery, algsets: AlgsetFilter): BestPairScore | null {

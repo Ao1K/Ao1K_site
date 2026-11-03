@@ -1,5 +1,5 @@
-import { DEFAULT_SCENE_LOOK } from "../../utils/cubeSceneAuthoring";
-import { stateFromFacelets } from "../../utils/cubeMoves";
+import { DEFAULT_SCENE_LOOK, parseScramble } from "../../utils/cubeSceneAuthoring";
+import { stateFromFacelets } from "../../utils/cubeFacelets";
 import { SimpleCube } from "../../composables/recon/SimpleCube";
 import { buildCubeSvgBody, SCENE_PX, type CubeSvgOptions } from "../../utils/cubeSvgRender";
 import type { CubeLookProps, PieceName } from "./cubeProps";
@@ -13,7 +13,7 @@ export default function CubeImage({ className, ...image }: CubeImageProps) {
   const opts: CubeSvgOptions = {
     state: image.facelets
       ? stateFromFacelets(image.facelets)
-      : new SimpleCube().getCubeState((image.scramble ?? "").trim().split(/\s+/).filter(Boolean)),
+      : new SimpleCube().getCubeState(parseScramble(image.scramble ?? "")),
     angles: image.angles ?? DEFAULT_SCENE_LOOK.angles,
     colorHex: image.colors ?? DEFAULT_SCENE_LOOK.colors,
     showFacelets: image.hints ?? false,

@@ -14,8 +14,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { SimpleCube } from '../composables/recon/SimpleCube';
+import { cube3x3 } from '../utils/parser/cube3x3';
+import type { FaceLayer3x3, Move3x3 } from '../utils/parser/cube3x3';
 import { SimpleCubeInterpreter } from '../composables/recon/SimpleCubeInterpreter';
-import { reverseMove } from '../composables/recon/transformHTML';
 
 interface YMoveAlg {
   new: boolean;
@@ -24,29 +25,25 @@ interface YMoveAlg {
   add_y: boolean;
 }
 
-const trigger1Faces = ['R', 'L'] as const;
-const trigger2Faces = ['R', 'L', 'F'] as const;
-const uMoves = ['U', "U'", 'U2'] as const;
-const aufs = ['', 'U', "U'", 'U2'] as const;
-const yMoves = ['y', "y'"] as const;
-
-function invert(move: string): string {
-  return move.endsWith("'") ? move.slice(0, -1) : move + "'";
-}
+const trigger1Faces: FaceLayer3x3[] = ['R', 'L'];
+const trigger2Faces: FaceLayer3x3[] = ['R', 'L', 'F'];
+const uMoves: Move3x3[] = ['U', "U'", 'U2'];
+const aufs: Move3x3[][] = [[], ['U'], ["U'"], ['U2']];
+const yMoves: Move3x3[] = ['y', "y'"];
 
 interface Trigger {
-  face: string;
-  value: string;
+  face: FaceLayer3x3;
+  moves: Move3x3[];
 }
 
-function triggers(faces: readonly string[]): Trigger[] {
+function triggers(faces: readonly FaceLayer3x3[]): Trigger[] {
   const result: Trigger[] = [];
   for (const face of faces) {
-    for (const dir of ['', "'"]) {
-      const open = face + dir;
-      const close = invert(open);
+    for (const amount of [1, -1] as const) {
+      const open = cube3x3.make(face, amount);
+      const [close] = cube3x3.invert([open]);
       for (const uMove of uMoves) {
-        result.push({ face, value: [open, uMove, close].join(' ') });
+        result.push({ face, moves: [open, uMove, close] });
       }
     }
   }
@@ -71,11 +68,7 @@ const f2lSlots = [
   { edge: 11, corner: 18 }, // BL
 ];
 
-function invertAlg(value: string): string[] {
-  return value.split(' ').map(reverseMove).reverse();
-}
-
-function hashOf(moves: string[]): string {
+function hashOf(moves: Move3x3[]): string {
   const cube = new SimpleCube();
   const interpreter = new SimpleCubeInterpreter();
   interpreter.getStepsCompleted(cube.getCubeState(moves));
@@ -86,9 +79,8 @@ function isUnsolved(hash: string, slot: { edge: number; corner: number }): boole
   return hash[slot.edge] !== SOLVED_HASH[slot.edge] || hash[slot.corner] !== SOLVED_HASH[slot.corner];
 }
 
-function solvedEdgeStartsInDifferentSlot(value: string): boolean {
-  const moves = value.split(' ');
-  const inverseMoves = invertAlg(value);
+function solvedEdgeStartsInDifferentSlot(moves: Move3x3[]): boolean {
+  const inverseMoves = cube3x3.invert(moves);
   const startHash = hashOf(inverseMoves);
 
   const crossSolved = crossEdgeIndices.every(i => startHash[i] === SOLVED_HASH[i]);
@@ -108,7 +100,7 @@ function solvedEdgeStartsInDifferentSlot(value: string): boolean {
   return startSlot !== targetSlot.edge;
 }
 
-const inefficientEndings = [
+const inefficientEndings = new Set([
   "U2 L' U2 L",
   "U2 L U2 L'",
   "U2 R' U2 R",
@@ -121,16 +113,12 @@ const inefficientEndings = [
   "U R' U R",
   "U L' U L",
   "U' L U' L'",
-];
-
-function hasInefficientEnding(value: string): boolean {
-  return inefficientEndings.some(ending => value.endsWith(ending));
-}
+]);
 
 function isPointlessPair(
-  trigger1Face: string,
-  yMove: string,
-  trigger2Face: string,
+  trigger1Face: FaceLayer3x3,
+  yMove: Move3x3,
+  trigger2Face: FaceLayer3x3,
 ): boolean {
   if (trigger2Face !== 'F') return false;
   return (
@@ -150,14 +138,12 @@ function generateAlgs(): YMoveAlg[] {
       for (const auf2 of aufs) {
         for (const trigger2 of trigger2s) {
           if (isPointlessPair(trigger1.face, yMove, trigger2.face)) continue;
-          const value = [trigger1.value, yMove, auf2, trigger2.value]
-            .filter(Boolean)
-            .join(' ');
-          if (hasInefficientEnding(value)) continue;
-          if (!solvedEdgeStartsInDifferentSlot(value)) continue;
+          const moves = [...trigger1.moves, yMove, ...auf2, ...trigger2.moves];
+          if (inefficientEndings.has(cube3x3.format(moves.slice(-4)))) continue;
+          if (!solvedEdgeStartsInDifferentSlot(moves)) continue;
           algs.push({
             new: true,
-            value,
+            value: cube3x3.format(moves),
             step: 'f2l',
             add_y: false,
           });

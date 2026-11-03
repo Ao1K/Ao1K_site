@@ -13,9 +13,10 @@ import { ALL_PIECE_NAMES, allHighlightSet } from './UnfoldedCube';
 import { compileCubeScene } from '../../app/devActions';
 import { formatCubeSceneJsx } from '../../utils/cubeSceneJsx';
 import { buildColorHex } from '../../utils/cubeSceneAuthoring';
-import { faceletsFromState } from '../../utils/cubeMoves';
+import { faceletsFromState } from '../../utils/cubeFacelets';
 import type { CompiledLine } from '../../app/devActionTypes';
 import { SimpleCube } from '../../composables/recon/SimpleCube';
+import { cube3x3, type Move3x3 } from '../../utils/parser/cube3x3';
 
 const CHECKERBOARD_STYLE = {
   backgroundColor: '#d4d4d4',
@@ -56,21 +57,22 @@ const STEP_TYPE_TPS: Record<string, number> = {
   'none': 4,
 };
 
-const moveDurationMs = (move: string) => {
-  if (move.includes('3')) return 2000;
-  if (move.includes('2')) return 1500;
+const moveDurationMs = (move: Move3x3) => {
+  const quarterTurnCount = Math.abs(cube3x3.amount(move));
+  if (quarterTurnCount === 3) return 2000;
+  if (quarterTurnCount === 2) return 1500;
   return 1000;
 };
 
-const SINGLE_U_TURN = /^U'?$/;
-const SINGLE_D_TURN = /^D'?$/;
+const SINGLE_U_TURNS: readonly Move3x3[] = ['U', "U'"];
+const SINGLE_D_TURNS: readonly Move3x3[] = ['D', "D'"];
 
-const isSimultaneousUDPair = (first: string, second: string) =>
-  (SINGLE_U_TURN.test(first) && SINGLE_D_TURN.test(second)) ||
-  (SINGLE_D_TURN.test(first) && SINGLE_U_TURN.test(second));
+const isSimultaneousUDPair = (first: Move3x3, second: Move3x3) =>
+  (SINGLE_U_TURNS.includes(first) && SINGLE_D_TURNS.includes(second)) ||
+  (SINGLE_D_TURNS.includes(first) && SINGLE_U_TURNS.includes(second));
 
-const groupSimultaneousMoves = (moves: string[], combineUD: boolean): string[][] => {
-  const groups: string[][] = [];
+const groupSimultaneousMoves = (moves: Move3x3[], combineUD: boolean): Move3x3[][] => {
+  const groups: Move3x3[][] = [];
   for (let i = 0; i < moves.length; i++) {
     const next = moves[i + 1];
     if (combineUD && next !== undefined && isSimultaneousUDPair(moves[i], next)) {
@@ -83,7 +85,7 @@ const groupSimultaneousMoves = (moves: string[], combineUD: boolean): string[][]
   return groups;
 };
 
-const groupDurationMs = (group: string[]) => Math.max(...group.map(moveDurationMs));
+const groupDurationMs = (group: Move3x3[]) => Math.max(...group.map(moveDurationMs));
 
 const renderShape = (shape: SvgShape, i: number) => {
   if (shape.type === 'rect') return <rect key={i} x={shape.x} y={shape.y} width={shape.width} height={shape.height} fill={shape.fill} />;
@@ -92,13 +94,13 @@ const renderShape = (shape: SvgShape, i: number) => {
 };
 
 export interface SceneSolveLine {
-  moves: string[];
+  moves: Move3x3[];
   isWhitespace: boolean;
 }
 
 interface HtmlSceneDialogProps {
   onClose: () => void;
-  scramble: string;
+  scramble: Move3x3[];
   solutionLines: SceneSolveLine[];
   lineIconData: LineIconDatum[];
   splits: string[];
@@ -447,7 +449,7 @@ export default function HtmlSceneDialog({
   };
 
   const scrambleFacelets = useMemo(
-    () => faceletsFromState(new SimpleCube().getCubeState(scramble.trim().split(/\s+/).filter(Boolean))),
+    () => faceletsFromState(new SimpleCube().getCubeState(scramble)),
     [scramble],
   );
   const firstLineHighlight = lineHighlights[0];
@@ -485,7 +487,7 @@ export default function HtmlSceneDialog({
     setError(null);
     try {
       const jsx = formatCubeSceneJsx({
-        scramble: scramble.trim(),
+        scramble: cube3x3.format(scramble),
         angles,
         colors: buildColorHex(cubeColors),
         shade: shadeColor,
@@ -516,9 +518,8 @@ export default function HtmlSceneDialog({
     setError(null);
     setIsCompiling(true);
     try {
-      const scrambleMoves = scramble.trim().split(/\s+/).filter(Boolean);
       const cube = new SimpleCube();
-      const initialState = cube.getCubeState(scrambleMoves);
+      const initialState = cube.getCubeState(scramble);
       const html = await compileCubeScene({
         initialState,
         lines: buildCompiledLines(),
@@ -538,8 +539,7 @@ export default function HtmlSceneDialog({
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      const sanitizedScramble = scramble
-        .trim()
+      const sanitizedScramble = cube3x3.format(scramble)
         .replace(/\s+/g, '_')
         .replace(/[']/g, 'pr')
         .replace(/[^A-Za-z0-9_]/g, '');

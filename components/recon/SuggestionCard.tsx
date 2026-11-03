@@ -1,5 +1,7 @@
 import { useSyncedSettings, type CubeColors } from '../../composables/useSettings';
-import { aufFreeAlg, useAlgFavorites } from '../../composables/algs/algFavorites';
+import { useAlgFavorites } from '../../composables/algs/algFavorites';
+import { aufFreeAlg } from '../../composables/algs/algMoves';
+import { cube3x3, type Move3x3 } from '../../utils/parser/cube3x3';
 import type { Algset, StepInfo } from '../../composables/recon/SimpleCubeInterpreter';
 import type { CrossSuggestionDetails } from '../../composables/recon/crossAutocomplete';
 import type { ContinuationCategory } from '../../composables/recon/crossContinuations';
@@ -12,7 +14,7 @@ import Link from 'next/link';
 import React, { JSX, useEffect, useRef, useState } from 'react';
 
 interface SuggestionCardProps {
-  alg: string;
+  moves: Move3x3[];
   steps: string[];
   id: string;
   placement: string;
@@ -141,12 +143,12 @@ const renderStepIcon = (steps: string[], letterToColor: Record<string, string>, 
   return renderTextIcon(steps[0] || '?');
 };
 
-export function useFavoriteToggle(alg: string, algset?: Algset) {
+export function useFavoriteToggle(moves: Move3x3[], algset?: Algset) {
   const { isFavorite, toggleFavorite } = useAlgFavorites();
 
   // WARNING: This could cause problems if we ever have a step type where AUFs have significant meaning
   // Would also need to change algFavorites.ts, since AUF is stripped out there as well
-  const favoriteAlg = aufFreeAlg(alg);
+  const favoriteAlg = aufFreeAlg(moves);
 
   const favorited = isFavorite(favoriteAlg);
   const [animating, setAnimating] = useState(false);
@@ -163,7 +165,7 @@ export function useFavoriteToggle(alg: string, algset?: Algset) {
       icon: <Parrot filled className="w-6 h-6 text-primary-800" />,
       message: (
         <span>
-          {favoriteAlg} added to{' '}
+          {cube3x3.format(favoriteAlg)} added to{' '}
           <Link href="/algs/" className="text-primary-800 underline hover:no-underline">
             Your Algs
           </Link>
@@ -179,11 +181,12 @@ export function useFavoriteToggle(alg: string, algset?: Algset) {
   return { favorited, animating, toggle, handleAnimationEnd };
 }
 
-export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolved, algset, cross, onSelect, onAccept }: SuggestionCardProps) => {
+export const SuggestionCard = ({ moves, steps, id, placement, isFocused, hasEOsolved, algset, cross, onSelect, onAccept }: SuggestionCardProps) => {
   const { settings } = useSyncedSettings();
   const { cubeColors } = settings;
+  const alg = cube3x3.format(moves);
 
-  const { favorited, animating, toggle: applyFavoriteToggle, handleAnimationEnd } = useFavoriteToggle(alg, algset);
+  const { favorited, animating, toggle: applyFavoriteToggle, handleAnimationEnd } = useFavoriteToggle(moves, algset);
 
   const keeperRef = useRef<HTMLSpanElement>(null);
   const activationPointerType = useRef<string | null>(null);
@@ -279,7 +282,7 @@ export const SuggestionCard = ({ alg, steps, id, placement, isFocused, hasEOsolv
         <ContinuationIcon
           cross={cross}
           cubeColors={cubeColors}
-          title={`Next pair is ${cross.category}: ${cross.continuation}`}
+          title={`Next pair is ${cross.category}: ${cube3x3.format(cross.continuation)}`}
         />
       ) : (
       <button

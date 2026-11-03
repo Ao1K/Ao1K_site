@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { replacementTable_M } from '../composables/recon/transformHTML';
+import { cube3x3 } from '../utils/parser/cube3x3';
+import type { Move3x3 } from '../utils/parser/cube3x3';
 import frequentLeftAlgs from '../utils/frequentLeftAlgs.json';
 
 type AlgEntry = string | { value: string; [key: string]: unknown };
@@ -12,28 +13,22 @@ const getValue = (entry: AlgEntry): string => typeof entry === 'string' ? entry 
 const withValue = (entry: AlgEntry, value: string): AlgEntry =>
   typeof entry === 'string' ? value : { ...entry, value };
 
-const splitMoves = (alg: string): string[] => alg.trim().split(/\s+/).filter((move) => move !== '');
-
-const mirrorAlg = (alg: string): string => splitMoves(alg).map((move) => {
-  const mirrored = replacementTable_M[move];
-  if (!mirrored) {
-    throw new Error(`Unsupported move "${move}" in alg "${alg}"`);
+const parseAlg = (alg: string): Move3x3[] => {
+  const { moves, invalid } = cube3x3.parse(alg);
+  if (invalid.length > 0) {
+    throw new Error(`Unsupported move "${invalid.join('", "')}" in alg "${alg}"`);
   }
-  return mirrored;
-}).join(' ');
-
-const isRighty = (alg: string): boolean => !/[lL]/.test(alg);
-
-const normalizeMove = (move: string): string => {
-  const rootMove = move[0];
-  const suffix = move.slice(1);
-  if (suffix === "2'" || suffix === '2') return rootMove + '2';
-  if (suffix === "3" || suffix === "'") return rootMove + "'";
-  if (suffix === "3'") return rootMove;
-  return move;
+  return moves;
 };
 
-const normalizeAlg = (alg: string): string => splitMoves(alg).map(normalizeMove).join(' ');
+const mirrorAlg = (alg: string): string => cube3x3.format(cube3x3.mirror(parseAlg(alg), 'M'));
+
+const isRighty = (alg: string): boolean => parseAlg(alg).every((move) => {
+  const layer = cube3x3.layer(move);
+  return layer !== 'L' && layer !== 'l';
+});
+
+const normalizeAlg = (alg: string): string => cube3x3.format(cube3x3.normalize(parseAlg(alg)));
 
 const dedupe = (entries: AlgEntry[]): AlgEntry[] => {
   const seen = new Set<string>();

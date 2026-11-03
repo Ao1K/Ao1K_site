@@ -1,16 +1,19 @@
 import AlgSuggester from './ExactAlgSuggester';
-import type { Doc, Constraint } from './ExactAlgSuggester';
+import type { CompiledDoc, Doc, Constraint } from './ExactAlgSuggester';
 import AlgSpeedEstimator from './AlgSpeedEstimator';
 import type { Grid, CompilableLLStep, SuggestableLLStep, LLCaseInfo } from './LLinterpreter';
 import LLinterpreter from './LLinterpreter';
 import LLsuggester from './LLsuggester';
-import type { CompiledLLAlg, KnownLLAlg } from './LLsuggester';
+import type { CompiledLLAlg, KnownLLAlg, LLAlg } from './LLsuggester';
+import { cube3x3 } from '../../utils/parser/cube3x3';
+import type { Move3x3 } from '../../utils/parser/cube3x3';
 import type { CubeState as SimpleCubeState, Color } from './SimpleCube';
 import type { Handedness } from '../useSettings';
 import { splitLeadingAuf } from '../../utils/collapseAufVariants';
 import { eoAngleOfAlg } from '../../utils/canonicalizeAuf';
 import type { EOAngle } from '../../utils/canonicalizeAuf';
-import { algsetPriority, dedupeByAlgsetPriority, rankSuggestions, savedAlgKey, suggestionRank } from './suggestionRanking';
+import { algsetPriority, dedupeByAlgsetPriority, rankSuggestions, suggestionRank } from './suggestionRanking';
+import { llAlgKey } from '../algs/algMoves';
 import type { SavedAlgKeys } from './suggestionRanking';
 import {
   SOLVED_HASH,
@@ -36,8 +39,11 @@ import type { CrossSuggestionDetails } from './crossAutocomplete';
 export type { AlgsetFilter, HashAlgset };
 export type Algset = HashAlgset | SuggestableLLStep | 'f2leo';
 
+const loadDocs = (docs: CompiledDoc[]): Doc[] =>
+  docs.map(({ alg, ...rest }) => ({ ...rest, moves: cube3x3.parseTrusted(alg) }));
+
 export interface Suggestion {
-  alg: string;
+  moves: Move3x3[];
   time: number;
   steps: string[];
   name?: string;
@@ -189,7 +195,7 @@ export class SimpleCubeInterpreter {
     '5,7': 'yellow,horizontal', // down right, down left
   };
 
-  constructor(algs: Doc[] = []) {
+  constructor(algs: CompiledDoc[] = []) {
     // build reverse mappings for hash decoding
     this.edgeIdxToDir = [];
     for (const [dir, idx] of Object.entries(EDGE_PIECE_DIRECTIONS)) {
@@ -207,7 +213,7 @@ export class SimpleCubeInterpreter {
     }
 
     if (algs.length > 0) {
-      this.algSuggester = new AlgSuggester(algs);
+      this.algSuggester = new AlgSuggester(loadDocs(algs));
     }
   }
 
@@ -218,7 +224,7 @@ export class SimpleCubeInterpreter {
    * re-enabling one is instant. Enabling/disabling is handled separately by getAlgSuggestions.
    * A variant (such as handedness) replaces the previously loaded algs of the same name.
    */
-  public addAlgset(name: string, algs: Doc[] | CompiledLLAlg[], variant?: string): void {
+  public addAlgset(name: string, algs: CompiledDoc[] | CompiledLLAlg[], variant?: string): void {
     if (this.isAlgsetLoaded(name, variant)) {
       return;
     }
@@ -227,7 +233,7 @@ export class SimpleCubeInterpreter {
       if (!this.algSuggester) {
         this.algSuggester = new AlgSuggester();
       }
-      const taggedAlgs = (algs as Doc[]).map(alg => ({ ...alg, step: name }));
+      const taggedAlgs = loadDocs(algs as CompiledDoc[]).map(alg => ({ ...alg, step: name }));
       this.algSuggester.addDocs(taggedAlgs);
     } else if (name === 'oll' || name === 'pll' || name === 'zbll') {
       if (!this.LLsuggester) {
@@ -262,10 +268,10 @@ export class SimpleCubeInterpreter {
     return this.offHandAlgsets.get(name) === variant;
   }
 
-  public findKnownLLAlgs(alg: string, enabledAlgsets: AlgsetFilter, handedness: Handedness): KnownLLAlg[] {
-    const matches = this.LLsuggester?.findKnownAlgs(alg) ?? [];
+  public findKnownLLAlgs(moves: readonly Move3x3[], enabledAlgsets: AlgsetFilter, handedness: Handedness): KnownLLAlg[] {
+    const matches = this.LLsuggester?.findKnownAlgs(moves) ?? [];
     const enabledMatches = enabledAlgsets === 'all' ? matches : matches.filter(match => enabledAlgsets.has(match.algset));
-    const handedFrequency = ({ alg, frequency = 0 }: CompiledLLAlg) => this.applyHandednessModifier(alg, frequency, handedness);
+    const handedFrequency = ({ moves, frequency = 0 }: LLAlg) => this.applyHandednessModifier(moves, frequency, handedness);
 
     return enabledMatches.map(({ algset, compiledAlg, caseAlgs }) => ({
       algset,
@@ -2505,18 +2511,12 @@ export class SimpleCubeInterpreter {
    */
   private filterOverlongAlgorithms(suggestions: Suggestion[]): Suggestion[] {
 
-    const countMoves = (alg: string): number => {
-      return alg.split(/\s+/).filter(move => move.match(/[^xyz2']/g)).length;
-    };
-
     suggestions = suggestions.sort((a, b) => {
-      return countMoves(a.alg) - countMoves(b.alg);
+      return cube3x3.count(a.moves, 'stm') - cube3x3.count(b.moves, 'stm');
     });
 
-    const toMoves = (alg: string): string[] =>
-      alg.trim().split(/\s+/).map(move => move.replace(/2'$/, '2'));
-
-    const movesPerSuggestion = suggestions.map(suggestion => toMoves(suggestion.alg));
+    const movesPerSuggestion = suggestions.map(suggestion =>
+      suggestion.moves.map(move => (cube3x3.turns(move) === 2 ? cube3x3.make(cube3x3.layer(move), 2) : move)));
 
     const sharesAnyStep = (a: Suggestion, b: Suggestion): boolean =>
       a.steps.some(step => b.steps.includes(step));
@@ -2527,6 +2527,9 @@ export class SimpleCubeInterpreter {
     const isRedundantExtension = (longer: number, shorter: number): boolean => {
       const shortMoves = movesPerSuggestion[shorter];
       const longMoves = movesPerSuggestion[longer];
+      if (shortMoves.length === 0) {
+        return longMoves.length === 0 && sharesAnyStep(suggestions[longer], suggestions[shorter]);
+      }
       const lastIndex = shortMoves.length - 1;
       if (!shortMoves.slice(0, lastIndex).every((move, i) => move === longMoves[i])) return false;
 
@@ -2540,7 +2543,10 @@ export class SimpleCubeInterpreter {
 
       // if we have L' U' L and L' U' L2 U L', 
       // longer alg redundant if shorter alg has all of the longer alg's steps
-      const isHalfOfDouble = matchingLongMove === `${lastShortMove.replace(/'$/, '')}2`;
+      const isHalfOfDouble = matchingLongMove !== undefined
+        && cube3x3.layer(matchingLongMove) === cube3x3.layer(lastShortMove)
+        && cube3x3.turns(matchingLongMove) === 2
+        && Math.abs(cube3x3.amount(lastShortMove)) === 1;
       return isHalfOfDouble && addsNoNewStep(suggestions[longer], suggestions[shorter]);
     };
 
@@ -2584,8 +2590,8 @@ export class SimpleCubeInterpreter {
       .filter(alg => isZBLSrelevant || alg.step !== 'zbls');
 
       algs.forEach(alg => {
-        const { alg: finalAlg, hasEOsolved } = reconstructF2LAlg(
-          alg.id, alg.eoValue, q, isTopLayer, wantsEO, currentEOByAngle[eoAngleOfAlg(alg.id)]
+        const { moves: finalMoves, hasEOsolved } = reconstructF2LAlg(
+          alg.moves, alg.eoValue, q, isTopLayer, wantsEO, currentEOByAngle[eoAngleOfAlg(alg.moves)]
         );
 
         // zbls algs are only valid suggestions when they actually solve EO
@@ -2594,17 +2600,18 @@ export class SimpleCubeInterpreter {
         }
 
         if (!isTopLayer) {
-          const core = splitLeadingAuf(finalAlg).coreKey;
+          const core = splitLeadingAuf(finalMoves).coreKey;
           const labels = labelsByAufFreeCore.get(core) ?? new Set<string>();
           labels.add(pairLabel);
           labelsByAufFreeCore.set(core, labels);
         }
 
+        const finalAlg = cube3x3.format(finalMoves);
         const existingSuggestion = suggestionsByAlg.get(finalAlg);
         if (!existingSuggestion) {
           suggestionsByAlg.set(finalAlg, {
-            alg: finalAlg,
-            time: speedEstimator.calcScore(finalAlg),
+            moves: finalMoves,
+            time: speedEstimator.calcScore(finalMoves),
             steps: [pairLabel],
             hasEOsolved,
             algset: alg.step,
@@ -2617,7 +2624,7 @@ export class SimpleCubeInterpreter {
 
     const suggestions = [...suggestionsByAlg.values()];
     suggestions.forEach(suggestion => {
-      const labels = labelsByAufFreeCore.get(splitLeadingAuf(suggestion.alg).coreKey);
+      const labels = labelsByAufFreeCore.get(splitLeadingAuf(suggestion.moves).coreKey);
       labels?.forEach(label => {
         if (!suggestion.steps.includes(label)) {
           suggestion.steps.push(label);
@@ -2684,9 +2691,10 @@ export class SimpleCubeInterpreter {
     );
   }
 
-  private applyHandednessModifier(alg: string, frequency: number, handedness: Handedness): number {
-    const hasRighty = /[Rr]/.test(alg);
-    const hasLefty = /[Ll]/.test(alg);
+  private applyHandednessModifier(moves: readonly Move3x3[], frequency: number, handedness: Handedness): number {
+    const layers = new Set(moves.map(move => cube3x3.layer(move)));
+    const hasRighty = layers.has('R') || layers.has('r');
+    const hasLefty = layers.has('L') || layers.has('l');
 
     if (handedness === 'right' && hasLefty && !hasRighty) {
       return frequency * 0.01;
@@ -2708,25 +2716,25 @@ export class SimpleCubeInterpreter {
     ];
 
     const llIndices = this.getLLindices(steps, stepTypes);
-    const algs: { alg: string, name: string, steps: string[], frequency: number, algset: SuggestableLLStep }[] = [];
+    const algs: { moves: Move3x3[], name: string, steps: string[], frequency: number, algset: SuggestableLLStep }[] = [];
 
     llIndices.forEach(index => {
       const stepAlgs = this.LLsuggester!.getAlgsForStep(index.step, index.index, index.minMovements, refPieceOrigins);
-      stepAlgs.forEach(({ alg, frequency, offHand }) => {
-        if (offHand && !this.savedAlgs?.has(savedAlgKey(alg))) {
+      stepAlgs.forEach(({ moves, frequency, offHand }) => {
+        if (offHand && !this.savedAlgs?.ll.has(llAlgKey(moves))) {
           return;
         }
-        algs.push({ alg, name: index.name, steps: [index.step], frequency, algset: index.step });
+        algs.push({ moves, name: index.name, steps: [index.step], frequency, algset: index.step });
       });
     });
 
     const speedEstimator = new AlgSpeedEstimator(this.handedness);
     const suggestions: Suggestion[] = algs.map(alg => ({
-      alg: alg.alg,
-      time: speedEstimator.calcScore(alg.alg),
+      moves: alg.moves,
+      time: speedEstimator.calcScore(alg.moves),
       steps: alg.steps,
       name: alg.name,
-      frequency: this.applyHandednessModifier(alg.alg, alg.frequency, this.handedness),
+      frequency: this.applyHandednessModifier(alg.moves, alg.frequency, this.handedness),
       algset: alg.algset
     }));
 

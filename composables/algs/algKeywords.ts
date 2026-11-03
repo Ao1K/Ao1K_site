@@ -4,6 +4,7 @@
 
 import { algSolvedSlots, type SlotKey } from './multislotSlots';
 import type { AlgClassification } from './classifyAlg';
+import type { Move3x3 } from '../../utils/parser/cube3x3';
 
 const SLOT_ORDER: SlotKey[] = ['FR', 'FL', 'BR', 'BL'];
 
@@ -23,8 +24,8 @@ const isSlotGroup = (group: string): boolean => SLOT_GROUPS.has(group.trim().toU
 export const keywordLabel = (group: string): string =>
   isSlotGroup(group) ? 'slot' : 'case';
 
-export const keywordsForAlg = (alg: string, classification: AlgClassification): string[] => {
-  if (isSlotGroup(classification.group)) return algSolvedSlots(alg).map((slot) => SLOT_LABEL[slot]);
+export const keywordsForAlg = (moves: Move3x3[], classification: AlgClassification): string[] => {
+  if (isSlotGroup(classification.group)) return algSolvedSlots(moves).map((slot) => SLOT_LABEL[slot]);
 
   const caseName = classification.stepInfo?.name;
   if (!caseName) return [];

@@ -35,6 +35,7 @@ import {
 } from '../../composables/algs/cubePaint';
 import { configToRaw, encodePrefixFromState } from '../../composables/algs/f2lCaseId';
 import { useShowEOStep } from '../../composables/useSettings';
+import { cube3x3, type Move3x3 } from '../../utils/parser/cube3x3';
 
 const DEFAULT_PAIR = pairsForCross('up')[0];
 
@@ -99,12 +100,13 @@ const F2lSearch = ({ cross, setCross, pair, setPair, config, setConfig, suggesti
     writeF2lURL(nextCross, nextPair, nextConfig);
   };
 
-  const handlePlay = (alg: string, playbackAlg: string) => {
-    if (playingAlg === alg) {
+  const handlePlay = (moves: Move3x3[], playbackMoves: Move3x3[]) => {
+    const algKey = cube3x3.format(moves);
+    if (playingAlg === algKey) {
       stopPlayback();
       return;
     }
-    setPlayingAlg(alg);
+    setPlayingAlg(algKey);
     const isInViewport = (el: HTMLElement) => {
       const rect = el.getBoundingClientRect();
       return rect.top >= 0 && rect.bottom <= (window.innerHeight || document.documentElement.clientHeight);
@@ -113,7 +115,7 @@ const F2lSearch = ({ cross, setCross, pair, setPair, config, setConfig, suggesti
     if (visualizer instanceof HTMLElement && !isInViewport(visualizer)) {
       visualizer.scrollIntoView({behavior: 'smooth'});
     }
-    cubeRef.current?.playAlg(playbackAlg);
+    cubeRef.current?.playAlg(playbackMoves);
   };
 
   const handlePlaybackEnd = () => setPlayingAlg(null);

@@ -1,7 +1,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { SimpleCubeInterpreter } from '../composables/recon/SimpleCubeInterpreter';
-import type { Doc } from '../composables/recon/ExactAlgSuggester';
+import type { CompiledDoc } from '../composables/recon/ExactAlgSuggester';
+import { cube3x3 } from '../utils/parser/cube3x3';
+import type { Move3x3 } from '../utils/parser/cube3x3';
 import type { Color } from '../composables/recon/SimpleCube';
 import { MAX_SHOWN_SUGGESTIONS } from '../composables/recon/suggestionRanking';
 import { buildF2lCubeState } from '../composables/algs/f2lCubeState';
@@ -57,7 +59,7 @@ function mulberry32(seed: number): () => number {
 
 function buildInterpreter(): SimpleCubeInterpreter {
   const loadAlgs = (fileName: string) =>
-    JSON.parse(fs.readFileSync(path.join(__dirname, '../public/recon', fileName), 'utf8')).algorithms as Doc[];
+    JSON.parse(fs.readFileSync(path.join(__dirname, '../public/recon', fileName), 'utf8')).algorithms as CompiledDoc[];
   const interpreter = new SimpleCubeInterpreter();
   interpreter.addAlgset('f2l', loadAlgs('compiled-f2l-algs.json'));
   interpreter.addAlgset('zbls', loadAlgs('compiled-zbls-algs.json'));
@@ -69,7 +71,7 @@ function suggestAlgs(
   config: F2lCaseConfig,
   cross: FaceKey,
   pair: [FaceKey, FaceKey],
-): string[] {
+): Move3x3[][] {
   if (!isFullEOValid(config) || isPairSolved(config, cross, pair)) return [];
   const steps = interpreter.getStepsCompleted(buildF2lCubeState(config, cross, pair));
   const f2lPair = pair.map((face) => FACE_COLOR_NAME[face]) as [string, string];
@@ -82,7 +84,7 @@ function suggestAlgs(
   };
   const shown = suggestions.filter((s) => s.steps.some(isTargetPair)).slice(0, MAX_SHOWN_SUGGESTIONS);
   const eoFiltered = isFullEOActive(config) ? shown.filter((s) => s.hasEOsolved) : shown;
-  return eoFiltered.map((s) => s.alg);
+  return eoFiltered.map((s) => s.moves);
 }
 
 function randomRaw(random: () => number, cross: FaceKey, pair: [FaceKey, FaceKey]): string {
@@ -146,19 +148,25 @@ function pickCases(interpreter: SimpleCubeInterpreter): CaseInput[] {
   return cases;
 }
 
-function labelCase(input: CaseInput, algs: string[]): { algs: AlgSnapshot[]; ms: number } {
+function labelCase(input: CaseInput, algs: Move3x3[][]): { algs: AlgSnapshot[]; ms: number } {
   const caseState = buildF2lCubeState(input.config, input.cross, input.pair);
   const pairColors: [Color, Color] = [COLOR_OF[input.pair[0]], COLOR_OF[input.pair[1]]];
   const startTime = performance.now();
-  const labeled = algs.map((alg) => ({ alg, rows: labelF2lAlg(alg, caseState, pairColors) }));
+  const labeled = algs.map((moves) => ({ alg: cube3x3.format(moves), rows: labelF2lAlg(moves, caseState, pairColors) }));
   return { algs: labeled, ms: performance.now() - startTime };
+}
+
+function parseStoredAlg(alg: string): Move3x3[] {
+  const { moves, invalid } = cube3x3.parse(alg);
+  if (invalid.length > 0) throw new Error(`Invalid move "${invalid.join('", "')}" in snapshot alg "${alg}"`);
+  return moves;
 }
 
 function formatRows(rows: F2lBreakdownRow[] | null): string {
   if (!rows) return '    (no labels)';
   return rows
     .map((row) => {
-      const segments = row.segments.map((s) => `${s.moves.join(' ').padEnd(16)} ${s.label ?? '-'}`);
+      const segments = row.segments.map((s) => `${cube3x3.format(s.moves).padEnd(16)} ${s.label ?? '-'}`);
       return row.name ? `    [${row.name}]\n${segments.map((s) => `      ${s}`).join('\n')}` : `    ${segments[0]}`;
     })
     .join('\n');
@@ -198,7 +206,7 @@ function runCompare(interpreter: SimpleCubeInterpreter) {
     const id = `${snapshot.prefix} ${snapshot.raw}`;
 
     const storedAlgs = snapshot.algs.map((a) => a.alg);
-    const currentAlgs = suggestAlgs(interpreter, input.config, input.cross, input.pair);
+    const currentAlgs = suggestAlgs(interpreter, input.config, input.cross, input.pair).map((moves) => cube3x3.format(moves));
     if (storedAlgs.join('|') !== currentAlgs.join('|')) {
       algListDiffs++;
       const removed = storedAlgs.filter((alg) => !currentAlgs.includes(alg));
@@ -206,7 +214,7 @@ function runCompare(interpreter: SimpleCubeInterpreter) {
       console.log(`ALGS ${id}: ${removed.length} removed, ${added.length} added${removed.length + added.length ? '' : ', reordered'}`);
     }
 
-    const relabeled = labelCase(input, storedAlgs);
+    const relabeled = labelCase(input, storedAlgs.map(parseStoredAlg));
     labelMs += relabeled.ms;
     for (const [i, stored] of snapshot.algs.entries()) {
       algTotal++;

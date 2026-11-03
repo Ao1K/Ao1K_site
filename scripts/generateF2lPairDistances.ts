@@ -2,13 +2,18 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { applyMove, crossSolved, topLayerPlacementIndex, type Facelets } from '../composables/recon/f2lIntuitiveDetection';
 import type { Color } from '../composables/recon/SimpleCube';
+import { cube3x3 } from '../utils/parser/cube3x3';
 
 const SEARCH_DEPTH = 4;
 const CORNER_PLACEMENTS = 12;
 const EDGE_PLACEMENTS = 8;
 const OUTPUT_PATH = path.join(__dirname, '../composables/recon/f2lPairDistances.ts');
 
-const SEARCH_TOKENS = ['U', 'R', 'L', 'F', 'B'].flatMap((base) => [base, `${base}2`, `${base}'`]);
+const SEARCH_TOKENS = (['U', 'R', 'L', 'F', 'B'] as const).flatMap((layer) => [
+  cube3x3.make(layer, 1),
+  cube3x3.make(layer, 2),
+  cube3x3.make(layer, -1),
+]);
 const FACE_COLORS: Color[] = ['W', 'Y', 'G', 'R', 'B', 'O'];
 const SOLVED: Facelets = FACE_COLORS.flatMap((color) => new Array<Color>(9).fill(color));
 const PAIRS: [Color, Color][] = [['G', 'R'], ['G', 'O'], ['B', 'O'], ['B', 'R']];

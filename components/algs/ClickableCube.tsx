@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useImperativeHandle, useRef } from 'react';
-import { rotateAlgByY, tokenize } from '../../composables/algs/algMoves';
+import { cube3x3, type Move3x3 } from '../../utils/parser/cube3x3';
 import { useCubeColors, useHintFaceletsElevation, DEFAULT_CAMERA_FOV } from '../../composables/useSettings';
 import { SimpleCube } from '../../composables/recon/SimpleCube';
 import { distanceView, INITIAL_ANGLES, sceneViewBox, smootherStep, timelineMoveMs, turnRotation } from '../../composables/recon/reconCube';
@@ -9,7 +9,7 @@ import { createCubeScene, createSvgPainter, type CubeScene } from '../../utils/c
 import { CUBE_SVG_CLASS } from '../../utils/cubeSceneIsland';
 import { buildColorHex, DEFAULT_SCENE_LOOK } from '../../utils/cubeSceneAuthoring';
 import { cubiesFromState } from '../../utils/cubeSvgRender';
-import { faceletsFromState, stateFromFacelets } from '../../utils/cubeMoves';
+import { faceletsFromState, stateFromFacelets } from '../../utils/cubeFacelets';
 import {
   buildPaintMap,
   computeShown,
@@ -32,7 +32,7 @@ export type LocationClick =
   | { pieceType: 'EDGES'; loc: EdgeLocation };
 
 export interface ClickableCubeHandle {
-  playAlg: (alg: string) => void;
+  playAlg: (moves: Move3x3[]) => void;
   reset: () => void;
 }
 
@@ -134,14 +134,16 @@ const ClickableCube = ({ cross = 'up', pair, corner, edge, filledSlots, highligh
     showCase();
   };
 
-  const playAlg = (rawAlg: string) => {
+  const playAlg = (algMoves: Move3x3[]) => {
     const scene = sceneRef.current;
     if (!scene) return;
 
     stopPlayback();
     showCase();
 
-    const moves = tokenize(rotateAlgByY(rawAlg, yTurns));
+    let moves = algMoves;
+    const quarterTurns = ((yTurns % 4) + 4) % 4;
+    for (let turn = 0; turn < quarterTurns; turn++) moves = cube3x3.rotate(moves, "y'");
     if (moves.length === 0) {
       onPlaybackEnd?.();
       return;

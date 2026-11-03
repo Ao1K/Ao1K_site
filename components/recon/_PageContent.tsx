@@ -19,9 +19,14 @@ import InvertIcon from "../../components/icons/invert";
 import Cookies from 'js-cookie';
 
 import addCat from "../../composables/recon/addCat";
-import { mirrorHTML_M, mirrorHTML_S, removeComments, rotateHTML_X, rotateHTML_Y, rotateHTML_Z, invertHTML } from "../../composables/recon/transformHTML";
 import isSelectionInTextbox from "../../composables/recon/isSelectionInTextbox";
-import { TransformHTMLprops } from "../../composables/recon/transformHTML";
+import {
+  invertSelectedMoves,
+  relabelSelectedMoves,
+  removeSelectedComments,
+  rotateSelectedMoves,
+  type SelectionTransform,
+} from "../../composables/recon/editorDocument";
 
 import TitleWithPlaceholder from "../../components/recon/TitleInput";
 import TopButton from "../../components/recon/TopButton";
@@ -36,12 +41,14 @@ import ColumnSelector from './ColumnSelector';
 import { useEnabledColumns } from '../../composables/recon/useEnabledColumns';
 import { ICON_SIZE_CONFIG, useCubeColors, useAlgsets, useHandedness, readSettingsFromCookie, type Handedness } from '../../composables/useSettings';
 import { SimpleCube, type CubeState } from '../../composables/recon/SimpleCube';
+import { cube3x3, type Move3x3, type Rotation3x3 } from '../../utils/parser/cube3x3';
 import { SimpleCubeInterpreter } from '../../composables/recon/SimpleCubeInterpreter';
 import type { StepInfo, Suggestion } from '../../composables/recon/SimpleCubeInterpreter';
-import type { Doc } from '../../composables/recon/ExactAlgSuggester';
+import type { CompiledDoc } from '../../composables/recon/ExactAlgSuggester';
 import type { CompiledLLAlg } from '../../composables/recon/LLsuggester';
 import type { CompilableLLStep } from '../../composables/recon/LLinterpreter';
-import { savedAlgKey, savedAlgKeys } from '../../composables/recon/suggestionRanking';
+import { savedAlgKeys } from '../../composables/recon/suggestionRanking';
+import { llAlgKey } from '../../composables/algs/algMoves';
 import { applyMovesUntilCross, getCrossSuggestions } from '../../composables/recon/crossAutocomplete';
 import { hasReviewContent, reviewSolve } from '../../composables/recon/solveReview';
 import type { CubeStateReader } from '../../composables/recon/algReview';
@@ -77,18 +84,12 @@ export interface MoveHistory {
   MAX_HISTORY: number;
 }
 
-interface OldSelectionRef {
-  status: string;
-  range: Range | null;
-  textbox: 'solution' | 'scramble' | null;
-}
-
-export type PlayerParams = { animationTimes: number[]; solution: string; scramble: string };
+export type PlayerParams = { animationTimes: number[]; solution: Move3x3[]; scramble: Move3x3[] };
 
 interface ClearedPageSnapshot {
   scrambleHTML: string;
   solutionHTML: string;
-  allMoves: string[][][];
+  allMoves: Move3x3[][][];
   moveLocation: [number, number, number];
   playerParams: PlayerParams;
   solveTime: number | string;
@@ -135,7 +136,7 @@ const algKeysByList = new WeakMap<unknown[], ReadonlySet<string>>();
 const getAlgKeys = (algorithms: unknown[]): ReadonlySet<string> => {
   let keys = algKeysByList.get(algorithms);
   if (!keys) {
-    keys = new Set((algorithms as CompiledLLAlg[]).map(entry => savedAlgKey(entry.alg)));
+    keys = new Set((algorithms as CompiledLLAlg[]).map(entry => llAlgKey(cube3x3.parseTrusted(entry.alg))));
     algKeysByList.set(algorithms, keys);
   }
   return keys;
@@ -155,9 +156,9 @@ const pickOffHandAlgsets = async (
   const wanted = new Set(unloaded);
   for (const favorite of readFavorites()) {
     if (picked.size === wanted.size) break;
-    const key = savedAlgKey(favorite.alg);
+    const key = llAlgKey(favorite.moves);
     if (inHandKeys.some(keys => keys.has(key))) continue;
-    llStepsForAlg(favorite.alg)
+    llStepsForAlg(favorite.moves)
       .filter(step => wanted.has(step))
       .forEach(step => picked.add(step));
   }
@@ -168,8 +169,8 @@ let currentSpeed = 30;
 const calcCubeSpeedLocal = (speed: number) =>
   speed === 100 ? 1000 : 1.5 ** (speed / 15) - 0.6;
 
-const isRotationOnlyLine = (moves: string[]) =>
-  moves.length > 0 && moves.every(move => !/[^xyz2'3]/.test(move));
+const isRotationOnlyLine = (moves: Move3x3[]) =>
+  moves.length > 0 && moves.every(cube3x3.isRotation);
 
 const TRANSFORM_SHORTCUT_LETTERS = new Set(['m', 's', 'x', 'y', 'z', 'i']);
 
@@ -191,7 +192,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   const showSplitsColumn = enabledColumns.splits || hasSplitsFromURL;
   const enabledAlgsets = useMemo(() => new Set(Object.values(algsets).flat()), [algsets]);
 
-  const allMovesRef = useRef<string[][][]>([[[]], [[]]]);
+  const allMovesRef = useRef<Move3x3[][][]>([[[]], [[]]]);
   const moveLocation = useRef<[number, number, number]>([0, 0, 0]);
   const trueCaretRef = useRef<[number, number]>([0, 0]);
 
@@ -215,7 +216,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   const [breakdownPlayRequest, setBreakdownPlayRequest] = useState<BreakdownPlayRequest | null>(null);
   const isBreakdownOpen = breakdownSession !== null;
 
-  const [playerParams, setPlayerParams] = useState<PlayerParams>({ animationTimes: [], solution: '', scramble: '' });
+  const [playerParams, setPlayerParams] = useState<PlayerParams>({ animationTimes: [], solution: [], scramble: [] });
 
   const [splits, setSplits] = useState<string[]>([]);
   const [committedSplits, setCommittedSplits] = useState<string[]>([]);
@@ -224,7 +225,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   const scrambleMethodsRef = useRef<ImperativeRef>(null);
   const solutionMethodsRef = useRef<ImperativeRef>(null);
   const [solutionDisplayElement, setSolutionDisplayElement] = useState<HTMLDivElement | null>(null);
-  const oldSelectionRef = useRef<OldSelectionRef>({ range: null, textbox: null, status: "init" });
+  const selectionTextboxRef = useRef<'scramble' | 'solution' | null>(null);
   const bottomBarRef = useRef<HTMLDivElement>(null!);
   const isLoopingRef = useRef<boolean>(false);
   const loopTimeoutRef = useRef<number | null>(null);
@@ -244,17 +245,20 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
 
   committedSplitsRef.current = committedSplits;
 
-  const totalMoves = allMovesRef.current[1].flat(2).filter(move => move.match(/[^xyz2']/g)).length
+  const totalMoves = cube3x3.count(allMovesRef.current[1].flat(), 'stm');
   const tpsString = typeof solveTime === 'number' && solveTime > 0
     ? `(${Math.round((totalMoves / solveTime) * 100) / 100} tps)`
     : '';
 
-  const solutionLines = allMovesRef.current[1]?.map((move: string[]) => move.join(' ')) || [''];
   const solutionLineHeight = ICON_SIZE_CONFIG['medium'].lineHeight;
 
-  const lineIconData = computeLineIconData(solutionLines, lineSteps.map(item => item.stepInfo), cubeColors);
+  const lineIconData = computeLineIconData(allMovesRef.current[1], lineSteps.map(item => item.stepInfo), cubeColors);
   const showIconsColumn = isIconsColumnEnabled && lineIconData.some(d => !d.isEmptyIcon);
-  const hasReviewFeedback = hasReviewContent(allMovesRef.current[0].flat(), allMovesRef.current[1], lineIconData);
+  const hasReviewFeedback = hasReviewContent(
+    allMovesRef.current[0].flat(),
+    allMovesRef.current[1],
+    lineIconData,
+  );
   const reviewButtonClass = !hasReviewFeedback
     ? 'text-neutral-500 border-neutral-700'
     : isSolveComplete(lineSteps.map(line => line.stepInfo))
@@ -296,7 +300,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
    * Finds the first non-empty line at or before the given line index.
    * Returns -1 if no non-empty line is found.
    */
-  const findPrevNonEmptyLine = (moves: string[][], lineIndex: number): number => {
+  const findPrevNonEmptyLine = (moves: Move3x3[][], lineIndex: number): number => {
     for (let i = lineIndex; i >= 0; i--) {
       if (moves && moves[i]?.length > 0) {
         return i;
@@ -305,7 +309,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     return -1;
   }
 
-  const findLastMoveInLine = (moves: string[][], lineIndex: number): number => {
+  const findLastMoveInLine = (moves: Move3x3[][], lineIndex: number): number => {
     const lastMoveIndex = moves[lineIndex] ? moves[lineIndex].length : -1; // not length - 1 because it's the number of moves before the caret
     return lastMoveIndex;
   }
@@ -314,7 +318,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
    * Starting from first line of interest, find first line that has a move.
    * If no line has a move, return -1.
    */
-  const findLineOfNextMove = (moves: string[][], lineIndex: number): number => {
+  const findLineOfNextMove = (moves: Move3x3[][], lineIndex: number): number => {
     for (let i = lineIndex; i < moves.length; i++) {
       if (moves[i] && moves[i].length > 0) {
         return i;
@@ -329,7 +333,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
    * @param lines 
    * @returns 
    */
-  const areMoveLinesEqual = (currentMoves: string[][], lines: string[][]): boolean => {
+  const areMoveLinesEqual = (currentMoves: Move3x3[][], lines: Move3x3[][]): boolean => {
     currentMoves = currentMoves.filter(line => line.length != 0);
     lines = lines.filter(line => line.length != 0);
 
@@ -339,7 +343,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       for (let i = 0; i < currentMoves.length; i++) {
         const line = currentMoves[i];
         const newLine = lines[i] || [];
-        if (line.join(' ') !== newLine.join(' ')) {
+        if (cube3x3.format(line) !== cube3x3.format(newLine)) {
           return false;
         }
       }
@@ -348,7 +352,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   };
 
 
-  const areMovesSame = (currentMoves: string[][], moves: string[][]): boolean => {
+  const areMovesSame = (currentMoves: Move3x3[][], moves: Move3x3[][]): boolean => {
     if (currentMoves.length !== moves.length) {
       return false;
     }
@@ -374,7 +378,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     return true;
   };
 
-  const findAnimationLengths = (moves: string[]): number[] => {
+  const findAnimationLengths = (moves: Move3x3[]): number[] => {
     const moveAnimationTimes: number[] = [];
     const singleTime = 1000;
     const doubleTime = 1500;
@@ -385,9 +389,10 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     }
 
     moves.forEach((move) => {
-      if (move.includes('2')) {
+      const quarterTurnCount = Math.abs(cube3x3.amount(move));
+      if (quarterTurnCount === 2) {
         moveAnimationTimes.push(doubleTime);
-      } else if (move.includes('3')) {
+      } else if (quarterTurnCount === 3) {
         moveAnimationTimes.push(tripleTime);
       } else {
         moveAnimationTimes.push(singleTime);
@@ -401,7 +406,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
    * Calculates the cumulative animation times for moves up to a specific position in the move sequence.
    * @returns [1] if scramble is selected. [0] if there are no moves in the solution.
    */
-  const findAnimationTimes = (idIndex: number, lineIndex: number, moveIndex: number, moves: string[][]): number[] => {
+  const findAnimationTimes = (idIndex: number, lineIndex: number, moveIndex: number, moves: Move3x3[][]): number[] => {
 
     if (idIndex === 0) {
       return [1]; // scramble moves are not animated
@@ -468,7 +473,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     }
   }
 
-  const getMoveToRight = (moves?: string[][]): [number, number] => {
+  const getMoveToRight = (moves?: Move3x3[][]): [number, number] => {
     const [idIndex, lineIndex, moveIndex] = moveLocation.current;
     const solutionMoves = moves ? moves : allMovesRef.current[1];
 
@@ -557,7 +562,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     const lineMoves = moves[lineIndex] || [];
     if (lineMoves.length === 0) return null;
 
-    const stmCount = lineMoves.filter(move => move.match(/[^xyz2']/)).length;
+    const stmCount = cube3x3.count(lineMoves, 'stm');
     if (stmCount === 0) return null;
 
     const tps = stmCount / splitTime;
@@ -567,8 +572,9 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     const moveTimeMs = splitTime * 1000 - pauseMs;
 
     const weights = lineMoves.map(move => {
-      if (move.includes('3')) return 2.0;
-      if (move.includes('2')) return 1.5;
+      const quarterTurnCount = Math.abs(cube3x3.amount(move));
+      if (quarterTurnCount === 3) return 2.0;
+      if (quarterTurnCount === 2) return 1.5;
       return 1.0;
     });
     const weightedTotal = weights.reduce((sum, w) => sum + w, 0);
@@ -688,7 +694,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     }
   }
 
-  const getControllerButtonsStatus = (idIndex: number, lineIndex: number, moveIndex: number, moves: string[][], playPauseStatus: string): {
+  const getControllerButtonsStatus = (idIndex: number, lineIndex: number, moveIndex: number, moves: Move3x3[][], playPauseStatus: string): {
     fullLeft: string, stepLeft: string, stepRight: string, fullRight: string, playPause: string
   } => {
     let fullLeft = 'disabled';
@@ -770,7 +776,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   };
 
   const handleEmptyLineSuggestions = (
-    solutionMoves: string[][],
+    solutionMoves: Move3x3[][],
     trueLineIndex: number,
     enabledAlgsets: Set<string>,
     handedness: Handedness,
@@ -788,7 +794,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       return [];
     });
     const allMoves = [...scrambleMoves, ...solutionMovesUpToPoint];
-    const cubeState = simpleCubeRef.current.getCubeState(allMoves as any);
+    const cubeState = simpleCubeRef.current.getCubeState(allMoves);
 
     const steps = cubeInterpreter.current.getStepsCompleted(cubeState);
     const savedAlgs = savedAlgKeys(readFavorites());
@@ -801,7 +807,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
    * Creates and pushes out cross suggestions. Returns true or false based on if operation was successful.
    */
   const handleCrossSuggestions = (
-    solutionMoves: string[][],
+    solutionMoves: Move3x3[][],
     lineIndex: number,
     enabledAlgsets: Set<string>,
     handedness: Handedness,
@@ -820,7 +826,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   };
 
   const updateLineSuggestions = (
-    solutionMoves: string[][],
+    solutionMoves: Move3x3[][],
     lineIndex: number,
     enabledAlgsets: Set<string>,
     handedness: Handedness,
@@ -849,7 +855,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     if (toLoad.length > 0) {
       await Promise.all(toLoad.map(async name => {
         const mod = await ALGSET_LOADERS[name](forHandedness);
-        interpreter.addAlgset(name, mod.default.algorithms as Doc[] | CompiledLLAlg[], algsetVariant(name, forHandedness));
+        interpreter.addAlgset(name, mod.default.algorithms as CompiledDoc[] | CompiledLLAlg[], algsetVariant(name, forHandedness));
       }));
     }
 
@@ -882,7 +888,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       idIndex: number,
       lineIndex: number, // the line number of the caret, zero-indexed
       moveIndex: number, // the number of moves before the caret on its line 
-      moves: string[][], // the moves in the textbox of id
+      moves: Move3x3[][], // the moves in the textbox of id
       moveControllerStatus?: string // the current status of loopStepRight
     ) => {
 
@@ -952,8 +958,8 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
         if (suggestionLineIndex != null) refreshLineSuggestions(suggestionLineIndex, enabledAlgsets, handedness);
       }
 
-      const sol = allMovesRef.current[1].flat().join(' ');
-      const scram = allMovesRef.current[0].flat().join(' ');
+      const sol = allMovesRef.current[1].flat();
+      const scram = allMovesRef.current[0].flat();
 
       if (idIndex === 1 && moveControllerStatus) highlightMove(moveIndex, lineIndex);
 
@@ -1037,50 +1043,29 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
 
   }
 
-  const getLastRangeAndTextbox = (): { range: Range | null, textbox: string | null } => {
-    let range = oldSelectionRef.current.range;
-    let textbox = oldSelectionRef.current.textbox;
-
-    if (range && textbox) {
-      return { range, textbox };
-    } else if (!range && textbox) {
-      range = getWholeTextboxRange(textbox);
-      return { range, textbox };
-    } else {
-      range = getWholeTextboxRange('solution');
-      textbox = 'solution';
-      return { range, textbox };
-    }
+  const getSelectionTextbox = (): 'scramble' | 'solution' | null => {
+    const selection = window.getSelection();
+    if (!isSelectionInTextbox(selection)) return null;
+    return getTextboxOfSelection(selection!.getRangeAt(0));
   };
 
-  const transformSelection = (transformType: TransformHTMLprops) => {
-
-    const { range, textbox } = getLastRangeAndTextbox();
-
-    if (!range || !textbox) return;
-
-    let newHTML = transformType(range, textbox!) ?? '';
-    textbox === 'solution' ?
-      solutionMethodsRef.current!.setContent(newHTML) : // can handle html or plaintext
-      scrambleMethodsRef.current!.setContent(newHTML)
+  const handleTransform = (transform: SelectionTransform) => {
+    const editor = getSelectionTextbox() === 'scramble' ? scrambleMethodsRef.current : solutionMethodsRef.current;
+    editor?.transformSelection(transform);
   }
 
-  const handleTransform = (transformType: TransformHTMLprops) => {
-    oldSelectionRef.current.status = 'locked';
+  const handleMirror = (plane: 'M' | 'S') => handleTransform((lines, range) =>
+    relabelSelectedMoves(lines, range, cube3x3, moves => cube3x3.mirror(moves, plane)));
+  const handleRotate = (rotation: Rotation3x3) => handleTransform((lines, range) =>
+    rotateSelectedMoves(lines, range, cube3x3, rotation));
+  const handleMirrorM = () => handleMirror('M');
+  const handleMirrorS = () => handleMirror('S');
+  const handleRotateX = () => handleRotate('x');
+  const handleRotateY = () => handleRotate('y');
+  const handleRotateZ = () => handleRotate('z');
+  const handleInvert = () => handleTransform((lines, range) => invertSelectedMoves(lines, range, cube3x3));
 
-    transformSelection(transformType);
-
-    oldSelectionRef.current.status = 'unlocked';
-  }
-
-  const handleMirrorM = () => handleTransform(mirrorHTML_M);
-  const handleMirrorS = () => handleTransform(mirrorHTML_S);
-  const handleRotateX = () => handleTransform(rotateHTML_X);
-  const handleRotateY = () => handleTransform(rotateHTML_Y);
-  const handleRotateZ = () => handleTransform(rotateHTML_Z);
-  const handleInvert = () => handleTransform(invertHTML);
-
-  const handleRemoveComments = () => handleTransform(removeComments);
+  const handleRemoveComments = () => handleTransform((lines, range) => removeSelectedComments(lines, range, cube3x3));
 
   const handleScrambleChange = (scrambleContent: string) => {
     scrambleMethodsRef.current?.setContent(scrambleContent);
@@ -1156,7 +1141,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     setBreakdownPlayRequest(null);
     allMovesRef.current = [[[]], [[]]];
     moveLocation.current = [0, 0, 0];
-    setPlayerParams({ animationTimes: [], solution: '', scramble: '' });
+    setPlayerParams({ animationTimes: [], solution: [], scramble: [] });
     scrambleMethodsRef.current?.setContent('');
     solutionMethodsRef.current?.setContent('');
     setSolveTime('');
@@ -1199,11 +1184,13 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   }
 
   const handleAddCat = () => {
-    const { range, textbox } = getLastRangeAndTextbox()
+    const selection = window.getSelection();
+    const selectionTextbox = getSelectionTextbox();
+    const hasSelectedText = !!selectionTextbox && !selection!.isCollapsed;
+    const textbox = selectionTextbox ?? 'solution';
+    const range = hasSelectedText ? selection!.getRangeAt(0).cloneRange() : getWholeTextboxRange(textbox);
 
-    if (!range || !textbox) return;
-
-    range!.collapse(false); // collapse to end of selection
+    range.collapse(false); // collapse to end of selection
     addCat(range, textbox)
   }
 
@@ -1219,8 +1206,8 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     const scrambleMoves = allMovesRef.current[0].flat();
     const solutionMoves = allMovesRef.current[1].flat();
 
-    const hasScramble = scrambleMoves.length > 0 && scrambleMoves.some(move => move.trim() !== '');
-    const hasSolution = solutionMoves.length > 0 && solutionMoves.some(move => move.trim() !== '');
+    const hasScramble = scrambleMoves.length > 0;
+    const hasSolution = solutionMoves.length > 0;
 
     if (!hasSolution) {
       return {
@@ -1243,7 +1230,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       };
     }
 
-    const moves = `${scrambleMoves.join(' ')}|${solutionMoves.join(' ')}`;
+    const moves = `${cube3x3.format(scrambleMoves)}|${cube3x3.format(solutionMoves)}`;
     const lastCopiedSolve = lastCopiedSolveRef.current;
     if (lastCopiedSolve?.solveTime !== solveTime) {
       lastCopiedSolveRef.current = { moves, solveTime };
@@ -1358,7 +1345,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     }
   }
 
-  const getTextboxOfSelection = (range: Range) => {
+  const getTextboxOfSelection = (range: Range): 'scramble' | 'solution' | null => {
     let node = range?.commonAncestorContainer
     let nodeType = node?.nodeType;
     while (node && (nodeType === Node.ELEMENT_NODE || nodeType === Node.TEXT_NODE)) {
@@ -1378,43 +1365,11 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     return null;
   }
 
-  const storeLastSelection = () => {
-    if (oldSelectionRef.current.status === 'locked') {
-      return;
-    }
+  const handleSelectionChange = () => {
+    const previousTextbox = selectionTextboxRef.current;
+    selectionTextboxRef.current = getSelectionTextbox();
 
-    oldSelectionRef.current.status = 'updating';
-
-    const selection = window.getSelection();
-    let range = null;
-    let textbox: 'solution' | 'scramble' | null = null;
-
-    oldSelectionRef.current.range = null;
-    oldSelectionRef.current.textbox = null;
-
-    if (selection && isSelectionInTextbox(selection)) {
-      range = selection.getRangeAt(0).cloneRange();
-      textbox = getTextboxOfSelection(range);
-    }
-
-    if (!range || !textbox) return;
-
-    if (range.startContainer === range.endContainer && range.startOffset === range.endOffset) {
-      // not multi-select
-      range = null;
-    }
-
-    oldSelectionRef.current.range = range;
-    oldSelectionRef.current.textbox = textbox;
-    oldSelectionRef.current.status = 'updated';
-  }
-
-  const handleStoreSelection = () => {
-    const lastSelection = oldSelectionRef.current.textbox;
-
-    storeLastSelection();
-
-    if (lastSelection === 'solution' && oldSelectionRef.current.textbox !== 'solution') {
+    if (previousTextbox === 'solution' && selectionTextboxRef.current !== 'solution') {
       if (isCompletedSolve) {
         void screenshotManagerRef.current?.getBlob(
           { scrambleHTML, solutionHTML, solveTime, penaltyStatus, solutionLabel: solutionSectionLabel },
@@ -1447,7 +1402,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     if (!editorView || !interpreter) return;
     if (!interpreter.isAlgsetLoaded('f2l')) {
       const f2lModule = await ALGSET_LOADERS.f2l(handedness);
-      interpreter.addAlgset('f2l', f2lModule.default.algorithms as Doc[]);
+      interpreter.addAlgset('f2l', f2lModule.default.algorithms as CompiledDoc[]);
     }
     const oppositeHandedness: Handedness = handedness === 'right' ? 'left' : 'right';
     const oppositeHandInterpreter = await loadOppositeHandInterpreter(oppositeHandedness);
@@ -1455,7 +1410,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
 
     // create empty index
     const index = interpreter.getF2LScoreIndex(handedness);
-    const readSteps = (moves: readonly string[]) => interpreter.getStepsCompleted(simpleCubeRef.current.getCubeState([...moves]));
+    const readSteps = (moves: readonly Move3x3[]) => interpreter.getStepsCompleted(simpleCubeRef.current.getCubeState(moves));
     const reader: CubeStateReader = {
       handedness,
       readSteps,
@@ -1464,7 +1419,13 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       findOppositeHandKnownAlgs: alg => oppositeHandInterpreter.findKnownLLAlgs(alg, enabledAlgsets, oppositeHandedness),
     };
 
-    const solveReview = reviewSolve(allMovesRef.current[0].flat(), allMovesRef.current[1], lineIconData, index, reader);
+    const solveReview = reviewSolve(
+      allMovesRef.current[0].flat(),
+      allMovesRef.current[1],
+      lineIconData,
+      index,
+      reader,
+    );
     clearLoopTimeout();
     isLoopingRef.current = false;
     setControllerButtonsStatus(status => status.playPause === 'play' ? { ...status, playPause: 'pause' } : status);
@@ -1474,10 +1435,10 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
   }
 
   const handleBreakdownPlay = (request: BreakdownPlayRequest) => {
-    const setupAlg = [...allMovesRef.current[0].flat(), ...allMovesRef.current[1].slice(0, request.lineIndex).flat()].join(' ');
+    const setupMoves = [...allMovesRef.current[0].flat(), ...allMovesRef.current[1].slice(0, request.lineIndex).flat()];
     setBreakdownPlayRequest(request);
     document.getElementById('player-box')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    cubePlayerRef.current?.playPreview(setupAlg, request.alg, () => setBreakdownPlayRequest({ ...request, isFinished: true }));
+    cubePlayerRef.current?.playPreview(setupMoves, request.moves, () => setBreakdownPlayRequest({ ...request, isFinished: true }));
   }
 
   const handleBreakdownStop = () => {
@@ -1589,16 +1550,17 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
     }
   };
 
-  function hasLineStepSpaceChanges(moves: string[][], currentLineSteps: { moveLine: string; stepInfo: StepInfo[] }[]): boolean {
+  function hasLineStepSpaceChanges(moves: Move3x3[][], currentLineSteps: { moveLine: string; stepInfo: StepInfo[] }[]): boolean {
+    if (currentLineSteps.length === 0) return false;
     let hasAddedScramble = false;
     for (let idx = 0; idx < moves.length; idx++) {
       const line = moves[idx];
       const lineStepEntry = currentLineSteps[idx];
-      if (!lineStepEntry) continue;
       if (!line || line.length === 0) continue;
+      if (!lineStepEntry) return true;
       const lineAndScram = hasAddedScramble ? line : [...allMovesRef.current[0].flat(), ...line];
       hasAddedScramble = true;
-      if (lineStepEntry.moveLine !== lineAndScram.join(' ')) return true;
+      if (lineStepEntry.moveLine !== cube3x3.format(lineAndScram)) return true;
     }
     return false;
   }
@@ -1617,7 +1579,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       }
       const lineAndScram = hasAddedScramble ? line : [...allMovesRef.current[0].flat(), ...line];
       hasAddedScramble = true;
-      const flatLine = lineAndScram.join(' ');
+      const flatLine = cube3x3.format(lineAndScram);
       const existingLine = filteredLineSteps[hasStepsCount];
       if (existingLine && existingLine.moveLine === flatLine) {
         respacedSteps.push({ moveLine: existingLine.moveLine, stepInfo: existingLine.stepInfo });
@@ -1650,7 +1612,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
         return [];
       });
       const allMoves = [...scrambleMoves, ...solutionMovesUpToLine];
-      const cubeState = simpleCubeRef.current.getCubeState(allMoves as any);
+      const cubeState = simpleCubeRef.current.getCubeState(allMoves);
 
       const steps = cubeInterpreter.current.getStepsCompleted(cubeState);
       return steps;
@@ -1658,20 +1620,20 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
 
 
 
-    const buildMoveLine = (line: string[], lineIdx: number, hasAddedScramble: boolean): string => {
+    const buildMoveLine = (line: Move3x3[], lineIdx: number, hasAddedScramble: boolean): string => {
       const lineAndScram = hasAddedScramble ? line : [...allMovesRef.current[0].flat(), ...line];
-      return lineAndScram.join(' ');
+      return cube3x3.format(lineAndScram);
     };
 
-    const processLineAfterChange = (line: string[], lineIdx: number, updatedSteps: { moveLine: string, stepInfo: StepInfo[] }[]): void => {
+    const processLineAfterChange = (line: Move3x3[], lineIdx: number, updatedSteps: { moveLine: string, stepInfo: StepInfo[] }[]): void => {
       const stepInfo = getStepsForLine(lineIdx);
       const prevSteps = updatedSteps.map(item => item.stepInfo).flat();
       const newSteps = getNewSteps(prevSteps, stepInfo);
-      updatedSteps.push({ moveLine: line.join(' '), stepInfo: newSteps });
+      updatedSteps.push({ moveLine: cube3x3.format(line), stepInfo: newSteps });
     };
 
     const processLineBeforeChange = (
-      line: string[],
+      line: Move3x3[],
       lineIdx: number,
       hasAddedScramble: boolean,
       previousLineSteps: { moveLine: string, stepInfo: StepInfo[] }[],
@@ -1777,13 +1739,13 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       setHasSplitsFromURL(true);
     }
 
-    const solution = allMovesRef.current[1].flat().join(' ');
-    if (solution) {
+    const solution = allMovesRef.current[1].flat();
+    if (solution.length > 0) {
       setPlayerParams(prev => ({ ...prev, solution }));
     }
 
-    const scramble = allMovesRef.current[0].flat().join(' ');
-    if (scramble) {
+    const scramble = allMovesRef.current[0].flat();
+    if (scramble.length > 0) {
       setPlayerParams(prev => ({ ...prev, scramble }));
     }
 
@@ -1802,14 +1764,14 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
 
   useEffect(() => {
 
-    document.addEventListener('selectionchange', handleStoreSelection);
+    document.addEventListener('selectionchange', handleSelectionChange);
     return () => {
 
-      document.removeEventListener('selectionchange', handleStoreSelection);
+      document.removeEventListener('selectionchange', handleSelectionChange);
     };
 
-    // may create screenshot, so handleStoreSelection needs current values.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- deliberately re-subscribes only on scramble/solution changes, not every value handleStoreSelection reads
+    // may create screenshot, so handleSelectionChange needs current values.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- deliberately re-subscribes only on scramble/solution changes, not every value handleSelectionChange reads
   }, [scrambleHTML, solutionHTML]);
 
   const windowsToolbarButtons = [
@@ -1865,7 +1827,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       {isHtmlSceneDialogOpen ? (
         <HtmlSceneDialog
           onClose={() => setIsHtmlSceneDialogOpen(false)}
-          scramble={allMovesRef.current[0].flat().join(' ')}
+          scramble={allMovesRef.current[0].flat()}
           solutionLines={allMovesRef.current[1].map((moves, i) => ({
             moves,
             isWhitespace: !!isWhitespaceLine[i],
@@ -1891,7 +1853,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
           });
           const setupMoves = [...scrambleMoves, ...solutionMovesUpToPoint];
           const cubeState = new SimpleCube().getCubeState(setupMoves);
-          setHtmlImageData({ cubeState, setupMovesForFilename: setupMoves.join(' ') });
+          setHtmlImageData({ cubeState, setupMovesForFilename: cube3x3.format(setupMoves) });
         }}
       >Create HTML Image</button>
       {htmlImageData ? (
@@ -1907,7 +1869,7 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
         <Suspense fallback={null}>
           <CubeGifDialog
             onClose={() => setIsGifDialogOpen(false)}
-            scramble={allMovesRef.current[0].flat().join(' ')}
+            scramble={allMovesRef.current[0].flat()}
             solutionLines={allMovesRef.current[1].map((moves, i) => ({
               moves,
               isWhitespace: !!isWhitespaceLine[i],
@@ -1952,8 +1914,8 @@ export default function Recon({ dailyScramble = "", infoPanelSlot }: { dailyScra
       </div>
       <div id="scramble-area" className="px-3 mt-3 flex flex-col">
         <ScrambleDropdown
-          scramble={allMovesRef.current[0].flat().join(' ')}
-          solution={allMovesRef.current[1].flat().join(' ')}
+          scramble={allMovesRef.current[0].flat()}
+          solution={allMovesRef.current[1].flat()}
           scrambleOfTheDay={dailyScramble}
           onScrambleChange={handleScrambleChange}
           isLabelOnly={isBreakdownOpen}

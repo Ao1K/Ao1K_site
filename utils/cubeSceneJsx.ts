@@ -1,5 +1,6 @@
-import { DEFAULT_SCENE_LOOK, type AuthoredLine, type AuthoredScene, type SceneMove } from './cubeSceneAuthoring'
+import { DEFAULT_SCENE_LOOK, type AuthoredLine, type AuthoredScene } from './cubeSceneAuthoring'
 import { DEFAULT_TURN_MS } from './cubeSceneIsland'
+import type { Move3x3 } from './parser/cube3x3'
 
 type Prop = { name: string; value: string }
 
@@ -16,7 +17,7 @@ function quote(value: string): string {
   return `"${value.replace(/"/g, '&quot;')}"`
 }
 
-function moveLiteral(entry: SceneMove): string {
+function moveLiteral(entry: Move3x3 | Move3x3[]): string {
   if (typeof entry === 'string') return JSON.stringify(entry)
   if (entry.length === 1) return JSON.stringify(entry[0])
   return `[${entry.map(m => JSON.stringify(m)).join(', ')}]`

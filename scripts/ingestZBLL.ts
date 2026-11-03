@@ -3,6 +3,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as zlib from 'zlib';
+import { cube3x3 } from '../utils/parser/cube3x3';
+import type { Move3x3 } from '../utils/parser/cube3x3';
 
 type ZipEntries = Map<string, Buffer>;
 
@@ -162,8 +164,7 @@ function readNotes(entries: ZipEntries, sheetTarget: string): Cell[] {
 }
 
 const headerPattern = /^3x3\s+algorithms?$/i;
-const movePattern = /^[RUFLDBrufldbMESxyz][123]?'?$/;
-const leadingUPattern = /^U(?:2'?|')?(?:\s+|$)/;
+const LEADING_AUF_MOVES = new Set<Move3x3>(['U', "U'", 'U2', "U2'"]);
 const invisiblePattern = /[​-‏‪-‮⁠﻿]/g;
 const wideSpacePattern = /[  - 　]/g;
 const apostrophePattern = /[‘’ʼ′´]/g;
@@ -171,26 +172,22 @@ const annotationPattern = /\*[^*]*\*/g;
 const groupingPattern = /[()[\]{}]/g;
 
 function cleanLine(line: string): string {
-  let alg = line
+  return line
     .split('/')[0]
     .replace(annotationPattern, '')
     .replace(invisiblePattern, '')
     .replace(wideSpacePattern, ' ')
     .replace(apostrophePattern, "'")
-    .replace(groupingPattern, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-
-  while (leadingUPattern.test(alg)) {
-    alg = alg.replace(leadingUPattern, '').trim();
-  }
-
-  return alg;
+    .replace(groupingPattern, '');
 }
 
-function isAlg(alg: string): boolean {
-  const moves = alg.split(' ');
-  return moves.length > 1 && moves.every(move => movePattern.test(move));
+function algOfLine(line: string): Move3x3[] | null {
+  const { moves, invalid } = cube3x3.parse(cleanLine(line));
+  if (invalid.length > 0) return null;
+
+  const firstNonAuf = moves.findIndex(move => !LEADING_AUF_MOVES.has(move));
+  const alg = firstNonAuf === -1 ? [] : moves.slice(firstNonAuf);
+  return alg.length > 1 ? alg : null;
 }
 
 function collectAlgs(entries: ZipEntries): string[] {
@@ -213,8 +210,8 @@ function collectAlgs(entries: ZipEntries): string[] {
 
     for (const source of sources) {
       for (const line of source.value.split('\n')) {
-        const alg = cleanLine(line);
-        if (isAlg(alg)) algs.push(alg);
+        const alg = algOfLine(line);
+        if (alg) algs.push(cube3x3.format(alg));
       }
     }
   }

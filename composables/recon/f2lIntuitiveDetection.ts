@@ -1,5 +1,9 @@
+// TODO: check if it's worth rolling this file into SimpleCubeInterpreter
+
 import type { CubeState as SimpleCubeState, Color } from './SimpleCube';
 import { PAIR_DISTANCES, PAIR_SEARCH_DEPTH } from './f2lPairDistances';
+import { cube3x3 } from '../../utils/parser/cube3x3';
+import type { Layer3x3, Move3x3 } from '../../utils/parser/cube3x3';
 
 export type Facelets = Color[];
 
@@ -47,7 +51,7 @@ interface Turn {
   reversed: boolean;
 }
 
-const TURNS: Record<string, Turn> = {
+const TURNS: Record<Layer3x3, Turn> = {
   R: { axis: 0, layers: [1], reversed: false },
   L: { axis: 0, layers: [-1], reversed: true },
   M: { axis: 0, layers: [0], reversed: true },
@@ -69,44 +73,28 @@ const TURNS: Record<string, Turn> = {
 };
 
 const buildQuarter = (turn: Turn): number[] => {
-  const perm = new Array<number>(54);
-  for (let i = 0; i < 54; i++) perm[i] = i;
+  const stickerMap = new Array<number>(54);
+  for (let i = 0; i < 54; i++) stickerMap[i] = i;
   for (let i = 0; i < 54; i++) {
     const { pos, normal } = PLACEMENTS[i];
     if (!turn.layers.includes(pos[turn.axis])) continue;
     const moved = placementKey(spin(pos, turn.axis, turn.reversed), spin(normal, turn.axis, turn.reversed));
     const destination = INDEX_BY_PLACEMENT.get(moved);
-    if (destination !== undefined) perm[destination] = i;
+    if (destination !== undefined) stickerMap[destination] = i;
   }
-  return perm;
+  return stickerMap;
 };
 
-const QUARTERS = new Map<string, number[]>();
-for (const [base, turn] of Object.entries(TURNS)) QUARTERS.set(base, buildQuarter(turn));
-
-const TOKEN_PERMS = new Map<string, number[] | null>();
-
-const quarterCountOf = (token: string): number => {
-  const suffix = token.slice(1);
-  const magnitude = parseInt(suffix, 10) || 1;
-  const signed = suffix.includes("'") ? -magnitude : magnitude;
-  return ((signed % 4) + 4) % 4;
+const buildStickerMapsByTurns =(turn: Turn): Record<1 | 2 | 3, number[]> => {
+  const quarter = buildQuarter(turn);
+  const half = quarter.map((source) => quarter[source]);
+  const threeQuarters = half.map((source) => quarter[source]);
+  return { 1: quarter, 2: half, 3: threeQuarters };
 };
 
-const permOf = (token: string): number[] | null => {
-  const cached = TOKEN_PERMS.get(token);
-  if (cached !== undefined) return cached;
-
-  const quarter = QUARTERS.get(token[0] ?? '');
-  const count = quarterCountOf(token);
-  let perm: number[] | null = null;
-  if (quarter && count > 0) {
-    perm = quarter;
-    for (let i = 1; i < count; i++) perm = perm.map((source) => quarter[source]);
-  }
-  TOKEN_PERMS.set(token, perm);
-  return perm;
-};
+const STICKER_MAPS_BY_LAYER = Object.fromEntries(
+  (Object.keys(TURNS) as Layer3x3[]).map((layer) => [layer, buildStickerMapsByTurns(TURNS[layer])]),
+) as Record<Layer3x3, Record<1 | 2 | 3, number[]>>;
 
 export const flattenState = (state: SimpleCubeState): Facelets => {
   const flat: Color[] = new Array<Color>(54);
@@ -118,11 +106,10 @@ export const flattenState = (state: SimpleCubeState): Facelets => {
   return flat;
 };
 
-export const applyMove = (state: Facelets, token: string): Facelets => {
-  const perm = permOf(token);
-  if (!perm) return state;
+export const applyMove = (state: Facelets, move: Move3x3): Facelets => {
+  const stickerMap = STICKER_MAPS_BY_LAYER[cube3x3.layer(move)][cube3x3.turns(move)];
   const next = new Array<Color>(54);
-  for (let i = 0; i < 54; i++) next[i] = state[perm[i]];
+  for (let i = 0; i < 54; i++) next[i] = state[stickerMap[i]];
   return next;
 };
 

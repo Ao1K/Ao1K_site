@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback, RefObject, useMemo } from 'react';
 import manualAlgs from '../../utils/manualAlgs';
-import { reverseMove } from '../../composables/recon/transformHTML';
+import { cube3x3 } from '../../utils/parser/cube3x3';
 import type { ImperativeRef } from './MovesTextEditor';
 
 interface ManualAlgVerifierProps {
@@ -17,18 +17,6 @@ const ACCEPT_TYPES: { key: Decision; label: string; shortcut: string }[] = [
   { key: 'accept_both', label: 'Accept for both', shortcut: '3' },
   { key: 'accept_none', label: 'Accept (no mods)', shortcut: '4' },
 ];
-
-const getAlgInverse = (alg: string): string => {
-  let reversedAlg = '';
-  const moves = alg.split(' ').reverse();
-  moves.forEach((move) => {
-    const reversedMove = reverseMove(move);
-    if (reversedMove) {
-      reversedAlg += reversedMove + ' ';
-    }
-  });
-  return reversedAlg.trim();
-};
 
 export default function ManualAlgVerifier({ scrambleRef, solutionRef }: ManualAlgVerifierProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -69,7 +57,7 @@ export default function ManualAlgVerifier({ scrambleRef, solutionRef }: ManualAl
   useEffect(() => {
     if (!currentAlg) return;
 
-    const inverse = getAlgInverse(currentAlg);
+    const inverse = cube3x3.format(cube3x3.invert(cube3x3.parse(currentAlg).moves));
     const applyAlgs = () => {
       if (scrambleRef.current) {
         scrambleRef.current.setContent(inverse);

@@ -135,7 +135,7 @@ canonicalization — so it gets dropped. Dropping it is safe because everything 
 constrained is U-invariant: the pair's own characters by assumption, and the cross and
 solved-pair characters because they are E/D-layer pieces.
 
-Prepending is done through `combineMoves`, so a preAUF that meets the core's first move merges
+Prepending is done through `cube3x3.combine` (`utils/parser/cube3x3.ts`), so a preAUF that meets the core's first move merges
 (`U` + `U'` cancels, `U` + `U` becomes `U2`). A leading `U` landing in front of a leading `y` is
 reordered to `y U` for display, matching `reorderAnglingInAlg` in `AlgCompiler.tsx`; the two
 commute, so the reorder is free.

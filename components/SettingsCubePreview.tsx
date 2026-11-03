@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react';
 import { createCubeScene, type CubeScene } from '../utils/cubeSceneRuntime.client';
 import { createCanvasPainter } from '../utils/cubeCanvasRender';
 import { buildColorHex, DEFAULT_SCENE_LOOK } from '../utils/cubeSceneAuthoring';
-import { faceletsFromState } from '../utils/cubeMoves';
+import { faceletsFromState } from '../utils/cubeFacelets';
 import { cameraView, INITIAL_ANGLES, ORBIT_DAMPING } from '../composables/recon/reconCube';
 import { SimpleCube } from '../composables/recon/SimpleCube';
 import type { CubeColors } from '../composables/useSettings';

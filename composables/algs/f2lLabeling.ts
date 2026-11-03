@@ -1,4 +1,4 @@
-import { tokenize } from './algMoves';
+import { cube3x3, type Layer3x3, type Move3x3 } from '../../utils/parser/cube3x3';
 import type { CubeState as SimpleCubeState, Color } from '../recon/SimpleCube';
 import {
   analyzeF2lPair,
@@ -12,7 +12,7 @@ import {
 
 export interface F2lSegment {
   label?: string;
-  moves: string[];
+  moves: Move3x3[];
   // index of the alg's own move each displayed move came from, since a turn may be split
   rawIndices?: number[];
 }
@@ -51,25 +51,14 @@ function groupRows(tagged: TaggedSegment[]): F2lBreakdownRow[] {
   return rows;
 }
 
-const baseOf = (token: string): string => token[0] ?? '';
+const SPLITTABLE = new Set<Layer3x3>(['R', 'r', 'L', 'l']);
 
-const magnitudeOf = (token: string): number => parseInt(token.slice(1), 10) || 1;
-
-const amountOf = (token: string): number => {
-  const signed = token.includes("'") ? -magnitudeOf(token) : magnitudeOf(token);
-  return ((signed % 4) + 4) % 4;
-};
-
-const ROTATIONS = new Set(['x', 'y', 'z']);
-const SPLITTABLE = new Set(['R', 'r', 'L', 'l']);
-
-const isU = (token: string): boolean => baseOf(token) === 'U';
-const isD = (token: string): boolean => baseOf(token) === 'D';
-const isRotation = (token: string): boolean => ROTATIONS.has(baseOf(token));
-const allU = (moves: string[]): boolean => moves.every(isU);
-const allD = (moves: string[]): boolean => moves.every(isD);
-const cancels = (a: string, b: string): boolean =>
-  baseOf(a) === baseOf(b) && (amountOf(a) + amountOf(b)) % 4 === 0;
+const isU = (move: Move3x3): boolean => cube3x3.layer(move) === 'U';
+const isD = (move: Move3x3): boolean => cube3x3.layer(move) === 'D';
+const allU = (moves: Move3x3[]): boolean => moves.every(isU);
+const allD = (moves: Move3x3[]): boolean => moves.every(isD);
+const cancels = (a: Move3x3, b: Move3x3): boolean =>
+  cube3x3.layer(a) === cube3x3.layer(b) && (cube3x3.turns(a) + cube3x3.turns(b)) % 4 === 0;
 
 const EO_ROTATION_LABEL = 'Rotate based on EO';
 const PLAIN_ROTATION_LABEL = 'Rotate';
@@ -88,7 +77,7 @@ const rotationLabel = (
   return wasBad && isGood ? EO_ROTATION_LABEL : PLAIN_ROTATION_LABEL;
 };
 
-function bodyStates(tokens: string[], start?: Facelets | null): (Facelets | null)[] {
+function bodyStates(tokens: Move3x3[], start?: Facelets | null): (Facelets | null)[] {
   const states: (Facelets | null)[] = tokens.map(() => null);
   if (!start) return states;
 
@@ -100,7 +89,7 @@ function bodyStates(tokens: string[], start?: Facelets | null): (Facelets | null
   return states;
 }
 
-const UDLabel = (moves: string[]): string | undefined => {
+const UDLabel = (moves: Move3x3[]): string | undefined => {
   if (allU(moves)) return 'AUF';
   if (allD(moves)) return 'Move D layer';
   return undefined;
@@ -108,7 +97,7 @@ const UDLabel = (moves: string[]): string | undefined => {
 
 // identify portions that aren't using labelStandard()
 function labelSlice(
-  moves: string[],
+  moves: Move3x3[],
   state: Facelets | null,
   pairColors?: [Color, Color] | null,
 ): TaggedSegment[] {
@@ -143,16 +132,16 @@ function expandSpans(
   return segments;
 }
 
-function isKeyholeWindow(window: string[]): boolean {
+function isKeyholeWindow(window: Move3x3[]): boolean {
   const [open, first, middle, last, restore] = window;
-  if (baseOf(open) !== 'D' || baseOf(restore) !== 'D' || !cancels(open, restore)) return false;
-  const side = baseOf(first);
+  if (!isD(open) || !isD(restore) || !cancels(open, restore)) return false;
+  const side = cube3x3.layer(first);
   if (side !== 'R' && side !== 'L') return false;
   return isU(middle) && cancels(first, last);
 }
 
 // keyhole only makes sense once the cross is done, so a window that opens before then is not one
-function findKeyholeWindows(tokens: string[], states: (Facelets | null)[]): number[] {
+function findKeyholeWindows(tokens: Move3x3[], states: (Facelets | null)[]): number[] {
   const starts: number[] = [];
   let i = 0;
   while (i + 5 <= tokens.length) {
@@ -168,7 +157,7 @@ function findKeyholeWindows(tokens: string[], states: (Facelets | null)[]): numb
 }
 
 function labelKeyhole(
-  body: string[],
+  body: Move3x3[],
   start?: Facelets | null,
   pairColors?: [Color, Color] | null,
 ): TaggedSegment[] | null {
@@ -194,10 +183,10 @@ function labelKeyhole(
   return expandSpans(states, spans, pairColors);
 }
 
-const RUD = new Set(['R', 'U', 'D']);
-const LUD = new Set(['L', 'U', 'D']);
+const RUD = new Set<Layer3x3>(['R', 'U', 'D']);
+const LUD = new Set<Layer3x3>(['L', 'U', 'D']);
 
-const isInverseOf = (a: string[], b: string[]): boolean =>
+const isInverseOf = (a: Move3x3[], b: Move3x3[]): boolean =>
   a.length === b.length && a.every((token, i) => cancels(token, b[b.length - 1 - i]));
 
 interface CandidateGroup {
@@ -207,15 +196,15 @@ interface CandidateGroup {
 }
 
 // a span of just (y)RU or (y)LU can be explained in other ways, so only RUD or LUD spans qualify
-const spanQualifies = (span: string[]): boolean => {
+const spanQualifies = (span: Move3x3[]): boolean => {
   if (!span.some((token) => isD(token))) return false;
-  const fits = (allowed: Set<string>) => span.every((token) => allowed.has(baseOf(token)));
+  const fits = (allowed: Set<Layer3x3>) => span.every((token) => allowed.has(cube3x3.layer(token)));
   return fits(RUD) || fits(LUD);
 };
 
 // create a process that uses a sliding window and checks for at least 3 moves where the normal and
 // inverse are both present, for example, R D R' and R D' R'. We'll call these candidate groups.
-function findCandidateGroups(tokens: string[], aufEnd: number): CandidateGroup[] {
+function findCandidateGroups(tokens: Move3x3[], aufEnd: number): CandidateGroup[] {
   const groups: CandidateGroup[] = [];
   // increase window size until size is greater or equal to total number of moves divided by 2
   const maxSize = Math.max(3, Math.ceil(tokens.length / 2));
@@ -262,14 +251,14 @@ function selectCandidateGroups(groups: CandidateGroup[]): CandidateGroup[] {
   return best;
 }
 
-const restoreLabel = (moves: string[]): string => {
+const restoreLabel = (moves: Move3x3[]): string => {
   if (allU(moves)) return 'Undo AUF';
   if (allD(moves)) return 'Undo D move';
   return 'Undo interchange';
 };
 
 function labelCommutatorOrConjugate(
-  body: string[],
+  body: Move3x3[],
   aufEnd: number,
   start?: Facelets | null,
   pairColors?: [Color, Color] | null,
@@ -314,22 +303,24 @@ function labelCommutatorOrConjugate(
 
 // a double or triple outer-slice turn can pass through cross-solved on its way, so the paths
 // it could have been turned along are tried before treating it as one atomic move
-function quarterPaths(token: string): string[][] {
-  if (!SPLITTABLE.has(baseOf(token))) return [];
-  const magnitude = magnitudeOf(token);
+function quarterPaths(token: Move3x3): Move3x3[][] {
+  const layer = cube3x3.layer(token);
+  if (!SPLITTABLE.has(layer)) return [];
+  const amount = cube3x3.amount(token);
+  const magnitude = Math.abs(amount);
   if (magnitude === 2) {
-    const forward = baseOf(token);
-    const backward = `${forward}'`;
+    const forward = cube3x3.make(layer, 1);
+    const backward = cube3x3.make(layer, -1);
     return [[forward, forward], [backward, backward]];
   }
   if (magnitude === 3) {
-    const quarter = token.includes("'") ? `${baseOf(token)}'` : baseOf(token);
+    const quarter = cube3x3.make(layer, amount > 0 ? 1 : -1);
     return [[quarter, quarter, quarter]];
   }
   return [];
 }
 
-function mapExpandedToRaw(raw: string[], expanded: string[]): number[] {
+function mapExpandedToRaw(raw: Move3x3[], expanded: Move3x3[]): number[] {
   const map: number[] = [];
   let e = 0;
   for (let r = 0; r < raw.length && e < expanded.length; r++) {
@@ -337,10 +328,10 @@ function mapExpandedToRaw(raw: string[], expanded: string[]): number[] {
       map[e++] = r;
       continue;
     }
-    const target = amountOf(raw[r]);
+    const target = cube3x3.turns(raw[r]);
     let amount = 0;
-    while (e < expanded.length && baseOf(expanded[e]) === baseOf(raw[r])) {
-      amount = (amount + amountOf(expanded[e])) % 4;
+    while (e < expanded.length && cube3x3.layer(expanded[e]) === cube3x3.layer(raw[r])) {
+      amount = (amount + cube3x3.turns(expanded[e])) % 4;
       map[e++] = r;
       if (amount === target) break;
     }
@@ -349,7 +340,7 @@ function mapExpandedToRaw(raw: string[], expanded: string[]): number[] {
   return map;
 }
 
-function withRawIndices(segments: TaggedSegment[], raw: string[]): TaggedSegment[] {
+function withRawIndices(segments: TaggedSegment[], raw: Move3x3[]): TaggedSegment[] {
   const map = mapExpandedToRaw(raw, segments.flatMap((segment) => segment.moves));
   let offset = 0;
   return segments.map((segment) => {
@@ -360,12 +351,12 @@ function withRawIndices(segments: TaggedSegment[], raw: string[]): TaggedSegment
 }
 
 interface Breakpoint {
-  moves: string[];
+  moves: Move3x3[];
   state: Facelets;
 }
 
-function expandTurns(start: Facelets, tokens: string[]): string[] {
-  const expanded: string[] = [];
+function expandTurns(start: Facelets, tokens: Move3x3[]): Move3x3[] {
+  const expanded: Move3x3[] = [];
   let state = start;
   let wasSolved = crossSolved(state);
 
@@ -400,11 +391,11 @@ function expandTurns(start: Facelets, tokens: string[]): string[] {
   return expanded;
 }
 
-function splitAtCrossSolved(start: Facelets, tokens: string[]): Breakpoint[] {
+function splitAtCrossSolved(start: Facelets, tokens: Move3x3[]): Breakpoint[] {
   const groups: Breakpoint[] = [];
   let state = start;
   let wasSolved = crossSolved(state);
-  let current: string[] = [];
+  let current: Move3x3[] = [];
 
   for (const token of tokens) {
     current.push(token);
@@ -434,14 +425,14 @@ const LONG_INSERTS = new Set<string>([
   "L' B' U B L",  
 ]);
 
-const isValidInsert = (moves: string[]): boolean => {
+const isValidInsert = (moves: Move3x3[]): boolean => {
   let auf = 0;
   while (auf < moves.length && isU(moves[auf])) auf++;
   const insert = moves.slice(auf);
-  return insert.length === 3 || LONG_INSERTS.has(insert.join(' '));
+  return insert.length === 3 || LONG_INSERTS.has(cube3x3.format(insert));
 };
 
-function transitionLabel(before: F2lPairInfo, after: F2lPairInfo, moves: string[]): string | undefined {
+function transitionLabel(before: F2lPairInfo, after: F2lPairInfo, moves: Move3x3[]): string | undefined {
   if (allU(moves)) return 'AUF';
   if (after.pairSolved && !before.pairSolved) {
     return isValidInsert(moves) ? 'Insert pair' : undefined;
@@ -475,7 +466,7 @@ function transitionLabel(before: F2lPairInfo, after: F2lPairInfo, moves: string[
   return undefined;
 }
 
-function labelStandard(body: string[], start: Facelets, pairColors: [Color, Color]): F2lSegment[] | null {
+function labelStandard(body: Move3x3[], start: Facelets, pairColors: [Color, Color]): F2lSegment[] | null {
   const segments: F2lSegment[] = [];
   const groups = splitAtCrossSolved(start, body);
 
@@ -493,7 +484,7 @@ function labelStandard(body: string[], start: Facelets, pairColors: [Color, Colo
 }
 
 interface Run {
-  moves: string[];
+  moves: Move3x3[];
   rotation: boolean;
   start: Facelets | null;
   end: Facelets | null;
@@ -501,15 +492,15 @@ interface Run {
 
 // rotations stand on their own, so the alg is cut into alternating rotation and move runs and
 // each run is read in the single frame it lives in
-function splitAtRotations(tokens: string[], start: Facelets | null): Run[] {
+function splitAtRotations(tokens: Move3x3[], start: Facelets | null): Run[] {
   const runs: Run[] = [];
   let state = start;
   let index = 0;
 
   while (index < tokens.length) {
-    const rotation = isRotation(tokens[index]);
+    const rotation = cube3x3.isRotation(tokens[index]);
     const from = index;
-    while (index < tokens.length && isRotation(tokens[index]) === rotation) index++;
+    while (index < tokens.length && cube3x3.isRotation(tokens[index]) === rotation) index++;
 
     const moves = tokens.slice(from, index);
     let end = state;
@@ -539,11 +530,10 @@ function labelRun(run: Run, aufEnd: number, pairColors?: [Color, Color] | null):
  * Returns null when nothing could be labeled, so the card can skip the dropdown.
  */
 export function labelF2lAlg(
-  alg: string,
+  raw: Move3x3[],
   caseState?: SimpleCubeState | null,
   pairColors?: [Color, Color] | null,
 ): F2lBreakdownRow[] | null {
-  const raw = tokenize(alg);
   if (raw.length === 0) return null;
 
   const start = caseState ? flattenState(caseState) : null;

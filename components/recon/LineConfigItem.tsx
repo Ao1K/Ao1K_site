@@ -2,6 +2,7 @@ import { memo, type ComponentProps, type ReactNode } from 'react';
 import LockIcon from '../icons/lock';
 import UnlockIcon from '../icons/unlock';
 import UnfoldedCube from './UnfoldedCube';
+import { cube3x3, type Move3x3 } from '../../utils/parser/cube3x3';
 
 export const MIN_LINE_PCT = 1;
 
@@ -12,7 +13,7 @@ const formatNumber = (n: number, decimals = 2) => {
 
 export interface LineEntry {
   index: number;
-  moves: string[];
+  moves: Move3x3[];
   // moveDurations are cube-animation durations in ms for each move
   moveDurations: number[];
   totalCubeDuration: number;
@@ -60,7 +61,7 @@ const LineConfigItem = memo(function LineConfigItem({
   onSetLineHighlight,
 }: LineConfigItemProps) {
   const seconds = (pct / 100) * totalDuration;
-  const movePreview = entry.moves.join(' ');
+  const movePreview = cube3x3.format(entry.moves);
 
   return (
     <li className="rounded-sm border border-neutral-600 bg-dark/30 py-2 px-2">

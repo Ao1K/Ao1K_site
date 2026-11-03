@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { type StepInfo, type F2LDirection } from '../../composables/recon/SimpleCubeInterpreter';
 import { ORIENTATIONS, FACE_COLOR_NAME, type FaceKey } from '../../composables/algs/cubePaint';
 import { SimpleCube, type CubeState, type Color } from '../../composables/recon/SimpleCube';
-import { tokenize } from '../../composables/algs/algMoves';
+import { cube3x3, type Move3x3 } from '../../utils/parser/cube3x3';
 import {
   getStepIconDescriptor,
   type ColorConfig,
@@ -28,7 +28,7 @@ import DropdownIcon from '../icons/dropdown';
 import Parrot from '../icons/parrot';
 
 interface F2lAlgCardProps {
-  alg: string;
+  moves: Move3x3[];
   // the interpreter's step labels for this suggestion (used to draw the pair icon)
   steps: string[];
   cross: FaceKey;
@@ -43,7 +43,7 @@ interface F2lAlgCardProps {
   highlightedMove: number;
   isFavorited: boolean;
   // the card picks the form to animate: the alg, or the breakdown's split-up moves when open
-  onPlay: (playbackAlg: string) => void;
+  onPlay: (playbackMoves: Move3x3[]) => void;
   onToggleFavorite: () => void;
 }
 
@@ -99,8 +99,8 @@ function rotateDirections(
 // solved cube and reading the front center, so wide/slice moves that rotate the frame
 // without a literal y (e.g. wide D) are caught. Assumes the cross stays on the bottom.
 const FRONT_CENTER_TURNS: Record<string, number> = { G: 0, R: 1, B: 2, O: 3 };
-function netAlgYTurns(alg: string): number {
-  const state = new SimpleCube().getCubeState(tokenize(alg));
+function netAlgYTurns(moves: Move3x3[]): number {
+  const state = new SimpleCube().getCubeState(moves);
   return FRONT_CENTER_TURNS[state[2][1][1]] ?? 0;
 }
 
@@ -168,7 +168,7 @@ const iconButtonClass =
 
 const moveHighlightClass = 'text-dark bg-primary-100 rounded-xs shadow-[0_0_0_2px_var(--color-primary-100)]';
 
-function MoveList({ moves, indices, highlighted }: { moves: string[]; indices?: number[]; highlighted: number }) {
+function MoveList({ moves, indices, highlighted }: { moves: Move3x3[]; indices?: number[]; highlighted: number }) {
   return (
     <>
       {moves.map((move, i) => (
@@ -212,35 +212,34 @@ function SegmentRow({ segment, positions, playingBreakdown, highlighted }: Break
   );
 }
 
-const F2lAlgCard =({ alg, steps, cross, caseState, pairColors, yTurns, colorConfig, isPlaying, highlightedMove, isFavorited, onPlay, onToggleFavorite }: F2lAlgCardProps) => {
+const F2lAlgCard =({ moves, steps, cross, caseState, pairColors, yTurns, colorConfig, isPlaying, highlightedMove, isFavorited, onPlay, onToggleFavorite }: F2lAlgCardProps) => {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [parrotAnimating, setParrotAnimating] = useState(false);
   const [playingBreakdown, setPlayingBreakdown] = useState(false);
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const labeled = useMemo(() => labelF2lAlg(alg, caseState, pairColors), [alg, caseState, pairColors]);
+  const labeled = useMemo(() => labelF2lAlg(moves, caseState, pairColors), [moves, caseState, pairColors]);
   const hasNotableDropdown = !!labeled?.some((row) =>
     row.segments.some((segment) => segment.label !== undefined && !UNINFORMATIVE_LABELS.has(segment.label))
   );
 
-  const tokens = useMemo(() => tokenize(alg), [alg]);
   const showsBreakdown = hasNotableDropdown && open;
 
   const breakdown = useMemo(() => {
     const rows: BreakdownRow[] = [];
-    const moves: string[] = [];
+    const playbackMoves: Move3x3[] = [];
     const toToken: number[] = [];
     for (const row of labeled ?? []) {
       const lines: BreakdownLine[] = [];
       for (const segment of row.segments) {
-        lines.push({ segment, positions: segment.moves.map((_, i) => moves.length + i) });
-        moves.push(...segment.moves);
+        lines.push({ segment, positions: segment.moves.map((_, i) => playbackMoves.length + i) });
+        playbackMoves.push(...segment.moves);
         toToken.push(...(segment.rawIndices ?? []));
       }
       rows.push({ name: row.name, lines });
     }
-    return { rows, playbackAlg: moves.join(' '), toToken };
+    return { rows, playbackMoves, toToken };
   }, [labeled]);
 
   // the index counts moves in whichever form is animating, so translate it for the other one
@@ -248,11 +247,11 @@ const F2lAlgCard =({ alg, steps, cross, caseState, pairColors, yTurns, colorConf
   const highlightedToken = playingBreakdown ? breakdown.toToken[highlighted] ?? -1 : highlighted;
 
   // rotate the pair icon by the view angle plus the alg's own net rotation
-  const algTurns = useMemo(() => netAlgYTurns(alg), [alg]);
+  const algTurns = useMemo(() => netAlgYTurns(moves), [moves]);
   const iconTurns = yTurns + algTurns;
 
   const handleCopy = () => {
-    navigator.clipboard?.writeText(alg).then(() => {
+    navigator.clipboard?.writeText(cube3x3.format(moves)).then(() => {
       setCopied(true);
       if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
       copyTimerRef.current = setTimeout(() => setCopied(false), 1200);
@@ -261,7 +260,7 @@ const F2lAlgCard =({ alg, steps, cross, caseState, pairColors, yTurns, colorConf
 
   const handlePlay = () => {
     setPlayingBreakdown(showsBreakdown);
-    onPlay(showsBreakdown ? breakdown.playbackAlg : alg);
+    onPlay(showsBreakdown ? breakdown.playbackMoves : moves);
   };
 
   const handleToggleFavorite = () => {
@@ -324,7 +323,7 @@ const F2lAlgCard =({ alg, steps, cross, caseState, pairColors, yTurns, colorConf
         </span>
 
         <span className="grow min-w-0 text-primary-100 tracking-wide wrap-break-word text-md">
-          <MoveList moves={tokens} highlighted={showsBreakdown ? -1 : highlightedToken} />
+          <MoveList moves={moves} highlighted={showsBreakdown ? -1 : highlightedToken} />
         </span>
 
         <span className="relative flex shrink-0 items-center">

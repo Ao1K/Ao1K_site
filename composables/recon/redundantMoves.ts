@@ -1,80 +1,77 @@
-import { MOVE_TABLE } from '../../utils/cubeMoves';
-import { formatMove, parseMove } from '../../utils/moveUtils';
+import { cube3x3 } from '../../utils/parser/cube3x3';
+import type { Layer3x3, Move3x3 } from '../../utils/parser/cube3x3';
+import type { Amount, Axis } from '../../utils/parser';
 import type { FeedbackCategory } from '../../utils/sharedConstants';
 import type { FeedbackNote } from '../../components/recon/FeedbackNotes';
 
 export type RedundancyCategory = 'none' | 'combine' | 'cancel' | 'exception';
 
 export interface MoveGroup {
-  moves: string[];
+  moves: Move3x3[];
   category: RedundancyCategory;
   group: number;
 }
 
 interface AxisMove {
   index: number;
-  base: string;
-  amount: number;
+  move: Move3x3;
+  layer: Layer3x3;
+  turns: number;
 }
 
 interface Redundancy {
   category: Exclude<RedundancyCategory, 'none'>;
-  base: string;
-  totalAmount: number;
+  layer: Layer3x3;
+  totalTurns: number;
   key: string;
 }
 
-function splitAxisRuns(moves: readonly string[]): AxisMove[][] {
+function splitAxisRuns(moves: readonly Move3x3[]): AxisMove[][] {
   const runs: AxisMove[][] = [];
-  let currentAxis: string | null = null;
+  let currentAxis: Axis | null = null;
 
   moves.forEach((move, index) => {
-    const parsed = parseMove(move);
-    const axis = parsed ? MOVE_TABLE[parsed.base]?.axis : undefined;
-    if (!parsed || !axis) {
-      currentAxis = null;
-      return;
-    }
+    const { axis } = cube3x3.geometry(move);
     if (axis !== currentAxis) runs.push([]);
     currentAxis = axis;
-    runs[runs.length - 1].push({ index, ...parsed });
+    runs[runs.length - 1].push({ index, move, layer: cube3x3.layer(move), turns: cube3x3.turns(move) });
   });
 
   return runs;
 }
 
-const isOppositeFace = (a: string, b: string): boolean => {
-  const [layerA] = MOVE_TABLE[a].layers;
-  const [layerB] = MOVE_TABLE[b].layers;
-  const isOuterFace = (base: string) => MOVE_TABLE[base].layers.length === 1 && MOVE_TABLE[base].layers[0] !== 0;
-  return isOuterFace(a) && isOuterFace(b) && layerA === -layerB;
+const isOppositeFace = (a: Move3x3, b: Move3x3): boolean => {
+  const layersA = cube3x3.geometry(a).layers;
+  const layersB = cube3x3.geometry(b).layers;
+  const isOuterFace = (layers: readonly number[]) => layers.length === 1 && layers[0] !== 0;
+  return isOuterFace(layersA) && isOuterFace(layersB) && layersA[0] === -layersB[0];
 };
 
 const isSimultaneousOppositeTurn = (run: readonly AxisMove[]): boolean =>
   run.length === 3 &&
-  run[0].base === run[2].base &&
-  isOppositeFace(run[0].base, run[1].base) &&
-  run.every(move => move.amount % 2 === 1);
+  run[0].layer === run[2].layer &&
+  isOppositeFace(run[0].move, run[1].move) &&
+  run.every(move => move.turns % 2 === 1);
 
-function findRedundancies(moves: readonly string[]): Map<number, Redundancy> {
+function findRedundancies(moves: readonly Move3x3[]): Map<number, Redundancy> {
   const redundancyByIndex = new Map<number, Redundancy>();
 
   splitAxisRuns(moves).forEach((run, runIndex) => {
-    const movesByBase = new Map<string, AxisMove[]>();
-    run.forEach(move => movesByBase.set(move.base, [...(movesByBase.get(move.base) ?? []), move]));
+    const movesByLayer = new Map<Layer3x3, AxisMove[]>();
+    run.forEach(move => movesByLayer.set(move.layer, [...(movesByLayer.get(move.layer) ?? []), move]));
 
-    movesByBase.forEach((sameBaseMoves, base) => {
-      if (sameBaseMoves.length < 2) return;
-      const totalAmount = sameBaseMoves.reduce((sum, move) => sum + move.amount, 0) % 4;
-      const category = totalAmount === 0 ? 'cancel' : isSimultaneousOppositeTurn(run) ? 'exception' : 'combine';
-      sameBaseMoves.forEach(move => redundancyByIndex.set(move.index, { category, base, totalAmount, key: `${runIndex}:${base}` }));
+    movesByLayer.forEach((sameLayerMoves, layer) => {
+      if (sameLayerMoves.length < 2) return;
+      const totalTurns = sameLayerMoves.reduce((sum, move) => sum + move.turns, 0) % 4;
+      const category = totalTurns === 0 ? 'cancel' : isSimultaneousOppositeTurn(run) ? 'exception' : 'combine';
+      sameLayerMoves.forEach(move => redundancyByIndex.set(move.index, { category, layer, totalTurns, key: `${runIndex}:${layer}` }));
     });
   });
 
   return redundancyByIndex;
 }
 
-export function groupRedundantMoves(moves: readonly string[]): MoveGroup[] {
+export function groupRedundantMoves(moves: readonly Move3x3[]): MoveGroup[] {
   const redundancyByIndex = findRedundancies(moves);
   const groupNumbers = new Map<string, number>();
   const groups: MoveGroup[] = [];
@@ -103,7 +100,7 @@ export function groupRedundantMoves(moves: readonly string[]): MoveGroup[] {
   return groups;
 }
 
-function mergeRedundantMovesOnce(moves: readonly string[]): string[] {
+function mergeRedundantMovesOnce(moves: readonly Move3x3[]): Move3x3[] {
   const redundancyByIndex = findRedundancies(moves);
   const mergedKeys = new Set<string>();
 
@@ -112,7 +109,8 @@ function mergeRedundantMovesOnce(moves: readonly string[]): string[] {
     if (!redundancy || redundancy.category === 'exception') return [move];
     if (mergedKeys.has(redundancy.key)) return [];
     mergedKeys.add(redundancy.key);
-    return redundancy.category === 'cancel' ? [] : [formatMove(redundancy.base, redundancy.totalAmount)];
+    const combinedAmount = (redundancy.totalTurns === 3 ? -1 : redundancy.totalTurns) as Amount;
+    return redundancy.category === 'cancel' ? [] : [cube3x3.make(redundancy.layer, combinedAmount)];
   });
 }
 
@@ -129,7 +127,7 @@ const mistakeNoteCategory = (count: number): FeedbackCategory => count === 1 ? '
 
 const pluralTimes = (count: number) => count === 1 ? `${count} time` : `${count} times`;
 
-export function reviewRedundantMoves(moves: readonly string[]): RedundancyReview {
+export function reviewRedundantMoves(moves: readonly Move3x3[]): RedundancyReview {
   const moveGroups = groupRedundantMoves(moves);
   const combineCount = countGroups(moveGroups, 'combine');
   const cancelCount = countGroups(moveGroups, 'cancel');
@@ -141,7 +139,7 @@ export function reviewRedundantMoves(moves: readonly string[]): RedundancyReview
   return { moveGroups, notes, mistakeCount: combineCount + cancelCount };
 }
 
-export function removeRedundantMoves(moves: readonly string[]): string[] {
+export function removeRedundantMoves(moves: readonly Move3x3[]): Move3x3[] {
   let current = [...moves];
   let merged = mergeRedundantMovesOnce(current);
   while (merged.length < current.length) {

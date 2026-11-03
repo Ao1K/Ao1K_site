@@ -5,9 +5,9 @@ import { customDecodeURL } from '../../../composables/recon/urlEncoding';
 import { createPreviewContent, type ScreenshotData as PreviewData, type SolutionLine } from '../../../composables/recon/ScreenshotManager';
 import { SimpleCube } from '../../../composables/recon/SimpleCube';
 import { SimpleCubeInterpreter, type StepInfo } from '../../../composables/recon/SimpleCubeInterpreter';
-import parseText from '../../../composables/recon/validateTextInput';
-import validationToArray from '../../../composables/recon/validationToMoves';
 import { cleanMovesText, movesFromText } from '../../../composables/recon/parseMovesText';
+import { expandLine, parseLine, segmentStyle, type SegmentStyle } from '../../../composables/recon/editorDocument';
+import { cube3x3 } from '../../../utils/parser/cube3x3';
 import { getLineStepInfo, getNewSteps } from '../../../composables/recon/getLineStepInfo';
 import { fetchDailyScramble } from '../../../utils/fetchDailyScramble';
 import { parsePenaltyParam } from '../../../composables/recon/penaltyStatus';
@@ -75,11 +75,10 @@ function computeLineIcons(
 }
 
 function renderColoredText(text: string): React.ReactNode {
-  const parsed = parseText(text);
-  const elements: React.ReactNode[] = [];
-  
-  const getColor = (type: string) => {
-    switch(type) {
+  const segments = parseLine(text, cube3x3);
+
+  const getColor = (style: SegmentStyle) => {
+    switch(style) {
       case 'invalid': return '#ef4444';
       case 'comment': return '#a3a3a3';
       case 'move': return '#d4d4d4'; // default text color
@@ -89,32 +88,22 @@ function renderColoredText(text: string): React.ReactNode {
     }
   };
 
-  if (parsed.length === 0) return null;
+  if (segments.length === 0) return null;
 
-  let currentString = '';
-  let lastType = parsed[0][1];
-  
-  for (const [char, type] of parsed) {
-    // if type changes, push the accumulated string with the previous type's color
-    if (type !== 'space' && type !== lastType) {
-      elements.push(
-        <span key={elements.length} style={{ color: getColor(lastType) }}>{currentString.replace(/\s+/g, "\u00a0")}</span>
-      );
-      currentString = '';
-      lastType = type;
-    }
-    currentString += char;
-  }
-  
-  if (currentString.length > 0) {
-    elements.push(
-      <span key={elements.length} style={{ color: getColor(lastType) }}>{currentString.replace(/\s+/g, "\u00a0")}</span>
-    );
+  const runs: { style: SegmentStyle; text: string }[] = [];
+  for (const segment of segments) {
+    const style = segmentStyle(segment);
+    const piece = text.slice(segment.start, segment.end);
+    const lastRun = runs[runs.length - 1];
+    if (lastRun && (segment.kind === 'space' || style === lastRun.style)) lastRun.text += piece;
+    else runs.push({ style, text: piece });
   }
 
   return (
     <div style={{ display: 'flex' }}>
-      {elements}
+      {runs.map((run, index) => (
+        <span key={index} style={{ color: getColor(run.style) }}>{run.text.replace(/\s+/g, "\u00a0")}</span>
+      ))}
     </div>
   );
 }
@@ -168,9 +157,7 @@ export async function GET(request: Request) {
     
     const solutionData = solutionLinesText.map(lineText => {
       // Parse for logic (moves)
-      const parsed = parseText(lineText);
-      const tokens = validationToArray(parsed, 300);
-      const moves = tokens.map(t => t.value);
+      const moves = expandLine(parseLine(lineText, cube3x3), 300);
       
       // Parse for display (colors)
       const rendered = renderColoredText(lineText);
@@ -189,7 +176,7 @@ export async function GET(request: Request) {
 
     // calculate stats
     const flatMoves = solutionMoveLines.flat();
-    const calculatedStm = flatMoves.filter(move => move.match(/[^xyz2']/g)).length;
+    const calculatedStm = cube3x3.count(flatMoves, 'stm');
     const timeNum = time ? parseFloat(time) : 0;
     // only use time if it's valid (not NaN, not 0, not negative, not > 99999)
     const isValidTime = !isNaN(timeNum) && timeNum > 0 && timeNum <= 99999;

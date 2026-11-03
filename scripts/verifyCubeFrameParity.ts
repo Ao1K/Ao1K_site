@@ -1,8 +1,10 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { SimpleCube } from '../composables/recon/SimpleCube';
+import { cube3x3 } from '../utils/parser/cube3x3';
+import type { Move3x3 } from '../utils/parser/cube3x3';
 import { CUBE_SCENE_CSS } from '../utils/cubeSceneCss';
-import { faceletsFromState } from '../utils/cubeMoves';
+import { faceletsFromState } from '../utils/cubeFacelets';
 import { islandFrameZero, type SceneIsland } from '../utils/cubeSceneIsland';
 import { cubieWorld } from '../utils/cubeSceneRuntime.client';
 import {
@@ -16,11 +18,11 @@ import {
 
 const COLORS = { W: '#ffffff', Y: '#ffd500', G: '#009b48', R: '#b71234', B: '#0046ad', O: '#ff5800' };
 
-const SCRAMBLES = [
-  '',
-  "R U R' U'",
-  "D2 F' L2 B U R2 F' D B2 R U'",
-  "M2 E2 S2 x y' z2",
+const SCRAMBLES: Move3x3[][] = [
+  [],
+  ['R', 'U', "R'", "U'"],
+  ['D2', "F'", 'L2', 'B', 'U', 'R2', "F'", 'D', 'B2', 'R', "U'"],
+  ['M2', 'E2', 'S2', 'x', "y'", 'z2'],
 ];
 
 const ANGLES = [
@@ -36,9 +38,8 @@ const HIGHLIGHTS: Array<string[] | null> = [
   [],
 ];
 
-function faceletsFor(scramble: string): string {
-  const moves = scramble.trim().split(/\s+/).filter(Boolean);
-  return faceletsFromState(new SimpleCube().getCubeState(moves));
+function faceletsFor(scramble: Move3x3[]): string {
+  return faceletsFromState(new SimpleCube().getCubeState(scramble));
 }
 
 // what the runtime paints on its first frame, reached through the same helpers createScene uses
@@ -104,7 +105,7 @@ function main() {
               checked++;
               if (server !== client) {
                 failures.push(
-                  `scramble="${scramble}" angles=${JSON.stringify(angles)} hints=${hints} ` +
+                  `scramble="${cube3x3.format(scramble)}" angles=${JSON.stringify(angles)} hints=${hints} ` +
                   `labels=${labels} startHighlighted=${startHighlighted} highlight=${JSON.stringify(highlight)}`
                 );
               }

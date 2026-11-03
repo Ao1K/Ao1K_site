@@ -10,12 +10,12 @@
 
 import { useCallback, useSyncExternalStore } from 'react';
 import type { Algset } from '../recon/SimpleCubeInterpreter';
-import { splitLeadingAuf } from '../../utils/collapseAufVariants';
-import { stripTrailingAuf } from './algMoves';
+import { aufFreeAlg, aufFreeKey } from './algMoves';
+import { cube3x3, type Move3x3 } from '../../utils/parser/cube3x3';
 
 export type AlgStatus = 'learning' | 'learned' | 'none';
 
-export interface FavoriteAlg {
+export interface StoredFavorite {
   alg: string;
   status: AlgStatus;
   // manual algset description override (max 6 chars). Absent = use the detected algset.
@@ -27,9 +27,13 @@ export interface FavoriteAlg {
   sourceAlgset?: Algset;
 }
 
+export interface FavoriteAlg extends Omit<StoredFavorite, 'alg'> {
+  moves: Move3x3[];
+}
+
 interface FavoritesEnvelope {
   version: number;
-  favorites: FavoriteAlg[];
+  favorites: StoredFavorite[];
 }
 
 const STORAGE_KEY = 'ao1k.algFavorites';
@@ -41,11 +45,11 @@ const EMPTY: FavoriteAlg[] = [];
 
 // forward migrations keyed by the version they upgrade from. To change the stored shape, bump
 // STORE_VERSION and add the step that turns version N favorites into version N+1 favorites.
-const MIGRATIONS: Record<number, (favorites: FavoriteAlg[]) => FavoriteAlg[]> = {};
+const MIGRATIONS: Record<number, (favorites: StoredFavorite[]) => StoredFavorite[]> = {};
 
 // runs the migration steps from fromVersion up to STORE_VERSION. The CSV import reads a version
 // out of the file and calls this too, so both it and local storage share one set of steps.
-export const migrateFavorites = (favorites: FavoriteAlg[], fromVersion: number): FavoriteAlg[] => {
+export const migrateFavorites = (favorites: StoredFavorite[], fromVersion: number): FavoriteAlg[] => {
   let version = fromVersion;
   let migrated = favorites;
   while (version < STORE_VERSION) {
@@ -53,7 +57,7 @@ export const migrateFavorites = (favorites: FavoriteAlg[], fromVersion: number):
     if (step) migrated = step(migrated);
     version += 1;
   }
-  return migrated;
+  return migrated.map(({ alg, ...rest }) => ({ ...rest, moves: cube3x3.parse(alg).moves }));
 };
 
 const isEnvelope = (value: unknown): value is FavoritesEnvelope =>
@@ -64,13 +68,13 @@ const isEnvelope = (value: unknown): value is FavoritesEnvelope =>
 // version 0; a valid envelope carries its own version; anything else is discarded as empty.
 const migrate = (parsed: unknown): FavoriteAlg[] => {
   let version: number;
-  let favorites: FavoriteAlg[];
+  let favorites: StoredFavorite[];
   if (isEnvelope(parsed)) {
     version = Number(parsed.version) || 0;
     favorites = parsed.favorites;
   } else if (Array.isArray(parsed)) {
     version = 0;
-    favorites = parsed as FavoriteAlg[];
+    favorites = parsed as StoredFavorite[];
   } else {
     return EMPTY;
   }
@@ -121,7 +125,8 @@ const getServerSnapshot = (): FavoriteAlg[] => EMPTY;
 
 const write = (favorites: FavoriteAlg[]) => {
   if (typeof window === 'undefined') return;
-  const raw = JSON.stringify({ version: STORE_VERSION, favorites } satisfies FavoritesEnvelope);
+  const stored = favorites.map(({ moves, ...rest }) => ({ alg: cube3x3.format(moves), ...rest }));
+  const raw = JSON.stringify({ version: STORE_VERSION, favorites: stored } satisfies FavoritesEnvelope);
   window.localStorage.setItem(STORAGE_KEY, raw);
   // refresh the cache and notify same-tab subscribers (the storage event only fires cross-tab)
   cachedRaw = raw;
@@ -129,44 +134,51 @@ const write = (favorites: FavoriteAlg[]) => {
   listeners.forEach((l) => l());
 };
 
-export const aufFreeAlg = (alg: string): string => stripTrailingAuf(splitLeadingAuf(alg).coreKey || alg);
-
-const toggle = (favorites: FavoriteAlg[], alg: string, sourceAlgset?: Algset): FavoriteAlg[] => {
-  const core = aufFreeAlg(alg);
-  const withoutVariants = favorites.filter((f) => aufFreeAlg(f.alg) !== core);
+const toggle = (favorites: FavoriteAlg[], moves: Move3x3[], sourceAlgset?: Algset): FavoriteAlg[] => {
+  const core = aufFreeAlg(moves);
+  const coreKey = aufFreeKey(moves);
+  const withoutVariants = favorites.filter((f) => aufFreeKey(f.moves) !== coreKey);
   return withoutVariants.length === favorites.length
-    ? [...favorites, { alg: core, status: DEFAULT_STATUS, sourceAlgset }]
+    ? [...favorites, { moves: core, status: DEFAULT_STATUS, sourceAlgset }]
     : withoutVariants;
 };
 
-const setStatus = (favorites: FavoriteAlg[], alg: string, status: AlgStatus): FavoriteAlg[] =>
-  favorites.map((f) => (f.alg === alg ? { ...f, status } : f));
+const setStatus = (favorites: FavoriteAlg[], moves: Move3x3[], status: AlgStatus): FavoriteAlg[] => {
+  const key = cube3x3.format(moves);
+  return favorites.map((f) => (cube3x3.format(f.moves) === key ? { ...f, status } : f));
+};
 
 // set (or clear, when blank) the manual algset override for an alg
-const setAlgset = (favorites: FavoriteAlg[], alg: string, algset: string): FavoriteAlg[] =>
-  favorites.map((f) => (f.alg === alg ? { ...f, algset: algset || undefined } : f));
+const setAlgset = (favorites: FavoriteAlg[], moves: Move3x3[], algset: string): FavoriteAlg[] => {
+  const key = cube3x3.format(moves);
+  return favorites.map((f) => (cube3x3.format(f.moves) === key ? { ...f, algset: algset || undefined } : f));
+};
 
 // Rewrite an alg in place, keeping its status and algset.
 // If rewrite matches an existing alg, that old existing is dropped.
-const setAlgText = (favorites: FavoriteAlg[], alg: string, nextAlg: string): { favorites: FavoriteAlg[]; replaced: boolean } => {
-  if (nextAlg === '' || nextAlg === alg) return { favorites, replaced: false };
-  if (!favorites.some((f) => f.alg === alg)) return { favorites, replaced: false };
-  const replaced = favorites.some((f) => f.alg === nextAlg);
+const setAlgMoves = (favorites: FavoriteAlg[], moves: Move3x3[], nextMoves: Move3x3[]): { favorites: FavoriteAlg[]; replaced: boolean } => {
+  const key = cube3x3.format(moves);
+  const nextKey = cube3x3.format(nextMoves);
+  if (nextKey === '' || nextKey === key) return { favorites, replaced: false };
+  if (!favorites.some((f) => cube3x3.format(f.moves) === key)) return { favorites, replaced: false };
+  const replaced = favorites.some((f) => cube3x3.format(f.moves) === nextKey);
   return {
     favorites: favorites
-      .filter((f) => f.alg !== nextAlg)
-      .map((f) => (f.alg === alg ? { ...f, alg: nextAlg } : f)),
+      .filter((f) => cube3x3.format(f.moves) !== nextKey)
+      .map((f) => (cube3x3.format(f.moves) === key ? { ...f, moves: nextMoves } : f)),
     replaced,
   };
 };
 
-const remove = (favorites: FavoriteAlg[], alg: string): FavoriteAlg[] =>
-  favorites.filter((f) => f.alg !== alg);
+const remove = (favorites: FavoriteAlg[], moves: Move3x3[]): FavoriteAlg[] => {
+  const key = cube3x3.format(moves);
+  return favorites.filter((f) => cube3x3.format(f.moves) !== key);
+};
 
 // merging never overwrites: an alg already saved keeps its status and algset
 const merge = (favorites: FavoriteAlg[], incoming: FavoriteAlg[]): { favorites: FavoriteAlg[]; added: number } => {
-  const known = new Set(favorites.map((f) => f.alg));
-  const added = incoming.filter((f) => !known.has(f.alg));
+  const known = new Set(favorites.map((f) => cube3x3.format(f.moves)));
+  const added = incoming.filter((f) => !known.has(cube3x3.format(f.moves)));
   return { favorites: [...favorites, ...added], added: added.length };
 };
 
@@ -178,25 +190,26 @@ export function useAlgFavorites() {
   const favorites = useSyncExternalStore(subscribe, read, getServerSnapshot);
 
   const toggleFavorite = useCallback(
-    (alg: string, sourceAlgset?: Algset) => write(toggle(read(), alg, sourceAlgset)),
+    (moves: Move3x3[], sourceAlgset?: Algset) => write(toggle(read(), moves, sourceAlgset)),
     [],
   );
   // returns false when the alg is already saved, so callers can report the no-op
-  const addFavorite = useCallback((alg: string, sourceAlgset?: Algset): boolean => {
+  const addFavorite = useCallback((moves: Move3x3[], sourceAlgset?: Algset): boolean => {
     const current = read();
-    if (current.some((f) => f.alg === alg)) return false;
-    write([...current, { alg, status: DEFAULT_STATUS, sourceAlgset }]);
+    const key = cube3x3.format(moves);
+    if (current.some((f) => cube3x3.format(f.moves) === key)) return false;
+    write([...current, { moves, status: DEFAULT_STATUS, sourceAlgset }]);
     return true;
   }, []);
-  const setFavoriteStatus = useCallback((alg: string, status: AlgStatus) => write(setStatus(read(), alg, status)), []);
-  const setFavoriteAlgset = useCallback((alg: string, algset: string) => write(setAlgset(read(), alg, algset)), []);
-  // returns true when the rename dropped an already saved copy of nextAlg
-  const setFavoriteAlg = useCallback((alg: string, nextAlg: string): boolean => {
-    const { favorites: next, replaced } = setAlgText(read(), alg, nextAlg);
+  const setFavoriteStatus = useCallback((moves: Move3x3[], status: AlgStatus) => write(setStatus(read(), moves, status)), []);
+  const setFavoriteAlgset = useCallback((moves: Move3x3[], algset: string) => write(setAlgset(read(), moves, algset)), []);
+  // returns true when the rename dropped an already saved copy of nextMoves
+  const setFavoriteAlg = useCallback((moves: Move3x3[], nextMoves: Move3x3[]): boolean => {
+    const { favorites: next, replaced } = setAlgMoves(read(), moves, nextMoves);
     write(next);
     return replaced;
   }, []);
-  const removeFavorite = useCallback((alg: string) => write(remove(read(), alg)), []);
+  const removeFavorite = useCallback((moves: Move3x3[]) => write(remove(read(), moves)), []);
   // returns how many of the incoming algs were new, the rest being already saved
   const mergeFavorites = useCallback((incoming: FavoriteAlg[]): number => {
     const { favorites: next, added } = merge(read(), incoming);
@@ -205,7 +218,10 @@ export function useAlgFavorites() {
   }, []);
 
   const isFavorite = useCallback(
-    (alg: string) => favorites.some((f) => aufFreeAlg(f.alg) === aufFreeAlg(alg)),
+    (moves: Move3x3[]) => {
+      const coreKey = aufFreeKey(moves);
+      return favorites.some((f) => aufFreeKey(f.moves) === coreKey);
+    },
     [favorites],
   );
 

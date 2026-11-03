@@ -4,7 +4,7 @@ import { createOrbit, type Angles, type Orbit } from '../../utils/cubeSceneRunti
 import { CUBE_SVG_CLASS } from '../../utils/cubeSceneIsland';
 import { buildColorHex } from '../../utils/cubeSceneAuthoring';
 import { buildCubeSvgBody, SCENE_PX } from '../../utils/cubeSvgRender';
-import { stateFromFacelets } from '../../utils/cubeMoves';
+import { stateFromFacelets } from '../../utils/cubeFacelets';
 import type { CubeColors } from '../../composables/useSettings';
 
 interface CubeAnglePreviewProps {

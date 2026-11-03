@@ -1,31 +1,33 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import AlgIcon from './AlgIcon';
 import AlgDraftActions from './AlgDraftActions';
 import { useCubeColors } from '../../composables/useSettings';
 import { useAlgDraft } from '../../composables/algs/useAlgDraft';
 import MovesTextEditor from '../recon/MovesTextEditor';
+import { cube3x3, type Move3x3 } from '../../utils/parser/cube3x3';
 
 interface AddAlgRowProps {
-  onAdd: (alg: string) => boolean;
+  onAdd: (moves: Move3x3[]) => boolean;
   onCancel: () => void;
 }
 
-const abbreviateAlg = (alg: string) => {
-  const moves = alg.split(' ');
-  if (moves.length <= 6) return alg;
-  return `${moves.slice(0, 6).join(' ')}…`;
-};
+const ABBREVIATED_MOVE_COUNT = 6;
 
 const AddAlgRow = ({ onAdd, onCancel }: AddAlgRowProps) => {
   const [cubeColors] = useCubeColors();
   const [added, setAdded] = useState<{ text: string; key: number } | null>(null);
 
   const draft = useAlgDraft('', (alg) => {
-    if (!onAdd(alg)) return;
-    setAdded((prev) => ({ text: abbreviateAlg(alg), key: (prev?.key ?? 0) + 1 }));
+    const moves = cube3x3.parse(alg).moves;
+    if (!onAdd(moves)) return;
+    const shownMoves = cube3x3.format(moves.slice(0, ABBREVIATED_MOVE_COUNT));
+    const text = moves.length > ABBREVIATED_MOVE_COUNT ? `${shownMoves}…` : shownMoves;
+    setAdded((prev) => ({ text, key: (prev?.key ?? 0) + 1 }));
   }, { resetOnCommit: true });
+
+  const draftMoves = useMemo(() => cube3x3.parse(draft.normalized).moves, [draft.normalized]);
 
   // dismiss empty on blur
   const handleBlur = (event: React.FocusEvent<HTMLDivElement>) => {
@@ -37,7 +39,7 @@ const AddAlgRow = ({ onAdd, onCancel }: AddAlgRowProps) => {
   return (
     <div className="flex flex-row flex-wrap items-center justify-end gap-3 px-2 py-1" onBlur={handleBlur}>
       <div className="shrink-0 -my-3 flex items-center justify-center">
-        <AlgIcon classification={draft.classification} alg={draft.normalized} cubeColors={cubeColors} />
+        <AlgIcon classification={draft.classification} moves={draftMoves} cubeColors={cubeColors} />
       </div>
 
       <div

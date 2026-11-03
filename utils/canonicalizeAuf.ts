@@ -1,3 +1,7 @@
+import { cube3x3 } from './parser/cube3x3';
+import type { Move3x3 } from './parser/cube3x3';
+import type { Axis } from './parser';
+
 export type F2LPieceType = 'edge' | 'corner';
 
 /**
@@ -68,21 +72,14 @@ export function aufValToToken(val: number): AufToken {
  */
 export type EOAngle = 'y0' | 'y';
 
-type Axis = 'x' | 'y' | 'z';
-
-const ROTATION_AXIS_OF_MOVE: Record<string, Axis> = {
-  x: 'x', r: 'x', l: 'x', M: 'x',
-  y: 'y', u: 'y', d: 'y', E: 'y',
-  z: 'z', f: 'z', b: 'z', S: 'z',
-};
-
-export function eoAngleOfAlg(alg: string): EOAngle {
+export function eoAngleOfAlg(moves: readonly Move3x3[]): EOAngle {
   const originalAxisAt: Record<Axis, Axis> = { x: 'x', y: 'y', z: 'z' };
 
-  for (const move of alg.trim().split(/\s+/)) {
-    const rotationAxis = ROTATION_AXIS_OF_MOVE[move[0]];
-    const isHalfTurn = move.includes('2');
-    if (!rotationAxis || isHalfTurn) continue;
+  for (const move of moves) {
+    const { axis: rotationAxis, layers } = cube3x3.geometry(move);
+    const movesCenters = layers.includes(0);
+    const isHalfTurn = cube3x3.turns(move) === 2;
+    if (!movesCenters || isHalfTurn) continue;
 
     const [a, b] = (['x', 'y', 'z'] as Axis[]).filter((axis) => axis !== rotationAxis);
     [originalAxisAt[a], originalAxisAt[b]] = [originalAxisAt[b], originalAxisAt[a]];

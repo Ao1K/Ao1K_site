@@ -34,10 +34,15 @@ The alg pipeline flows from source data (`utils/raw*data.json`, `utils/ZBLL.xlsx
 ## Cube rendering runtime
 
 ### `build-cube-runtime`
-`scripts/buildCubeRuntime.ts`. Uses esbuild to bundle `utils/cubeSceneEntry.client.ts` (minified IIFE, es2018). **Writes `public/learn/cubeScene.js`**, which is committed. Required after editing anything that bundle imports: `cubeSceneRuntime.client.ts`, `cubeSvgRender.ts`, `cubeSceneIsland.ts`, `cubeMoves.ts`, and similar. Deploy does not run it, so a stale bundle ships if it's skipped.
+`scripts/buildCubeRuntime.ts`. Uses esbuild to bundle `utils/cubeSceneEntry.client.ts` (minified IIFE, es2018). **Writes `public/learn/cubeScene.js`**, which is committed. Required after editing anything that bundle imports: `cubeSceneRuntime.client.ts`, `cubeSvgRender.ts`, `cubeSceneIsland.ts`, `cubeFacelets.ts`, and similar. Deploy does not run it, so a stale bundle ships if it's skipped.
 
 ### `verify-cube-parity`
 `scripts/verifyCubeFrameParity.ts`. Checks that the server-rendered SVG (`buildCubeSvgBody(islandFrameZero(...))`) is byte-identical to the client runtime's first frame (`renderSceneMarkup` through `cubieWorld`). It covers 4 scrambles × 4 angles × 3 highlight sets × hints × labels × startHighlighted. It also checks that `app/globals.css` still contains `CUBE_SCENE_CSS` from `utils/cubeSceneCss.ts`. Writes nothing. Exits 1 on any mismatch and prints each failing combination. Run it with `build-cube-runtime` after changes to the render pipeline. It imports the TS sources directly, not the bundle, so it does not detect a stale `cubeScene.js`.
+
+## Move parser
+
+### `verify-parser`
+`scripts/verifyParser.ts`. Checks the generated tables in `utils/parser/cube3x3.ts` for all 96 moves: mirror, invert, and rotate round trips, and that `y2`, `y2'`, and `x'` agree with repeated quarter rotations. It checks `combine` against fixed expected outputs, and checks that `simplifyRotations` gives the same orientation in at most 2 rotations for every rotation sequence of length 1 to 3. It also spot-checks `parse` aliases, `count`, `normalize`, and `inputRules`. Known differences are allowed and printed with a count. Writes nothing. Exits 1 on any other mismatch. Run it after changing the parser.
 
 ## Tests and measurement
 

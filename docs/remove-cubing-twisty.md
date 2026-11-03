@@ -3,7 +3,7 @@
 ## Goal
 
 Every 3D cube on the site draws with the SVG cube runtime that the lessons use:
-`utils/cubeSvgRender.ts`, `utils/cubeSceneRuntime.client.ts` and `utils/cubeMoves.ts`.
+`utils/cubeSvgRender.ts`, `utils/cubeSceneRuntime.client.ts` and `utils/cubeFacelets.ts`.
 When this is done:
 
 - Nothing imports `cubing/twisty`.

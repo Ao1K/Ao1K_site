@@ -3,8 +3,10 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { SimpleCube } from '../composables/recon/SimpleCube';
+import { cube3x3 } from '../utils/parser/cube3x3';
+import type { Move3x3 } from '../utils/parser/cube3x3';
 import { SimpleCubeInterpreter } from '../composables/recon/SimpleCubeInterpreter';
-import type { Doc } from '../composables/recon/ExactAlgSuggester';
+import type { CompiledDoc } from '../composables/recon/ExactAlgSuggester';
 import type { CompiledLLAlg } from '../composables/recon/LLsuggester';
 import { applyMovesUntilCross, getCrossSuggestions } from '../composables/recon/crossAutocomplete';
 
@@ -31,8 +33,8 @@ const loadAlgs = (fileName: string) =>
 
 function buildInterpreter(): SimpleCubeInterpreter {
   const interpreter = new SimpleCubeInterpreter();
-  interpreter.addAlgset('f2l', loadAlgs('compiled-f2l-algs.json') as Doc[]);
-  if (useZbls) interpreter.addAlgset('zbls', loadAlgs('compiled-zbls-algs.json') as Doc[]);
+  interpreter.addAlgset('f2l', loadAlgs('compiled-f2l-algs.json') as CompiledDoc[]);
+  if (useZbls) interpreter.addAlgset('zbls', loadAlgs('compiled-zbls-algs.json') as CompiledDoc[]);
   interpreter.addAlgset('oll', loadAlgs('compiled-oll-righty-algs.json') as CompiledLLAlg[], HANDEDNESS);
   interpreter.addAlgset('pll', loadAlgs('compiled-pll-righty-algs.json') as CompiledLLAlg[], HANDEDNESS);
   if (useZbll) interpreter.addAlgset('zbll', loadAlgs('compiled-zbll-righty-algs.json') as CompiledLLAlg[], HANDEDNESS);
@@ -45,32 +47,31 @@ const enabledAlgsets = new Set([
   ...(useZbll ? ['zbll'] : []),
 ]);
 
-const tokenize = (alg: string) => alg.trim().split(/\s+/).filter(Boolean);
-const countMoves = (alg: string) => tokenize(alg).filter(move => !/^[xyz]/.test(move)).length;
-
 const stageForPairsSolved = (pairsSolved: number): Stage =>
   pairsSolved === 0 ? 'c1' : pairsSolved < 4 ? 'pairs2to4' : 'll';
 
 function solve(scramble: string, interpreter: SimpleCubeInterpreter): SolveResult {
-  const scrambleMoves = tokenize(scramble);
-  const solutionMoves: string[] = [];
+  const { moves: scrambleMoves, invalid } = cube3x3.parse(scramble);
+  if (invalid.length > 0) throw new Error(`Invalid move "${invalid.join('", "')}" in scramble "${scramble}"`);
+  const solutionMoves: Move3x3[] = [];
   const steps: SolveResult['steps'] = [];
   const moveCounts = { c1: 0, pairs2to4: 0, ll: 0, total: 0 };
   const result: SolveResult = { scramble, steps, moveCounts };
 
-  const acceptAlg = (stage: Stage, alg: string) => {
-    steps.push({ stage, alg });
-    solutionMoves.push(...tokenize(alg));
-    moveCounts[stage] += countMoves(alg);
-    moveCounts.total += countMoves(alg);
+  const acceptAlg = (stage: Stage, moves: Move3x3[]) => {
+    const moveCount = cube3x3.count(moves, 'stm');
+    steps.push({ stage, alg: cube3x3.format(moves) });
+    solutionMoves.push(...moves);
+    moveCounts[stage] += moveCount;
+    moveCounts.total += moveCount;
   };
 
   const crossFacelets = applyMovesUntilCross([scrambleMoves]);
   const index = interpreter.getF2LScoreIndex(HANDEDNESS);
   if (crossFacelets && index) {
-    const crossAlg = getCrossSuggestions(crossFacelets, [], index)[0]?.alg;
-    if (!crossAlg) return { ...result, error: 'no cross suggestion' };
-    acceptAlg('c1', crossAlg);
+    const crossMoves = getCrossSuggestions(crossFacelets, [], index)[0]?.moves;
+    if (!crossMoves?.length) return { ...result, error: 'no cross suggestion' };
+    acceptAlg('c1', crossMoves);
   }
 
   for (let step = 0; step < MAX_STEPS; step++) {
@@ -79,9 +80,9 @@ function solve(scramble: string, interpreter: SimpleCubeInterpreter): SolveResul
     if (interpreter.isCubeSolved()) return result;
 
     const pairsSolved = stepsCompleted.filter(s => s.type === 'f2l').length;
-    const alg = interpreter.getAlgSuggestions(stepsCompleted, { enabledAlgsets, handedness: HANDEDNESS })[0]?.alg;
-    if (!alg) return { ...result, error: `no suggestion with ${pairsSolved} pairs solved` };
-    acceptAlg(stageForPairsSolved(pairsSolved), alg);
+    const suggestedMoves = interpreter.getAlgSuggestions(stepsCompleted, { enabledAlgsets, handedness: HANDEDNESS })[0]?.moves;
+    if (!suggestedMoves?.length) return { ...result, error: `no suggestion with ${pairsSolved} pairs solved` };
+    acceptAlg(stageForPairsSolved(pairsSolved), suggestedMoves);
   }
 
   return { ...result, error: `not solved after ${MAX_STEPS} steps` };

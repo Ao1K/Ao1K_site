@@ -1,15 +1,5 @@
 import type { Color } from "../../composables/recon/SimpleCube";
-
-type MoveLetter =
-  | "U" | "D" | "R" | "L" | "F" | "B"
-  | "M" | "E" | "S"
-  | "u" | "d" | "r" | "l" | "f" | "b"
-  | "x" | "y" | "z";
-
-type MoveSuffix = "" | "'" | "2" | "2'" | "3" | "3'";
-
-/** A single turn, e.g. `"R"`, `"U'"`, `"r2"`, `"x"`. Wide moves use lowercase (`"r"`), not `"Rw"`. */
-export type CubeMove = `${MoveLetter}${MoveSuffix}`;
+import type { Move3x3 } from "../../utils/parser/cube3x3";
 
 type SideEdgePair = "BO" | "BR" | "GO" | "GR";
 
@@ -27,7 +17,7 @@ export type PieceName =
 export type CubeColorValue = `#${string}` | `rgb(${string})` | `rgba(${string})`;
 
 type StartFromScramble = {
-  /** Moves applied to a solved cube, space separated. Invalid moves are skipped. */
+  /** Moves applied to a solved cube, space separated. `Rw` is read as `r`. An invalid move throws, failing the page render and the build. */
   scramble?: string;
   facelets?: never;
 };
@@ -60,8 +50,8 @@ export type CubeLookProps = (StartFromScramble | StartFromFacelets) & {
 };
 
 export type CubeSceneLine = {
-  /** Turns played in order. An array entry turns its moves at the same time, e.g. `["R", "L'"]`. */
-  moves: (CubeMove | CubeMove[])[];
+  /** Turns played in order. Wide moves use lowercase (`"r"`), not `"Rw"`. An array entry turns its moves at the same time, e.g. `["R", "L'"]`. */
+  moves: (Move3x3 | Move3x3[])[];
   /** Duration in ms for each entry in `moves`, by index. Default 550. */
   durations?: number[];
   /** Wait in ms after this line's highlight is applied, before its first move. Default 0. */

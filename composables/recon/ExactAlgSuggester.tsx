@@ -6,7 +6,10 @@
  * Uses 0-based indexing (so "first character" === pos=0).
  */
 
-export type Doc = { alg: string; hash: string; [k: string]: any };
+import type { Move3x3 } from '../../utils/parser/cube3x3';
+
+export type CompiledDoc = { alg: string; hash: string; [k: string]: any };
+export type Doc = { moves: Move3x3[]; hash: string; [k: string]: any };
 
 type CharSet = Set<string>;
 type PosMap = Map<number, Map<string, Set<number>>>;
@@ -229,7 +232,7 @@ export default class AlgSuggester {
 
     results.sort((a, b) => b.score - a.score);
     const limit = q.limit ?? 100;
-    return results.slice(0, limit).map(r => ({ id: r.doc.alg, hash: r.doc.hash, eoValue: r.doc.eoValue as number | undefined, step: r.doc.step as string | undefined, score: r.score, matches: r.matches }));
+    return results.slice(0, limit).map(r => ({ moves: r.doc.moves, hash: r.doc.hash, eoValue: r.doc.eoValue as number | undefined, step: r.doc.step as string | undefined, score: r.score, matches: r.matches }));
   }
 
   matchingDocIndices(q: Query): number[] {

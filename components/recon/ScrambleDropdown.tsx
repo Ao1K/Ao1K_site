@@ -8,24 +8,23 @@ import Parrot from '../icons/parrot';
 import { prefetchRandomScramble, takeRandomScramble } from '../../composables/recon/randomScrambleClient';
 import { inferScrambleFromSolution, removeRotations } from '../../composables/recon/setupMoves';
 import { SimpleCube } from '../../composables/recon/SimpleCube';
+import { cube3x3, type Move3x3 } from '../../utils/parser/cube3x3';
 
 interface ScrambleDropdownProps {
-  scramble: string;
-  solution: string;
+  scramble: Move3x3[];
+  solution: Move3x3[];
   scrambleOfTheDay: string;
   onScrambleChange: (scrambleContent: string) => void;
   isLabelOnly?: boolean;
 }
 
-const normalizeAlg = (alg: string) => alg.trim().split(/\s+/).join(' ');
+const getMovesFromText = (text: string) => cube3x3.parse(text
+  .split('\n')
+  .map((line) => line.replace(/\/\/.*/, ''))
+  .join(' ')).moves;
 
-const getMovesFromHTML = (html: string) => normalizeAlg(html
-  .split('</div>')
-  .map((line) => line.replace(/<[^>]*>/g, '').replace(/\/\/.*/, ''))
-  .join(' '));
-
-const isSolvedBy = (scramble: string, solution: string) => new SimpleCube()
-  .getCubeState(`${scramble} ${solution}`.trim().split(' '))
+const isSolvedBy = (scramble: Move3x3[], solution: Move3x3[]) => new SimpleCube()
+  .getCubeState([...scramble, ...solution])
   .every((face) => face.flat().every((color) => color === face[1][1]));
 
 type LoadingAction = 'new' | 'infer';
@@ -35,8 +34,8 @@ export default function ScrambleDropdown({ scramble, solution, scrambleOfTheDay,
   const [loadingAction, setLoadingAction] = useState<LoadingAction | null>(null);
   const isLoading = loadingAction !== null;
   const rotationFreeSolution = removeRotations(solution);
-  const canInferFromSolution = rotationFreeSolution !== '' && !isSolvedBy(scramble, solution);
-  const canAddScrambleOfTheDay = normalizeAlg(scramble) !== getMovesFromHTML(scrambleOfTheDay);
+  const canInferFromSolution = rotationFreeSolution.length > 0 && !isSolvedBy(scramble, solution);
+  const canAddScrambleOfTheDay = cube3x3.format(scramble) !== cube3x3.format(getMovesFromText(scrambleOfTheDay));
 
   const handleToggle = () => {
     prefetchRandomScramble();
@@ -62,7 +61,7 @@ export default function ScrambleDropdown({ scramble, solution, scrambleOfTheDay,
   });
 
   const handleGenerateFromSolution = () => runWithLoadingIndicator('infer', async () => {
-    onScrambleChange(await inferScrambleFromSolution(solution));
+    onScrambleChange(cube3x3.format(await inferScrambleFromSolution(solution)));
   });
 
   const handleScrambleOfTheDay = () => {

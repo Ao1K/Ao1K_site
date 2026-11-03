@@ -108,6 +108,7 @@ function rotateZ(deg: number): Mat {
 }
 
 export type Axis = 'x' | 'y' | 'z'
+export type RotationInfo = { axis: Axis; layers: number[]; angle: number }
 
 export function axisRotation(axis: Axis, deg: number): Mat {
   if (axis === 'x') return rotateX(deg)

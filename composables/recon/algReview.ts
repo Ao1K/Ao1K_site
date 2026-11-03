@@ -7,23 +7,24 @@ import { removeRedundantMoves, reviewRedundantMoves, type RedundancyReview } fro
 import { MAX_SHOWN_SUGGESTIONS } from './suggestionRanking';
 import type { KnownLLAlg } from './LLsuggester';
 import type { CompilableLLStep } from './LLinterpreter';
+import type { Move3x3 } from '../../utils/parser/cube3x3';
 
 export interface CubeStateReader {
   handedness: Handedness;
-  readSteps: (moves: readonly string[]) => StepInfo[];
-  readSuggestions: (moves: readonly string[]) => Suggestion[];
-  findKnownAlgs: (alg: string) => KnownLLAlg[];
-  findOppositeHandKnownAlgs: (alg: string) => KnownLLAlg[];
+  readSteps: (moves: readonly Move3x3[]) => StepInfo[];
+  readSuggestions: (moves: readonly Move3x3[]) => Suggestion[];
+  findKnownAlgs: (moves: readonly Move3x3[]) => KnownLLAlg[];
+  findOppositeHandKnownAlgs: (moves: readonly Move3x3[]) => KnownLLAlg[];
 }
 
 export interface AlgLine {
-  movesBefore: readonly string[];
-  lineMoves: readonly string[];
-  nextLineMoves: readonly string[] | null;
+  movesBefore: readonly Move3x3[];
+  lineMoves: readonly Move3x3[];
+  nextLineMoves: readonly Move3x3[] | null;
 }
 
 export interface ReviewedAlg {
-  alg: string;
+  moves: Move3x3[];
   algset?: Algset;
 }
 
@@ -78,7 +79,7 @@ interface PartialCompletion {
   solvedStep: LLStep;
 }
 
-function readLLSteps(reader: CubeStateReader, moves: readonly string[]): ReadonlySet<string> {
+function readLLSteps(reader: CubeStateReader, moves: readonly Move3x3[]): ReadonlySet<string> {
   const steps = reader.readSteps(moves);
   return steps.some(step => step.type === 'solved')
     ? new Set(LL_STEPS)
@@ -119,7 +120,7 @@ function findPartialCompletion(
 }
 
 function reviewSelection(
-  userAlg: string,
+  userAlg: readonly Move3x3[],
   knownAlg: KnownLLAlg | null,
   partialCompletion: PartialCompletion | null,
   shownSuggestions: readonly Suggestion[],
@@ -161,7 +162,7 @@ function gradeAlg(selectionCategory: FeedbackCategory | null, mistakeCount: numb
 }
 
 export function reviewAlg(algLine: AlgLine, reader: CubeStateReader): AlgReview {
-  const userAlg = removeRedundantMoves(algLine.lineMoves).join(' ');
+  const userAlg = removeRedundantMoves(algLine.lineMoves);
   const before = readLLSteps(reader, algLine.movesBefore);
   const after = readLLSteps(reader, [...algLine.movesBefore, ...algLine.lineMoves]);
   const partialCompletion = findPartialCompletion(algLine, before, after, reader);
@@ -189,7 +190,7 @@ export function reviewAlg(algLine: AlgLine, reader: CubeStateReader): AlgReview 
 
   const reviewedSuggestions = shownSuggestions
     .toSorted((a, b) => (b.frequency ?? 0) - (a.frequency ?? 0))
-    .map(suggestion => ({ alg: suggestion.alg, algset: suggestion.algset }));
+    .map(suggestion => ({ moves: suggestion.moves, algset: suggestion.algset }));
 
   return { category, notes, redundancy, suggestions: reviewedSuggestions };
 }

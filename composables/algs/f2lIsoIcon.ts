@@ -1,5 +1,5 @@
 import { SimpleCube, type Color, type CubeState } from '../recon/SimpleCube';
-import { invertTokens, tokenize } from './algMoves';
+import { cube3x3, type Move3x3 } from '../../utils/parser/cube3x3';
 import { algSolvedSlots, CORNERS, EDGES, type Facelet, type SlotKey } from './multislotSlots';
 import { isEdgeOriented, HINT_MASK_COLOR, type FaceKey } from './cubePaint';
 import { type ColorConfig, type IconDescriptor, type SvgShape } from '../recon/stepIconDescriptors';
@@ -96,12 +96,12 @@ function project([x, y, z]: Point3, view: View): [number, number] {
   return [(xp - zp) * U_STEP, (xp + zp) * V_STEP - y * H_STEP];
 }
 
-export function f2lIsoDescriptor(alg: string, config: ColorConfig, eoColor?: string): IconDescriptor {
-  const state = new SimpleCube().getCubeState(invertTokens(tokenize(alg)));
+export function f2lIsoDescriptor(moves: Move3x3[], config: ColorConfig, eoColor?: string): IconDescriptor {
+  const state = new SimpleCube().getCubeState(cube3x3.invert(moves));
   const realOf = (c: Color): string => config[CHAR_FACE[c]];
   const key = (f: number, r: number, c: number): string => `${f},${r},${c}`;
 
-  const slots = algSolvedSlots(alg);
+  const slots = algSolvedSlots(moves);
   const cross = state[DOWN][1][1];
   const targetCornerKeys = new Set<string>();
   const targetEdgeKeys = new Set<string>();

@@ -14,6 +14,7 @@
     "compile-algs": "npx tsx scripts/compileAlgs.ts",
     "build-cube-runtime": "npx tsx scripts/buildCubeRuntime.ts",
     "verify-cube-parity": "npx tsx scripts/verifyCubeFrameParity.ts",
+    "verify-parser": "npx tsx scripts/verifyParser.ts",
     "bench-cube-frame": "npx tsx scripts/benchCubeFrame.ts",
     "f2l-pair-distances": "npx tsx scripts/generateF2lPairDistances.ts",
     "autocomplete-solve": "npx tsx tests/autocompleteSolve.ts",
@@ -48,7 +49,6 @@
     "react-dom": "^19.3.1",
     "react-remove-scroll": "^2.7.2",
     "sanitize-html": "^2.18.1",
-    "sr-puzzlegen": "^1.0.4",
     "webpack": "^5.112.2",
     "yaml": "^2.9.1"
   },

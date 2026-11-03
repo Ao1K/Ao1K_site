@@ -7,8 +7,8 @@ import { SimpleCube } from '../recon/SimpleCube';
 import { SimpleCubeInterpreter, type Algset, type StepInfo } from '../recon/SimpleCubeInterpreter';
 import { readCubeRotation } from '../recon/cubeHashState';
 import { getNewSteps, getLineStepInfo } from '../recon/getLineStepInfo';
-import { invertTokens, tokenize } from './algMoves';
 import type { CompilableLLStep } from '../recon/LLinterpreter';
+import { cube3x3, type Move3x3 } from '../../utils/parser/cube3x3';
 
 export type AlgsetKind = 'f2l' | 'multislot' | 'zbls' | 'f2leo' | 'oll' | 'pll' | 'zbll' | 'unknown';
 
@@ -55,26 +55,23 @@ const isF2Lkind = (kind: AlgsetKind): boolean => kind in F2L_GROUP;
 
 // an override that names an LL algset looks the case name up again in that set, so relabeling an
 // alg from OLL to ZBLL gives it its ZBLL case name. Any other override text is only a label.
-export const classifyFavorite = (f: { alg: string; algset?: string; sourceAlgset?: Algset }): AlgClassification => {
-  if (!f.algset) return classifyAlg(f.alg, f.sourceAlgset);
+export const classifyFavorite = (f: { moves: Move3x3[]; algset?: string; sourceAlgset?: Algset }): AlgClassification => {
+  if (!f.algset) return classifyAlg(f.moves, f.sourceAlgset);
 
   const name = f.algset.trim().toLowerCase().replace(/\s+/g, '');
 
   const f2lStep = F2L_STEPS[name];
   if (f2lStep) {
-    const classification = classifyAlg(f.alg, f2lStep);
+    const classification = classifyAlg(f.moves, f2lStep);
     return isF2Lkind(classification.kind) ? classification : overrideClassification(f.algset);
   }
 
   const llStep = LL_STEPS[name];
   if (!llStep) return overrideClassification(f.algset);
 
-  const classification = classifyAlg(f.alg, llStep);
+  const classification = classifyAlg(f.moves, llStep);
   return isLLkind(classification.kind) ? classification : overrideClassification(f.algset);
 };
-
-// base letter + optional turn count (2 or 3) and optional prime
-const MOVE_RE = /^[UDFBLRudfblrMESxyz][23]?'?$/;
 
 // reused across keystrokes; classification doesn't need the alg database
 let interpreter: SimpleCubeInterpreter | null = null;
@@ -87,18 +84,17 @@ const getSolvedSteps = (interp: SimpleCubeInterpreter): StepInfo[] => {
 };
 
 // restore the intial orientation of the cube
-const appendFinalRotation = (tokens: string[]): string[] => {
-  const rotation = readCubeRotation(new SimpleCube().getCubeState(tokens));
-  if (!rotation || rotation === 'no_rotation') return tokens;
-  return [...tokens, ...invertTokens(tokenize(rotation))];
+const appendFinalRotation = (moves: Move3x3[]): Move3x3[] => {
+  const rotation = readCubeRotation(new SimpleCube().getCubeState(moves));
+  if (!rotation || rotation === 'no_rotation') return moves;
+  return [...moves, ...cube3x3.invert(cube3x3.parse(rotation).moves)];
 };
 
-export function classifyAlg(alg: string, sourceAlgset?: Algset): AlgClassification {
+export function classifyAlg(moves: Move3x3[], sourceAlgset?: Algset): AlgClassification {
   const llSource = sourceAlgset ? LL_STEPS[sourceAlgset] : undefined;
-  const tokens = tokenize(alg);
-  if (tokens.length === 0 || !tokens.every((t) => MOVE_RE.test(t))) return UNKNOWN;
+  if (moves.length === 0) return UNKNOWN;
 
-  const beforeState = new SimpleCube().getCubeState(['z2', ...invertTokens(appendFinalRotation(tokens))]);
+  const beforeState = new SimpleCube().getCubeState(['z2', ...cube3x3.invert(appendFinalRotation(moves))]);
 
   interpreter ??= new SimpleCubeInterpreter();
   // solved steps first so its internal state doesn't clobber the before-state read below
@@ -140,11 +136,10 @@ export function classifyAlg(alg: string, sourceAlgset?: Algset): AlgClassificati
   return UNKNOWN;
 }
 
-export function llStepsForAlg(alg: string): CompilableLLStep[] {
-  const tokens = tokenize(alg);
-  if (tokens.length === 0 || !tokens.every((t) => MOVE_RE.test(t))) return [];
+export function llStepsForAlg(moves: Move3x3[]): CompilableLLStep[] {
+  if (moves.length === 0) return [];
 
   interpreter ??= new SimpleCubeInterpreter();
-  const beforeState = new SimpleCube().getCubeState(['z2', ...invertTokens(appendFinalRotation(tokens))]);
+  const beforeState = new SimpleCube().getCubeState(['z2', ...cube3x3.invert(appendFinalRotation(moves))]);
   return interpreter.getSuggestableLLSteps(interpreter.getStepsCompleted(beforeState, 'CFOP'));
 }
