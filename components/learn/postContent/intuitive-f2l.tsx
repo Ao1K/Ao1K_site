@@ -5,6 +5,7 @@ import Story from "../LessonStory";
 import LessonLink from "../LessonLink";
 import LessonList from "../LessonList";
 import CubeScene from "../CubeScene";
+import AnnotatedCubeScene from "../AnnotatedCubeScene";
 import CubeImage, { type CubeImageProps } from "../CubeImage";
 import ExternalLink from "../../ExternalLink"
 import { SCENE_PX, apply, mul, sceneGeometry } from "../../../utils/cubeSvgRender";
@@ -13,6 +14,8 @@ import type { PieceName } from "../cubeProps";
 import FurtherLearning, { Citation, type Source } from "../FurtherLearning";
 import { crossIcon } from "../../../composables/recon/stepIconDescriptors";
 import { DEFAULT_SCENE_LOOK } from "../../../utils/cubeSceneAuthoring";
+
+const BOTTOM_LEFT_TEXT = { x: 2, y: 96, anchor: "bottom-left", duration: 2000 } as const;
 
 // Lesson inspiration came from Frosty, where we discussed including EO as a core part of the lesson.
 
@@ -46,9 +49,14 @@ export default function IntuitiveF2L() {
           {`, you solve four corner-and-edge pairs. So it is like we descend the tree four times.`}
         </p>
         <CrossToF2LDiagram />
+        <H3>Prerequisites</H3>
         <p>
           {`To start F2L, `}<LessonLink text="cross" href="/learn/better-cross/" />
-          {` should already be solved on the bottom of your cube. Except for brief moments, cross should stay solved during F2L.`}
+          {` should already be solved on the bottom of your cube.`}
+        </p>
+        <p>
+          {`You'll also need to know how to read basic `}<LessonLink text="notation" href="/learn/notation/" />
+          {`. If you can read `}<code>y R U2 R'</code>{`, you're ready.`}
         </p>
         <H1>{`Other tutorials`}</H1>
         <p>{`This lesson isn't the simplest possible way to learn F2L. This lesson adds some complexity so that you don't have as many bad habits later.`}</p>
@@ -372,7 +380,7 @@ export default function IntuitiveF2L() {
           <span className="font-normal">{"Undoing the original "}<code>R</code>{` or `}<code>L</code>{` move.`}</span>
         </LessonList>
         <p>{`We're basically doing a `}<code>U</code>{` move and then a trigger. We'll use this idea on a lot of the levels.`}</p>
-        <H3>Bonus example — optional</H3>
+        <H3>Bonus example</H3>
         <p>{`This time, the stuck piece is in the back-left slot.`}</p>
         <div className="flex flex-row flex-wrap gap-6 mb-6">
           <div className="flex flex-col gap-1">
@@ -389,32 +397,23 @@ export default function IntuitiveF2L() {
           </div>
         </div>
         <p>{`You can tilt the cube if you need to see pieces in the back better, but don't change your grip on the cube or do `}<code>y</code>{` or `}<code>U</code>{` moves. This helps avoid common bad habits.`}</p>
-        <p>{`We'll do the following four-move solution:`}</p>
-        <div className="grid grid-cols-[auto_auto_1fr] gap-x-3 gap-y-2 mb-6">
-          <div><code>U</code></div>
-          <div>—</div>
-          <div>{`The corner is on top of the edge. Turn the top layer to get the corner out of the way.`}</div>
-          <div><code>L</code></div>
-          <div>—</div>
-          <div>{`Expose the back left slot by turning the left face.`}</div>
-          <div><code>U</code></div>
-          <div>—</div>
-          <div>{`Take the edge out of the exposed active slot.`}</div>
-          <div><code>{`L'`}</code></div>
-          <div>—</div>
-          <div>{`Fix cross.`}</div>
-        </div>
+        <p>{`The corner is right on top of the edge, so we'll do a `}<code>U</code>{` move to get it out of the way. Here's the full solution:`}</p>
         <div className="flex flex-row flex-wrap gap-6 mb-6">
           <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Trying U L U L'</span>
             <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
+              <AnnotatedCubeScene
                 scramble="U' R' U B2 D R F' U2 R2 U B2 D' F2 B2 U' F2 D B2 D' F' L' x2 D L' F' L2 D U2 R' U R U'"
                 angles={{ x: 30, y: -45 }}
                 hints
                 labels
                 lines={[
                   { moves: ["U", "L", "U", "L'"], durations: [1500, 1500, 1500, 1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "WGR", "GR"] }
+                ]}
+                annotations={[
+                  { ...BOTTOM_LEFT_TEXT, text: "Get corner out of the way", moves: [0, 0] },
+                  { ...BOTTOM_LEFT_TEXT, text: "Expose back left slot", moves: [1, 1] },
+                  { ...BOTTOM_LEFT_TEXT, text: "Take edge out of slot", moves: [2, 2] },
+                  { ...BOTTOM_LEFT_TEXT, text: "Fix cross", moves: [3, 3] },
                 ]}
                 progress
                 startHighlighted
@@ -456,8 +455,7 @@ export default function IntuitiveF2L() {
             </div>
           </div>
         </div>
-        <p>{`In the example, we chose to rotate so that the slot we're solving is in the front. That'll make it easier to see what we're doing.`}</p>
-        <p>{`Choosing which way to rotate is actually a complex subject. It can be better to solve back slots since pieces won't be hiding in the back as much. We'll discuss this more in future lessons.`}</p>
+        <p>{`In the example, we chose to rotate so that the slot we're solving is in the front. We'll talk more about which way to rotate in future lessons.`}</p>
 
         <H2>On Level 3? Separate pieces</H2>
         <p>{`If the pieces are adjacent, we need to separate them.`}</p>
@@ -475,44 +473,44 @@ export default function IntuitiveF2L() {
             </div>
           </div>
         </div>
-        <p>{`From here-on-out, we'll know the direction of the slot we are solving. The colors on our F2L pieces are orange and green, and orange and green is the color of the centers next to the back-left slot.`}</p>
-        <p>{`Since we're solving a left-hand slot, we know our solution for the rest of the pair will be `}<code>L</code>{` and `}<code>U</code>{` moves. We know we can expose the back-left slot, since that's the one we're solving. So we know that we can do `}<code>L</code>{` and it'll be fine, as long as we do `}<code>{`L'`}</code>{` later.`}</p>
-        <p>{`Turn the `}<code>U</code>{` layer so that the corner is on the same side, left or right, as the target slot, and the edge isn't. This will mean that moving the target slot up will separate the pieces. In this first example, we expose the target slot correctly, but we don't do the right `}<code>U</code>{` move before it, so turning the left face doesn't separate the pieces.`}</p>
-        <div className="flex flex-row flex-wrap gap-8 pb-6 pt-2">
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">{`Trying L (Incorrect)`}</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="U F B2 L' B' R F' U' L2 U' F2 U' L2 D2 F2 R2 D' B2 L2 R B' x2 L B D F' D2"
-                angles={{ x: 30, y: -30 }}
-                hints
-                labels
-                lines={[
-                  { moves: ["L"], durations: [1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WGO", "GO", "WO", "WB", "WR", "WG"] }
-                ]}
-                progress
-                startHighlighted
-              />
-            </div>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">{`Trying U' L (Correct)`}</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="U F B2 L' B' R F' U' L2 U' F2 U' L2 D2 F2 R2 D' B2 L2 R B' x2 L B D F' D2"
-                angles={{ x: 30, y: -30 }}
-                hints
-                labels
-                lines={[
-                  { moves: [["U'"], ["L"]], durations: [1500, 1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WGO", "GO", "WO", "WB", "WR", "WG"]}
-                ]}
-                progress
-                startHighlighted
-              />
-            </div>
+        <p>{`From now on, our target slot will be the one we are solving. This example has us solving the orange and green pieces into the back-left.`}</p>
+        <p>{`Turn the top layer so that the corner is on the same side as the target slot and the edge isn't. Our target slot is on the left, so we put the corner on the left and the edge more in the middle.`}</p>
+        <div className="flex flex-col gap-1 pb-6">
+          <span className="text-sm font-bold">{`Prepare to separate`}</span>
+          <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
+            <CubeScene
+              scramble="U F B2 L' B' R F' U' L2 U' F2 U' L2 D2 F2 R2 D' B2 L2 R B' x2 L B D F' D2"
+              angles={{ x: 30, y: -30 }}
+              hints
+              labels
+              lines={[
+                { moves: ["U'"], durations: [1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WGO", "GO", "WO", "WB", "WR", "WG"] }
+              ]}
+              progress
+              startHighlighted
+            />
           </div>
         </div>
-        <p>{`Next, we turn the `}<code>U</code>{` layer so that none of our F2L pieces are in the `}<b>top left</b>{`. Finally we can undo the original `}<code>L</code>{` or `}<code>R</code>{` move. Let's look at a couple attempts at this:`}</p>
+        <p>{`Then, to separate the pieces, all we need to do is raise the target slot. We always turn the left or right layer, never the front or back.`}</p>
+        <div className="flex flex-col gap-1 pb-6">
+          <span className="text-sm font-bold">{`Separate`}</span>
+          <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
+            <CubeScene
+              scramble="U F B2 L' B' R F' U' L2 U' F2 U' L2 D2 F2 R2 D' B2 L2 R B' x2 L B D F' D2 U'"
+              angles={{ x: 30, y: -30 }}
+              hints
+              labels
+              lines={[
+                { moves: ["L"], durations: [1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WGO", "GO", "WO", "WB", "WR", "WG"] }
+              ]}
+              progress
+              startHighlighted
+            />
+          </div>
+        </div>
+
+        <p>{`Next, we turn the top layer so that none of our F2L pieces up there are on the same side as our target slot on the left. All that remains after that is to undo the original `}<code>L</code>{` or `}<code>R</code>{` move.`}</p>
+        <p>{`Let's look at a couple attempts at all this:`}</p>
         <div className="flex flex-row flex-wrap gap-8 pb-6 pt-2">
           <div className="flex flex-col gap-1">
             <span className="text-sm font-bold">{`Trying U' L U L' (Incorrect)`}</span>
@@ -547,7 +545,7 @@ export default function IntuitiveF2L() {
             </div>
           </div>
         </div>
-        <p>{`The first example is wrong because it brought the edge into the top left, and our edge ended up in the middle layer. We need to get the pieces out of the way before we restore cross.`}</p>
+        <p>{`The first example is wrong because the second `}<code>U</code>{` move brought the edge into the top left. We need to get the pieces out of the way before we restore cross.`}</p>
         <p>{`To summarize:`}</p>
         <LessonList>
           <span className="font-normal">{`Figure out if your target slot is on the left or right.`}</span>
@@ -556,14 +554,14 @@ export default function IntuitiveF2L() {
           {`Move the edge and/or corner out of the way.`}
           {`Fix cross.`}
         </LessonList>
-        <p>{`Separating F2L pieces will sometimes involve "hiding" a piece. Our last example had this. We hid the corner in the bottom layer so that we could move the edge around.`}</p>
-        <p>{`But we could also hide the edge and move the corner. For simplicity, we only show hiding the corner.`}</p>
-        <p>{`Sometimes you don't hide a piece. In this next example, moving the target slot to separate the pieces keeps them both in the top layer. We have to be careful to do the right `}<code>U</code>{` move after. Before you click play, figure out which move exposes the target slot.`}</p>
+        <p>{`Solving F2L will sometimes involve "hiding" a piece. Our last example had this. We hid the corner in the bottom layer so that we could move the edge around.`}</p>
+        <H3>Bonus example</H3>
+        <p>{`Sometimes you don't hide a piece. Here, lifting the target slot to separate the pieces keeps them both in the top layer. We have to be careful to do the right `}<code>U</code>{` move after. Before you click play, figure out which move exposes the target slot.`}</p>
         <div className="flex flex-row flex-wrap gap-6 mb-6">
           <div className="flex flex-col gap-1">
             <span className="text-sm font-bold">{`Level 3 — Example 2`}</span>
             <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
+              <AnnotatedCubeScene
                 scramble="U F B2 L' B' R F' U' L2 U' F2 U' L2 D2 F2 R2 D' B2 L2 R B' x2 L B D F' D2 U' L U' L' U L U L' y' U2 R U R' U2 R U R' y2 d'"
                 hints
                 labels
@@ -571,27 +569,34 @@ export default function IntuitiveF2L() {
                 lines={[
                   { moves: ["L'", "U2", "L"], durations: [1500,2000,1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "WGR", "GR"] }
                 ]}
+                annotations={[
+                  { ...BOTTOM_LEFT_TEXT, text: "Expose slot and separate pieces", moves: [0, 0] },
+                  { ...BOTTOM_LEFT_TEXT, text: "Moves pieces out of the way", moves: [1, 1] },
+                  { ...BOTTOM_LEFT_TEXT, text: "Fix cross", moves: [2, 2] },
+                ]}
                 progress
                 startHighlighted
               />
             </div>
           </div>
         </div>
-        <p>{`The corner is already on the left, and the edge isn't, so we don't need to do any `}<code>U</code>{` moves at the start. `}<code>L'</code>{` separates the pieces. `}<code>U2</code>{` gets both pieces out of the left layer. Then we fix cross. `}</p>
+        <p>{`The corner is already on the left with the target slot, and the edge is in the middle, so we don't need to do any `}<code>U</code>{` moves at the start.`}</p>
 
         <H2>On Level 2? Pair pieces</H2>
 
         {/* TODO: add fun image */}
-        <p>{`We're getting there. This can all feel like a lot, or even be overwhelming. But the good news is that once you know how to do all these steps, you'll be well on your way to having good F2L without a lot of bad habits, just some inefficiencies.`}</p>
-
+        <H3>Good progress!</H3>
+        <p>{`We're more than halfway done. We got the pieces into the top layer, made the edge is good, and separated the pieces. This can all feel like a lot, or even be overwhelming.`}</p>
+        <p>{`The good news is that once you know how to do all these steps, you'll be well on your way to having good F2L without a lot of bad habits, just some inefficiencies.`}</p>
+        <H3>The three cases</H3>
         <p>{`There's three cases you can have at Level 2. When we have the first two cases, we're going to set up a connected pair. Otherwise, a split pair:`}</p>
 
         <Level2CasesDiagram />
         
         <p>{`Let's look at how we deal with each case. After, we'll summarize to make this easier to remember.`}</p>
       
-        <H3>Cross color on top</H3>
-        <p>{`With this first case, we first need to turn the top layer so that the edge "connects" to the center. The edge and the center color will match. Here's an example:`}</p>
+        <H3>Cross color on top of corner</H3>
+        <p>{`Turn the top layer so that the edge "connects" to the center. The edge and the center color will match. Here's an example:`}</p>
         <div className="flex flex-col gap-1 pb-6">
           <span className="text-sm font-bold">{`Cross color on top case — Connect edge`}</span>
           <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
@@ -612,7 +617,7 @@ export default function IntuitiveF2L() {
         <div className="flex flex-col gap-1 pb-6">
           <span className="text-sm font-bold">{`Cross color on top case — Solve case`}</span>
           <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-            <CubeScene
+            <AnnotatedCubeScene
               scramble="y U B2 L D F L' B D R U2 B2 D' B2 D2 B2 L2 D' R2 L2 D L2 x2 L' F' B' R D L2 R U R' d' U"
               angles={{ x: 30, y: -30 }}
               hints
@@ -620,13 +625,19 @@ export default function IntuitiveF2L() {
               lines={[
                 { moves: ["L'", "U'", "L"], durations: [1500, 1500, 1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "WBO", "BO"] }
               ]}
+              annotations={[
+                { ...BOTTOM_LEFT_TEXT, text: "Hide edge", moves: [0, 0] },
+                { ...BOTTOM_LEFT_TEXT, text: "Put corner on top of edge", moves: [1, 1] },
+                { ...BOTTOM_LEFT_TEXT, text: "Fix cross", moves: [2, 2] },
+              ]}
               progress
               startHighlighted
             />
           </div>
         </div>
         <H3>Top colors match</H3>
-        <p>{`This next case, we hide the corner instead of the edge. We do that by putting the corner diagonal from the target slot. If the target slot is front-right, put the corner in the back-right. If the target slot is back-left, put the corner front-left. And so on.`}</p>
+        <p>{`This next case, we hide the corner instead of the edge.`}</p>
+        <p>{`Turn the top layer so that the corner is diagonal from the target slot. If the target slot is front-right, put the corner in the back-right. If the target slot is back-left, put the corner in the front-left. And so on.`}</p>
         <div className="flex flex-row flex-wrap gap-8 pb-6 pt-2">
           <div className="flex flex-col gap-1">
             <span className="text-sm font-bold">{`Top colors match case — Place corner diagonal`}</span>
@@ -649,19 +660,27 @@ export default function IntuitiveF2L() {
             <DiagonalDiagram />
           </div>
         </div>
-        <p>{`Take a close look at the cube with the red-blue F2L pieces above after we move the corner. Our goal here is to make a connected pair. If the blue edge was to the right of the blue corner, we'd have that. The blue stickers on top would connect, and the red ones would too.`}</p>
-        <p>{`After we hide the corner, we need to put the edge at that same location. You'll get good at visualizing this with practice, but for now, let's see what that looks like.`}</p>
+        <p>{`Hide the corner by lifting the target slot.`}</p>
+        <p>{`Now ask: Is the corner in the front or back layer?`}</p>
+        <p>{`Turn the top layer so that the edge is also in the front or back, whichever layer the corner is in.`}</p>
+        <p>{`Then unhide the corner. The pieces will now be paired.`}</p>
         <div className="flex flex-row flex-wrap gap-8 pb-6 pt-2">
           <div className="flex flex-col gap-1">
             <span className="text-sm font-bold">{`Top colors match case — Solve case`}</span>
             <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="y2 U F U2 D' F' B U' L' F L2 D2 F2 L2 U L2 U' B2 R2 U2 D' x2 D' B R D' B2 L' B' D' U' B U B' U'"
+              <AnnotatedCubeScene
+                scramble="y2 U F U2 D' F' B U' L' F L2 D2 F2 L2 U L2 U' B2 R2 U2 D' x2 D' B R D' B2 L' B' D' U' B U B'"
                 angles={{ x: 30, y: -30 }}
                 hints
                 labels
                 lines={[
-                  { moves: [["L"], ["U2"], ["L'"]], durations: [1500, 1500, 1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "WBR", "BR"] }
+                  { moves: [["U'"], ["L"], ["U2"], ["L'"]], durations: [1500, 1500, 1500, 1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "WBR", "BR"] }
+                ]}
+                annotations={[
+                  { ...BOTTOM_LEFT_TEXT, text: "Place corner diagonal from target slot", moves: [0, 0] },
+                  { ...BOTTOM_LEFT_TEXT, text: "Hide corner in front", moves: [1, 1] },
+                  { ...BOTTOM_LEFT_TEXT, text: "Move edge to front with corner", moves: [2, 2] },
+                  { ...BOTTOM_LEFT_TEXT, text: "Un-hide corner", moves: [3, 3] },
                 ]}
                 progress
                 startHighlighted
@@ -671,12 +690,17 @@ export default function IntuitiveF2L() {
           <div className="flex flex-col gap-1">
             <span className="text-sm font-bold">{`Top colors match case — Bonus example`}</span>
             <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="y2 U F U2 D' F' B U' L' F L2 D2 F2 L2 U L2 U' B2 R2 U2 D' x2 D' B R D' B2 L' B' D' U' B U B' L' U2 L d"
+              <AnnotatedCubeScene
+                scramble="y2 U F U2 D' F' B U' L' F L2 D2 F2 L2 U L2 U' B2 R2 U2 D' x2 D' B R D' B2 L' B' D' U' B U B' L' U2 L d U'"
                 hints
                 labels
                 lines={[
-                  { moves: ["U'", "R", "U", "R'"], durations: [1500, 1500, 1500, 1500], delay: 500, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "WGR", "GR"] }
+                  { moves: ["R", "U", "R'"], durations: [1500, 1500, 1500], delay: 500, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "WGR", "GR"] }
+                ]}
+                annotations={[
+                  { ...BOTTOM_LEFT_TEXT, text: "Corner already diagonal. Hide it.", moves: [0, 0] },
+                  { ...BOTTOM_LEFT_TEXT, text: "Move edge to back with corner", moves: [1, 1] },
+                  { ...BOTTOM_LEFT_TEXT, text: "Un-hide corner", moves: [2, 2] },
                 ]}
                 progress
               />
@@ -685,7 +709,7 @@ export default function IntuitiveF2L() {
         </div>
         <H3>Top colors different</H3>
         <p>{`The last Level 2 case is when the two colors on top of the F2L pieces are different, but cross color isn't on top.`}</p>
-        <p>{`Like the top colors matching case, we're going to put the corner diagonal from the target slot, then hide the corner by bringing the target slot up. The only difference is where we move the edge to after.`}</p>
+        <p>{`Like in the last case, moves the corner to be diagonal from the target slot.`}</p>
         <div className="flex flex-col gap-1 pb-6">
           <span className="text-sm font-bold">{`Top colors different case — Place corner diagonal`}</span>
           <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
@@ -694,26 +718,32 @@ export default function IntuitiveF2L() {
               hints
               labels
               lines={[
-                { moves: ["U2"], durations: [1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "WGO", "GO"] }
+                { moves: ["U2"], durations: [2000], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "WGO", "GO"] }
               ]}
               progress
               startHighlighted
             />
           </div>
         </div>
-        <p>{`Once the corner is in the right position, take note of which side of the cube it is on, left or right? We need to put the edge on the opposite face as that.`}</p>
-        <p>{`In our example, the corner is on the right. So the edge needs to go on the left.`}</p>
-        <p>{`As before, we hide the corner by lifting up the target slot, move the edge where it needs to go, then un-hide the corner.`}</p>
+        <p>{`Hide the corner by raising the target slot.`}</p>
+        <p>{`Now ask: is the corner in the left or right layer? We need to put the edge on the opposite layer as that.`}</p>
+        <p>{`In our example, the corner is on the right, so the edge needs to go on the left. We turn the top layer accordingly.`}</p>
+        <p>{`Then we un-hide the corner as normal.`}</p>
         <div className="flex flex-row flex-wrap gap-8 pb-6 pt-2">
           <div className="flex flex-col gap-1">
             <span className="text-sm font-bold">{`Top colors different case — Solve case`}</span>
             <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
+              <AnnotatedCubeScene
                 scramble="y U F U2 D' F' B U' L' F L2 D2 F2 L2 U L2 U' B2 R2 U2 D' x2 D' B R D' B2 L' B' D' d U' R U' R' U' U2"
                 hints
                 labels
                 lines={[
                   { moves: [["R"], ["U"], ["R'"]], durations: [1500, 1500, 1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "WGO", "GO"] }
+                ]}
+                annotations={[
+                  { ...BOTTOM_LEFT_TEXT, text: "Hide corner diagonal from target slot", moves: [0, 0] },
+                  { ...BOTTOM_LEFT_TEXT, text: "Move edge to opposite side from corner", moves: [1, 1] },
+                  { ...BOTTOM_LEFT_TEXT, text: "Fix cross", moves: [2, 2] },
                 ]}
                 progress
                 startHighlighted
@@ -731,7 +761,8 @@ export default function IntuitiveF2L() {
 
         <p>{`We're almost done!`}</p>
         <H2>On Level 1? Insert pair</H2>
-        <p>{`To solve the connected pair case, we make sure that the pair isn't in the same layer, left or right, as the target slot.`}</p>
+        <H3>Solving connected pairs</H3>
+        <p>{`Turn the top layer to make sure that the pair isn't in the same layer, left or right, as the target slot.`}</p>
         <div className="flex flex-col gap-1 pb-6">
           <span className="text-sm font-bold">{`Connected pair — Get pair out of the way`}</span>
           <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
@@ -747,7 +778,7 @@ export default function IntuitiveF2L() {
             />
           </div>
         </div>
-        <p>{`The target slot is in the right layer, so we turned the top face so that the connected pair wasn't in that layer.`}</p>
+        <p>{`The target slot is in the right layer, so we turned the top face so that the connected pair isn't in that layer.`}</p>
         <p>{`Then we raise the target slot, connect the pair to the cross edge, and fix cross.`}</p>
         <div className="flex flex-row flex-wrap gap-8 pb-6 pt-2">
           <div className="flex flex-col gap-1">
@@ -781,7 +812,8 @@ export default function IntuitiveF2L() {
             </div>
           </div>
         </div>
-        <p>{`When we have the split pair case, we need to be a bit more specific about where we put it. The corner of the split pair needs to go directly above the target slot.`}</p>
+        <H3>Solving split pairs</H3>
+        <p>{`Turn the top layer to put the corner directly above the target slot.`}</p>
         <div className="flex flex-col gap-1 pb-6">
           <span className="text-sm font-bold">{`Split pair — Get corner on top of target slot`}</span>
           <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
@@ -797,7 +829,7 @@ export default function IntuitiveF2L() {
             />
           </div>
         </div>
-        <p>{`From there it's very similar to the connected pair case. We raise the target slot, which connects the pieces. We move the `}<code>U</code>{` layer to connect the pair to the cross edge, and we fix cross.`}</p>
+        <p>{`From there it's very similar to the connected pair case. We raise the target slot, which connects the pieces. Move the `}<code>U</code>{` layer to connect the pair to the cross edge, then fix cross.`}</p>
         <div className="flex flex-row flex-wrap gap-8 pb-6 pt-2">
           <div className="flex flex-col gap-1">
             <span className="text-sm font-bold">{`Split pair — Insert pair`}</span>
@@ -829,7 +861,7 @@ export default function IntuitiveF2L() {
             </div>
           </div>
         </div>
-        <p>{`Notice how when lift up the target slot, we connect the pieces together. Then, it's like we pull the pair into the slot. If you have to solve a split pair into one of the back two slots, it's a bit more like pulling. But nothing about the idea changes. A lot of learning to cube is getting used to how to mirror and rotate cases in your head to see similarities.`}</p>
+        <p>{`Notice how when lift up the target slot, we connect the pieces together. Then, it's like we pull the pair into the slot. If you have to solve a split pair into one of the back two slots, it's a bit more like pushing, but nothing about the idea changes.`}</p>
 
         <H1>Full examples</H1>
         <H2>Example 1</H2>
@@ -872,7 +904,7 @@ export default function IntuitiveF2L() {
           </div>
         </div>
         <p>{`Now we have the Level 2 case where the colors on top of the F2L pieces match.`}</p>
-        <p>{`To solve the color matching case, remember that we hide the corner by putting it diagonal from the target slot. That means putting the corner in the back-right. The same as normal: we raise the target slot. This time our goal is to move the edge so that the corner will connect to it when we fix cross.`}</p>
+        <p>{`To solve the color-matching case, we hide the corner by putting it diagonal from the target slot. That means putting the corner in the back-right. Then we raise the target slot which hides the corner in the back. The edge needs to move to that same layer: in the back.`}</p>
         <div className="flex flex-row flex-wrap gap-6 mb-6">
           <div className="flex flex-col gap-1">
             <span className="text-sm font-bold">Example 1 — Pair pieces</span>
@@ -911,8 +943,8 @@ export default function IntuitiveF2L() {
         </div>
         <p>{`This is just an example of the procedure. This isn't actually the best way to solve this pair, because we're allowed to modify other slots than just our target slot, if they aren't solved. But that's beyond the scope of this tutorial.`}</p>
         <H2>Example 2</H2>
-        <p>{`This time, we have a couple pairs already solved in the front two slots. This won't change much, but it does mean we can't see any pairs very easily. But we do see a blue-red edge. Tilting the cube would reveal that the blue-red-white corner is in the back right slot. We'll solve that.`}</p>
-        <p>{`This is a Level 5 case, so we need to take out the corner. There's many ways we can do this. One idea that works here is to keep the edge on the right. When we raise the target slot, that will hide the edge and keep it out of the way. After that, we move the `}<code>U</code>{` layer and fix cross again.`}</p>
+        <p>{`In this example, the front two slots are already solved. This won't change much, but it does mean we can't see any pairs very easily. But we do see a blue-red edge. Tilting the cube would reveal that the blue-red-white corner is in the back-right slot. We'll solve that.`}</p>
+        <p>{`This is a Level 5 case, so we need to take out the corner. There's many ways we can do this. One idea that works here is to just raise the target slot. That will hide the edge. After that, we move the `}<code>U</code>{` layer to get the corner out of the way, then fix cross again.`}</p>
         <div className="flex flex-row flex-wrap gap-6 mb-6">
           <div className="flex flex-col gap-1">
             <span className="text-sm font-bold">Example 2 — Take corner out</span>
@@ -969,7 +1001,7 @@ export default function IntuitiveF2L() {
           </div>
         </div>
         <p>{`The final step is to insert.`}</p>
-        <p>{`For split pairs, the corner always goes right above the target slot. We start with `}<code>U</code>{`, then insert by pulling the edge in with the corner.`}</p>
+        <p>{`For split pairs, the corner always goes directly above the target slot. So we do `}<code>U</code>{`. Then, insert by pulling the edge in along with the corner.`}</p>
         <div className="flex flex-row flex-wrap gap-6 mb-6">
           <div className="flex flex-col gap-1">
             <span className="text-sm font-bold">Example 2 — Insert pair</span>
@@ -1110,7 +1142,7 @@ function DiagonalDiagram() {
   return (
     <ArrowDiagram
       id="diagonal-arrow"
-      facelets="YYYYYYXYY WWWWWWXWW XGGGGGGGG OOOOOOOOO BBBBBXBBX RRXXRRXRR"
+      facelets="YYYYYYXYY XXXXWXXXX XGGGXGGGG OOOOXOOOO BBBBXXBBX RRXXXRXRR"
       angles={{ x: 30, y: -45 }}
       from={{ x: 0, y: 250, z: -100 }}
       to={{ x: 0, y: 50, z: 100 }}
