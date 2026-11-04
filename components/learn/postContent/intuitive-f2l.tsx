@@ -137,7 +137,8 @@ export default function IntuitiveF2L() {
         <p>{`We want to be able to tell if an edge is good quickly, without turning the cube.`}</p>
         <p>{`We'll only be talking about F2L edges in the top layer. That edge will have one sticker on top and one sticker on the side. If the side color matches the left or right center color, it's a good edge.`}</p>
         <GoodEdgeDiagram />
-        <p>{`What about this orange-green edge? Good or bad? Hint: the labels show that the green center is in the front.`}</p>
+        <p>{`What about this orange-green edge? Good or bad?`}</p>
+        <p>{`Hint: the labels show that the green center is in the front.`}</p>
         <div className="w-80 h-80 mb-2  border border-neutral-400 rounded-sm overflow-hidden">
           <CubeImage
             facelets="ORYGYRGYRGWRWWWRWORGYOGBWGGBYGYOOWOBOBBBBGWBWYOYRRYBRO"
@@ -158,7 +159,7 @@ export default function IntuitiveF2L() {
           {`It's a good edge. The left center is red, so the right center is orange. The side color on the edge matches the right center.`}
         </div>
         <H2>Level 1 — Are the pieces paired?</H2>
-        <p>{`"Paired" means the F2L pieces can be solved in 3 or 4 moves. There's only two types of pairs.`}</p>
+        <p>{`"Paired" means the F2L pieces can be solved in 3 or 4 moves. There's only two types of pairs: connected and split.`}</p>
         <H3>Recognizing a connected pair</H3>
         <p>{`A "connected" pair is when the pieces are adjacent and the colors line up correctly. As far as this lesson is concerned, the edge must be good too. If the edge is bad, we're still on Level 4.`}</p>
         <div className="flex flex-col gap-1 mb-6">
@@ -266,11 +267,11 @@ export default function IntuitiveF2L() {
 
         <H1>Descending the tree</H1>
         <p>{`We're going to descend the tree by combining "triggers". Triggers are short, fast sequences of moves. You might already know one, called "sexy move", which is `}<code>{`R U R' U'`}</code>.</p>
-        <p>{`All of the triggers we'll need are going to use `}<code>R</code>{`, `}<code>U</code>{`, and `}<code>L</code>{` moves. Unless you know what you're doing, don't use `}<code>F</code>{` or `}<code>B</code>{` moves during F2L. Turning the front and back faces is usually slow.`}</p>
+        <p>{`All of the triggers we'll need are going to use `}<code>R</code>{`, `}<code>U</code>{`, and `}<code>L</code>{` moves. We won't use `}<code>F</code>{` or `}<code>B</code>{` moves. Turning the front and back faces is usually slow.`}</p>
         <p>{`We'll use `}<code>y</code>{` moves only on Level 4. Besides that, don't rotate the cube. If you can't see pieces, you can tilt the cube a little instead.`}</p>
-        <p>{`All these restrictions will make it easier to figure out what to do. You'll have fewer options, which means there's fewer things to check.`}</p>
+        <p>{`All these restrictions will make it easier to figure out what to do. You'll have fewer options, which means there's fewer things to try.`}</p>
         <H2>On Level 5? Get pieces in top layer</H2>
-        <p>{`When we're on Level 5, our goal is to get both pieces into the top layer. Let's jump right into an example.`}</p>
+        <p>{`When we're on Level 5, our goal is to get both pieces into the top layer.`}</p>
         <div className="flex flex-row flex-wrap gap-6 mb-6">
           <div className="flex flex-col gap-1">
             <span className="text-sm font-bold">Level 5 — Example 1</span>
@@ -286,12 +287,12 @@ export default function IntuitiveF2L() {
           <F2LSlotsDiagram />
         </div>
         <p>{`Here we have a blue-orange edge piece stuck in the front-right "slot". A slot is a location where an F2L corner and edge pair will go.`}</p>
-        <p>{`Any trigger we do will make changes to one of these slots. So we have to be careful which one we change.`}</p>
-        <p>{`The front-right slot isn't solved, so we're allowed to make changes to what pieces are there. That almost goes without saying. The piece we need to get out of the middle layer is in the front-right slot, so of course we have to change it. We'll call the slot we change our "target slot".`}</p>
-        <p>{`The slot we change is determined by the first `}<code>R</code>{` or `}<code>L</code>{` move that we do. If we want to target the front right-slot, we need to move that slot up into the top layer. We do that by turning the right face clockwise.`}</p>
+        <p>{`Any trigger we do will make changes to one of these slots. We'll call the slot we change our "target slot".`}</p>
+        <p>{`On Level 5, the slot we want to change is the one with F2L pieces in it. We want to take them out of the slot.`}</p>
+        <p>{`First, find the `}<code>R</code>{` or `}<code>L</code>{` move that lifts the target slot into the top layer.`}</p>
         <div className="flex flex-row flex-wrap gap-6 mb-6">
           <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Expose front-right slot</span>
+            <span className="text-sm font-bold">Lift up target slot</span>
             <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
               <CubeScene
                 scramble="U' R' U B2 D R F' U2 R2 U B2 D' F2 B2 U' F2 D B2 D' F' L' x2 D L' F' L2 D U2 R' U R U'"
@@ -306,9 +307,9 @@ export default function IntuitiveF2L() {
             </div>
           </div>
         </div>
-        <p>{`But there's a problem. We just unsolved cross! We really need to undo that right face turn with an `}<code>R'</code>{` as soon as possible.`}</p>
-        <p>{`But the cross piece is only in the middle layer. We're still free to turn the top layer, and that's where we just moved the front-right slot to anyway. So let's turn the top layer.`}</p>
-        <p>{`A lot of the experimentation in F2L comes from figuring out whether to do `}<code>U</code>{`, `}<code>U'</code>{`, or `}<code>U2</code>.{` So let's just try one of those. We'll try `}<code>U</code>{`. After, we'll do `}<code>R'</code>{` to solve cross again.`}</p>
+        <p>{`Next, we could do either `}<code>U</code>{`, `}<code>U'</code>{`, or `}<code>U2</code>{`. Soon you'll see why we have options. We'll try `}<code>U</code>{` first.`}</p>
+        <p>{`After, we'll do `}<code>R'</code>{` to solve cross again. We always need to undo the move that we used to lift up the target slot.`}</p>
+        <p>{`We're just doing a trigger: `}<code>{`R U R'`}</code>.</p>
         <div className="flex flex-row flex-wrap gap-6 mb-6">
           <div className="flex flex-col gap-1">
             <span className="text-sm font-bold">{`Trying R U R'`}</span>
@@ -326,9 +327,9 @@ export default function IntuitiveF2L() {
             </div>
           </div>
         </div>
-        <p><code>{`R U R'`}</code>{` is a trigger, and it's basically just sexy move. And it didn't really work. It did take the edge out of the middle layer, but it put the corner we need into the bottom layer.`}</p>
-        <p>{`You'll learn to detect this kind of thing before it happens. If the corner is just above the front-right slot, sexy move will always put the corner into the slot.`}</p>
-        <p>{`We have two ways to change what we try. We can try doing a `}<code>U</code>{` move before we do a trigger, or we can do a different trigger. Let's go back to the original case and try both:`}</p>
+        <p>{`It didn't really work. It did take the edge out of the middle layer, but it put the corner we need into the bottom layer.`}</p>
+        <p>{`This is why you have the option of doing a different `}<code>U</code>{` move in the middle. Another option is to do a `}<code>U</code>{` move before the trigger.`}</p>
+        <p>{`Let's go back to the original case and try both:`}</p>
         <div className="flex flex-row flex-wrap gap-8 pb-6 pt-2">
           <div className="flex flex-col gap-1">
             <span className="text-sm font-bold">{`Trying doing a U move first (U R U R')`}</span>
@@ -361,7 +362,7 @@ export default function IntuitiveF2L() {
             </div>
           </div>
         </div>
-        <p>{`Both worked! In both cases, both pieces are in the top layer. The relevant question is: why?`}</p>
+        <p>{`Both worked! In both cases, both pieces are in the top layer.`}</p>
         <p>{`Doing a `}<code>U</code>{` move first worked because it got the corner out of the way before we started. The different trigger worked because it got both pieces out of the way before we did `}<code>{`R'`}</code>.</p>
         <p>{`To summarize, we descend from Level 5 by:`}</p>
         <LessonList>
@@ -370,8 +371,9 @@ export default function IntuitiveF2L() {
           <span className="font-normal">{`Doing a `}<code>U</code>{` move.`}</span>
           <span className="font-normal">{"Undoing the original "}<code>R</code>{` or `}<code>L</code>{` move.`}</span>
         </LessonList>
-        <p>{`We're basically doing a `}<code>U</code>{` move and then a trigger. We'll use this idea on a lot of the levels. Unlike on Level 5 where there's a bit of ambiguity, we can usually make informed decisions about what trigger we'll need to use.`}</p>
-        <p>{`Let's look at one more example at Level 5. This time, the stuck piece is in the back-left slot.`}</p>
+        <p>{`We're basically doing a `}<code>U</code>{` move and then a trigger. We'll use this idea on a lot of the levels.`}</p>
+        <H3>Bonus example — optional</H3>
+        <p>{`This time, the stuck piece is in the back-left slot.`}</p>
         <div className="flex flex-row flex-wrap gap-6 mb-6">
           <div className="flex flex-col gap-1">
             <span className="text-sm font-bold">Level 5 — Example 2</span>
@@ -386,8 +388,22 @@ export default function IntuitiveF2L() {
             </div>
           </div>
         </div>
-        <p>{`If you got this case facing blue, keep facing blue. You can tilt the cube if you need to see pieces in the back better, but don't change your grip on the cube or do `}<code>U</code>{` moves. This helps avoid common bad habits.`}</p>
-        <p>{`The corner is right on top of the edge. Let's choose to do a `}<code>U</code>{` move to get the corner out of the way. Then we expose the back left slot by turning the left face. After, another `}<code>U</code>{` to get the edge out of that slot. Finally, fix cross.`}</p>
+        <p>{`You can tilt the cube if you need to see pieces in the back better, but don't change your grip on the cube or do `}<code>y</code>{` or `}<code>U</code>{` moves. This helps avoid common bad habits.`}</p>
+        <p>{`We'll do the following four-move solution:`}</p>
+        <div className="grid grid-cols-[auto_auto_1fr] gap-x-3 gap-y-2 mb-6">
+          <div><code>U</code></div>
+          <div>—</div>
+          <div>{`The corner is on top of the edge. Turn the top layer to get the corner out of the way.`}</div>
+          <div><code>L</code></div>
+          <div>—</div>
+          <div>{`Expose the back left slot by turning the left face.`}</div>
+          <div><code>U</code></div>
+          <div>—</div>
+          <div>{`Take the edge out of the exposed active slot.`}</div>
+          <div><code>{`L'`}</code></div>
+          <div>—</div>
+          <div>{`Fix cross.`}</div>
+        </div>
         <div className="flex flex-row flex-wrap gap-6 mb-6">
           <div className="flex flex-col gap-1">
             <span className="text-sm font-bold">Trying U L U L'</span>
@@ -408,10 +424,7 @@ export default function IntuitiveF2L() {
         </div>
 
         <H2>On Level 4? Make edge good</H2>
-        <p>{`After Level 5, descending from Level 4 should feel like a breath of fresh air. All we have to do is a `}<code>y</code>{` or `}<code>{`y'`}</code>{` when there's a bad edge. `}
-        <LessonLink text="Click here" href="/learn/notation/#rule-4-rotations-get-xyz" />
-          {` to review what a `}<code>y</code>{` move is.`}
-        </p>
+        <p>{`After Level 5, descending from Level 4 should feel like a breath of fresh air. All we have to do is a `}<code>y</code>{` or `}<code>{`y'`}</code>{` when there's a bad edge. `}</p>
         <p>{`Here's a Level 4 case, meaning the edge is bad and both pieces are in the top layer. We can rotate either direction and that'll make the edge good.`}</p>
         <div className="flex flex-row flex-wrap gap-8 pb-6 pt-2">
           <div className="flex flex-col gap-1">
