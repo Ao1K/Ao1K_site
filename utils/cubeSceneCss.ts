@@ -58,4 +58,32 @@ export const CUBE_SCENE_CSS = `.cube-scene {
   height: 100%;
   width: 0%;
   background: #e00;
+}
+
+.cube-scene .annotations {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  container-type: inline-size;
+  pointer-events: none;
+}
+
+.cube-scene .annotation {
+  position: absolute;
+  padding: 0.2em 0.5em;
+  border-radius: 0.3em;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  font-size: 5cqw;
+  line-height: 1.25;
+  opacity: 0;
+  transition: opacity 200ms;
+}
+
+.cube-scene .annotation.shown {
+  opacity: 1;
+}
+
+.cube-scene .annotation:empty {
+  display: none;
 }`

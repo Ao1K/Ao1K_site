@@ -23,6 +23,8 @@ import {
 import { stateFromFacelets } from './cubeFacelets'
 import type { Color } from '../composables/recon/SimpleCube'
 import {
+  ANNOTATION_CLASS,
+  ANNOTATION_SHOWN_CLASS,
   CUBE_SVG_CLASS,
   CYCLE_PAUSE_END_MS,
   CYCLE_PAUSE_START_MS,
@@ -514,6 +516,30 @@ export function createCubeScene(paint: ScenePainter, options: CubeSceneOptions):
   }
 }
 
+type Annotation = {
+  el: HTMLElement
+  firstMove: number
+  lastMove: number
+  holdMs: number
+  cutoffMs: number | null
+  cutoffTimer?: ReturnType<typeof setTimeout>
+}
+
+function readAnnotations(root: HTMLElement): Annotation[] {
+  return Array.from(root.querySelectorAll<HTMLElement>(`.${ANNOTATION_CLASS}`), el => ({
+    el,
+    firstMove: Number(el.dataset.firstMove),
+    lastMove: Number(el.dataset.lastMove),
+    holdMs: Number(el.dataset.holdMs),
+    cutoffMs: el.dataset.cutoffMs ? Number(el.dataset.cutoffMs) : null,
+  }))
+}
+
+function hideAnnotation(annotation: Annotation): void {
+  clearTimeout(annotation.cutoffTimer)
+  annotation.el.classList.remove(ANNOTATION_SHOWN_CLASS)
+}
+
 export function createScene(root: HTMLElement, island: SceneIsland): void {
   const svgEl = root.querySelector<SVGElement>(`.${CUBE_SVG_CLASS}`)
   const overlayEl = root.querySelector<HTMLElement>('.overlay')
@@ -535,6 +561,7 @@ export function createScene(root: HTMLElement, island: SceneIsland): void {
   })
 
   const totalMoves = island.lines.reduce((sum, line) => sum + line.moves.length, 0)
+  const annotations = readAnnotations(root)
 
   let paused = !island.autoplay
   let timeoutId: ReturnType<typeof setTimeout> | null = null
@@ -552,6 +579,16 @@ export function createScene(root: HTMLElement, island: SceneIsland): void {
     if (timeoutId) {
       clearTimeout(timeoutId)
       timeoutId = null
+    }
+  }
+
+  function showAnnotationsStartingAt(moveNumber: number): void {
+    for (const annotation of annotations) {
+      if (annotation.firstMove !== moveNumber) continue
+      annotation.el.classList.add(ANNOTATION_SHOWN_CLASS)
+      if (annotation.cutoffMs !== null) {
+        annotation.cutoffTimer = setTimeout(() => hideAnnotation(annotation), annotation.cutoffMs)
+      }
     }
   }
 
@@ -580,6 +617,20 @@ export function createScene(root: HTMLElement, island: SceneIsland): void {
     if (paused) return
     lineIdx = idx
     moveIdx = mi
+
+    const finished = annotations.filter(
+      a => a.lastMove < movesPlayed && a.el.classList.contains(ANNOTATION_SHOWN_CLASS),
+    )
+    const holdMs = Math.max(0, ...finished.map(a => a.holdMs))
+    if (holdMs > 0) {
+      timeoutId = setTimeout(() => {
+        finished.forEach(hideAnnotation)
+        playMove(idx, mi)
+      }, holdMs)
+      return
+    }
+    finished.forEach(hideAnnotation)
+
     const line = island.lines[idx]
     if (mi >= line.moves.length) {
       playLine(idx + 1)
@@ -590,6 +641,7 @@ export function createScene(root: HTMLElement, island: SceneIsland): void {
       progressFill.style.transition = `width ${turnMs}ms linear`
       progressFill.style.width = `${((movesPlayed + 1) / totalMoves) * 100}%`
     }
+    showAnnotationsStartingAt(movesPlayed)
     scene.applyMove(line.moves[mi], turnMs, () => {
       movesPlayed++
       moveIdx = mi + 1
@@ -603,6 +655,7 @@ export function createScene(root: HTMLElement, island: SceneIsland): void {
       progressFill.style.transition = 'none'
       progressFill.style.width = '0%'
     }
+    annotations.forEach(hideAnnotation)
     scene.setFacelets(island.facelets)
     scene.setHighlight(restHighlight(island), true)
     lineIdx = 0

@@ -102,3 +102,5 @@ Ctrl+K to search for algs... somewhere.
 
 Try using "buttons" styling for each stat in OG preview
 Consider moving Awkward case #3 to its own section. It doesn't fit cleanly when "Use one piece to solve an awkward" doesn't cover it. Stuck pieces are kind of their own thing.
+
+Calculate movecount and rotation count of my tutorial vs standard F2L tutorial (e.g. cubehead). Or just some cases.

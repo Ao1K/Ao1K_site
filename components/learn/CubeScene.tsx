@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { buildSceneIsland } from "../../utils/cubeSceneAuthoring";
 import type { CubeLookProps, CubeSceneLine } from "./cubeProps";
 import { islandFrameZero, SCENE_DATA_ATTR, CUBE_SVG_CLASS } from "../../utils/cubeSceneIsland";
@@ -22,9 +23,10 @@ export type CubeSceneProps = CubeLookProps & {
   /** Drag the cube to rotate the view. Default `false`. */
   orbit?: boolean;
   autoplay?: boolean;
+  children?: ReactNode;
 };
 
-export default function CubeScene({ className, ...scene }: CubeSceneProps) {
+export default function CubeScene({ className, children, ...scene }: CubeSceneProps) {
   const island = buildSceneIsland(scene);
   const frameZero = buildCubeSvgBody(islandFrameZero(island));
   const hasMoves = island.lines.some((line) => line.moves.length > 0);
@@ -47,6 +49,7 @@ export default function CubeScene({ className, ...scene }: CubeSceneProps) {
           </svg>
         </div>
       )}
+      {children}
       {island.progress && (
         <div className="progress">
           <div className="progress-fill" />
