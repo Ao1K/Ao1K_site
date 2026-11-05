@@ -43,7 +43,7 @@ export default function IntuitiveF2L() {
           `Peaku struggles to his feet.`
         ]} />
         <p>{`First Two Layers (F2L) is like a tree with many branches. Each branch is like an F2L case that you need to be able to solve. Your goal is to get to the bottom of the tree.`}</p>
-        <p>{`It is not possible to memorize all these branches. Not right way. Instead, we figure out our way down the tree, step by step. Each intuitive step will get you closer to the bottom. You can learn more details of the tree over time, which makes you faster and more efficient.`}</p>
+        <p>{`It is not possible to memorize all these branches. Not right away. Instead, we figure out our way down the tree, step by step. Each intuitive step will get you closer to the bottom. You can learn more details of the tree over time, which makes you faster and more efficient.`}</p>
         <p>
           <LessonLink text="As we've learned" href="/learn/what-to-learn/#f2l" />
           {`, you solve four corner-and-edge pairs. So it is like we descend the tree four times.`}
