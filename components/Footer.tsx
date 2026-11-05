@@ -11,7 +11,9 @@ const glory = Glory({
   preload: false,
 });
 
-export default function Footer() {
+const repoUrl = 'https://github.com/Ao1K/Ao1K_site';
+
+export default function Footer({ lessonSlug }: { lessonSlug?: string }) {
 
 
   return (
@@ -33,7 +35,7 @@ export default function Footer() {
         Connect on Discord
       </a>
       <a
-        href="https://github.com/Ao1K/Ao1K_site"
+        href={repoUrl}
         target="_blank"
         rel="noopener noreferrer"
         className="flex items-center gap-2 hover:text-primary-100"
@@ -42,8 +44,30 @@ export default function Footer() {
         Contribute || Report bugs
       </a>
       <Link href="/credits" className="hover:text-primary-100">
-        Credits
+        Alg credits
       </Link>
+      {lessonSlug && (
+        <>
+          <a
+            href={`${repoUrl}/commits/main/components/learn/postContent/${lessonSlug}.tsx`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-primary-100"
+          >
+            Lesson contributions
+          </a>
+          <a
+            href="https://creativecommons.org/licenses/by/4.0/"
+            target="_blank"
+            rel="license noopener noreferrer"
+            className="text-center hover:text-primary-100"
+          >
+            Lesson by Ao1K and contributors,
+            <br />
+            licensed under CC BY 4.0
+          </a>
+        </>
+      )}
       </div>
     </footer>
   );

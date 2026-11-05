@@ -1,24 +1,23 @@
 ## CONTRIBUTION GUIDELINES
 
 ### Security Vulnerabilities: 
-  If you find a security vulnerability, privately message an admin on our [discord server](https://discord.gg/WMm6JBgt2W).
+If you find a security vulnerability, privately message an admin on our [discord server](https://discord.gg/WMm6JBgt2W).
 
 
 
 ### Reporting Bugs:
-  For non-security bugs:
+For non-security bugs:
 
-  Check GitHub Issues to see if it has already been reported.
-  If not, open a new issue with:
-   - A descriptive title.
-   - A brief explanation.
-   - Clear steps to reproduce the issue.
+Check GitHub Issues to see if it has already been reported.
+If not, open a new issue with:
+  - A descriptive title.
+  - A brief explanation.
+  - Clear steps to reproduce the issue.
 
 
 
 ### Feature Discussions: 
 Discuss new feature ideas on our [discord](https://discord.gg/WMm6JBgt2W). You can also make a post in the #feature-ideas channel.
-
    
 
 ### Pull Requests: 
@@ -28,6 +27,14 @@ The most likely way to get a PR accepted would be through what you want to chang
 Features should prioritize UX and be easily reachable by the user.
 
 Any UI changes must work well on mobile devices.
+
+### Writing Lessons:
+Lesson contributions are welcome. As with code, it is recommended that potential contributions are discussed with a Discord admin before you begin writing or editing.
+
+All lesson content on the /learn pages is under the [CC BY 4.0 license](https://creativecommons.org/licenses/by/4.0/)
+
+If you wish to be credited for lesson content, you must create a PR. GitHub's commit history is used to track contributions. A link to each lesson's commit history is included at the bottom of each lesson. If a lesson change is made by more than just the site owner, merges should not be squashed so that commit history is fully preserved.
+
 
 **Restrictions:**
  - LLM use is all well and good, but you must fully understand your PR.

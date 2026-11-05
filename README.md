@@ -23,5 +23,12 @@ Refer to [CONTRIBUTING.md](https://github.com/Ao1K/Ao1K_site/blob/main/CONTRIBUT
 
 
 ### License
-This project operates under an [MIT license](https://github.com/Ao1K/Ao1K_site/blob/main/LICENSE). 
+
+#### Code
+All code, including code used for lessons, operates under an [MIT license](https://github.com/Ao1K/Ao1K_site/blob/main/LICENSE). 
+
+#### Lessons
+The lesson content in `components/learn/postContent/` is under the [CC BY 4.0 license](https://creativecommons.org/licenses/by/4.0/). The license is available in that folder.
+
+When reusing lesson content, credit "Ao1K and contributors" and link to the relevant lesson page(s).
 
