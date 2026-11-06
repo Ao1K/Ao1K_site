@@ -12,6 +12,7 @@ export default function LessonLink({
       <Link
         href={href}
         target="_blank"
+        prefetch={false}
         className="text-base text-primary-400 underline underline-offset-4 hover:text-primary-300 transition-colors"
       >
         {text}

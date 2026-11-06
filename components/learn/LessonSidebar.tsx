@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import ListIcon from "../icons/list";
+import HoverPrefetchLink from "./HoverPrefetchLink";
 import { lessons } from "./lessons";
 
 export default function LessonSidebar() {
   const pathname = usePathname().replace(/\/$/, "") || "/";
-  const router = useRouter();
   const [open, setOpen] = useState(false);
 
   // group lessons by category
@@ -30,7 +30,6 @@ export default function LessonSidebar() {
       <Link
         href="/learn"
         onClick={() => setOpen(false)}
-        onMouseEnter={() => router.prefetch("/learn")}
         className={`block py-1.5 px-2 rounded mb-2 transition-colors font-medium ${
           pathname === "/learn"
             ? "bg-primary-700 text-primary-100"
@@ -67,10 +66,9 @@ export default function LessonSidebar() {
                 const active = pathname === href;
                 return (
                   <li key={lesson.slug}>
-                    <Link
+                    <HoverPrefetchLink
                       href={href}
                       onClick={() => setOpen(false)}
-                      onMouseEnter={() => router.prefetch(href)}
                       className={`block py-1.5 px-2 rounded transition-colors ${
                         active
                           ? "bg-primary-700 text-primary-100"
@@ -78,7 +76,7 @@ export default function LessonSidebar() {
                       }`}
                     >
                       {lesson.title}
-                    </Link>
+                    </HoverPrefetchLink>
                   </li>
                 );
               })}
