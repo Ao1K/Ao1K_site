@@ -394,7 +394,7 @@ to prevent sticky hover on touch devices and enlargement on small screens */
 .cube-scene .progress-fill {
   height: 100%;
   width: 0%;
-  background: #e00;
+  background: #ECE6EF;
 }
 
 .cube-scene .annotations {

@@ -7,6 +7,7 @@ import ExternalLink from "../../ExternalLink";
 import { H1, H2 } from "../LessonHeading"
 import FurtherLearning, { Citation, type Source } from "../FurtherLearning";
 import CubeImage from "../CubeImage";
+import CubeWrapper from "../CubeWrapper";
 import type { PieceName } from "../cubeProps";
 import HandPointingIcon from "../../icons/hand-pointing";
 import CubeScene from "../CubeScene";
@@ -82,217 +83,167 @@ export default function BetterCross() {
           <CenterCycleDiagram />
         </div>
         <p>{`Say we're trying to solve a couple of cross pieces. The orange piece is already attached to the white center. The green one isn't in the cross yet. We could solve orange, then solve green.`}</p>
-        <div className="flex flex-col gap-1 pb-6">
-          <span className="text-sm font-bold">Inefficient way</span>
-          <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-            <CubeScene
-              scramble="x2 F B' L' D2 B2 U F U L' U' R2 B2 D F2 U D2 F2 D F2 L2 D' B' y2 B' L"
-              angles={{ x: -30, y: -45 }}
-              hints
-              lines={[
-                { moves: ["D", "U'", "F2"], durations: [1500, 1500, 2000], delay: 1000, highlight: ["W", "O", "G", "R", "B", "Y", "WO", "WG"] }
-              ]}
-              progress
-            />
-          </div>
-        </div>
+        <CubeWrapper titles={["Inefficient way"]}>
+          <CubeScene
+            scramble="x2 F B' L' D2 B2 U F U L' U' R2 B2 D F2 U D2 F2 D F2 L2 D' B' y2 B' L"
+            angles={{ x: -30, y: -45 }}
+            hints
+            lines={[
+              { moves: ["D", "U'", "F2"], durations: [1500, 1500, 2000], delay: 1000, highlight: ["W", "O", "G", "R", "B", "Y", "WO", "WG"] }
+            ]}
+            progress
+          />
+        </CubeWrapper>
         <p>{`But what if we put the green piece in the cross first?`}</p>
-        <div className="flex flex-col gap-1 pb-6">
-          <span className="text-sm font-bold">Better way</span>
-          <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-            <CubeScene
-              scramble="x2 F B' L' D2 B2 U F U L' U' R2 B2 D F2 U D2 F2 D F2 L2 D' B' y2 B' L"
-              angles={{ x: -30, y: -45 }}
-              hints
-              lines={[
-                { moves: ["L2", "D"], durations: [2000, 1500], delay: 1000, highlight: ["W", "O", "G", "R", "B", "Y", "WO", "WG"] }
-              ]}
-              progress
-            />
-          </div>
-        </div>
+        <CubeWrapper titles={["Better way"]}>
+          <CubeScene
+            scramble="x2 F B' L' D2 B2 U F U L' U' R2 B2 D F2 U D2 F2 D F2 L2 D' B' y2 B' L"
+            angles={{ x: -30, y: -45 }}
+            hints
+            lines={[
+              { moves: ["L2", "D"], durations: [2000, 1500], delay: 1000, highlight: ["W", "O", "G", "R", "B", "Y", "WO", "WG"] }
+            ]}
+            progress
+          />
+        </CubeWrapper>
         <p>{`This demonstrates a really important idea. We can move the bottom layer around when we need to, if it helps us add pieces to the cross.`}</p>
         <p>{`We just have to be sure we put the pieces in the right order. If we're solving white cross, a green piece can't go to the right of an orange piece. It needs to go to the left. Refer to your center colors when you don't remember the order.`}</p>
         <p>{`Here's one more example. We have a cube with just one red-white cross piece left to solve. We could first attach the piece to red, then insert it into the cross. Or we could move the bottom layer instead.`}</p>
-        <div className="flex flex-row flex-wrap gap-8 pb-6 pt-2">
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Inefficient way</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="x2 F B' L' D2 B2 U F U L' U' R2 B2 D F2 U D2 F2 D F2 L2 D' B' y2 B' L D U' F2 B L y'"
-                angles={{ x: -30, y: 45 }}
-                hints
-                lines={[
-                  { moves: ["R", "U", "R'", "F2"], durations: [1500, 1500, 1500, 2000], delay: 1000, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO"] }
-                ]}
-                progress
-              />
-            </div>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Better way</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="x2 F B' L' D2 B2 U F U L' U' R2 B2 D F2 U D2 F2 D F2 L2 D' B' y2 B' L D U' F2 B L y'"
-                angles={{ x: -30, y: 45 }}
-                hints
-                lines={[
-                  { moves: ["D", "R'", "D'"], durations: [1500, 1500, 1500], delay: 1000, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO"] }
-                ]}
-                progress
-              />
-            </div>
-          </div>
-          <p>{`In the "better way", we notice that turning the green face can put the red piece into the cross in one move. But if we did that right away, the cross pieces would no longer be solved relative to each other. By moving the bottom layer first, we can add the red cross piece between the blue and green ones, then fix cross with a `}<code>{`D'`}</code>{` move.`}</p>
-        </div>
+        <CubeWrapper titles={["Inefficient way", "Better way"]}>
+          <CubeScene
+            scramble="x2 F B' L' D2 B2 U F U L' U' R2 B2 D F2 U D2 F2 D F2 L2 D' B' y2 B' L D U' F2 B L y'"
+            angles={{ x: -30, y: 45 }}
+            hints
+            lines={[
+              { moves: ["R", "U", "R'", "F2"], durations: [1500, 1500, 1500, 2000], delay: 1000, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO"] }
+            ]}
+            progress
+          />
+          <CubeScene
+            scramble="x2 F B' L' D2 B2 U F U L' U' R2 B2 D F2 U D2 F2 D F2 L2 D' B' y2 B' L D U' F2 B L y'"
+            angles={{ x: -30, y: 45 }}
+            hints
+            lines={[
+              { moves: ["D", "R'", "D'"], durations: [1500, 1500, 1500], delay: 1000, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO"] }
+            ]}
+            progress
+          />
+        </CubeWrapper>
+        <p>{`In the "better way", we notice that turning the green face can put the red piece into the cross in one move. But if we did that right away, the cross pieces would no longer be solved relative to each other. By moving the bottom layer first, we can add the red cross piece between the blue and green ones, then fix cross with a `}<code>{`D'`}</code>{` move.`}</p>
         <H2>{`Don't rotate during cross`}</H2>
         <p>{`Similar to how we want to do cross on bottom, we also don't want to rotate the entire cube during cross. Rotating is wasted time, and because cross is so short, you can't usually make up that time by doing faster, easier turns.`}</p>
         <p>{`This is unlike F2L, where rotating can make up for the time it wastes.`}</p>
         <p>{`In a future lesson, we'll talk about fingertricks. Fingertricks help us work around some of the difficulties that a rotationless cross solution creates.`}</p>
         <H2>Know how to solve bad pieces</H2>
         <p>{`Let's ignore the entire cube except for one cross piece. We want to add it to the cross. Sometimes we can do this in one move, sometimes we can't.`}</p>
-        <div className="flex flex-row flex-wrap gap-8 pb-6 pt-2">
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Add piece in one move</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="F B' L' D2 B2 U F U L' U' R2 B2 D F2 U D2 F2 D F2 L2 D' x2 L' y' D' d"
-                angles={{ x: 30, y: 30 }}
-                hints
-                lines={[
-                  { moves: ["F2"], durations: [2000], delay: 500, highlight: ["W", "O", "G", "R", "B", "Y", "WO"] }
-                ]}
-                progress
-              />
-            </div>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">{`Can't add piece in one move`}</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="F B' L' D2 B2 U F U L' U' R2 B2 D F2 U D2 F2 D F2 L2 D' x2 L' y' D' d F R U"
-                angles={{ x: 30, y: 30 }}
-                hints
-                lines={[
-                  { moves: ["F2"], durations: [2000], delay: 500, highlight: ["W", "O", "G", "R", "B", "Y", "WO"] }
-                ]}
-                progress
-                orbit
-              />
-            </div>
-          </div>
-        </div>
+        <CubeWrapper titles={["Add piece in one move", "Can't add piece in one move"]}>
+          <CubeScene
+            scramble="F B' L' D2 B2 U F U L' U' R2 B2 D F2 U D2 F2 D F2 L2 D' x2 L' y' D' d"
+            angles={{ x: 30, y: 30 }}
+            hints
+            lines={[
+              { moves: ["F2"], durations: [2000], delay: 500, highlight: ["W", "O", "G", "R", "B", "Y", "WO"] }
+            ]}
+            progress
+          />
+          <CubeScene
+            scramble="F B' L' D2 B2 U F U L' U' R2 B2 D F2 U D2 F2 D F2 L2 D' x2 L' y' D' d F R U"
+            angles={{ x: 30, y: 30 }}
+            hints
+            lines={[
+              { moves: ["F2"], durations: [2000], delay: 500, highlight: ["W", "O", "G", "R", "B", "Y", "WO"] }
+            ]}
+            progress
+            orbit
+          />
+        </CubeWrapper>
         <p>{`Remember that we can turn the bottom layer however we need. So if it's just one piece, it doesn't matter that the cross piece is in the wrong spot in the `}<code>D</code>{` layer. We can fix it later.`}</p>
         <p>{`If we need to solve a piece that can't go into the cross in one move, we can do it in three moves like this:`}</p>
-        <div className="flex flex-col gap-1 pb-8">
-          <span className="text-sm font-bold">{`Bad case #1 — Flipped wrong in top`}</span>
-          <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-            <CubeScene
-              scramble="x2 F B' L' D2 B2 U F U L' U' R2 B2 D F2 U D2 F2 D F2 L2 D' B' y2 B' L D U' F2 B L y' F' U' E'"
-              hints
-              lines={[
-                { moves: ["R'", "F", "R"], durations: [1500, 1500, 1500], delay: 500, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO"] }
-              ]}
-              progress
-            />
-          </div>
-        </div>
+        <CubeWrapper titles={["Bad case #1 — Flipped wrong in top"]}>
+          <CubeScene
+            scramble="x2 F B' L' D2 B2 U F U L' U' R2 B2 D F2 U D2 F2 D F2 L2 D' B' y2 B' L D U' F2 B L y' F' U' E'"
+            hints
+            lines={[
+              { moves: ["R'", "F", "R"], durations: [1500, 1500, 1500], delay: 500, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO"] }
+            ]}
+            progress
+          />
+        </CubeWrapper>
         <p>{`Note how if there isn't a cross piece to the right of the one we're solving, we can skip the last move.`}</p>
         <p>{`What if the cross piece is already in the bottom layer, but flipped the wrong way? Before you click play, think about what you think the best way might be.`}</p>
-        <div className="flex flex-col gap-1 pb-8">
-          <span className="text-sm font-bold">{`Bad case #2 — Flipped wrong in bottom`}</span>
-          <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-            <CubeScene
-              scramble="R2 F' U2 D F L F' D' F2 U' F2 D' R2 D L2 F2 D B2 L D x2 R' D F2 L2 y2"
-              angles={{ x: -30, y: 30 }}
-              hints
-              lines={[
-                { moves: ["F'", "D", "R'", "D'"], durations: [1500, 1500, 1500, 1500], delay: 500, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO"] }
-              ]}
-              progress
-            />
-          </div>
-        </div>
+        <CubeWrapper titles={["Bad case #2 — Flipped wrong in bottom"]}>
+          <CubeScene
+            scramble="R2 F' U2 D F L F' D' F2 U' F2 D' R2 D L2 F2 D B2 L D x2 R' D F2 L2 y2"
+            angles={{ x: -30, y: 30 }}
+            hints
+            lines={[
+              { moves: ["F'", "D", "R'", "D'"], durations: [1500, 1500, 1500, 1500], delay: 500, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO"] }
+            ]}
+            progress
+          />
+        </CubeWrapper>
         <p>{`With this second bad case, we're just turning the green face to set up into a case we've already seen. We turn green, then move the bottom layer and insert the white-green piece into the cross in the correct relative location. Lastly, we solve cross.`}</p>
         <div className="flex flex-col items-center gap-x-8 sm:flex-row sm:items-start">
           <p className="flex-1">{`There's one more bad case. Sometimes we'll get a piece stuck in between the top and bottom layers, and cross pieces near it are already solved. In this example, the white-green piece is stuck. Technically, we can add it to the cross in one move, but then we would un-solve the white-blue piece.`}</p>
-          <div className="flex flex-col gap-1 pb-8">
-            <span className="text-sm font-bold">{`Bad case #3 — Stuck piece`}</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeImage
-                facelets="WORBYBBGOOWBGWWGROYRGOBGWBRWRGWROWRYYWGGGBBYYRORYOYOYB"
-                angles={{ x: -30, y: 30 }}
-                hints
-                highlight={["WGR", "WBR", "WBO", "WGO", "YGR", "YGO", "YBO", "YBR", "WG", "WR", "WB", "WO", "YG", "YR", "YB", "YO", "GR", "GO", "BR", "BO", "W", "O", "G", "R", "B", "Y"]}
-              />
-            </div>
-          </div>
+          <CubeWrapper titles={["Bad case #3 — Stuck piece"]}>
+            <CubeImage
+              facelets="WORBYBBGOOWBGWWGROYRGOBGWBRWRGWROWRYYWGGGBBYYRORYOYOYB"
+              angles={{ x: -30, y: 30 }}
+              hints
+              highlight={["WGR", "WBR", "WBO", "WGO", "YGR", "YGO", "YBO", "YBR", "WG", "WR", "WB", "WO", "YG", "YR", "YB", "YO", "GR", "GO", "BR", "BO", "W", "O", "G", "R", "B", "Y"]}
+            />
+          </CubeWrapper>
         </div>
         <p>{`We have two options for how to deal with this. The first option is to move the bottom layer again. Then we can insert the cross piece and restore the cross after. The second option is to turn one of the sides twice, insert the cross piece, then turn that side back.`}</p>
-        <div className="flex flex-row flex-wrap gap-8 pb-6 pt-2">
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Bad Case #3 — Option 1</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="F2 B R B2 L' F' B D R U2 L2 D' R2 L2 D F2 U2 L2 F2 L2 F2 x2 L U2 F2 U2"
-                angles={{ x: -30, y: 30 }}
-                hints
-                lines={[
-                  { moves: ["D2", "F", "D2"], durations: [2000, 1500, 2000], delay: 500 }
-                ]}
-                progress
-              />
-            </div>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Bad Case #3 — Option 2</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="F2 B R B2 L' F' B D R U2 L2 D' R2 L2 D F2 U2 L2 F2 L2 F2 x2 L U2 F2 U2"
-                angles={{ x: -30, y: 30 }}
-                hints
-                lines={[
-                  { moves: ["R2", "B'", "R2"], durations: [2000, 1500, 2000], delay: 500 }
-                ]}
-                progress
-              />
-            </div>
-          </div>
-        </div>
+        <CubeWrapper titles={["Bad Case #3 — Option 1", "Bad Case #3 — Option 2"]}>
+          <CubeScene
+            scramble="F2 B R B2 L' F' B D R U2 L2 D' R2 L2 D F2 U2 L2 F2 L2 F2 x2 L U2 F2 U2"
+            angles={{ x: -30, y: 30 }}
+            hints
+            lines={[
+              { moves: ["D2", "F", "D2"], durations: [2000, 1500, 2000], delay: 500 }
+            ]}
+            progress
+          />
+          <CubeScene
+            scramble="F2 B R B2 L' F' B D R U2 L2 D' R2 L2 D F2 U2 L2 F2 L2 F2 x2 L U2 F2 U2"
+            angles={{ x: -30, y: 30 }}
+            hints
+            lines={[
+              { moves: ["R2", "B'", "R2"], durations: [2000, 1500, 2000], delay: 500 }
+            ]}
+            progress
+          />
+        </CubeWrapper>
         <p>{`The second option only works if the piece needs to go on the opposite side from where it is currently. In the example, the green sticker on the edge is next to the blue center, and of course blue and green are on opposite sides of the cube.`}</p>
         <p>{`These are actually the only three bad cases. The solutions we've seen work if you're just trying to solve one cross piece, but if you're trying to solve multiple pieces, there's usually a better way. Read on.`}</p>
 
         <H2>Use one piece to solve a bad one</H2>
         <p>{`Efficient cross is all about combining steps together. Instead of solving one piece with a few moves, then solving another, you can solve multiple pieces in one motion.`}</p>
         <p>{`Because this idea is so general, there are many ways to combine steps. Let's start with just a basic one you'll see a lot. We'll call it the triangle case.`}</p>
-        <div className="flex flex-col gap-1 pb-8">
-          <span className="text-sm font-bold">{`Triangle case`}</span>
-          <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-            <CubeScene
-              scramble="L2 B2 L2 D B2 U R2 D B2 U R2 B2 L' F2 D R2 B' D U2 B' L' x2 F' U2 L B L U R' U' y2"
-              hints
-              lines={[
-                { moves: ["U", "F", "R'"], durations: [1500, 1500, 1500], delay: 500, highlight: ["W", "O", "G", "R", "B", "Y", "WO", "WB"] }
-              ]}
-              progress
-            />
-          </div>
-        </div>
+        <CubeWrapper titles={["Triangle case"]}>
+          <CubeScene
+            scramble="L2 B2 L2 D B2 U R2 D B2 U R2 B2 L' F2 D R2 B' D U2 B' L' x2 F' U2 L B L U R' U' y2"
+            hints
+            lines={[
+              { moves: ["U", "F", "R'"], durations: [1500, 1500, 1500], delay: 500, highlight: ["W", "O", "G", "R", "B", "Y", "WO", "WB"] }
+            ]}
+            progress
+          />
+        </CubeWrapper>
         <p>{`Here, it's impossible to add the blue-white piece to the cross in one move. It's one of the bad cases. Meanwhile, the orange piece can be put into the cross in one move. If we put the blue piece above the orange before we insert it, then that sets up blue to also be inserted. Very efficient. Remember to check that this will put cross pieces in the correct order.`}</p>
         <p>{`Let's look at one more example of this idea. Here we use one bad piece to solve another bad piece. Very fun!`}</p>
-        <div className="flex flex-col gap-1 pb-8">
-          <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-            <CubeScene
-              scramble="y2 L' U' D2 B2 D R2 F' L' D' R2 D' F2 U2 R2 F2 D2 R2 F2 U F2 R' x2 D' U R' F R"
-              angles={{ x: -30, y: 30 }}
-              hints
-              lines={[
-                { moves: ["F'", "R'", "B'"], durations: [1500, 1500, 1500], delay: 500, highlight: ["W", "O", "G", "R", "B", "Y", "WR", "WB"] }
-              ]}
-              progress
-            />
-          </div>
-        </div>
+        <CubeWrapper>
+          <CubeScene
+            scramble="y2 L' U' D2 B2 D R2 F' L' D' R2 D' F2 U2 R2 F2 D2 R2 F2 U F2 R' x2 D' U R' F R"
+            angles={{ x: -30, y: 30 }}
+            hints
+            lines={[
+              { moves: ["F'", "R'", "B'"], durations: [1500, 1500, 1500], delay: 500, highlight: ["W", "O", "G", "R", "B", "Y", "WR", "WB"] }
+            ]}
+            progress
+          />
+        </CubeWrapper>
         <H2>Consider dual or full color neutrality</H2>
         <p>{`In our examples, we've been looking at white cross only. But you could be solving on a cross color every time, depending on whichever looks easiest. Should you?`}</p>
         <p>{`Being able to solve any cross color equally well is called being color neutral. Being color neutral can give you easier starts to your solves, but it also means you have to spend extra time figuring out which color of cross to solve. Recognition for the rest of the solve is also harder, in large part because the colors on F2L pieces will be different every time.`}</p>
@@ -360,124 +311,99 @@ export default function BetterCross() {
         <H2>Use replacement</H2>
         <div className="flex flex-col items-center gap-x-8 sm:flex-row sm:items-start">
           <p className="flex-1">{`Here we have a scramble where there's two pieces already add to cross: blue and orange. But they're in the wrong order. Orange needs to go to the left of blue, not the right.`}</p>
-          <div className="w-80 h-80 mb-8 shrink-0 border border-neutral-400 rounded-sm overflow-hidden">
+          <CubeWrapper>
             <CubeImage
               facelets="WBBOYRROBRWYWWYBBWWBYGOOGOOOWRGBYGRRYYOGRWGRWGYBGGROBY"
               angles={{ x: 30, y: -30 }}
               hints
               highlight={["W", "O", "G", "R", "B", "Y", "WG", "WO", "WB", "WR"]}
             />
-          </div>
+          </CubeWrapper>
         </div>
         <p>{`We can fix the order by taking one piece out of the cross, moving the rest of the cross, then putting the cross piece back in.`}</p>
-        <div className="flex flex-col gap-1 pb-8">
-          <span className="text-sm font-bold">{`Fixing color order`}</span>
-          <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-            <CubeScene
-              scramble="L' B D2' B U2' B' R2' U2' B2' U2' B' L2' D2' U' B2' F D2' R' B R' z2' F R y R B'"
-              hints
-              lines={[
-                { moves: ["F", "D2", "F'"], durations: [1500, 2000, 1500], delay: 500, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WO", "WB", "WR"] }
-              ]}
-              progress
-            />
-          </div>
-        </div>
+        <CubeWrapper titles={["Fixing color order"]}>
+          <CubeScene
+            scramble="L' B D2' B U2' B' R2' U2' B2' U2' B' L2' D2' U' B2' F D2' R' B R' z2' F R y R B'"
+            hints
+            lines={[
+              { moves: ["F", "D2", "F'"], durations: [1500, 2000, 1500], delay: 500, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WO", "WB", "WR"] }
+            ]}
+            progress
+          />
+        </CubeWrapper>
         <p>{`This is already an improvement over something you might do as a beginner. But we can do better. What if, when we take out orange, we put in a different cross piece in its place?`}</p>
-        <div className="flex flex-col gap-1 pb-8">
-          <span className="text-sm font-bold">{`Replacement technique`}</span>
-          <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-            <CubeScene
-              scramble="L' B D2' B U2' B' R2' U2' B2' U2' B' L2' D2' U' B2' F D2' R' B R' z2' F R y R B'"
-              hints
-              lines={[
-                { moves: ["R'", "F", "D2", "F'"], durations: [1500, 1500, 2000, 1500], delay: 500, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WO", "WB", "WR"] }
-              ]}
-              progress
-            />
-          </div>
-        </div>
+        <CubeWrapper titles={["Replacement technique"]}>
+          <CubeScene
+            scramble="L' B D2' B U2' B' R2' U2' B2' U2' B' L2' D2' U' B2' F D2' R' B R' z2' F R y R B'"
+            hints
+            lines={[
+              { moves: ["R'", "F", "D2", "F'"], durations: [1500, 1500, 2000, 1500], delay: 500, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WO", "WB", "WR"] }
+            ]}
+            progress
+          />
+        </CubeWrapper>
         <p>{`When we use this replacement technique, we just have to be sure to replace the existing piece with the right one. The piece we want to put to the right of blue is red, so this works here.`}</p>
         <p>{`Notice how in these examples, we're moving a cross piece that was already solved. We don't have to always leave our solved pieces alone. Keep your thinking flexible!`}</p>
         <p>{`Here's another example, useful for when you make a mistake with color order during cross. Here we replace blue with orange, then put blue back in.`}</p>
-        <div className="flex flex-col gap-1 pb-8">
-          <span className="text-sm font-bold">{`Double replacement`}</span>
-          <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-            <CubeScene
-              scramble="x2 y L' F2 D2 B2 L2 B D F' D2 B' D2 F' U2 B' R2 B2 L2 U2 F' U F' D' B2 R D F2 y2"
-              hints
-              angles={{ x: -30, y: 30 }}
-              lines={[
-                { moves: ["R", "D", "R'", "D'", "R"], durations: [1500, 1500, 1500, 1500, 1500], delay: 500 }
-              ]}
-              progress
-            />
-          </div>
-        </div>
-        <H2>Consider the order you'll solve pieces</H2>
+        <CubeWrapper titles={["Double replacement"]}>
+          <CubeScene
+            scramble="x2 y L' F2 D2 B2 L2 B D F' D2 B' D2 F' U2 B' R2 B2 L2 U2 F' U F' D' B2 R D F2 y2"
+            hints
+            angles={{ x: -30, y: 30 }}
+            lines={[
+              { moves: ["R", "D", "R'", "D'", "R"], durations: [1500, 1500, 1500, 1500, 1500], delay: 500 }
+            ]}
+            progress
+          />
+        </CubeWrapper>
+        <H2>{`Consider the order you'll solve pieces`}</H2>
         <p>{`When we looked at bad pieces, we showed how to use one piece to solve another. This hints at how the order you solve pieces is important. The more moves a piece takes to solve, the more strongly you should incorporate solving it into the rest of your cross solution.`}</p>
         <p>{`In this example, the red piece flipped incorrectly in the bottom layer. We solve the rest of cross while we solve the red piece.`}</p>
-        <div className="flex flex-col gap-1 pb-8">
-          <span className="text-sm font-bold">{`Bad red first`}</span>
-          <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-            <CubeScene
-              scramble="U' B2 U2 R2 B R' L' U' R L2 F2 U' R2 D' F2 L2 D2 B2 L2 F2 R2 x2"
-              hints
-              angles={{ x: -30, y: 120 }}
-              lines={[
-                { moves: ["R'", "D2", "B'", "R'", "D'", "L'"], durations: [1500, 2000, 1500, 1500, 1500, 1500], delay: 500, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO"] }
-              ]}
-              progress
-            />
-          </div>
-        </div>
+        <CubeWrapper titles={["Bad red first"]}>
+          <CubeScene
+            scramble="U' B2 U2 R2 B R' L' U' R L2 F2 U' R2 D' F2 L2 D2 B2 L2 F2 R2 x2"
+            hints
+            angles={{ x: -30, y: 120 }}
+            lines={[
+              { moves: ["R'", "D2", "B'", "R'", "D'", "L'"], durations: [1500, 2000, 1500, 1500, 1500, 1500], delay: 500, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO"] }
+            ]}
+            progress
+          />
+        </CubeWrapper>
         <p>{`First we take out the red and add green to the cross. This also sets up red and blue, but we have to do `}<code>D2</code>{` so that we don't mess up the color order. Then when we add red to the cross, it also connects the orange piece to the orange center. Finally we add blue, fix our cross location, and solve orange.`}</p>
         <p>{`It doesn't always work out this way though. In this next example, it was easier to get the blue piece out of the way so that we can set up into a triangle case for the remaining two pieces.`}</p>
-        <div className="flex flex-col gap-1 pb-8">
-          <span className="text-sm font-bold">{`Easy blue first`}</span>
-          <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-            <CubeScene
-              scramble="D R' F2 R' F2 L F2 R' B2 D2 L' B2 R F D F L B' R U2 B' x2"
-              angles={{ x: -30, y: 60 }}
-              hints
-              lines={[
-                { moves: ["F", "B2", "R", "B'"], durations: [1500, 2000, 1500, 1500], delay: 500, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO"] }
-              ]}
-              progress
-            />
-          </div>
-        </div>
+        <CubeWrapper titles={["Easy blue first"]}>
+          <CubeScene
+            scramble="D R' F2 R' F2 L F2 R' B2 D2 L' B2 R F D F L B' R U2 B' x2"
+            angles={{ x: -30, y: 60 }}
+            hints
+            lines={[
+              { moves: ["F", "B2", "R", "B'"], durations: [1500, 2000, 1500, 1500], delay: 500, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO"] }
+            ]}
+            progress
+          />
+        </CubeWrapper>
         <p>{`With how useful it is to move the cross around on the bottom layer, your cross solution may have several `}<code>D</code> {` moves. Solving pieces in the right order can also eliminate some `}<code>D</code> {` moves.`}</p>
-        <div className="flex flex-row flex-wrap gap-8 pb-6 pt-2">
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Worse order (6 moves)</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="U B' L D R F R2 U R' B' U2 R2 D R2 D L2 U' F2 L2 D L2 x2 U R' U L' f U f' R' F' R y'"
-                angles={{ x: -30, y: 45 }}
-                hints
-                lines={[
-                  { moves: ["D2", "R", "D2", "R", "D", "L"], durations: [2000, 1500, 2000, 1500, 1500, 1500], delay: 500, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO"] }
-                ]}
-                progress
-              />
-            </div>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Better order (5 moves)</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="U B' L D R F R2 U R' B' U2 R2 D R2 D L2 U' F2 L2 D L2 x2 U R' U L' f U f' R' F' R y'"
-                angles={{ x: -30, y: 45 }}
-                hints
-                lines={[
-                  { moves: ["R2", "D2", "R'", "D'", "L"], durations: [2000, 2000, 1500, 1500, 1500], delay: 500, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO"] }
-                ]}
-                progress
-              />
-            </div>
-          </div>
-        </div>
+        <CubeWrapper titles={["Worse order (6 moves)", "Better order (5 moves)"]}>
+          <CubeScene
+            scramble="U B' L D R F R2 U R' B' U2 R2 D R2 D L2 U' F2 L2 D L2 x2 U R' U L' f U f' R' F' R y'"
+            angles={{ x: -30, y: 45 }}
+            hints
+            lines={[
+              { moves: ["D2", "R", "D2", "R", "D", "L"], durations: [2000, 1500, 2000, 1500, 1500, 1500], delay: 500, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO"] }
+            ]}
+            progress
+          />
+          <CubeScene
+            scramble="U B' L D R F R2 U R' B' U2 R2 D R2 D L2 U' F2 L2 D L2 x2 U R' U L' f U f' R' F' R y'"
+            angles={{ x: -30, y: 45 }}
+            hints
+            lines={[
+              { moves: ["R2", "D2", "R'", "D'", "L"], durations: [2000, 2000, 1500, 1500, 1500], delay: 500, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO"] }
+            ]}
+            progress
+          />
+        </CubeWrapper>
         <H2>Use example cross solutions</H2>
         <p>{`Tutorials like this one are only one half of the story. Cross solutions are extremely varied, and so it's not feasible to cover every possible cross case in a tutorial.`}</p>
         <p>{`To get more ideas on how to solve cross, we can look at examples. Here are a couple videos worth checking out right now:`}</p>

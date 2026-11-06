@@ -6,6 +6,7 @@ import TitleBar from "../TitleBar";
 import { H1, H2 } from "../LessonHeading";
 import CubeScene from "../CubeScene";
 import CubeImage from "../CubeImage";
+import CubeWrapper from "../CubeWrapper";
 import type { PieceName } from "../cubeProps";
 import InfoIcon from "../../icons/info";
 import FurtherLearning,{ Citation, type Source } from "../FurtherLearning";
@@ -96,36 +97,26 @@ export default function EO() {
 
         <H1>The good and the bad</H1>
         <p>{"With edge orientation, we can define every edge on the cube as good or bad. An edge is good if it can be completely solved with just"}<code>R</code>, <code>L</code>, <code>U</code>, and <code>D</code>{"moves. Click on the two examples below to see what that looks like."}</p>
-        <div className="flex flex-row flex-wrap gap-8 pb-6 pt-2">
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Good edge</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="R U"
-                hints
-                labels
-                lines={[
-                  { moves: ["U'", "R'"], durations: [1500, 1500], delay: 800, highlight: [...CENTERS, "GR"] }
-                ]}
-                progress
-              />
-            </div>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Bad edge</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="R' F R F'"
-                hints
-                labels
-                lines={[
-                  { moves: ["U'", "R'"], durations: [1500, 1500], delay: 800, highlight: [...CENTERS, "GR"] }
-                ]}
-                progress
-              />
-            </div>
-          </div>
-        </div>
+        <CubeWrapper titles={["Good edge", "Bad edge"]}>
+          <CubeScene
+            scramble="R U"
+            hints
+            labels
+            lines={[
+              { moves: ["U'", "R'"], durations: [1500, 1500], delay: 800, highlight: [...CENTERS, "GR"] }
+            ]}
+            progress
+          />
+          <CubeScene
+            scramble="R' F R F'"
+            hints
+            labels
+            lines={[
+              { moves: ["U'", "R'"], durations: [1500, 1500], delay: 800, highlight: [...CENTERS, "GR"] }
+            ]}
+            progress
+          />
+        </CubeWrapper>
         <p>
           <span>{`In the bad edge example, placing the edge in the correct location leaves it "flipped". The stickers on the edge do not line up with the centers. It's impossible to solve this kind of flipped edge with`}<code>R</code>, <code>L</code>, <code>U</code>, and <code>D</code>.{" "}</span>
           <LessonLink text="Check for yourself!" href="https://www.ao1k.com/recon/?scramble=R-_F_R_F-%0A%2F%2F_In_the_Solution_box_below,_try_to_use_only_R,_U,_L,_and_D_moves_and_solve_the_red%7E-green_edge.%0A%2F%2F_You-ll_find_it-s_impossible.&title=EO_Lesson_%7E-_Example_1" />
@@ -153,54 +144,41 @@ export default function EO() {
         <p>{`The cube's centers don't move much in CFOP. What if we recognized EO by comparing the edges to the centers in some way? Which sticker on the edge would you look at? Consider this problem before you keep reading.`}</p>
         <p>{`Going back to the good edge video, the red-green edge "connects" to the red center by doing `}<code>{"U'"}</code>{`. In other words, the red stickers line up on both pieces. Then, we did`}<code>{"R'"}</code>{`to solve the edge.`}</p>
 
-        <div className="flex flex-col gap-1 pb-4">
-          <span className="text-sm font-bold">Good edge, again</span>
-          <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-            <CubeScene
-              scramble="R U"
-              hints
-              labels
-              lines={[
-                { moves: ["U'", "R'"], durations: [1500, 1500], delay: 800, highlight: [...CENTERS, "GR"] }
-              ]}
-              progress
-            />
-          </div>
-        </div>
+        <CubeWrapper titles={["Good edge, again"]}>
+          <CubeScene
+            scramble="R U"
+            hints
+            labels
+            lines={[
+              { moves: ["U'", "R'"], durations: [1500, 1500], delay: 800, highlight: [...CENTERS, "GR"] }
+            ]}
+            progress
+          />
+        </CubeWrapper>
         <p>{`If we were forced to use `}<code>F</code> or <code> B </code>{`to solve it, that'd automatically make it a bad edge. So the edge has to be able to connect to the right or left center using`} <code>R U L D</code> {` moves for it to be a good edge.`}</p>
         <p>{`Thankfully, since we only checking how pieces move with `} <code>R U L D</code>{`, there's only so many places that each sticker on one edge can be. The sticker is limited to certain "orbits". Let's look at how the sticker moves around. We'll color one sticker white and the other magenta. As you watch, remember that none of these moves change an edge's orientation.`}</p>
-        <div className="flex flex-row flex-wrap gap-8 pb-6 pt-2">
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Each location one-by-one</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble=""
-                hints
-                labels
-                lines={[
-                  { moves: [["U"],["U"],["U"],["U"],["R'"],["R'"],["D'"],["D'"],["D'"],["D'"],["R'"],["R'"]], durations: [1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000], delay: 800, highlight: ["WR"] }
-                ]}
-                progress
-                shade="#888888FF"
-                colors={{
-                  W: '#FF00FF',
-                  O: '#FFFFFF',
-                  G: '#FFFFFF',
-                  R: '#FFFFFF',
-                  B: '#FFFFFF',
-                  Y: '#FFFFFF'
-                }}
-                startHighlighted
-              />
-            </div>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">All locations</span>
-            <div className="w-80 h-80.5 border border-neutral-400 rounded-sm overflow-hidden">
-              <OrbitReferenceImage />
-            </div>
-          </div>
-        </div>
+        <CubeWrapper titles={["Each location one-by-one", "All locations"]}>
+          <CubeScene
+            scramble=""
+            hints
+            labels
+            lines={[
+              { moves: [["U"],["U"],["U"],["U"],["R'"],["R'"],["D'"],["D'"],["D'"],["D'"],["R'"],["R'"]], durations: [1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000], delay: 800, highlight: ["WR"] }
+            ]}
+            progress
+            shade="#888888FF"
+            colors={{
+              W: '#FF00FF',
+              O: '#FFFFFF',
+              G: '#FFFFFF',
+              R: '#FFFFFF',
+              B: '#FFFFFF',
+              Y: '#FFFFFF'
+            }}
+            startHighlighted
+          />
+          <OrbitReferenceImage />
+        </CubeWrapper>
         <p>{`In CFOP, this is useful for OLL, but especially F2L, for reasons we'll look at later.`}</p>
 
         <H2>F2L and EO recognition</H2>
@@ -217,33 +195,23 @@ export default function EO() {
         <p>{"Find the red-green edge on the cube below. Is it good or bad?"}</p>
         <p>{"Let's use the magenta orbit. The sticker on this edge that is within the magenta orbit is green. Green matches the front center color. That's enough to tell you it's a good edge, as long as you know that you're looking at an F2L edge."}</p>
         <p>{"We can confirm it's good by solving it with"} <code>R U L D</code>{" moves. Click the play button below."}</p>
-        <div className="flex flex-row flex-wrap gap-8 pb-6 pt-2">
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Good or bad?</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                facelets={F2L_TOP_EDGE_FACELETS}
-                angles={{ x: 30, y: -30 }}
-                hints
-                labels
-                lines={[
-                  { moves: ["L'", "U", "L"], durations: [1067, 1067, 1067], delay: 800, highlight: [...CENTERS, "GR"] }
-                ]}
-                progress
-              />
-            </div>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Orbit reference</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <OrbitReferenceImage />
-            </div>
-          </div>
-        </div>
+        <CubeWrapper titles={["Good or bad?", "Orbit reference"]}>
+          <CubeScene
+            facelets={F2L_TOP_EDGE_FACELETS}
+            angles={{ x: 30, y: -30 }}
+            hints
+            labels
+            lines={[
+              { moves: ["L'", "U", "L"], durations: [1067, 1067, 1067], delay: 800, highlight: [...CENTERS, "GR"] }
+            ]}
+            progress
+          />
+          <OrbitReferenceImage />
+        </CubeWrapper>
         
         <p>{"Below is one more example. Again, we're looking at the red-green edge. But the edge is in the middle layer, so try using the white orbit this time. Good or bad?"}</p>
         <p>{"The sticker on this edge that's within the white orbit is red. When we use this orbit, the sticker has to match the left or right center color. The red sticker doesn't match the right center that's next to it, but it does match the left. Another good edge. Let's verify:"}</p>
-        <div className="w-80 h-80 mb-6 border border-neutral-400 rounded-sm overflow-hidden">
+        <CubeWrapper>
           <CubeScene
             facelets={F2L_MIDDLE_EDGE_FACELETS}
             hints
@@ -253,7 +221,7 @@ export default function EO() {
             ]}
             progress
           />
-        </div>
+        </CubeWrapper>
         <p>{"These approaches show how one sticker can be used to determine EO. But you still need to know the color of both stickers. Otherwise, you might be looking at an OLL edge or a cross piece."}</p>
         <p>{"If a both stickers aren't visible, you can either try to remember what it was from past moves (lookahead, an advanced skill), deduce what the sticker is, or barring those options, tilt the cube to check directly. You should avoid rotating or doing moves to get information, since that is wasted effort and would slow you down."}</p>
 
@@ -261,9 +229,9 @@ export default function EO() {
         <p>{"If you know OLL, you already know how to orient last layer edges. You solve the top cross, which flips all the edges so that all of the same color is on top."}</p>
         <p>{"But it's useful to know that an OLL edge in the middle layer can still considered be oriented or not. Sometimes you'll try to influence OLL during F2L in various ways."}</p>
         <p>{`A correctly oriented OLL edge will always have the top center color in the magenta orbit. Knowing that, is the white-green edge good or bad? Try to remember the orbit diagram and how it was made rather than referring back to it.`}</p>
-        <div className="w-80 h-80 mb-2  border border-neutral-400 rounded-sm overflow-hidden">
+        <CubeWrapper>
           <CubeImage facelets={OLL_EDGE_FACELETS} hints labels className="w-full h-auto" />
-        </div>
+        </CubeWrapper>
         <input type="checkbox" id="eo5-answer" className="hidden peer/eo5" />
         <label htmlFor="eo5-answer" className="inline-block peer-checked/eo5:hidden cursor-pointer text-md text-neutral-400 select-none hover:text-neutral-300 transition-colors bg-neutral-800 px-3 py-1 rounded-sm mb-1 w-fit">
           Click to reveal the answer
@@ -286,34 +254,24 @@ export default function EO() {
         <H2>Changing F2L EO</H2>
         <p>{"Doing y rotations is the most typical way to deal with bad edges. If the F2L edge is in the top layer, rotating flips F2L edge orientation. Good F2L edges turn into bad edges, and bad become good."}</p>
         <p>{"Below, we show the same cube with different rotations applied. Only the good F2L edges are highlighted."}</p>
-        <div className="flex flex-row flex-wrap pb-6 gap-4">
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">No rotation</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeImage
-                facelets={ROTATION_FACELETS}
-                hints
-                labels
-                highlight={[...CENTERS, "BR", "GR"]}
-                className="w-full h-auto"
-                dim={1}
-              />
-            </div>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">y rotation</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeImage
-                facelets={ROTATION_Y_FACELETS}
-                hints
-                labels
-                highlight={[...CENTERS, "BO", "GR"]}
-                className="w-full h-auto"
-                dim={1}
-              />
-            </div>
-          </div>
-        </div>
+        <CubeWrapper titles={["No rotation", "y rotation"]}>
+          <CubeImage
+            facelets={ROTATION_FACELETS}
+            hints
+            labels
+            highlight={[...CENTERS, "BR", "GR"]}
+            className="w-full h-auto"
+            dim={1}
+          />
+          <CubeImage
+            facelets={ROTATION_Y_FACELETS}
+            hints
+            labels
+            highlight={[...CENTERS, "BO", "GR"]}
+            className="w-full h-auto"
+            dim={1}
+          />
+        </CubeWrapper>
         <p>{"Notice how the "}<strong>red-green</strong>{" edge is highlighted in both images, and how the "}<strong>orange-green</strong>{" edge between the red and blue centers is highlighted in neither. If you apply the EO recognition rules from earlier, you'll see that rotating only flips EO of the top and bottom layer edges! The middle F2L edges are unaffected."}</p>
         <p>{"Due to this difficulty with altering their EO, bad F2L edges in the middle layer are some of the worst cases you can get. Often, you'll want to solve something else and destroy this case in the process."}</p>
         <p>{"If you do have to solve them, you either use "}<code>F</code>{" moves, or you can take the edge out of the middle layer before you rotate and then solve it. Which of these you choose can depend on the case, the pairs after it, and your own preferences."}</p>
@@ -325,34 +283,24 @@ export default function EO() {
         <p>
           {`A less structured way is to sometimes use triggers like sledgehammer `}<code>{`(R' F R F')`}</code>{` to insert a pair and orient some edges. This technique is often called partial edge control. Compare the EO of OLL after inserting normally and after inserting with sledgehammer.`}
         </p>
-        <div className="flex flex-row flex-wrap pb-6 gap-4">
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Basic insert</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="x2 U2 F B' R' U2 F' R B L2 F2 U' F2 D F2 D' F2 L2 U' F2 U2 F2 L2"
-                hints
-                lines={[
-                  { moves: ["U", "R", "U'", "R'"], durations: [1000, 1000, 1000, 1000], delay: 400 }
-                ]}
-                progress
-              />
-            </div>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Sledgehammer insert</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="x2 U2 F B' R' U2 F' R B L2 F2 U' F2 D F2 D' F2 L2 U' F2 U2 F2 L2"
-                hints
-                lines={[
-                  { moves: ["R'", "F", "R", "F'"], durations: [1000, 1000, 1000, 1000], delay: 400 }
-                ]}
-                progress
-              />
-            </div>
-          </div>
-        </div>
+        <CubeWrapper titles={["Basic insert", "Sledgehammer insert"]}>
+          <CubeScene
+            scramble="x2 U2 F B' R' U2 F' R B L2 F2 U' F2 D F2 D' F2 L2 U' F2 U2 F2 L2"
+            hints
+            lines={[
+              { moves: ["U", "R", "U'", "R'"], durations: [1000, 1000, 1000, 1000], delay: 400 }
+            ]}
+            progress
+          />
+          <CubeScene
+            scramble="x2 U2 F B' R' U2 F' R B L2 F2 U' F2 D F2 D' F2 L2 U' F2 U2 F2 L2"
+            hints
+            lines={[
+              { moves: ["R'", "F", "R", "F'"], durations: [1000, 1000, 1000, 1000], delay: 400 }
+            ]}
+            progress
+          />
+        </CubeWrapper>
 
         <p>{`Using sledgehammer flips the orientation of the front and right edges. If those edges weren't oriented to start, they would be after doing sledge.`}</p>
         <p>{`OLLs with more edges oriented tend to be slightly better. There are a couple other inserts worth considering for this reason:`}</p>
@@ -403,9 +351,9 @@ export default function EO() {
         <p>{"But reality is more complicated. What if a very fast pair would require a rotation before all good-edge pairs are solved? What if you have multiple bad edges in the middle layer? The choice is yours."}</p>
 
         <p>{"Here's a hard example. Which pair is better to solve here: orange-blue, orange-green, or are they about the same? Why?"}</p>
-        <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
+        <CubeWrapper>
           <CubeImage facelets={PAIR_CHOICE_FACELETS} hints labels className="w-full h-auto" />
-        </div>
+        </CubeWrapper>
         <input type="checkbox" id="eo7-answer" className="hidden peer/eo7" />
         <label htmlFor="eo7-answer" className="inline-block peer-checked/eo7:hidden cursor-pointer text-md text-neutral-400 select-none hover:text-neutral-300 transition-colors bg-neutral-800 px-3 py-1 rounded-sm mt-4 mb-1 w-fit">
           Click to reveal the answer

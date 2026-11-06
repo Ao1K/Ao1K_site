@@ -7,6 +7,7 @@ import LessonList from "../LessonList";
 import CubeScene from "../CubeScene";
 import AnnotatedCubeScene from "../AnnotatedCubeScene";
 import CubeImage, { type CubeImageProps } from "../CubeImage";
+import CubeWrapper from "../CubeWrapper";
 import ExternalLink from "../../ExternalLink"
 import { SCENE_PX, apply, mul, sceneGeometry } from "../../../utils/cubeSvgRender";
 import { H1, H2, H3 } from "../LessonHeading";
@@ -56,7 +57,7 @@ export default function IntuitiveF2L() {
         </p>
         <p>
           {`You'll also need to know how to read basic `}<LessonLink text="notation" href="/learn/notation/" />
-          {`. If you can read `}<code>y R U2 R'</code>{`, you're ready.`}
+          {`. If you can read `}<code>{`y R U2 R'`}</code>{`, you're ready.`}
         </p>
         <H1>{`Other tutorials`}</H1>
         <p>{`This lesson isn't the simplest possible way to learn F2L. This lesson adds some complexity so that you don't have as many bad habits later.`}</p>
@@ -79,16 +80,13 @@ export default function IntuitiveF2L() {
         <PairColorsDiagram />
         <H2>Finding pieces example</H2>
         <p>{`Cross was solved on white. We can solve any corner piece with white on it. We see the red-blue-white corner piece first. That means we need to find the red-blue edge. This time, it's in the middle layer.`}</p>
-        <div className="flex flex-col gap-1 pb-6">
-          <span className="text-sm font-bold">Finding one corner and one edge</span>
-          <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-            <CubeImage
-              facelets="ROOOYOWYWYWOWWWOWBRRBGBYRBYOYYGRBBRYGGBYGRRGWWBGBORGOG"
-              hints
-              angles={{ x: 30, y: 210 }}
-            />
-          </div>
-        </div>
+        <CubeWrapper titles={["Finding one corner and one edge"]}>
+          <CubeImage
+            facelets="ROOOYOWYWYWOWWWOWBRRBGBYRBYOYYGRBBRYGGBYGRRGWWBGBORGOG"
+            hints
+            angles={{ x: 30, y: 210 }}
+          />
+        </CubeWrapper>
         <H1>Tree overview</H1>
         <p>{`Once we get two F2L pieces to solve, we need to figure out what kind of case we have. In our tree analogy, it's like we're figuring out how high up in the tree we are. We take branches down towards the bottom as we solve it.`}</p>
 
@@ -110,36 +108,26 @@ export default function IntuitiveF2L() {
 
         <H2>Level 4 — Is the edge bad?</H2>
         <p>{`Basically, edges are good when they can be solved with `}<code>R</code>{', '}<code>L</code>{', '}<code>U</code>{', and '}<code>D</code>{` moves. These moves are fast to perform, which is why we call them good edges.`}</p>
-        <div className="flex flex-row flex-wrap gap-8 pb-6 pt-2">
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Good edge</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="x2 R U"
-                hints
-                labels
-                lines={[
-                  { moves: ["U'", "R'"], durations: [1500, 1500], delay: 500, highlight: [...CENTERS, "BR"] }
-                ]}
-                progress
-              />
-            </div>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Bad edge</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="x2 R' F R F'"
-                hints
-                labels
-                lines={[
-                  { moves: ["U'", "R'"], durations: [1500, 1500], delay: 500, highlight: [...CENTERS, "BR"] }
-                ]}
-                progress
-              />
-            </div>
-          </div>
-        </div>
+        <CubeWrapper titles={["Good edge", "Bad edge"]}>
+          <CubeScene
+            scramble="x2 R U"
+            hints
+            labels
+            lines={[
+              { moves: ["U'", "R'"], durations: [1500, 1500], delay: 500, highlight: [...CENTERS, "BR"] }
+            ]}
+            progress
+          />
+          <CubeScene
+            scramble="x2 R' F R F'"
+            hints
+            labels
+            lines={[
+              { moves: ["U'", "R'"], durations: [1500, 1500], delay: 500, highlight: [...CENTERS, "BR"] }
+            ]}
+            progress
+          />
+        </CubeWrapper>
         <p>{`A bad edge ends up flipped in place when we try to solve it with `}<code>RULD</code>{` moves.`}</p>
         <H3>Recognizing a good or bad edge</H3>
         <p>{`We want to be able to tell if an edge is good quickly, without turning the cube.`}</p>
@@ -147,7 +135,7 @@ export default function IntuitiveF2L() {
         <GoodEdgeDiagram />
         <p>{`What about this orange-green edge? Good or bad?`}</p>
         <p>{`Hint: the labels show that the green center is in the front.`}</p>
-        <div className="w-80 h-80 mb-2  border border-neutral-400 rounded-sm overflow-hidden">
+        <CubeWrapper>
           <CubeImage
             facelets="ORYGYRGYRGWRWWWRWORGYOGBWGGBYGYOOWOBOBBBBGWBWYOYRRYBRO"
             angles={{ x: 30, y: -30 }}
@@ -155,7 +143,7 @@ export default function IntuitiveF2L() {
             labels
             highlight={["WGR", "WBR", "WBO", "WGO", "YGR", "YGO", "YBO", "YBR", "WG", "WR", "WB", "WO", "YG", "YR", "YB", "YO", "GR", "GO", "BR", "BO", "W", "O", "G", "R", "B", "Y"]}
           />
-        </div>
+        </CubeWrapper>
         <input type="checkbox" id="good1-answer" className="hidden peer/good1" />
         <label htmlFor="good1-answer" className="inline-block peer-checked/good1:hidden cursor-pointer text-md text-neutral-400 select-none hover:text-neutral-300 transition-colors bg-neutral-800 px-3 py-1 rounded-sm mb-1 w-fit">
           Click to reveal the answer
@@ -169,56 +157,43 @@ export default function IntuitiveF2L() {
         <H2>Level 1 — Are the pieces paired?</H2>
         <p>{`"Paired" means the F2L pieces can be solved in 3 or 4 moves. There's only two types of pairs: connected and split.`}</p>
         <H3>Recognizing a connected pair</H3>
-        <p>{`A "connected" pair is when the pieces are adjacent and the colors line up correctly. As far as this lesson is concerned, the edge must be good too. If the edge is bad, we're still on Level 4.`}</p>
-        <div className="flex flex-col gap-1 mb-6">
-          <span className="text-sm font-bold">Connected pair on left</span>
-          <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-            <CubeImage
-              facelets="OYORYORYGGWRWWWWWWWBYGRRORBRBBGGGYGGYRWOOOOORBBBYBYGBY"
-              angles={{ x: 30, y: -45 }}
-              hints
-              labels
-              highlight={["WG", "WO", "WR", "WB", "WBR", "BR", "W", "O", "G", "R", "B", "Y"]}
-            />
-          </div>
-        </div>
+        <p>{`A connected pair is when the pieces are adjacent and the colors line up correctly. As far as this lesson is concerned, the edge must be good too. If the edge is bad, we're still on Level 4.`}</p>
+        <CubeWrapper titles={["Connected pair on left"]}>
+          <CubeImage
+            facelets="OYORYORYGGWRWWWWWWWBYGRRORBRBBGGGYGGYRWOOOOORBBBYBYGBY"
+            angles={{ x: 30, y: -45 }}
+            hints
+            labels
+            highlight={["WG", "WO", "WR", "WB", "WBR", "BR", "W", "O", "G", "R", "B", "Y"]}
+          />
+        </CubeWrapper>
         <p>{`On the F2L pieces above, blue lines up with blue and red lines up with red.`}</p>
         <H3>Recognizing a split pair</H3>
-        <p>{`A "split" pair is when you can do a single move and make what looks like a connected pair.`}</p>
-        <div className="flex flex-row flex-wrap gap-8 pb-6 pt-2">
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Confirming split pair — Example 1</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="y R B U' F2' D' F2' U L2' U R2' F2' L2' F2' U' R F' D2' L U2' B' F2' x2 F R2' D' R' D2' F2' L U L' R' U' R y' R U' R' U2' U R U' R' U R U2' R'"
-                angles={{ x: 30, y: 45 }}
-                hints
-                labels
-                lines={[
-                  { moves: ["R'"], durations: [1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WO", "WB", "WR", "BO", "WBO"] },
-                ]}
-                progress
-                startHighlighted
-              />
-            </div>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">{`Confirming split pair — Example 2`}</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="B R F2 U2 F2 D2 L U2 L2 B2 U2 L2 F2 U F' L' F2 R F L U' x2 F L2 F D L' D L' R' U2 R y2 U"
-                angles={{ x: 30, y: -30 }}
-                hints
-                labels
-                lines={[
-                  { moves: ["L'"], durations: [1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WO", "WB", "WR", "WGR", "GR"] }
-                ]}
-                progress
-                startHighlighted
-              />
-            </div>
-          </div>
-        </div>
+        <p>{`A split pair is when you can do a single move and make what looks like a connected pair.`}</p>
+        <CubeWrapper titles={["Confirming split pair — Example 1", "Confirming split pair — Example 2"]}>
+          <CubeScene
+            scramble="y R B U' F2' D' F2' U L2' U R2' F2' L2' F2' U' R F' D2' L U2' B' F2' x2 F R2' D' R' D2' F2' L U L' R' U' R y' R U' R' U2' U R U' R' U R U2' R'"
+            angles={{ x: 30, y: 45 }}
+            hints
+            labels
+            lines={[
+              { moves: ["R'"], durations: [1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WO", "WB", "WR", "BO", "WBO"] },
+            ]}
+            progress
+            startHighlighted
+          />
+          <CubeScene
+            scramble="B R F2 U2 F2 D2 L U2 L2 B2 U2 L2 F2 U F' L' F2 R F L U' x2 F L2 F D L' D L' R' U2 R y2 U"
+            angles={{ x: 30, y: -30 }}
+            hints
+            labels
+            lines={[
+              { moves: ["L'"], durations: [1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WO", "WB", "WR", "WGR", "GR"] }
+            ]}
+            progress
+            startHighlighted
+          />
+        </CubeWrapper>
         <p>{`Split pairs can be difficult to recognize. Notice these properties:`}</p>
         <LessonList>
           {"On the corner, the cross color is never on top."}
@@ -298,78 +273,58 @@ export default function IntuitiveF2L() {
         <p>{`Any trigger we do will make changes to one of these slots. We'll call the slot we change our "target slot".`}</p>
         <p>{`On Level 5, the slot we want to change is the one with F2L pieces in it. We want to take them out of the slot.`}</p>
         <p>{`First, find the `}<code>R</code>{` or `}<code>L</code>{` move that lifts the target slot into the top layer.`}</p>
-        <div className="flex flex-row flex-wrap gap-6 mb-6">
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Lift up target slot</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="U' R' U B2 D R F' U2 R2 U B2 D' F2 B2 U' F2 D B2 D' F' L' x2 D L' F' L2 D U2 R' U R U'"
-                hints
-                labels
-                lines={[
-                  { moves: ["R"], durations: [1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WO", "WG", "WB", "WR", "WBO", "BO"] }
-                ]}
-                progress
-                startHighlighted
-              />
-            </div>
-          </div>
-        </div>
-        <p>{`Next, we could do either `}<code>U</code>{`, `}<code>U'</code>{`, or `}<code>U2</code>{`. Soon you'll see why we have options. We'll try `}<code>U</code>{` first.`}</p>
-        <p>{`After, we'll do `}<code>R'</code>{` to solve cross again. We always need to undo the move that we used to lift up the target slot.`}</p>
+        <CubeWrapper titles={["Lift up target slot"]}>
+          <CubeScene
+            scramble="U' R' U B2 D R F' U2 R2 U B2 D' F2 B2 U' F2 D B2 D' F' L' x2 D L' F' L2 D U2 R' U R U'"
+            hints
+            labels
+            lines={[
+              { moves: ["R"], durations: [1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WO", "WG", "WB", "WR", "WBO", "BO"] }
+            ]}
+            progress
+            startHighlighted
+          />
+        </CubeWrapper>
+        <p>{`Next, we could do either `}<code>U</code>{`, `}<code>{`U'`}</code>{`, or `}<code>U2</code>{`. Soon you'll see why we have options. We'll try `}<code>U</code>{` first.`}</p>
+        <p>{`After, we'll do `}<code>{`R'`}</code>{` to solve cross again. We always need to undo the move that we used to lift up the target slot.`}</p>
         <p>{`We're just doing a trigger: `}<code>{`R U R'`}</code>.</p>
-        <div className="flex flex-row flex-wrap gap-6 mb-6">
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">{`Trying R U R'`}</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="U' R' U B2 D R F' U2 R2 U B2 D' F2 B2 U' F2 D B2 D' F' L' x2 D L' F' L2 D U2 R' U R U'"
-                hints
-                labels
-                lines={[
-                  { moves: [["R"], ["U"], ["R'"]], durations: [1500, 1500, 1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WO", "WG", "WB", "WR", "WBO", "BO"] }
-                ]}
-                progress
-                startHighlighted
-              />
-            </div>
-          </div>
-        </div>
+        <CubeWrapper titles={["Trying R U R'"]}>
+          <CubeScene
+            scramble="U' R' U B2 D R F' U2 R2 U B2 D' F2 B2 U' F2 D B2 D' F' L' x2 D L' F' L2 D U2 R' U R U'"
+            hints
+            labels
+            lines={[
+              { moves: [["R"], ["U"], ["R'"]], durations: [1500, 1500, 1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WO", "WG", "WB", "WR", "WBO", "BO"] }
+            ]}
+            progress
+            startHighlighted
+          />
+        </CubeWrapper>
         <p>{`It didn't really work. It did take the edge out of the middle layer, but it put the corner we need into the bottom layer.`}</p>
         <p>{`This is why you have the option of doing a different `}<code>U</code>{` move in the middle. Another option is to do a `}<code>U</code>{` move before the trigger.`}</p>
         <p>{`Let's go back to the original case and try both:`}</p>
-        <div className="flex flex-row flex-wrap gap-8 pb-6 pt-2">
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">{`Trying doing a U move first (U R U R')`}</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="U' R' U B2 D R F' U2 R2 U B2 D' F2 B2 U' F2 D B2 D' F' L' x2 D L' F' L2 D U2 R' U R U'"
-                hints
-                labels
-                lines={[
-                  { moves: [["U"], ["R"], ["U"], ["R'"]], durations: [1500, 1500, 1500, 1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WO", "WG", "WB", "WR", "WBO", "BO"] }
-                ]}
-                progress
-                startHighlighted
-              />
-            </div>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">{`Trying different trigger (R U2 R')`}</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="U' R' U B2 D R F' U2 R2 U B2 D' F2 B2 U' F2 D B2 D' F' L' x2 D L' F' L2 D U2 R' U R U'"
-                hints
-                labels
-                lines={[
-                  { moves: [["R"], ["U2"], ["R'"]], durations: [1500, 2000, 1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WO", "WG", "WB", "WR", "WBO", "BO"] }
-                ]}
-                progress
-                startHighlighted
-              />
-            </div>
-          </div>
-        </div>
+        <CubeWrapper titles={["Trying doing a U move first (U R U R')", "Trying different trigger (R U2 R')"]}>
+          <CubeScene
+            scramble="U' R' U B2 D R F' U2 R2 U B2 D' F2 B2 U' F2 D B2 D' F' L' x2 D L' F' L2 D U2 R' U R U'"
+            hints
+            labels
+            lines={[
+              { moves: [["U"], ["R"], ["U"], ["R'"]], durations: [1500, 1500, 1500, 1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WO", "WG", "WB", "WR", "WBO", "BO"] }
+            ]}
+            progress
+            startHighlighted
+          />
+          <CubeScene
+            scramble="U' R' U B2 D R F' U2 R2 U B2 D' F2 B2 U' F2 D B2 D' F' L' x2 D L' F' L2 D U2 R' U R U'"
+            hints
+            labels
+            lines={[
+              { moves: [["R"], ["U2"], ["R'"]], durations: [1500, 2000, 1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WO", "WG", "WB", "WR", "WBO", "BO"] }
+            ]}
+            progress
+            startHighlighted
+          />
+        </CubeWrapper>
         <p>{`Both worked! In both cases, both pieces are in the top layer.`}</p>
         <p>{`Doing a `}<code>U</code>{` move first worked because it got the corner out of the way before we started. The different trigger worked because it got both pieces out of the way before we did `}<code>{`R'`}</code>.</p>
         <p>{`To summarize, we descend from Level 5 by:`}</p>
@@ -382,169 +337,129 @@ export default function IntuitiveF2L() {
         <p>{`We're basically doing a `}<code>U</code>{` move and then a trigger. We'll use this idea on a lot of the levels.`}</p>
         <H3>Bonus example</H3>
         <p>{`This time, the stuck piece is in the back-left slot.`}</p>
-        <div className="flex flex-row flex-wrap gap-6 mb-6">
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Level 5 — Example 2</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeImage
-                facelets="GOYGYBBBOYWWWWWGWWYRWOBBGBGBYOORYORBBGRRGRRGRWYRGOYYOO"
-                angles={{ x: 30, y: -45 }}
-                hints
-                labels
-                highlight={["WG", "W", "O", "G", "R", "B", "Y", "WO", "WB", "WR", "WGR", "GR"]}
-              />
-            </div>
-          </div>
-        </div>
+        <CubeWrapper titles={["Level 5 — Example 2"]}>
+          <CubeImage
+            facelets="GOYGYBBBOYWWWWWGWWYRWOBBGBGBYOORYORBBGRRGRRGRWYRGOYYOO"
+            angles={{ x: 30, y: -45 }}
+            hints
+            labels
+            highlight={["WG", "W", "O", "G", "R", "B", "Y", "WO", "WB", "WR", "WGR", "GR"]}
+          />
+        </CubeWrapper>
         <p>{`You can tilt the cube if you need to see pieces in the back better, but don't change your grip on the cube or do `}<code>y</code>{` or `}<code>U</code>{` moves. This helps avoid common bad habits.`}</p>
         <p>{`The corner is right on top of the edge, so we'll do a `}<code>U</code>{` move to get it out of the way. Here's the full solution:`}</p>
-        <div className="flex flex-row flex-wrap gap-6 mb-6">
-          <div className="flex flex-col gap-1">
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <AnnotatedCubeScene
-                scramble="U' R' U B2 D R F' U2 R2 U B2 D' F2 B2 U' F2 D B2 D' F' L' x2 D L' F' L2 D U2 R' U R U'"
-                angles={{ x: 30, y: -45 }}
-                hints
-                labels
-                lines={[
-                  { moves: ["U", "L", "U", "L'"], durations: [1500, 1500, 1500, 1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "WGR", "GR"] }
-                ]}
-                annotations={[
-                  { ...BOTTOM_LEFT_TEXT, text: "Get corner out of the way", moves: [0, 0] },
-                  { ...BOTTOM_LEFT_TEXT, text: "Expose back left slot", moves: [1, 1] },
-                  { ...BOTTOM_LEFT_TEXT, text: "Take edge out of slot", moves: [2, 2] },
-                  { ...BOTTOM_LEFT_TEXT, text: "Fix cross", moves: [3, 3] },
-                ]}
-                progress
-                startHighlighted
-              />
-            </div>
-          </div>
-        </div>
+        <CubeWrapper>
+          <AnnotatedCubeScene
+            scramble="U' R' U B2 D R F' U2 R2 U B2 D' F2 B2 U' F2 D B2 D' F' L' x2 D L' F' L2 D U2 R' U R U'"
+            angles={{ x: 30, y: -45 }}
+            hints
+            labels
+            lines={[
+              { moves: ["U", "L", "U", "L'"], durations: [1500, 1500, 1500, 1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "WGR", "GR"] }
+            ]}
+            annotations={[
+              { ...BOTTOM_LEFT_TEXT, text: "Get corner out of the way", moves: [0, 0] },
+              { ...BOTTOM_LEFT_TEXT, text: "Expose back left slot", moves: [1, 1] },
+              { ...BOTTOM_LEFT_TEXT, text: "Take edge out of slot", moves: [2, 2] },
+              { ...BOTTOM_LEFT_TEXT, text: "Fix cross", moves: [3, 3] },
+            ]}
+            progress
+            startHighlighted
+          />
+        </CubeWrapper>
 
         <H2>On Level 4? Make edge good</H2>
         <p>{`After Level 5, descending from Level 4 should feel like a breath of fresh air. All we have to do is a `}<code>y</code>{` or `}<code>{`y'`}</code>{` when there's a bad edge. `}</p>
         <p>{`Here's a Level 4 case, meaning the edge is bad and both pieces are in the top layer. We can rotate either direction and that'll make the edge good.`}</p>
-        <div className="flex flex-row flex-wrap gap-8 pb-6 pt-2">
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">{`Level 4 example`}</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeImage
-                facelets="RBGRYORBGYWYWWWOWOYRRYRYBRBWYWBGOOGBOOBGOGWOGWYGRBGYBR"
-                angles={{ x: 30, y: -30 }}
-                hints
-                labels
-                highlight={["W", "O", "G", "R", "B", "Y", "WG", "WO", "WB", "WR", "WBR", "BR"]}
-              />
-            </div>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">{`Level 4 solution`}</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="R2 F2 L2 D B2 D F2 D2 F2 R2 D2 F L F U B' L D2 B2 D R x2 D B2 D R' y U'"
-                angles={{ x: 30, y: 0 }}
-                hints
-                labels
-                lines={[
-                  { moves: ["y'"], durations: [1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WO", "WB", "WR", "WBR", "BR"] }
-                ]}
-                progress
-                startHighlighted
-              />
-            </div>
-          </div>
-        </div>
+        <CubeWrapper titles={["Level 4 example", "Level 4 solution"]}>
+          <CubeImage
+            facelets="RBGRYORBGYWYWWWOWOYRRYRYBRBWYWBGOOGBOOBGOGWOGWYGRBGYBR"
+            angles={{ x: 30, y: -30 }}
+            hints
+            labels
+            highlight={["W", "O", "G", "R", "B", "Y", "WG", "WO", "WB", "WR", "WBR", "BR"]}
+          />
+          <CubeScene
+            scramble="R2 F2 L2 D B2 D F2 D2 F2 R2 D2 F L F U B' L D2 B2 D R x2 D B2 D R' y U'"
+            angles={{ x: 30, y: 0 }}
+            hints
+            labels
+            lines={[
+              { moves: ["y'"], durations: [1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WO", "WB", "WR", "WBR", "BR"] }
+            ]}
+            progress
+            startHighlighted
+          />
+        </CubeWrapper>
         <p>{`In the example, we chose to rotate so that the slot we're solving is in the front. We'll talk more about which way to rotate in future lessons.`}</p>
 
         <H2>On Level 3? Separate pieces</H2>
         <p>{`If the pieces are adjacent, we need to separate them.`}</p>
-        <div className="flex flex-row flex-wrap gap-6 mb-6">
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Level 3 — Example 1</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeImage
-                facelets="ORYGYGRBOGWYWWWRWGWYWRBGRBBBRGYROORROBGBGYYGBWOBOOYYOW"
-                angles={{ x: 30, y: -30 }}
-                hints
-                labels
-                highlight={["W", "O", "G", "R", "B", "Y", "WGO", "GO", "WO", "WB", "WR", "WG"]}
-              />
-            </div>
-          </div>
-        </div>
+        <CubeWrapper titles={["Level 3 — Example 1"]}>
+          <CubeImage
+            facelets="ORYGYGRBOGWYWWWRWGWYWRBGRBBBRGYROORROBGBGYYGBWOBOOYYOW"
+            angles={{ x: 30, y: -30 }}
+            hints
+            labels
+            highlight={["W", "O", "G", "R", "B", "Y", "WGO", "GO", "WO", "WB", "WR", "WG"]}
+          />
+        </CubeWrapper>
         <p>{`From now on, our target slot will be the one we are solving. This example has us solving the orange and green pieces into the back-left.`}</p>
         <p>{`Turn the top layer so that the corner is on the same side as the target slot and the edge isn't. Our target slot is on the left, so we put the corner on the left and the edge more in the middle.`}</p>
-        <div className="flex flex-col gap-1 pb-6">
-          <span className="text-sm font-bold">{`Prepare to separate`}</span>
-          <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-            <CubeScene
-              scramble="U F B2 L' B' R F' U' L2 U' F2 U' L2 D2 F2 R2 D' B2 L2 R B' x2 L B D F' D2"
-              angles={{ x: 30, y: -30 }}
-              hints
-              labels
-              lines={[
-                { moves: ["U'"], durations: [1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WGO", "GO", "WO", "WB", "WR", "WG"] }
-              ]}
-              progress
-              startHighlighted
-            />
-          </div>
-        </div>
+        <CubeWrapper titles={["Prepare to separate"]}>
+          <CubeScene
+            scramble="U F B2 L' B' R F' U' L2 U' F2 U' L2 D2 F2 R2 D' B2 L2 R B' x2 L B D F' D2"
+            angles={{ x: 30, y: -30 }}
+            hints
+            labels
+            lines={[
+              { moves: ["U'"], durations: [1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WGO", "GO", "WO", "WB", "WR", "WG"] }
+            ]}
+            progress
+            startHighlighted
+          />
+        </CubeWrapper>
         <p>{`Then, to separate the pieces, all we need to do is raise the target slot. We always turn the left or right layer, never the front or back.`}</p>
-        <div className="flex flex-col gap-1 pb-6">
-          <span className="text-sm font-bold">{`Separate`}</span>
-          <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-            <CubeScene
-              scramble="U F B2 L' B' R F' U' L2 U' F2 U' L2 D2 F2 R2 D' B2 L2 R B' x2 L B D F' D2 U'"
-              angles={{ x: 30, y: -30 }}
-              hints
-              labels
-              lines={[
-                { moves: ["L"], durations: [1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WGO", "GO", "WO", "WB", "WR", "WG"] }
-              ]}
-              progress
-              startHighlighted
-            />
-          </div>
-        </div>
+        <CubeWrapper titles={["Separate"]}>
+          <CubeScene
+            scramble="U F B2 L' B' R F' U' L2 U' F2 U' L2 D2 F2 R2 D' B2 L2 R B' x2 L B D F' D2 U'"
+            angles={{ x: 30, y: -30 }}
+            hints
+            labels
+            lines={[
+              { moves: ["L"], durations: [1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WGO", "GO", "WO", "WB", "WR", "WG"] }
+            ]}
+            progress
+            startHighlighted
+          />
+        </CubeWrapper>
 
         <p>{`Next, we turn the top layer so that none of our F2L pieces up there are on the same side as our target slot on the left. All that remains after that is to undo the original `}<code>L</code>{` or `}<code>R</code>{` move.`}</p>
         <p>{`Let's look at a couple attempts at all this:`}</p>
-        <div className="flex flex-row flex-wrap gap-8 pb-6 pt-2">
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">{`Trying U' L U L' (Incorrect)`}</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="U F B2 L' B' R F' U' L2 U' F2 U' L2 D2 F2 R2 D' B2 L2 R B' x2 L B D F' D2"
-                angles={{ x: 30, y: -30 }}
-                hints
-                labels
-                lines={[
-                  { moves: [["U'"], ["L"], ["U"], ["L'"]], durations: [1500, 1500, 1500, 1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WGO", "GO", "WO", "WB", "WR", "WG"]}
-                ]}
-                progress
-                startHighlighted
-              />
-            </div>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">{`Trying U' L U' L' (Correct)`}</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="U F B2 L' B' R F' U' L2 U' F2 U' L2 D2 F2 R2 D' B2 L2 R B' x2 L B D F' D2"
-                angles={{ x: 30, y: -30 }}
-                hints
-                labels
-                lines={[
-                  { moves: [["U'"], ["L"], ["U'"], ["L'"]], durations: [1500, 1500, 1500, 1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WGO", "GO", "WO", "WB", "WR", "WG"]}
-                ]}
-                progress
-                startHighlighted
-              />
-            </div>
-          </div>
-        </div>
+        <CubeWrapper titles={["Trying U' L U L' (Incorrect)", "Trying U' L U' L' (Correct)"]}>
+          <CubeScene
+            scramble="U F B2 L' B' R F' U' L2 U' F2 U' L2 D2 F2 R2 D' B2 L2 R B' x2 L B D F' D2"
+            angles={{ x: 30, y: -30 }}
+            hints
+            labels
+            lines={[
+              { moves: [["U'"], ["L"], ["U"], ["L'"]], durations: [1500, 1500, 1500, 1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WGO", "GO", "WO", "WB", "WR", "WG"]}
+            ]}
+            progress
+            startHighlighted
+          />
+          <CubeScene
+            scramble="U F B2 L' B' R F' U' L2 U' F2 U' L2 D2 F2 R2 D' B2 L2 R B' x2 L B D F' D2"
+            angles={{ x: 30, y: -30 }}
+            hints
+            labels
+            lines={[
+              { moves: [["U'"], ["L"], ["U'"], ["L'"]], durations: [1500, 1500, 1500, 1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WGO", "GO", "WO", "WB", "WR", "WG"]}
+            ]}
+            progress
+            startHighlighted
+          />
+        </CubeWrapper>
         <p>{`The first example is wrong because the second `}<code>U</code>{` move brought the edge into the top left. We need to get the pieces out of the way before we restore cross.`}</p>
         <p>{`To summarize:`}</p>
         <LessonList>
@@ -557,29 +472,24 @@ export default function IntuitiveF2L() {
         <p>{`Solving F2L will sometimes involve "hiding" a piece. Our last example had this. We hid the corner in the bottom layer so that we could move the edge around.`}</p>
         <H3>Bonus example</H3>
         <p>{`Sometimes you don't hide a piece. Here, lifting the target slot to separate the pieces keeps them both in the top layer. We have to be careful to do the right `}<code>U</code>{` move after. Before you click play, figure out which move exposes the target slot.`}</p>
-        <div className="flex flex-row flex-wrap gap-6 mb-6">
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">{`Level 3 — Example 2`}</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <AnnotatedCubeScene
-                scramble="U F B2 L' B' R F' U' L2 U' F2 U' L2 D2 F2 R2 D' B2 L2 R B' x2 L B D F' D2 U' L U' L' U L U L' y' U2 R U R' U2 R U R' y2 d'"
-                hints
-                labels
-                angles={{ x: 30, y: -30 }}
-                lines={[
-                  { moves: ["L'", "U2", "L"], durations: [1500,2000,1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "WGR", "GR"] }
-                ]}
-                annotations={[
-                  { ...BOTTOM_LEFT_TEXT, text: "Expose slot and separate pieces", moves: [0, 0] },
-                  { ...BOTTOM_LEFT_TEXT, text: "Moves pieces out of the way", moves: [1, 1] },
-                  { ...BOTTOM_LEFT_TEXT, text: "Fix cross", moves: [2, 2] },
-                ]}
-                progress
-                startHighlighted
-              />
-            </div>
-          </div>
-        </div>
+        <CubeWrapper titles={["Level 3 — Example 2"]}>
+          <AnnotatedCubeScene
+            scramble="U F B2 L' B' R F' U' L2 U' F2 U' L2 D2 F2 R2 D' B2 L2 R B' x2 L B D F' D2 U' L U' L' U L U L' y' U2 R U R' U2 R U R' y2 d'"
+            hints
+            labels
+            angles={{ x: 30, y: -30 }}
+            lines={[
+              { moves: ["L'", "U2", "L"], durations: [1500,2000,1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "WGR", "GR"] }
+            ]}
+            annotations={[
+              { ...BOTTOM_LEFT_TEXT, text: "Expose slot and separate pieces", moves: [0, 0] },
+              { ...BOTTOM_LEFT_TEXT, text: "Moves pieces out of the way", moves: [1, 1] },
+              { ...BOTTOM_LEFT_TEXT, text: "Fix cross", moves: [2, 2] },
+            ]}
+            progress
+            startHighlighted
+          />
+        </CubeWrapper>
         <p>{`The corner is already on the left with the target slot, and the edge is in the middle, so we don't need to do any `}<code>U</code>{` moves at the start.`}</p>
 
         <H2>On Level 2? Pair pieces</H2>
@@ -597,44 +507,38 @@ export default function IntuitiveF2L() {
       
         <H3>Cross color on top of corner</H3>
         <p>{`Turn the top layer so that the edge "connects" to the center. The edge and the center color will match. Here's an example:`}</p>
-        <div className="flex flex-col gap-1 pb-6">
-          <span className="text-sm font-bold">{`Cross color on top case — Connect edge`}</span>
-          <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-            <CubeScene
-              scramble="y U B2 L D F L' B D R U2 B2 D' B2 D2 B2 L2 D' R2 L2 D L2 x2 L' F' B' R D L2 R U R' d'"
-              angles={{ x: 30, y: -30 }}
-              hints
-              labels
-              lines={[
-                { moves: ["U"], durations: [1500, 1500, 1500, 1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "WBO", "BO"] }
-              ]}
-              progress
-              startHighlighted
-            />
-          </div>
-        </div>
+        <CubeWrapper titles={["Cross color on top case — Connect edge"]}>
+          <CubeScene
+            scramble="y U B2 L D F L' B D R U2 B2 D' B2 D2 B2 L2 D' R2 L2 D L2 x2 L' F' B' R D L2 R U R' d'"
+            angles={{ x: 30, y: -30 }}
+            hints
+            labels
+            lines={[
+              { moves: ["U"], durations: [1500, 1500, 1500, 1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "WBO", "BO"] }
+            ]}
+            progress
+            startHighlighted
+          />
+        </CubeWrapper>
         <p>{`Then, hide the edge by bringing up the target slot. Turn the top layer so that the corner is on top of the edge. Fix cross.`}</p>
-        <div className="flex flex-col gap-1 pb-6">
-          <span className="text-sm font-bold">{`Cross color on top case — Solve case`}</span>
-          <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-            <AnnotatedCubeScene
-              scramble="y U B2 L D F L' B D R U2 B2 D' B2 D2 B2 L2 D' R2 L2 D L2 x2 L' F' B' R D L2 R U R' d' U"
-              angles={{ x: 30, y: -30 }}
-              hints
-              labels
-              lines={[
-                { moves: ["L'", "U'", "L"], durations: [1500, 1500, 1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "WBO", "BO"] }
-              ]}
-              annotations={[
-                { ...BOTTOM_LEFT_TEXT, text: "Hide edge", moves: [0, 0] },
-                { ...BOTTOM_LEFT_TEXT, text: "Put corner on top of edge", moves: [1, 1] },
-                { ...BOTTOM_LEFT_TEXT, text: "Fix cross", moves: [2, 2] },
-              ]}
-              progress
-              startHighlighted
-            />
-          </div>
-        </div>
+        <CubeWrapper titles={["Cross color on top case — Solve case"]}>
+          <AnnotatedCubeScene
+            scramble="y U B2 L D F L' B D R U2 B2 D' B2 D2 B2 L2 D' R2 L2 D L2 x2 L' F' B' R D L2 R U R' d' U"
+            angles={{ x: 30, y: -30 }}
+            hints
+            labels
+            lines={[
+              { moves: ["L'", "U'", "L"], durations: [1500, 1500, 1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "WBO", "BO"] }
+            ]}
+            annotations={[
+              { ...BOTTOM_LEFT_TEXT, text: "Hide edge", moves: [0, 0] },
+              { ...BOTTOM_LEFT_TEXT, text: "Put corner on top of edge", moves: [1, 1] },
+              { ...BOTTOM_LEFT_TEXT, text: "Fix cross", moves: [2, 2] },
+            ]}
+            progress
+            startHighlighted
+          />
+        </CubeWrapper>
         <H3>Top colors match</H3>
         <p>{`This next case, we hide the corner instead of the edge.`}</p>
         <p>{`Turn the top layer so that the corner is diagonal from the target slot. If the target slot is front-right, put the corner in the back-right. If the target slot is back-left, put the corner in the front-left. And so on.`}</p>
@@ -664,67 +568,54 @@ export default function IntuitiveF2L() {
         <p>{`Now ask: Is the corner in the front or back layer?`}</p>
         <p>{`Turn the top layer so that the edge is also in the front or back, whichever layer the corner is in.`}</p>
         <p>{`Then unhide the corner. The pieces will now be paired.`}</p>
-        <div className="flex flex-row flex-wrap gap-8 pb-6 pt-2">
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">{`Top colors match case — Solve case`}</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <AnnotatedCubeScene
-                scramble="y2 U F U2 D' F' B U' L' F L2 D2 F2 L2 U L2 U' B2 R2 U2 D' x2 D' B R D' B2 L' B' D' U' B U B'"
-                angles={{ x: 30, y: -30 }}
-                hints
-                labels
-                lines={[
-                  { moves: [["U'"], ["L"], ["U2"], ["L'"]], durations: [1500, 1500, 1500, 1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "WBR", "BR"] }
-                ]}
-                annotations={[
-                  { ...BOTTOM_LEFT_TEXT, text: "Place corner diagonal from target slot", moves: [0, 0] },
-                  { ...BOTTOM_LEFT_TEXT, text: "Hide corner in front", moves: [1, 1] },
-                  { ...BOTTOM_LEFT_TEXT, text: "Move edge to front with corner", moves: [2, 2] },
-                  { ...BOTTOM_LEFT_TEXT, text: "Un-hide corner", moves: [3, 3] },
-                ]}
-                progress
-                startHighlighted
-              />
-            </div>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">{`Top colors match case — Bonus example`}</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <AnnotatedCubeScene
-                scramble="y2 U F U2 D' F' B U' L' F L2 D2 F2 L2 U L2 U' B2 R2 U2 D' x2 D' B R D' B2 L' B' D' U' B U B' L' U2 L d U'"
-                hints
-                labels
-                lines={[
-                  { moves: ["R", "U", "R'"], durations: [1500, 1500, 1500], delay: 500, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "WGR", "GR"] }
-                ]}
-                annotations={[
-                  { ...BOTTOM_LEFT_TEXT, text: "Corner already diagonal. Hide it.", moves: [0, 0] },
-                  { ...BOTTOM_LEFT_TEXT, text: "Move edge to back with corner", moves: [1, 1] },
-                  { ...BOTTOM_LEFT_TEXT, text: "Un-hide corner", moves: [2, 2] },
-                ]}
-                progress
-              />
-            </div>
-          </div>
-        </div>
+        <CubeWrapper titles={["Top colors match case — Solve case", "Top colors match case — Bonus example"]}>
+          <AnnotatedCubeScene
+            scramble="y2 U F U2 D' F' B U' L' F L2 D2 F2 L2 U L2 U' B2 R2 U2 D' x2 D' B R D' B2 L' B' D' U' B U B'"
+            angles={{ x: 30, y: -30 }}
+            hints
+            labels
+            lines={[
+              { moves: [["U'"], ["L"], ["U2"], ["L'"]], durations: [1500, 1500, 1500, 1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "WBR", "BR"] }
+            ]}
+            annotations={[
+              { ...BOTTOM_LEFT_TEXT, text: "Place corner diagonal from target slot", moves: [0, 0] },
+              { ...BOTTOM_LEFT_TEXT, text: "Hide corner in front", moves: [1, 1] },
+              { ...BOTTOM_LEFT_TEXT, text: "Move edge to front with corner", moves: [2, 2] },
+              { ...BOTTOM_LEFT_TEXT, text: "Un-hide corner", moves: [3, 3] },
+            ]}
+            progress
+            startHighlighted
+          />
+          <AnnotatedCubeScene
+            scramble="y2 U F U2 D' F' B U' L' F L2 D2 F2 L2 U L2 U' B2 R2 U2 D' x2 D' B R D' B2 L' B' D' U' B U B' L' U2 L d U'"
+            hints
+            labels
+            lines={[
+              { moves: ["R", "U", "R'"], durations: [1500, 1500, 1500], delay: 500, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "WGR", "GR"] }
+            ]}
+            annotations={[
+              { ...BOTTOM_LEFT_TEXT, text: "Corner already diagonal. Hide it.", moves: [0, 0] },
+              { ...BOTTOM_LEFT_TEXT, text: "Move edge to back with corner", moves: [1, 1] },
+              { ...BOTTOM_LEFT_TEXT, text: "Un-hide corner", moves: [2, 2] },
+            ]}
+            progress
+          />
+        </CubeWrapper>
         <H3>Top colors different</H3>
         <p>{`The last Level 2 case is when the two colors on top of the F2L pieces are different, but cross color isn't on top.`}</p>
         <p>{`Like in the last case, moves the corner to be diagonal from the target slot.`}</p>
-        <div className="flex flex-col gap-1 pb-6">
-          <span className="text-sm font-bold">{`Top colors different case — Place corner diagonal`}</span>
-          <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-            <CubeScene
-              scramble="y U F U2 D' F' B U' L' F L2 D2 F2 L2 U L2 U' B2 R2 U2 D' x2 D' B R D' B2 L' B' D' d U' R U' R' U'"
-              hints
-              labels
-              lines={[
-                { moves: ["U2"], durations: [2000], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "WGO", "GO"] }
-              ]}
-              progress
-              startHighlighted
-            />
-          </div>
-        </div>
+        <CubeWrapper titles={["Top colors different case — Place corner diagonal"]}>
+          <CubeScene
+            scramble="y U F U2 D' F' B U' L' F L2 D2 F2 L2 U L2 U' B2 R2 U2 D' x2 D' B R D' B2 L' B' D' d U' R U' R' U'"
+            hints
+            labels
+            lines={[
+              { moves: ["U2"], durations: [2000], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "WGO", "GO"] }
+            ]}
+            progress
+            startHighlighted
+          />
+        </CubeWrapper>
         <p>{`Hide the corner by raising the target slot.`}</p>
         <p>{`Now ask: is the corner in the left or right layer? We need to put the edge on the opposite layer as that.`}</p>
         <p>{`In our example, the corner is on the right, so the edge needs to go on the left. We turn the top layer accordingly.`}</p>
@@ -763,262 +654,196 @@ export default function IntuitiveF2L() {
         <H2>On Level 1? Insert pair</H2>
         <H3>Solving connected pairs</H3>
         <p>{`Turn the top layer to make sure that the pair isn't in the same layer, left or right, as the target slot.`}</p>
-        <div className="flex flex-col gap-1 pb-6">
-          <span className="text-sm font-bold">{`Connected pair — Get pair out of the way`}</span>
-          <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-            <CubeScene
-              scramble="y' R' B2 L' D B D2 B U2 B2 D2 R' B2 R L2 F2 U2 D2 L2 U2 x2 F U L D' F' L' D d U2"
-              hints
-              labels
-              lines={[
-                { moves: ["U'"], durations: [1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "WGR", "GR"] }
-              ]}
-              progress
-              startHighlighted
-            />
-          </div>
-        </div>
+        <CubeWrapper titles={["Connected pair — Get pair out of the way"]}>
+          <CubeScene
+            scramble="y' R' B2 L' D B D2 B U2 B2 D2 R' B2 R L2 F2 U2 D2 L2 U2 x2 F U L D' F' L' D d U2"
+            hints
+            labels
+            lines={[
+              { moves: ["U'"], durations: [1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "WGR", "GR"] }
+            ]}
+            progress
+            startHighlighted
+          />
+        </CubeWrapper>
         <p>{`The target slot is in the right layer, so we turned the top face so that the connected pair isn't in that layer.`}</p>
         <p>{`Then we raise the target slot, connect the pair to the cross edge, and fix cross.`}</p>
-        <div className="flex flex-row flex-wrap gap-8 pb-6 pt-2">
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">{`Connected pair — Insert pair`}</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="y' R' B2 L' D B D2 B U2 B2 D2 R' B2 R L2 F2 U2 D2 L2 U2 x2 F U L D' F' L' D d U"
-                hints
-                labels
-                lines={[
-                  { moves: [["R'"], ["U"], ["R"]], durations: [1500, 1500, 1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "WGR", "GR"] }
-                ]}
-                progress
-                startHighlighted
-              />
-            </div>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">{`Connected pair — Bonus example`}</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="y R' B2 L' D B D2 B U2 B2 D2 R' B2 R L2 F2 U2 D2 L2 U2 x2 F U L D' F' L' D d'"
-                angles={{ x: 30, y: -30 }}
-                hints
-                labels
-                lines={[
-                  { moves: ["U'", "L'", "U", "L"], durations: [1500, 1500, 1500, 1500], delay: 500, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "BO", "WBO"] }
-                ]}
-                progress
-              />
-            </div>
-          </div>
-        </div>
+        <CubeWrapper titles={["Connected pair — Insert pair", "Connected pair — Bonus example"]}>
+          <CubeScene
+            scramble="y' R' B2 L' D B D2 B U2 B2 D2 R' B2 R L2 F2 U2 D2 L2 U2 x2 F U L D' F' L' D d U"
+            hints
+            labels
+            lines={[
+              { moves: [["R'"], ["U"], ["R"]], durations: [1500, 1500, 1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "WGR", "GR"] }
+            ]}
+            progress
+            startHighlighted
+          />
+          <CubeScene
+            scramble="y R' B2 L' D B D2 B U2 B2 D2 R' B2 R L2 F2 U2 D2 L2 U2 x2 F U L D' F' L' D d'"
+            angles={{ x: 30, y: -30 }}
+            hints
+            labels
+            lines={[
+              { moves: ["U'", "L'", "U", "L"], durations: [1500, 1500, 1500, 1500], delay: 500, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "BO", "WBO"] }
+            ]}
+            progress
+          />
+        </CubeWrapper>
         <H3>Solving split pairs</H3>
         <p>{`Turn the top layer to put the corner directly above the target slot.`}</p>
-        <div className="flex flex-col gap-1 pb-6">
-          <span className="text-sm font-bold">{`Split pair — Get corner on top of target slot`}</span>
-          <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-            <CubeScene
-              scramble="R' D' R U' B2 D R' B R L2 D' R2 D' L2 D R2 B2 D2 B2 U B2 x2 y U'"
-              hints
-              labels
-              lines={[
-                { moves: ["U"], durations: [1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "BO", "WBO", "GO", "WGO", "WBR", "BR"] }
-              ]}
-              progress
-              startHighlighted
-            />
-          </div>
-        </div>
+        <CubeWrapper titles={["Split pair — Get corner on top of target slot"]}>
+          <CubeScene
+            scramble="R' D' R U' B2 D R' B R L2 D' R2 D' L2 D R2 B2 D2 B2 U B2 x2 y U'"
+            hints
+            labels
+            lines={[
+              { moves: ["U"], durations: [1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "BO", "WBO", "GO", "WGO", "WBR", "BR"] }
+            ]}
+            progress
+            startHighlighted
+          />
+        </CubeWrapper>
         <p>{`From there it's very similar to the connected pair case. We raise the target slot, which connects the pieces. Move the `}<code>U</code>{` layer to connect the pair to the cross edge, then fix cross.`}</p>
-        <div className="flex flex-row flex-wrap gap-8 pb-6 pt-2">
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">{`Split pair — Insert pair`}</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="R' D' R U' B2 D R' B R L2 D' R2 D' L2 D R2 B2 D2 B2 U B2 x2 y"
-                hints
-                labels
-                lines={[
-                  { moves: [["L'"],["U'"],["L"]], durations: [1500, 1500, 1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "BO", "WBO", "GO", "WGO", "WBR", "BR"] }
-                ]}
-                progress
-                startHighlighted
-              />
-            </div>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">{`Split pair — Bonus example`}</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="R' D' R U' B2 D R' B R L2 D' R2 D' L2 D R2 B2 D2 B2 U B2 x2 y U' U L' U' L U R U' R' U R U2 R' U2"
-                hints
-                labels
-                lines={[
-                  { moves: ["U2", "R", "U", "R'"], durations: [2000, 1500, 1500, 1500], delay: 500, highlight: ["W", "WB", "WG", "WR", "WO", "GR", "WGR", "O", "G", "R", "B", "Y"] }
-                ]}
-                progress
-              />
-            </div>
-          </div>
-        </div>
+        <CubeWrapper titles={["Split pair — Insert pair", "Split pair — Bonus example"]}>
+          <CubeScene
+            scramble="R' D' R U' B2 D R' B R L2 D' R2 D' L2 D R2 B2 D2 B2 U B2 x2 y"
+            hints
+            labels
+            lines={[
+              { moves: [["L'"],["U'"],["L"]], durations: [1500, 1500, 1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "BO", "WBO", "GO", "WGO", "WBR", "BR"] }
+            ]}
+            progress
+            startHighlighted
+          />
+          <CubeScene
+            scramble="R' D' R U' B2 D R' B R L2 D' R2 D' L2 D R2 B2 D2 B2 U B2 x2 y U' U L' U' L U R U' R' U R U2 R' U2"
+            hints
+            labels
+            lines={[
+              { moves: ["U2", "R", "U", "R'"], durations: [2000, 1500, 1500, 1500], delay: 500, highlight: ["W", "WB", "WG", "WR", "WO", "GR", "WGR", "O", "G", "R", "B", "Y"] }
+            ]}
+            progress
+          />
+        </CubeWrapper>
         <p>{`Notice how when lift up the target slot, we connect the pieces together. Then, it's like we pull the pair into the slot. If you have to solve a split pair into one of the back two slots, it's a bit more like pushing, but nothing about the idea changes.`}</p>
 
         <H1>Full examples</H1>
         <H2>Example 1</H2>
         <p>{`Let's say we just solved white cross, and we see two F2L pieces right in front of us. The green-orange ones. Let's solve them.`}</p>
         <p>{`Both pieces are in the `}<code>U</code>{` layer, so we skipped Level 5. The edge clearly connects to the front center, not the left or right, so we're on Level 4. We need to rotate the cube.`}</p>
-        <div className="flex flex-row flex-wrap gap-6 mb-6">
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Example 1 — Make edge good</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="R2 B D2 F D2 F' L2 R2 F L2 D2 F2 D' U B' U2 R' B D2 L' D2 x2 R' B' F L2 D L' B L d U'"
-                hints
-                labels
-                lines={[
-                  { moves: ["y'"], durations: [1500], delay: 500, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "WGO", "GO"] }
-                ]}
-                progress
-              />
-            </div>
-          </div>
-        </div>
+        <CubeWrapper titles={["Example 1 — Make edge good"]}>
+          <CubeScene
+            scramble="R2 B D2 F D2 F' L2 R2 F L2 D2 F2 D' U B' U2 R' B D2 L' D2 x2 R' B' F L2 D L' B L d U'"
+            hints
+            labels
+            lines={[
+              { moves: ["y'"], durations: [1500], delay: 500, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "WGO", "GO"] }
+            ]}
+            progress
+          />
+        </CubeWrapper>
         <p>{`We chose to rotate so that the orange-green slot is in the front right, where it's easier to see what we're doing.`}</p>
         <p>{`The edge is good now, and in theory we could be on any level from 3 to 1. We're on Level 3 since the pieces are adjacent.`}</p>
         <p>{`We turn the `}<code>U</code>{` layer so that one piece is on the same side, right, as the target slot, and one isn't. Then we raise the target slot, turn the `}<code>U</code>{` layer again so that both pieces aren't on the right-hand side, and fix cross.`}</p>
-        <div className="flex flex-row flex-wrap gap-6 mb-6">
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Example 1 — Separate pieces</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="R2 B D2 F D2 F' L2 R2 F L2 D2 F2 D' U B' U2 R' B D2 L' D2 x2 R' B' F L2 D L' B L d U' y'"
-                hints
-                labels
-                lines={[
-                  { moves: ["U", "R", "U2", "R'"], durations: [1500, 1500, 2000, 1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WO", "WG", "WR", "WB", "WGO", "GO"] }
-                ]}
-                progress
-                startHighlighted
-              />
-            </div>
-          </div>
-        </div>
+        <CubeWrapper titles={["Example 1 — Separate pieces"]}>
+          <CubeScene
+            scramble="R2 B D2 F D2 F' L2 R2 F L2 D2 F2 D' U B' U2 R' B D2 L' D2 x2 R' B' F L2 D L' B L d U' y'"
+            hints
+            labels
+            lines={[
+              { moves: ["U", "R", "U2", "R'"], durations: [1500, 1500, 2000, 1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WO", "WG", "WR", "WB", "WGO", "GO"] }
+            ]}
+            progress
+            startHighlighted
+          />
+        </CubeWrapper>
         <p>{`Now we have the Level 2 case where the colors on top of the F2L pieces match.`}</p>
         <p>{`To solve the color-matching case, we hide the corner by putting it diagonal from the target slot. That means putting the corner in the back-right. Then we raise the target slot which hides the corner in the back. The edge needs to move to that same layer: in the back.`}</p>
-        <div className="flex flex-row flex-wrap gap-6 mb-6">
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Example 1 — Pair pieces</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="R2 B D2 F D2 F' L2 R2 F L2 D2 F2 D' U B' U2 R' B D2 L' D2 x2 R' B' F L2 D L' B L d U' y' U R U2 R'"
-                hints
-                labels
-                lines={[
-                  { moves: ["U2", "R", "U2", "R'"], durations: [2000, 1500, 2000, 1500], delay: 200, highlight: ["O", "G", "R", "B", "Y", "WG", "WO", "WR", "W", "WB", "WGO", "GO"] }
-                ]}
-                progress
-                startHighlighted
-              />
-            </div>
-          </div>
-        </div>
+        <CubeWrapper titles={["Example 1 — Pair pieces"]}>
+          <CubeScene
+            scramble="R2 B D2 F D2 F' L2 R2 F L2 D2 F2 D' U B' U2 R' B D2 L' D2 x2 R' B' F L2 D L' B L d U' y' U R U2 R'"
+            hints
+            labels
+            lines={[
+              { moves: ["U2", "R", "U2", "R'"], durations: [2000, 1500, 2000, 1500], delay: 200, highlight: ["O", "G", "R", "B", "Y", "WG", "WO", "WR", "W", "WB", "WGO", "GO"] }
+            ]}
+            progress
+            startHighlighted
+          />
+        </CubeWrapper>
         <p>{`We have a connected pair, which means we need to get it out of the way of the right layer where the target slot is. We choose to do `}<code>{`U'`}</code>{`, but we could have done `}<code>U2</code>.</p>
         <p>{`Raise the target slot, find the right `}<code>U</code>{` move that connects the pair to the cross, then fix cross.`}</p>
-        <div className="flex flex-row flex-wrap gap-6 mb-6">
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Example 1 — Insert pair</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="R2 B D2 F D2 F' L2 R2 F L2 D2 F2 D' U B' U2 R' B D2 L' D2 x2 R' B' F L2 D L' B L d U' y' U R U2 R' U2 R U2 R'"
-                hints
-                labels
-                lines={[
-                  { moves: ["U'", "R", "U2", "R'"], durations: [1500, 1500, 2000, 1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "GO", "WGO"] }
-                ]}
-                progress
-                startHighlighted
-              />
-            </div>
-          </div>
-        </div>
+        <CubeWrapper titles={["Example 1 — Insert pair"]}>
+          <CubeScene
+            scramble="R2 B D2 F D2 F' L2 R2 F L2 D2 F2 D' U B' U2 R' B D2 L' D2 x2 R' B' F L2 D L' B L d U' y' U R U2 R' U2 R U2 R'"
+            hints
+            labels
+            lines={[
+              { moves: ["U'", "R", "U2", "R'"], durations: [1500, 1500, 2000, 1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "GO", "WGO"] }
+            ]}
+            progress
+            startHighlighted
+          />
+        </CubeWrapper>
         <p>{`This is just an example of the procedure. This isn't actually the best way to solve this pair, because we're allowed to modify other slots than just our target slot, if they aren't solved. But that's beyond the scope of this tutorial.`}</p>
         <H2>Example 2</H2>
         <p>{`In this example, the front two slots are already solved. This won't change much, but it does mean we can't see any pairs very easily. But we do see a blue-red edge. Tilting the cube would reveal that the blue-red-white corner is in the back-right slot. We'll solve that.`}</p>
         <p>{`This is a Level 5 case, so we need to take out the corner. There's many ways we can do this. One idea that works here is to just raise the target slot. That will hide the edge. After that, we move the `}<code>U</code>{` layer to get the corner out of the way, then fix cross again.`}</p>
-        <div className="flex flex-row flex-wrap gap-6 mb-6">
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Example 2 — Take corner out</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="x2 y' L2 B U' L U' B L B2 U B2 L2 U' L2 U L2 B2 U L2 B2 U2"
-                hints
-                labels
-                lines={[
-                  { moves: ["R'", "U'", "R"], durations: [1500, 1500, 1500], delay: 500, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WO", "WR", "WB", "WBR", "BR", "WGO", "GO", "BR", "BO", "WBO", "WBR"] }
-                ]}
-                progress
-              />
-            </div>
-          </div>
-        </div>
+        <CubeWrapper titles={["Example 2 — Take corner out"]}>
+          <CubeScene
+            scramble="x2 y' L2 B U' L U' B L B2 U B2 L2 U' L2 U L2 B2 U L2 B2 U2"
+            hints
+            labels
+            lines={[
+              { moves: ["R'", "U'", "R"], durations: [1500, 1500, 1500], delay: 500, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WO", "WR", "WB", "WBR", "BR", "WGO", "GO", "BR", "BO", "WBO", "WBR"] }
+            ]}
+            progress
+          />
+        </CubeWrapper>
         <p>{`The top color on the edge is blue, and the side is red. Red does not match the left or right center color, so this is a bad edge. We need to rotate.`}</p>
-        <div className="flex flex-row flex-wrap gap-6 mb-6">
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Example 2 — Make edge good</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="x2 y' L2 B U' L U' B L B2 U B2 L2 U' L2 U L2 B2 U L2 B2 U2 R' U' R"
-                hints
-                labels
-                lines={[
-                  { moves: ["y"], durations: [1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WO", "WR", "WB", "WBR", "BR", "WGO", "GO", "BR", "BO", "WBO", "WBR"] }
-                ]}
-                progress
-                startHighlighted
-              />
-            </div>
-          </div>
-        </div>
+        <CubeWrapper titles={["Example 2 — Make edge good"]}>
+          <CubeScene
+            scramble="x2 y' L2 B U' L U' B L B2 U B2 L2 U' L2 U L2 B2 U L2 B2 U2 R' U' R"
+            hints
+            labels
+            lines={[
+              { moves: ["y"], durations: [1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WO", "WR", "WB", "WBR", "BR", "WGO", "GO", "BR", "BO", "WBO", "WBR"] }
+            ]}
+            progress
+            startHighlighted
+          />
+        </CubeWrapper>
         <p>{`The pieces are separated but not paired, so we're on Level 2.`}</p>
         <p>{`The top colors don't match, and it's not a case with cross color on top, so we hide the corner.`}</p>
         <p>{`The corner needs to go diagonal from the target slot, which it already is. The corner is on the right. The edge needs to go on the opposite side: on the left. So we hide the corner, move the edge to the left side, then fix cross.`}</p>
 
-        <div className="flex flex-row flex-wrap gap-6 mb-6">
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Example 2 — Pair pieces</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="x2 y' L2 B U' L U' B L B2 U B2 L2 U' L2 U L2 B2 U L2 B2 U2 R' U' R y"
-                hints
-                labels
-                lines={[
-                  { moves: ["R", "U", "R'"], durations: [1500, 1500, 1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WO", "WR", "WB", "WBR", "BR", "WGO", "GO", "BR", "BO", "WBO", "WBR"] }
-                ]}
-                progress
-                startHighlighted
-              />
-            </div>
-          </div>
-        </div>
+        <CubeWrapper titles={["Example 2 — Pair pieces"]}>
+          <CubeScene
+            scramble="x2 y' L2 B U' L U' B L B2 U B2 L2 U' L2 U L2 B2 U L2 B2 U2 R' U' R y"
+            hints
+            labels
+            lines={[
+              { moves: ["R", "U", "R'"], durations: [1500, 1500, 1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WO", "WR", "WB", "WBR", "BR", "WGO", "GO", "BR", "BO", "WBO", "WBR"] }
+            ]}
+            progress
+            startHighlighted
+          />
+        </CubeWrapper>
         <p>{`The final step is to insert.`}</p>
         <p>{`For split pairs, the corner always goes directly above the target slot. So we do `}<code>U</code>{`. Then, insert by pulling the edge in along with the corner.`}</p>
-        <div className="flex flex-row flex-wrap gap-6 mb-6">
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Example 2 — Insert pair</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="x2 y' L2 B U' L U' B L B2 U B2 L2 U' L2 U L2 B2 U L2 B2 U2 R' U' R y R U R'"
-                hints
-                labels
-                lines={[
-                  { moves: ["U", "R", "U", "R'"], durations: [1500, 1500, 1500, 1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WO", "WR", "WB", "WBR", "BR", "WGO", "GO", "BR", "BO", "WBO", "WBR"] }
-                ]}
-                progress
-                startHighlighted
-              />
-            </div>
-          </div>
-        </div>
+        <CubeWrapper titles={["Example 2 — Insert pair"]}>
+          <CubeScene
+            scramble="x2 y' L2 B U' L U' B L B2 U B2 L2 U' L2 U L2 B2 U L2 B2 U2 R' U' R y R U R'"
+            hints
+            labels
+            lines={[
+              { moves: ["U", "R", "U", "R'"], durations: [1500, 1500, 1500, 1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WO", "WR", "WB", "WBR", "BR", "WGO", "GO", "BR", "BO", "WBO", "WBR"] }
+            ]}
+            progress
+            startHighlighted
+          />
+        </CubeWrapper>
         <H1>Now what?</H1>
         <p>{`This isn't everything there is to F2L, but it's plenty for now. We'll cover more in future lessons. For now, spend a lot of time just getting used to the procedure. It will feel slow at first, but with practice, it becomes quite fast.`}</p>
         <p>{`You can do untimed solves to get used to everything. Timed solves help you to practice making quick decisions.`}</p>
@@ -1700,14 +1525,14 @@ const TREE_EXAMPLE_HIGHLIGHT: PieceName[] = [...CROSS_PIECES, "BR", "WBR"];
 const TREE_LINK_CLASS = "text-primary-400 underline underline-offset-4 hover:text-primary-300 transition-colors";
 const LEVEL_DESCRIPTIONS = [
   "Pieces solved",
-  <span>
+  <span key="paired">
     {"Pieces "}
     <a href="#level-1-are-the-pieces-paired" className={TREE_LINK_CLASS}>paired</a>
     {" in the top layer"}
   </span>,
   "Pieces separated in the top layer",
   "Pieces adjacent in the top layer",
-  <span>
+  <span key="bad">
     {`Edge is `}
     <a href="#level-4-is-the-edge-bad" className={TREE_LINK_CLASS}>bad</a>
   </span>,

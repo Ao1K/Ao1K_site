@@ -4,6 +4,7 @@ import Story from "../LessonStory"
 import ExternalLink from "../../ExternalLink"
 import CubeImage from "../CubeImage"
 import CubeScene from "../CubeScene"
+import CubeWrapper from "../CubeWrapper"
 import { H1, H2 } from "../LessonHeading"
 import type { PieceName } from "../cubeProps"
 
@@ -53,134 +54,94 @@ export default function WhatToLearn() {
         <p>{`Let's go over each step. This will just be an overview. The next several lessons will go over how to actually learn these steps.`}</p>
         <H2>Cross</H2>
         <p>{`In the first step of CFOP, you solve four edge pieces into a cross or plus pattern.`}</p>
-        <div className="flex flex-row flex-wrap pb-6 gap-4">
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Goal</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeImage
-                labels
-                scramble="z2"
-                highlight={CROSS_PIECES}
-                shade="#888888"
-                className="w-full h-auto"
-                dim={0.3}
-              />
-            </div>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Example</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="B' U2 R F2 U2 L' D2 L2 R D2 L2 U2 B2 F U2 B D R U2 F' z2"
-                hints
-                lines={[
-                  { moves: ["R'", ["U'", "D'"], "L", "F", "R'", "D'"], durations: [1300, 1300, 1300, 1300, 1300, 1300], delay: 1400, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO"] }
-                ]}
-                loop
-                progress
-              />
-            </div>
-          </div>
-        </div>
+        <CubeWrapper titles={["Goal", "Example"]}>
+          <CubeImage
+            labels
+            scramble="z2"
+            highlight={CROSS_PIECES}
+            shade="#888888"
+            className="w-full h-auto"
+            dim={0.3}
+          />
+          <CubeScene
+            scramble="B' U2 R F2 U2 L' D2 L2 R D2 L2 U2 B2 F U2 B D R U2 F' z2"
+            hints
+            lines={[
+              { moves: ["R'", ["U'", "D'"], "L", "F", "R'", "D'"], durations: [1300, 1300, 1300, 1300, 1300, 1300], delay: 1400, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO"] }
+            ]}
+            loop
+            progress
+          />
+        </CubeWrapper>
         <p>{`CFOP users will of course try to solve cross as fast as possible, which tends to mean doing it in as few moves as possible.`}</p>
         <p>{`This step is the most creative.`}</p>
         <H2>F2L</H2>
         <p>{`F2L is the second step, and it stands for First Two (2) Layers.`}</p>
         <p>{`In almost all beginner's method, you solve the first four corners, and then the second-layer edges. With F2L, you solve corner-edge pairs. This means you solve one corner and one edge at the same time, and you do this four times total.`}</p>
-        <div className="flex flex-row flex-wrap pb-6 gap-4">
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Goal</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeImage
-                hints
-                labels
-                scramble="z2 y'"
-                highlight={F2L_PIECES}
-                shade="#888888"
-                className="w-full h-auto"
-                dim={1}
-              />
-            </div>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Example</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="B' U2 R F2 U2 L' D2 L2 R D2 L2 U2 B2 F U2 B D R U2 F' z2 R' U' D' L F R' D'"
-                hints
-                lines={[
-                  { moves: ["L", "U'", "L'", "R", "U2", "R'"], durations: [500, 500, 500, 500, 750, 500], delay: 800, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "GO", "WGO"] },
-                  { moves: ["y", "R'", "U'", "R2", "U2", "R'"], durations: [500, 500, 500, 750, 750, 500], delay: 800, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "GO", "WGO", "BO", "WBO"] },
-                  { moves: ["y", "U2", "R", "U2", "R'", "U2", "R", "U'", "R'"], durations: [500, 750, 500, 750, 500, 750, 500, 500, 500], delay: 800, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "GO", "WGO", "BO", "WBO", "BR", "WBR"] },
-                  { moves: ["U'", "R'", "U", "R", "y", "U", "R", "U", "R'"], durations: [500, 500, 500, 500, 500, 500, 500, 500, 500], delay: 800, highlight: ["W", "O", "G", "R", "B", "Y", "WGR", "WGO", "WG", "WO", "WBO", "WBR", "WR", "WB", "GR", "GO", "BO", "BR"] }
-                ]}
-                progress
-              />               
-            </div>
-          </div>
-        </div>
+        <CubeWrapper titles={["Goal", "Example"]}>
+          <CubeImage
+            hints
+            labels
+            scramble="z2 y'"
+            highlight={F2L_PIECES}
+            shade="#888888"
+            className="w-full h-auto"
+            dim={1}
+          />
+          <CubeScene
+            scramble="B' U2 R F2 U2 L' D2 L2 R D2 L2 U2 B2 F U2 B D R U2 F' z2 R' U' D' L F R' D'"
+            hints
+            lines={[
+              { moves: ["L", "U'", "L'", "R", "U2", "R'"], durations: [500, 500, 500, 500, 750, 500], delay: 800, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "GO", "WGO"] },
+              { moves: ["y", "R'", "U'", "R2", "U2", "R'"], durations: [500, 500, 500, 750, 750, 500], delay: 800, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "GO", "WGO", "BO", "WBO"] },
+              { moves: ["y", "U2", "R", "U2", "R'", "U2", "R", "U'", "R'"], durations: [500, 750, 500, 750, 500, 750, 500, 500, 500], delay: 800, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "GO", "WGO", "BO", "WBO", "BR", "WBR"] },
+              { moves: ["U'", "R'", "U", "R", "y", "U", "R", "U", "R'"], durations: [500, 500, 500, 500, 500, 500, 500, 500, 500], delay: 800, highlight: ["W", "O", "G", "R", "B", "Y", "WGR", "WGO", "WG", "WO", "WBO", "WBR", "WR", "WB", "GR", "GO", "BO", "BR"] }
+            ]}
+            progress
+          />
+        </CubeWrapper>
         <p>{`This step is a mix of creativity and algorithms. The last two steps are purely about algorithms.`}</p>
         <H2>OLL</H2>
         <p>{`OLL stands for Orientation of the Last Layer. In this step, you make the top face all one color. This is also called "orienting" the pieces, hence the name OLL. The top pieces won't usually be in the correct spots relative to each other, so the cube won't be completely solved yet.`}</p>
         <p>{`In the full version of OLL, you choose from a selection of 57 algorithms that you've already memorized and use just one of those algs to orient the top face.`}</p>
         <p>{`Fifty-seven algorithms is a lot to learn. So for beginners, it's broken into two steps, called "looks". In the first look, you use one of three algorithms to orient the edges. In the second, you use one of seven algorithms to orient the corners. Each and every two-look OLL algorithm can be later used in full OLL, so there's no downside to learning this "two-look" version first.`}</p>
-        <div className="flex flex-row flex-wrap pb-6 gap-4">
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Goal</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeImage
-                hints
-                labels
-                facelets={OLL_GOAL_FACELETS}
-                className="w-full h-auto"
-              />
-            </div>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Example (two-look algs)</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="B' U2 R F2 U2 L' D2 L2 R D2 L2 U2 B2 F U2 B D R U2 F' z2 R' U' D' L F R' D' L U' L' R U2 R' y R' U' R2 U2 R' y U2 R U2 R' U2 R U' R' U' R' U R y U R U R'"
-                hints
-                labels
-                lines={[
-                  { moves: ["F", "R", "U", "R'", "U'", "F'", "f", "R", "U", "R'", "U'", "f'"], durations: [437, 437, 437, 437, 437, 437, 437, 437, 437, 437, 437, 437], delay: 300 },
-                  { moves: ["U", "R", "U", "R'", "U", "R", "U2'", "R'"], durations: [437, 437, 437, 437, 437, 437, 655, 437], delay: 760 }
-                ]}
-                progress
-              />    
-            </div>
-          </div>
-        </div>
+        <CubeWrapper titles={["Goal", "Example (two-look algs)"]}>
+          <CubeImage
+            hints
+            labels
+            facelets={OLL_GOAL_FACELETS}
+            className="w-full h-auto"
+          />
+          <CubeScene
+            scramble="B' U2 R F2 U2 L' D2 L2 R D2 L2 U2 B2 F U2 B D R U2 F' z2 R' U' D' L F R' D' L U' L' R U2 R' y R' U' R2 U2 R' y U2 R U2 R' U2 R U' R' U' R' U R y U R U R'"
+            hints
+            labels
+            lines={[
+              { moves: ["F", "R", "U", "R'", "U'", "F'", "f", "R", "U", "R'", "U'", "f'"], durations: [437, 437, 437, 437, 437, 437, 437, 437, 437, 437, 437, 437], delay: 300 },
+              { moves: ["U", "R", "U", "R'", "U", "R", "U2'", "R'"], durations: [437, 437, 437, 437, 437, 437, 655, 437], delay: 760 }
+            ]}
+            progress
+          />
+        </CubeWrapper>
         <H2>PLL</H2>
         <p>{`PLL stands for Permutation of the Last Layer. This final step gets all the top pieces into the correct location, thereby solving the cube.`}</p>
-        <div className="flex flex-row flex-wrap pb-6 gap-4">
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Goal</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeImage
-                hints
-                labels
-                scramble="z2"
-                className="w-full h-auto"
-              />
-            </div>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-bold">Example (full PLL alg)</span>
-            <div className="w-80 h-80 border border-neutral-400 rounded-sm overflow-hidden">
-              <CubeScene
-                scramble="B' U2 R F2 U2 L' D2 L2 R D2 L2 U2 B2 F U2 B D R U2 F' z2 R' U' D' L F R' D' L U' L' R U2 R' y R' U' R2 U2 R' y U2 R U2 R' U2 R U' R' U' R' U R y U R U R' F R U R' U' F' f R U R' U' f' U R U R' U R U2' R'"
-                hints
-                labels
-                lines={[
-                  { moves: ["U'", "R'", "U", "R'", "d'", "R'", "F'", "R2", "U'", "R'", "U", "R'", "F", "R", "F", "U2"], durations: [141, 141, 141, 141, 212, 141, 141, 212, 141, 141, 141, 141, 141, 141, 141, 212], delay: 300 }
-                ]}
-                progress
-              />
-            </div>
-          </div>
-        </div>
+        <CubeWrapper titles={["Goal", "Example (full PLL alg)"]}>
+          <CubeImage
+            hints
+            labels
+            scramble="z2"
+            className="w-full h-auto"
+          />
+          <CubeScene
+            scramble="B' U2 R F2 U2 L' D2 L2 R D2 L2 U2 B2 F U2 B D R U2 F' z2 R' U' D' L F R' D' L U' L' R U2 R' y R' U' R2 U2 R' y U2 R U2 R' U2 R U' R' U' R' U R y U R U R' F R U R' U' F' f R U R' U' f' U R U R' U R U2' R'"
+            hints
+            labels
+            lines={[
+              { moves: ["U'", "R'", "U", "R'", "d'", "R'", "F'", "R2", "U'", "R'", "U", "R'", "F", "R", "F", "U2"], durations: [141, 141, 141, 141, 212, 141, 141, 212, 141, 141, 141, 141, 141, 141, 141, 212], delay: 300 }
+            ]}
+            progress
+          />
+        </CubeWrapper>
         <p>{`There's 21 algorithms in the full version and only six in the two-look version. Again, there's no downside to starting with two-look.`}</p>
 
         <H1>What order do I learn CFOP in?</H1>
