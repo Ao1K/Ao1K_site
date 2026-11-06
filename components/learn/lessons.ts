@@ -37,6 +37,12 @@ export const lessons: Lesson[] = [
     category: "CFOP",
   },
   {
+    slug: "two-look-oll-and-pll",
+    title: "Two Look OLL and PLL",
+    description: "The book is long, but it can be conquered. Learn how to start memorizing OLL and PLL.",
+    category: "CFOP",
+  },
+  {
     slug: "keyhole",
     title: "Keyhole",
     description: "There is a long road. Learn how keyhole can set you down the path towards greater efficiency.",

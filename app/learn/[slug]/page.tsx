@@ -8,6 +8,7 @@ import WhatToLearn from "../../../components/learn/postContent/what-to-learn";
 import BetterCross from "../../../components/learn/postContent/better-cross";
 import Notation from "../../../components/learn/postContent/notation";
 import IntuitiveF2L from "../../../components/learn/postContent/intuitive-f2l";
+import TwoLookOllAndPll from "../../../components/learn/postContent/two-look-oll-and-pll";
 import CubeSceneLoader from "../../../components/learn/CubeSceneLoader";
 import LessonFooterNav from "../../../components/learn/LessonFooterNav";
 
@@ -19,6 +20,7 @@ const lessonComponents: Record<string, React.ComponentType> = {
   "better-cross": BetterCross,
   notation: Notation,
   "intuitive-f2l": IntuitiveF2L,
+  "two-look-oll-and-pll": TwoLookOllAndPll,
 };
 
 export function generateStaticParams() {
