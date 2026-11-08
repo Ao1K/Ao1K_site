@@ -94,7 +94,7 @@ export default function LessonSidebar() {
       {/* mobile toggle */}
       <button
         onClick={() => setOpen((v) => !v)}
-        className="md:hidden fixed bottom-4 left-4 z-50 bg-primary-700 text-primary-100 rounded-sm w-11 h-11 flex items-center justify-center shadow-lg"
+        className="md:hidden fixed bottom-4 left-4 z-50 bg-primary-600/90 hover:bg-primary-600 transition-colors text-primary-100 rounded-sm w-11 h-11 flex items-center justify-center shadow-lg"
         aria-label="Toggle sidebar"
       >
         <ListIcon className="w-6 h-6" />

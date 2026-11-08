@@ -16,3 +16,8 @@
 | ZBLS | ZB (the inventer's initials) Last Slot. Solving the final F2L pair while also solving EO, so the solve continues into ZBLL. It is the *last* slot: the other three slots are solved, and EO is solved everywhere except possibly the slot being solved into. |
 | F2L+EO | Not a standard set name. An alg that solves a pair and EO but is not ZBLS because it modifies multiple slots. |
 | Substep order | Any LL substep (EO, CO, EP, CP) can be solved before any other, and a substep can be undone by later moves. Assume nothing about ordering. The most typical solver does OLL then PLL, but CP and/or EP may already be solved beforehand and simply be ignored by the solver, who then solves EO and CO as normal. |
+| Headlights | Two corner stickers of the same color on the same side of the cube and in the top layer, typically used during PLL recognition. |
+| Bar | Two or three stickers of the same color next to each other on the same side of the cube and in the top layer, typically used during PLL recognition. |
+| Checkerboard | Two alternating colors next to each other on the same side of the cube and in the top layer, typically used during PLL recognition. |
+| Antiheadlights | Headlights, but two corner stickers of opposite color. |
+| Bookends | Two corner stickers of matching color on two sides of the cube in the top layer, with 4 stickers (2 edges, one corner) between them, such that viewing the cube from an angle shows two corners of matching color on either edge of the cube. Typically used during PLL recognition. |
