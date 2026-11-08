@@ -38,7 +38,7 @@ export const lessons: Lesson[] = [
   },
   {
     slug: "two-look-oll-and-pll",
-    title: "Two Look OLL and PLL",
+    title: "Two-Look OLL and PLL",
     description: "The book is long, but it can be conquered. Learn how to start memorizing OLL and PLL.",
     category: "CFOP",
   },
