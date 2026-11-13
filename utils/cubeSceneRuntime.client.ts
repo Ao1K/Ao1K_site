@@ -545,6 +545,7 @@ export function createScene(root: HTMLElement, island: SceneIsland): void {
   const overlayEl = root.querySelector<HTMLElement>('.overlay')
   if (!svgEl) return
   const iconPlay = overlayEl?.querySelector<HTMLElement>('.icon-play') ?? null
+  const iconReplay = overlayEl?.querySelector<HTMLElement>('.icon-replay') ?? null
   const progressFill = island.progress ? root.querySelector<HTMLElement>('.progress-fill') : null
 
   const scene = createCubeScene(createSvgPainter(svgEl), {
@@ -571,8 +572,11 @@ export function createScene(root: HTMLElement, island: SceneIsland): void {
 
   function updateOverlay(): void {
     if (!overlayEl) return
-    overlayEl.style.background = paused ? 'rgba(0,0,0,0.45)' : 'transparent'
-    if (iconPlay) iconPlay.style.opacity = paused ? '0.85' : '0'
+    const ended = paused && lineIdx >= island.lines.length
+    const pausedMidway = paused && !ended
+    overlayEl.style.background = pausedMidway ? 'rgba(0,0,0,0.45)' : 'transparent'
+    if (iconPlay) iconPlay.style.opacity = pausedMidway ? '0.85' : '0'
+    if (iconReplay) iconReplay.style.opacity = ended ? '0.85' : '0'
   }
 
   function clearPending(): void {

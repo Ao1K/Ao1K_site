@@ -255,6 +255,7 @@ export default function IntuitiveF2L() {
         <p>{`All these restrictions will make it easier to figure out what to do. You'll have fewer options, which means there's fewer things to try.`}</p>
         <H2>On Level 5? Get pieces in top layer</H2>
         <p>{`When we're on Level 5, our goal is to get both pieces into the top layer.`}</p>
+        <p>{`In the example below, we have a blue-orange edge piece stuck in the front-right "slot". A slot is a location where an F2L corner-edge pair will go.`}</p>
         <div className="flex flex-row flex-wrap gap-6 mb-6">
           <div className="flex flex-col gap-1">
             <span className="text-sm font-bold">Level 5 — Example 1</span>
@@ -269,7 +270,6 @@ export default function IntuitiveF2L() {
           </div>
           <F2LSlotsDiagram />
         </div>
-        <p>{`Here we have a blue-orange edge piece stuck in the front-right "slot". A slot is a location where an F2L corner and edge pair will go.`}</p>
         <p>{`Any trigger we do will make changes to one of these slots. We'll call the slot we change our "target slot".`}</p>
         <p>{`On Level 5, the slot we want to change is the one with F2L pieces in it. We want to take them out of the slot.`}</p>
         <p>{`First, find the `}<code>R</code>{` or `}<code>L</code>{` move that lifts the target slot into the top layer.`}</p>
@@ -539,6 +539,7 @@ export default function IntuitiveF2L() {
             startHighlighted
           />
         </CubeWrapper>
+        <p>{`We now have a connected pair.`}</p>
         <H3>Top colors match</H3>
         <p>{`This next case, we hide the corner instead of the edge.`}</p>
         <p>{`Turn the top layer so that the corner is diagonal from the target slot. If the target slot is front-right, put the corner in the back-right. If the target slot is back-left, put the corner in the front-left. And so on.`}</p>
@@ -567,7 +568,7 @@ export default function IntuitiveF2L() {
         <p>{`Hide the corner by lifting the target slot.`}</p>
         <p>{`Now ask: Is the corner in the front or back layer?`}</p>
         <p>{`Turn the top layer so that the edge is also in the front or back, whichever layer the corner is in.`}</p>
-        <p>{`Then unhide the corner. The pieces will now be paired.`}</p>
+        <p>{`Then unhide the corner.`}</p>
         <CubeWrapper titles={["Top colors match case — Solve case", "Top colors match case — Bonus example"]}>
           <AnnotatedCubeScene
             scramble="y2 U F U2 D' F' B U' L' F L2 D2 F2 L2 U L2 U' B2 R2 U2 D' x2 D' B R D' B2 L' B' D' U' B U B'"
@@ -575,13 +576,13 @@ export default function IntuitiveF2L() {
             hints
             labels
             lines={[
-              { moves: [["U'"], ["L"], ["U2"], ["L'"]], durations: [1500, 1500, 1500, 1500], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "WBR", "BR"] }
+              { moves: [["U'"], ["L"], ["U2"], ["L'"]], durations: [2000, 2000, 2500, 2000], delay: 200, highlight: ["W", "O", "G", "R", "B", "Y", "WG", "WR", "WB", "WO", "WBR", "BR"] }
             ]}
             annotations={[
-              { ...BOTTOM_LEFT_TEXT, text: "Place corner diagonal from target slot", moves: [0, 0] },
-              { ...BOTTOM_LEFT_TEXT, text: "Hide corner in front", moves: [1, 1] },
-              { ...BOTTOM_LEFT_TEXT, text: "Move edge to front with corner", moves: [2, 2] },
-              { ...BOTTOM_LEFT_TEXT, text: "Un-hide corner", moves: [3, 3] },
+              { ...BOTTOM_LEFT_TEXT, text: "Place corner diagonal from target slot", duration: 2500, moves: [0, 0] },
+              { ...BOTTOM_LEFT_TEXT, text: "Hide corner in front", duration: 2500, moves: [1, 1] },
+              { ...BOTTOM_LEFT_TEXT, text: "Move edge to front with corner", duration: 3000, moves: [2, 2] },
+              { ...BOTTOM_LEFT_TEXT, text: "Un-hide corner", duration: 2500, moves: [3, 3] },
             ]}
             progress
             startHighlighted
@@ -601,9 +602,10 @@ export default function IntuitiveF2L() {
             progress
           />
         </CubeWrapper>
+        <p>{`Notice what we're doing. We're just getting the edge in the same layer as the corner. That way, we form a connected pair.`}</p>
         <H3>Top colors different</H3>
         <p>{`The last Level 2 case is when the two colors on top of the F2L pieces are different, but cross color isn't on top.`}</p>
-        <p>{`Like in the last case, moves the corner to be diagonal from the target slot.`}</p>
+        <p>{`Like in the last case, move the corner to be diagonal from the target slot.`}</p>
         <CubeWrapper titles={["Top colors different case — Place corner diagonal"]}>
           <CubeScene
             scramble="y U F U2 D' F' B U' L' F L2 D2 F2 L2 U L2 U' B2 R2 U2 D' x2 D' B R D' B2 L' B' D' d U' R U' R' U'"
@@ -704,7 +706,7 @@ export default function IntuitiveF2L() {
             startHighlighted
           />
         </CubeWrapper>
-        <p>{`From there it's very similar to the connected pair case. We raise the target slot, which connects the pieces. Move the `}<code>U</code>{` layer to connect the pair to the cross edge, then fix cross.`}</p>
+        <p>{`From there it's very similar to the connected pair case. Raise the target slot. Move the `}<code>U</code>{` layer to connect the pair to the cross edge, then fix cross.`}</p>
         <CubeWrapper titles={["Split pair — Insert pair", "Split pair — Bonus example"]}>
           <CubeScene
             scramble="R' D' R U' B2 D R' B R L2 D' R2 D' L2 D R2 B2 D2 B2 U B2 x2 y"
@@ -729,6 +731,7 @@ export default function IntuitiveF2L() {
         <p>{`Notice how when lift up the target slot, we connect the pieces together. Then, it's like we pull the pair into the slot. If you have to solve a split pair into one of the back two slots, it's a bit more like pushing, but nothing about the idea changes.`}</p>
 
         <H1>Full examples</H1>
+        <p>{`That was everything! You likely need to spend some time reviewing the content above. Start trying to solve F2L on your cube if you haven't already. You may also benefit from the examples below.`}</p>
         <H2>Example 1</H2>
         <p>{`Let's say we just solved white cross, and we see two F2L pieces right in front of us. The green-orange ones. Let's solve them.`}</p>
         <p>{`Both pieces are in the `}<code>U</code>{` layer, so we skipped Level 5. The edge clearly connects to the front center, not the left or right, so we're on Level 4. We need to rotate the cube.`}</p>
@@ -745,6 +748,7 @@ export default function IntuitiveF2L() {
         </CubeWrapper>
         <p>{`We chose to rotate so that the orange-green slot is in the front right, where it's easier to see what we're doing.`}</p>
         <p>{`The edge is good now, and in theory we could be on any level from 3 to 1. We're on Level 3 since the pieces are adjacent.`}</p>
+        <p>{`The pair is solved front-right, so front-right is our target slot.`}</p>
         <p>{`We turn the `}<code>U</code>{` layer so that one piece is on the same side, right, as the target slot, and one isn't. Then we raise the target slot, turn the `}<code>U</code>{` layer again so that both pieces aren't on the right-hand side, and fix cross.`}</p>
         <CubeWrapper titles={["Example 1 — Separate pieces"]}>
           <CubeScene
@@ -759,7 +763,7 @@ export default function IntuitiveF2L() {
           />
         </CubeWrapper>
         <p>{`Now we have the Level 2 case where the colors on top of the F2L pieces match.`}</p>
-        <p>{`To solve the color-matching case, we hide the corner by putting it diagonal from the target slot. That means putting the corner in the back-right. Then we raise the target slot which hides the corner in the back. The edge needs to move to that same layer: in the back.`}</p>
+        <p>{`To solve the color-matching case, we hide the corner by putting it diagonal from the target slot. That means putting the corner in the back-right. Then we raise the target slot, which hides the corner in the back. The edge needs to move to that same layer: in the back.`}</p>
         <CubeWrapper titles={["Example 1 — Pair pieces"]}>
           <CubeScene
             scramble="R2 B D2 F D2 F' L2 R2 F L2 D2 F2 D' U B' U2 R' B D2 L' D2 x2 R' B' F L2 D L' B L d U' y' U R U2 R'"
@@ -1449,7 +1453,7 @@ const LEVEL_2_CASE_GROUPS = [
       ] as string[] },
       { title: "Top colors match", facelets: "YYBRYRRYYGWYWWWWWRWGRBOYWOOGBORBGGBBWBOOROYRRBGBYGOGGO", steps: [
         "Hide corner",
-        "Place edge by corner",
+        "Place edge by corner (front or back)",
         "Un-hide corner",
       ] as string[] },
     ],
@@ -1459,8 +1463,8 @@ const LEVEL_2_CASE_GROUPS = [
     cases: [
       { title: "Top colors different", facelets: "WYORYRBYBGWYWWWGWYRORBOYWOOYBWRBGGBBBBGORGORRRGWYGOYGO", steps: [
         "Hide corner",
-        "Place edge opposite corner",
-        "Unhide corner",
+        "Place edge opposite corner (left or right)",
+        "Un-hide corner",
       ] as string[] },
     ],
   },

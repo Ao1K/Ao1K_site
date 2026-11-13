@@ -44,6 +44,20 @@ export const CUBE_SCENE_CSS = `.cube-scene {
   pointer-events: none;
 }
 
+.cube-scene .icon-replay {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  width: 43px;
+  height: 43px;
+  fill: white;
+  transition: opacity 0.2s, filter 0.2s;
+}
+
+.cube-scene:hover .icon-replay {
+  filter: brightness(0.6);
+}
+
 .cube-scene .progress {
   position: absolute;
   bottom: 0;

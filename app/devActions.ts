@@ -7,12 +7,16 @@ import { buildCubeSvg, buildCubeSvgBody, SCENE_PX } from '../utils/cubeSvgRender
 import { faceletsFromState } from '../utils/cubeFacelets'
 import { CUBE_SCENE_CSS } from '../utils/cubeSceneCss'
 import { buildColorHex, buildSceneIsland, type AuthoredLine } from '../utils/cubeSceneAuthoring'
-import { islandFrameZero, CUBE_SVG_CLASS, SCENE_DATA_ATTR } from '../utils/cubeSceneIsland'
+import {
+  islandFrameZero,
+  CUBE_SVG_CLASS,
+  SCENE_DATA_ATTR,
+  PLAY_ICON_PATH,
+  REPLAY_ICON_PATH,
+} from '../utils/cubeSceneIsland'
 import type { CompileSceneOptions, CompileStaticImageOptions } from './devActionTypes'
 
 const RUNTIME_PATH = path.join(process.cwd(), 'public', 'learn', 'cubeScene.js')
-
-const PLAY_PATH = `M232.4 114.49L88.32 26.35a16 16 0 0 0-16.2-.3A15.86 15.86 0 0 0 64 39.87v176.26A15.94 15.94 0 0 0 80 232a16.07 16.07 0 0 0 8.36-2.35l144.04-88.14a15.81 15.81 0 0 0 0-27ZM80 215.94V40l143.83 88Z`
 
 function embeddableJson(value: unknown): string {
   return JSON.stringify(value).replace(/</g, '\\u003c')
@@ -49,7 +53,8 @@ async function buildSceneHtml(opts: CompileSceneOptions): Promise<string> {
   const sceneEl = `<div ${SCENE_DATA_ATTR} class="cube-scene">`
     + `<svg class="${CUBE_SVG_CLASS}" viewBox="0 0 ${SCENE_PX} ${SCENE_PX}">${frameZero}</svg>`
     + `<div class="overlay" style="background:rgba(0,0,0,0.45)">`
-    + `<svg class="icon-play" viewBox="0 0 256 256" style="opacity:0.85"><path d="${PLAY_PATH}"></path></svg>`
+    + `<svg class="icon-play" viewBox="0 0 256 256" style="opacity:0.85"><path d="${PLAY_ICON_PATH}"></path></svg>`
+    + `<svg class="icon-replay" viewBox="0 0 256 256" style="opacity:0"><path d="${REPLAY_ICON_PATH}"></path></svg>`
     + `</div>${progressHtml}`
     + `<script type="application/json">${embeddableJson(island)}</script>`
     + `</div>`
