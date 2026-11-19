@@ -99,7 +99,7 @@ export default function IntuitiveF2L() {
         <H2>Finding your place in the tree</H2>
         <p>{`We need to be able to tell what level we're on at any given time. Think of this like identifying the problem. Once we know the problem, we can descend the tree further.`}</p>
 
-        <p>{`We can figure out which level we're on by asking some questions:`}</p>
+        <p>{`We can figure out which level we're on by asking some questions about the two F2L pieces we want to solve:`}</p>
 
         <LevelQuestionsDiagram />
 
@@ -347,7 +347,7 @@ export default function IntuitiveF2L() {
           />
         </CubeWrapper>
         <p>{`You can tilt the cube if you need to see pieces in the back better, but don't change your grip on the cube or do `}<code>y</code>{` or `}<code>U</code>{` moves. This helps avoid common bad habits.`}</p>
-        <p>{`The corner is right on top of the edge, so we'll do a `}<code>U</code>{` move to get it out of the way. Here's the full solution:`}</p>
+        <p>{`The corner is right on top of the edge, so we'll do a `}<code>U</code>{` move to get it out of the way. Then we'll do a trigger to get the edge out. Here's the full solution:`}</p>
         <CubeWrapper>
           <AnnotatedCubeScene
             scramble="U' R' U B2 D R F' U2 R2 U B2 D' F2 B2 U' F2 D B2 D' F' L' x2 D L' F' L2 D U2 R' U R U'"
@@ -1798,7 +1798,7 @@ function F2LTreeDiagram() {
 }
 
 const LEVEL_QUESTIONS = [
-  { level: 5, question: "Are pieces in the bottom or middle layer?" },
+  { level: 5, question: "Is either piece in the bottom or middle layer?" },
   { level: 4, question: "Is the edge bad?" },
   { level: 3, question: "Are the pieces adjacent?" },
   { level: 2, question: "Are the pieces separated?" },
@@ -1813,7 +1813,7 @@ function LevelQuestionsDiagram() {
       role="img"
       aria-label={LEVEL_QUESTIONS.map(({ level, question }) => `${question} If yes, Level ${level}.`).join(" If no: ")}
     >
-      <div className="flex max-w-md flex-col gap-7">
+      <div className="flex max-w-115 flex-col gap-7">
         {LEVEL_QUESTIONS.map(({ level, question }, index) => (
           <div key={level} className="flex">
             <div className="relative flex flex-1 items-center rounded-[9px] border-[1.5px] border-primary-500 bg-primary-700 px-2 py-1 text-sm text-primary-200">
