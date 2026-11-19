@@ -14,6 +14,9 @@ A completely intuitive f2l guide
 
 Add roux algs
  - Roux icons in YourAlgsList
+ - 2nd block LS. Maybe don't try to reuse F2L queries too heavily? Maybe do? Why wouldn't we?
+ - CMLL, 4a (EO), EOLR, EOLRb, EP + AUF
+
 
 Wack suggestion
 http://localhost:3000/algs/?a=f2l&c=y3022000000000000
@@ -28,14 +31,10 @@ Idea: Alg packs, karma system. Algs can have fingertricks attached.
 
 switch to premium dns
 
-Unique parsing algorithm, Parser, for each puzzle/input abstraction. In this way, we can handle things like FMC and 4x4, or even allow people to create their own
-
 Switch local algs saving disclaimer to login prompt once we have profiles
 
 Untimer -> Correlator? Semitimer? PseudoTimer? Detime? Warmup?
  - Space to activate checklist. c to check, space to continue
-
-Using move transform tools (Ex: ctrl+shift+y) should keep text selected, and of course work on a selection basis rather than per line
 
 Linking tutorials:
 If doesn't use keyhole and should -> keyhole
@@ -51,6 +50,11 @@ Check if cross has any xyz moves in it. If yes, needs work and link tutorial.
 
 F2L Feedback:
  - Good/bad: solution to pair chosen
+  - Bad: Didn't use empty slot
+  - Bad: Didn't use keyhole and should have: "Missed __keyhole__", specifically for edges or when no good RU/LU option exists
+  - Bad: "Missed a __five mover__", "Missed a free pair".
+  - Bad: inefficient pairing. Could do xyz to pair
+    - Maybe Good: inefficient lead to more efficient next pair, so a net benefit. But don't assume intentional when we describe this, phrase passively
  - Good/bad: pair choice
  - Good: Solve back slot when had the option to not, and opened front slots
   - Bad: Did opposite
@@ -62,10 +66,12 @@ F2L Feedback:
  - Lefty when should have been righty, or vice versa? (no good/bad, just call it out in the feedback)
    - Actually, lefty is significantly less common in the data, see https://basilio.dev/cubing/recons/ReconStats-v0.pdf pg 32
    - But the data is still so messy. What can you actually say about it?
+    - Well, if it was 
+      solved front left
+      could have been back right (bad edge)
+      and more lefty slots open than righty. Then bad? But you could imagine a situation
    - Should we just try to tune an algorithm based on the available data?
- - Bad: Didn't use keyhole and should have: "Missed __keyhole__"
- - Bad: "Missed a __five mover__", "Missed a free pair".
- - Bad: inefficient pairing. Could do xyz to pair
+
 
 Minimize feedback if it's all good? Really you just need to see negative stuff. Kinda.
 
