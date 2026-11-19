@@ -9,8 +9,8 @@ import { cube3x3 } from '../../utils/parser/cube3x3';
 
 const CATEGORY_LABELS: Record<CrossPickCategory, string> = {
   fastest: 'Best',
-  fewestMoves: 'FM',
-  easiestContinuation: 'Ease',
+  fewestMoves: 'Shortest',
+  easiestContinuation: 'Easiest',
 };
 
 const CATEGORY_MEANINGS: Record<CrossPickCategory, string> = {
