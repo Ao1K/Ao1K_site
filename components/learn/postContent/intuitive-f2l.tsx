@@ -651,7 +651,8 @@ export default function IntuitiveF2L() {
         <H3>Reviewing Level 2</H3>
         <p>{`Level 2 has the most to remember. Let's update the diagram from earlier with the new information.`}</p>
         <Level2CasesDiagram withInstructions />
-
+                
+        <p>{`One intuitive way to remember the "top colors match" and "top colors different" cases is: when the top colors match, we need to connect the pieces. When the colors are different, we don't. In both cases, we hide the corner.`}</p>
         <p>{`We're almost done!`}</p>
         <H2>On Level 1? Insert pair</H2>
         <H3>Solving connected pairs</H3>
@@ -733,7 +734,7 @@ export default function IntuitiveF2L() {
         <H1>Full examples</H1>
         <p>{`That was everything! You likely need to spend some time reviewing the content above. Start trying to solve F2L on your cube if you haven't already. You may also benefit from the examples below.`}</p>
         <H2>Example 1</H2>
-        <p>{`Let's say we just solved white cross, and we see two F2L pieces right in front of us. The green-orange ones. Let's solve them.`}</p>
+        <p>{`We just solved white cross, and we see two F2L pieces right in front of us: the green-orange ones. Let's solve them.`}</p>
         <p>{`Both pieces are in the `}<code>U</code>{` layer, so we skipped Level 5. The edge clearly connects to the front center, not the left or right, so we're on Level 4. We need to rotate the cube.`}</p>
         <CubeWrapper titles={["Example 1 — Make edge good"]}>
           <CubeScene
@@ -748,8 +749,8 @@ export default function IntuitiveF2L() {
         </CubeWrapper>
         <p>{`We chose to rotate so that the orange-green slot is in the front right, where it's easier to see what we're doing.`}</p>
         <p>{`The edge is good now, and in theory we could be on any level from 3 to 1. We're on Level 3 since the pieces are adjacent.`}</p>
-        <p>{`The pair is solved front-right, so front-right is our target slot.`}</p>
-        <p>{`We turn the `}<code>U</code>{` layer so that one piece is on the same side, right, as the target slot, and one isn't. Then we raise the target slot, turn the `}<code>U</code>{` layer again so that both pieces aren't on the right-hand side, and fix cross.`}</p>
+        <p>{`The pair will be solved front-right, so front-right is our target slot.`}</p>
+        <p>{`We turn the `}<code>U</code>{` layer so that one piece is on the same side, right, as the target slot, and one isn't. Then we separate the pieces. We raise the target slot, turn the `}<code>U</code>{` layer again so that both pieces aren't on the right-hand side, and fix cross.`}</p>
         <CubeWrapper titles={["Example 1 — Separate pieces"]}>
           <CubeScene
             scramble="R2 B D2 F D2 F' L2 R2 F L2 D2 F2 D' U B' U2 R' B D2 L' D2 x2 R' B' F L2 D L' B L d U' y'"
